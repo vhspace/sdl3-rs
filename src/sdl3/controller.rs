@@ -1,5 +1,5 @@
 use crate::rwops::RWops;
-use libc::c_char;
+use libc::{c_char, c_void};
 use std::error;
 use std::ffi::{CStr, CString, NulError};
 use std::fmt;
@@ -57,26 +57,24 @@ impl GameControllerSubsystem {
     /// Retrieve the total number of attached joysticks *and* controllers identified by SDL.
     #[doc(alias = "SDL_GetJoysticks")]
     pub fn num_joysticks(&self, joystick_id: u32) -> Result<u32, String> {
-        let mut joystick_ids = [0; 16];
-        let result = unsafe { sys::SDL_GetJoysticks(&joystick_ids) };
-
-        if result >= 0 {
-            Ok(joystick_ids.len() as u32)
-        } else {
-            Err(get_error())
-        }
+        let mut num_joysticks: i32 = 0;
+        unsafe {
+            // see: https://github.com/libsdl-org/SDL/blob/main/docs/README-migration.md#sdl_joystickh
+            let joystick_ids = sys::SDL_GetJoysticks(&mut num_joysticks);
+            if (joystick_ids as *mut sys::SDL_Joystick) == std::ptr::null_mut() {
+                return Err(get_error());
+            } else {
+                sys::SDL_free(joystick_ids as *mut c_void);
+                return Ok(num_joysticks as u32);
+            };
+        };
     }
 
     /// Return true if the joystick at index `joystick_index` is a game controller.
     #[inline]
     #[doc(alias = "SDL_IsGamepad")]
     pub fn is_game_controller(&self, joystick_index: u32) -> bool {
-        match validate_int(joystick_index, "joystick_index") {
-            Ok(joystick_index) => unsafe {
-                sys::SDL_IsGamepad(joystick_index) != sys::SDL_bool::SDL_FALSE
-            },
-            Err(_) => false,
-        }
+        return unsafe { sys::SDL_IsGamepad(joystick_index) != sys::SDL_bool::SDL_FALSE };
     }
 
     /// Attempt to open the controller at index `joystick_index` and return it.
@@ -85,7 +83,6 @@ impl GameControllerSubsystem {
     #[doc(alias = "SDL_OpenGamepad")]
     pub fn open(&self, joystick_index: u32) -> Result<GameController, IntegerOrSdlError> {
         use crate::common::IntegerOrSdlError::*;
-        let joystick_index = validate_int(joystick_index, "joystick_index")?;
         let controller = unsafe { sys::SDL_OpenGamepad(joystick_index) };
 
         if controller.is_null() {
@@ -102,7 +99,6 @@ impl GameControllerSubsystem {
     #[doc(alias = "SDL_GetGamepadInstanceName")]
     pub fn name_for_index(&self, joystick_index: u32) -> Result<String, IntegerOrSdlError> {
         use crate::common::IntegerOrSdlError::*;
-        let joystick_index = validate_int(joystick_index, "joystick_index")?;
         let c_str = unsafe { sys::SDL_GetGamepadInstanceName(joystick_index) };
 
         if c_str.is_null() {
