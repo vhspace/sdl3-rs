@@ -4,7 +4,7 @@ use std::error::Error;
 use std::ffi::{CStr, CString, NulError};
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
-use std::{fmt, mem, ptr, slice};
+use std::{fmt, mem, ptr};
 
 use crate::common::{validate_int, IntegerOrSdlError};
 use crate::pixels::PixelFormatEnum;
@@ -942,13 +942,13 @@ impl VideoSubsystem {
     ///
     /// This is useful for OpenGL wrappers such as [`gl-rs`](https://github.com/bjz/gl-rs).
     #[doc(alias = "SDL_GL_GetProcAddress")]
-    pub fn gl_get_proc_address(&self, procname: &str) -> *const () {
+    pub fn gl_get_proc_address(&self, procname: &str) -> sys::SDL_FunctionPointer {
         match CString::new(procname) {
             Ok(procname) => unsafe {
-                sys::SDL_GL_GetProcAddress(procname.as_ptr() as *const c_char) as *const ()
+                sys::SDL_GL_GetProcAddress(procname.as_ptr() as *const c_char)
             },
             // string contains a nul byte - it won't match anything.
-            Err(_) => ptr::null(),
+            Err(_) => None,
         }
     }
 
@@ -1062,13 +1062,8 @@ impl VideoSubsystem {
     /// Vulkan function. This function can be called to retrieve the address of other Vulkan
     /// functions.
     #[doc(alias = "SDL_Vulkan_GetVkGetInstanceProcAddr")]
-    pub fn vulkan_get_proc_address_function(&self) -> Result<*const (), String> {
-        let result = unsafe { sys::SDL_Vulkan_GetVkGetInstanceProcAddr() as *const () };
-        if result.is_null() {
-            Err(get_error())
-        } else {
-            Ok(result)
-        }
+    pub fn vulkan_get_proc_address_function(&self) -> sys::SDL_FunctionPointer {
+        unsafe { sys::SDL_Vulkan_GetVkGetInstanceProcAddr() }
     }
 }
 
@@ -1220,12 +1215,6 @@ impl WindowBuilder {
         self
     }
 
-    /// Sets the window to fullscreen at the current desktop resolution.
-    pub fn fullscreen_desktop(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::SDL_WindowFlags::SDL_WINDOW_FULLSCREEN_DESKTOP as u32;
-        self
-    }
-
     /// Sets the window to be usable with an OpenGL context
     pub fn opengl(&mut self) -> &mut WindowBuilder {
         self.window_flags |= sys::SDL_WindowFlags::SDL_WINDOW_OPENGL as u32;
@@ -1271,12 +1260,6 @@ impl WindowBuilder {
     /// Sets the window to have grabbed input focus.
     pub fn input_grabbed(&mut self) -> &mut WindowBuilder {
         self.window_flags |= sys::SDL_WindowFlags::SDL_WINDOW_MOUSE_GRABBED as u32;
-        self
-    }
-
-    /// Creates the window in high-DPI mode if supported (>= SDL 2.0.1)
-    pub fn allow_highdpi(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::SDL_WindowFlags::SDL_WINDOW_ALLOW_HIGHDPI as u32;
         self
     }
 
@@ -1388,7 +1371,7 @@ impl Window {
 
     #[doc(alias = "SDL_GL_SwapWindow")]
     pub fn gl_swap_window(&self) {
-        unsafe { sys::SDL_GL_SwapWindow(self.context.raw) }
+        unsafe { sys::SDL_GL_SwapWindow(self.context.raw) };
     }
 
     /// Get the names of the Vulkan instance extensions needed to create a surface with `vulkan_create_surface`.
@@ -1462,14 +1445,15 @@ impl Window {
 
     #[doc(alias = "SDL_GetWindowFullscreenMode")]
     pub fn display_mode(&self) -> Option<DisplayMode> {
-        let result = unsafe {
+        unsafe {
             // returns a pointer to the mode, or NULL if the window will be fullscreen desktop
             let mode_raw = sys::SDL_GetWindowFullscreenMode(self.context.raw);
             if mode_raw.is_null() {
                 return None;
             }
-            *mode_raw
-        };
+            let mode_raw = *mode_raw;
+            Some(DisplayMode::from_ll(&mode_raw))
+        }
     }
 
     #[doc(alias = "SDL_GetWindowICCProfile")]
@@ -1555,7 +1539,7 @@ impl Window {
     /// window.set_icon(window_icon);
     /// ```
     #[doc(alias = "SDL_SetWindowIcon")]
-    pub fn set_icon<S: AsRef<SurfaceRef>>(&mut self, icon: S) {
+    pub fn set_icon<S: AsRef<SurfaceRef>>(&mut self, icon: S) -> c_int {
         unsafe { sys::SDL_SetWindowIcon(self.context.raw, icon.as_ref().raw()) }
     }
 
@@ -1563,7 +1547,7 @@ impl Window {
     //pub fn SDL_GetWindowData(window: *SDL_Window, name: *c_char) -> *c_void;
 
     #[doc(alias = "SDL_SetWindowPosition")]
-    pub fn set_position(&mut self, x: WindowPos, y: WindowPos) {
+    pub fn set_position(&mut self, x: WindowPos, y: WindowPos) -> c_int {
         unsafe {
             sys::SDL_SetWindowPosition(self.context.raw, to_ll_windowpos(x), to_ll_windowpos(y))
         }
@@ -1658,7 +1642,7 @@ impl Window {
     }
 
     #[doc(alias = "SDL_SetWindowBordered")]
-    pub fn set_bordered(&mut self, bordered: bool) {
+    pub fn set_bordered(&mut self, bordered: bool) -> c_int {
         unsafe {
             sys::SDL_SetWindowBordered(
                 self.context.raw,
@@ -1672,32 +1656,32 @@ impl Window {
     }
 
     #[doc(alias = "SDL_ShowWindow")]
-    pub fn show(&mut self) {
+    pub fn show(&mut self) -> c_int {
         unsafe { sys::SDL_ShowWindow(self.context.raw) }
     }
 
     #[doc(alias = "SDL_HideWindow")]
-    pub fn hide(&mut self) {
+    pub fn hide(&mut self) -> c_int {
         unsafe { sys::SDL_HideWindow(self.context.raw) }
     }
 
     #[doc(alias = "SDL_RaiseWindow")]
-    pub fn raise(&mut self) {
+    pub fn raise(&mut self) -> c_int {
         unsafe { sys::SDL_RaiseWindow(self.context.raw) }
     }
 
     #[doc(alias = "SDL_MaximizeWindow")]
-    pub fn maximize(&mut self) {
+    pub fn maximize(&mut self) -> c_int {
         unsafe { sys::SDL_MaximizeWindow(self.context.raw) }
     }
 
     #[doc(alias = "SDL_MinimizeWindow")]
-    pub fn minimize(&mut self) {
+    pub fn minimize(&mut self) -> c_int {
         unsafe { sys::SDL_MinimizeWindow(self.context.raw) }
     }
 
     #[doc(alias = "SDL_RestoreWindow")]
-    pub fn restore(&mut self) {
+    pub fn restore(&mut self) -> c_int {
         unsafe { sys::SDL_RestoreWindow(self.context.raw) }
     }
 
@@ -1706,9 +1690,16 @@ impl Window {
     }
 
     #[doc(alias = "SDL_SetWindowFullscreen")]
-    pub fn set_fullscreen(&mut self, fullscreen_type: FullscreenType) -> Result<(), String> {
+    pub fn set_fullscreen(&mut self, fullscreen: bool) -> Result<(), String> {
         unsafe {
-            let result = sys::SDL_SetWindowFullscreen(self.context.raw, fullscreen_type as u32);
+            let result = sys::SDL_SetWindowFullscreen(
+                self.context.raw,
+                if fullscreen {
+                    sys::SDL_bool::SDL_TRUE
+                } else {
+                    sys::SDL_bool::SDL_FALSE
+                },
+            );
             if result == 0 {
                 Ok(())
             } else {
@@ -1742,7 +1733,7 @@ impl Window {
     }
 
     #[doc(alias = "SDL_SetWindowGrab")]
-    pub fn set_grab(&mut self, grabbed: bool) {
+    pub fn set_grab(&mut self, grabbed: bool) -> i32 {
         unsafe {
             sys::SDL_SetWindowGrab(
                 self.context.raw,
@@ -1756,7 +1747,7 @@ impl Window {
     }
 
     #[doc(alias = "SDL_SetWindowKeyboardGrab")]
-    pub fn set_keyboard_grab(&mut self, grabbed: bool) {
+    pub fn set_keyboard_grab(&mut self, grabbed: bool) -> i32 {
         unsafe {
             sys::SDL_SetWindowKeyboardGrab(
                 self.context.raw,
@@ -1770,7 +1761,7 @@ impl Window {
     }
 
     #[doc(alias = "SDL_SetWindowMouseGrab")]
-    pub fn set_mouse_grab(&mut self, grabbed: bool) {
+    pub fn set_mouse_grab(&mut self, grabbed: bool) -> i32 {
         unsafe {
             sys::SDL_SetWindowMouseGrab(
                 self.context.raw,
