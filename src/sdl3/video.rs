@@ -446,13 +446,21 @@ pub mod gl_attr {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct DisplayMode {
     pub format: PixelFormatEnum,
-    pub w: i32,
-    pub h: i32,
-    pub refresh_rate: i32,
+    pub screen_w: i32,
+    pub screen_h: i32,
+    pub pixel_width: i32,
+    pub pixel_height: i32,
+    pub scale: f32,
+    pub refresh_rate: f32,
 }
 
 impl DisplayMode {
-    pub fn new(format: PixelFormatEnum, w: i32, h: i32, refresh_rate: i32) -> DisplayMode {
+    pub fn new(
+        format: PixelFormatEnum,
+        screen_w: i32,
+        screen_h: i32,
+        refresh_rate: f32,
+    ) -> DisplayMode {
         DisplayMode {
             format,
             w,
@@ -840,7 +848,11 @@ impl VideoSubsystem {
         let mut dm = mem::MaybeUninit::uninit();
 
         let result = unsafe {
-            sys::SDL_GetClosestFullscreenDisplayMode(display_index as c_int, &input, dm.as_mut_ptr())
+            sys::SDL_GetClosestFullscreenDisplayMode(
+                display_index as c_int,
+                &input,
+                dm.as_mut_ptr(),
+            )
         };
 
         if result.is_null() {
