@@ -443,7 +443,7 @@ pub mod gl_attr {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct DisplayMode {
     pub display_id: sys::SDL_DisplayID,
     pub format: PixelFormatEnum,
@@ -487,7 +487,7 @@ impl DisplayMode {
             raw.pixel_w,
             raw.pixel_h,
             raw.display_scale,
-            raw.refresh_rate as i32,
+            raw.refresh_rate,
         )
     }
 
