@@ -553,7 +553,8 @@ pub struct GLContext {
 impl Drop for GLContext {
     #[doc(alias = "SDL_GL_DeleteContext")]
     fn drop(&mut self) {
-        unsafe { sys::SDL_GL_DeleteContext(self.raw) }
+        unsafe { sys::SDL_GL_DeleteContext(self.raw) };
+        return;
     }
 }
 
@@ -760,9 +761,9 @@ impl VideoSubsystem {
     /// Will return an error if the index is out of bounds or if SDL experienced a failure; inspect
     /// the returned string for further info.
     #[doc(alias = "SDL_GetDisplayName")]
-    pub fn display_name(&self, display_index: i32) -> Result<String, String> {
+    pub fn display_name(&self, display_index: u32) -> Result<String, String> {
         unsafe {
-            let display = sys::SDL_GetDisplayName(display_index as c_int);
+            let display = sys::SDL_GetDisplayName(display_index);
             if display.is_null() {
                 Err(get_error())
             } else {
@@ -775,10 +776,9 @@ impl VideoSubsystem {
     }
 
     #[doc(alias = "SDL_GetDisplayBounds")]
-    pub fn display_bounds(&self, display_index: i32) -> Result<Rect, String> {
+    pub fn display_bounds(&self, display_index: u32) -> Result<Rect, String> {
         let mut out = mem::MaybeUninit::uninit();
-        let result =
-            unsafe { sys::SDL_GetDisplayBounds(display_index as c_int, out.as_mut_ptr()) == 0 };
+        let result = unsafe { sys::SDL_GetDisplayBounds(display_index, out.as_mut_ptr()) == 0 };
 
         if result {
             let out = unsafe { out.assume_init() };
@@ -789,10 +789,9 @@ impl VideoSubsystem {
     }
 
     #[doc(alias = "SDL_GetDisplayUsableBounds")]
-    pub fn display_usable_bounds(&self, display_index: i32) -> Result<Rect, String> {
+    pub fn display_usable_bounds(&self, display_index: u32) -> Result<Rect, String> {
         let mut out = mem::MaybeUninit::uninit();
-        let result =
-            unsafe { sys::SDL_GetDisplayUsableBounds(display_index as c_int, out.as_mut_ptr()) };
+        let result = unsafe { sys::SDL_GetDisplayUsableBounds(display_index, out.as_mut_ptr()) };
         if result == 0 {
             let out = unsafe { out.assume_init() };
             Ok(Rect::from_ll(out))
@@ -814,10 +813,11 @@ impl VideoSubsystem {
             return if modes.is_null() {
                 Err(get_error())
             } else {
-                let modes = slice::from_raw_parts(modes, num_modes as usize);
                 let mut result = Vec::with_capacity(num_modes as usize);
-                for mode in modes {
-                    result.push(DisplayMode::from_ll(mode));
+                for i in 0..num_modes {
+                    let mode = *modes.offset(i as isize);
+                    let mode = *mode;
+                    result.push(DisplayMode::from_ll(&mode));
                 }
                 sys::SDL_free(modes as *mut c_void);
                 Ok(result)
@@ -826,7 +826,7 @@ impl VideoSubsystem {
     }
 
     #[doc(alias = "SDL_GetDesktopDisplayMode")]
-    pub fn desktop_display_mode(&self, display_index: i32) -> Result<DisplayMode, String> {
+    pub fn desktop_display_mode(&self, display_index: u32) -> Result<DisplayMode, String> {
         unsafe {
             let raw_mode = sys::SDL_GetDesktopDisplayMode(display_index);
             if raw_mode.is_null() {
@@ -838,9 +838,9 @@ impl VideoSubsystem {
     }
 
     #[doc(alias = "SDL_GetCurrentDisplayMode")]
-    pub fn current_display_mode(&self, display_index: i32) -> Result<DisplayMode, String> {
+    pub fn current_display_mode(&self, display_index: u32) -> Result<DisplayMode, String> {
         unsafe {
-            let raw_mode = sys::SDL_GetCurrentDisplayMode(display_index as c_int);
+            let raw_mode = sys::SDL_GetCurrentDisplayMode(display_index);
             if raw_mode.is_null() {
                 return Err(get_error());
             }
@@ -852,33 +852,28 @@ impl VideoSubsystem {
     #[doc(alias = "SDL_GetClosestFullscreenDisplayMode")]
     pub fn closest_display_mode(
         &self,
-        display_index: i32,
+        display_index: u32,
         mode: &DisplayMode,
     ) -> Result<DisplayMode, String> {
-        let input = mode.to_ll();
-        let mut dm = mem::MaybeUninit::uninit();
-
-        let result = unsafe {
-            sys::SDL_GetClosestFullscreenDisplayMode(
-                display_index as c_int,
-                &input,
-                dm.as_mut_ptr(),
+        unsafe {
+            let mode = sys::SDL_GetClosestFullscreenDisplayMode(
+                display_index,
+                mode.pixel_w,
+                mode.pixel_h,
                 mode.refresh_rate,
-            )
-        };
-
-        if result.is_null() {
-            Err(get_error())
-        } else {
-            let dm = unsafe { dm.assume_init() };
-            Ok(DisplayMode::from_ll(&dm))
+            );
+            if mode.is_null() {
+                Err(get_error())
+            } else {
+                Ok(DisplayMode::from_ll(&*mode))
+            }
         }
     }
 
     /// Return orientation of a display or Unknown if orientation could not be determined.
     #[doc(alias = "SDL_GetDisplayOrientation")]
-    pub fn display_orientation(&self, display_index: i32) -> Orientation {
-        Orientation::from_ll(unsafe { sys::SDL_GetDisplayOrientation(display_index as c_int) })
+    pub fn display_orientation(&self, display_index: u32) -> Orientation {
+        Orientation::from_ll(unsafe { sys::SDL_GetDisplayOrientation(display_index) })
     }
 
     #[doc(alias = "SDL_ScreenSaverEnabled")]
@@ -888,12 +883,12 @@ impl VideoSubsystem {
 
     #[doc(alias = "SDL_EnableScreenSaver")]
     pub fn enable_screen_saver(&self) {
-        unsafe { sys::SDL_EnableScreenSaver() }
+        unsafe { sys::SDL_EnableScreenSaver() };
     }
 
     #[doc(alias = "SDL_DisableScreenSaver")]
     pub fn disable_screen_saver(&self) {
-        unsafe { sys::SDL_DisableScreenSaver() }
+        unsafe { sys::SDL_DisableScreenSaver() };
     }
 
     /// Loads the default OpenGL library.
