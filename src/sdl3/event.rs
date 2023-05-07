@@ -661,10 +661,10 @@ pub enum Event {
         window_id: u32,
         which: u32,
         mousestate: MouseState,
-        x: i32,
-        y: i32,
-        xrel: i32,
-        yrel: i32,
+        x: f32,
+        y: f32,
+        xrel: f32,
+        yrel: f32,
     },
 
     MouseButtonDown {
@@ -673,8 +673,8 @@ pub enum Event {
         which: u32,
         mouse_btn: MouseButton,
         clicks: u8,
-        x: i32,
-        y: i32,
+        x: f32,
+        y: f32,
     },
     MouseButtonUp {
         timestamp: u64,
@@ -682,19 +682,19 @@ pub enum Event {
         which: u32,
         mouse_btn: MouseButton,
         clicks: u8,
-        x: i32,
-        y: i32,
+        x: f32,
+        y: f32,
     },
 
     MouseWheel {
         timestamp: u64,
         window_id: u32,
         which: u32,
-        x: i32,
-        y: i32,
+        x: f32,
+        y: f32,
         direction: MouseWheelDirection,
-        precise_x: f32,
-        precise_y: f32,
+        mouse_x: f32,
+        mouse_y: f32,
     },
 
     JoyAxisMotion {
@@ -1212,8 +1212,8 @@ impl Event {
                 x,
                 y,
                 direction,
-                precise_x,
-                precise_y,
+                mouse_x,
+                mouse_y,
             } => {
                 let event = sys::SDL_MouseWheelEvent {
                     type_: SDL_EventType::SDL_EVENT_MOUSE_WHEEL as u32,
@@ -1223,8 +1223,8 @@ impl Event {
                     x,
                     y,
                     direction: direction.to_ll(),
-                    preciseX: precise_x,
-                    preciseY: precise_y,
+                    mouseX: mouse_x,
+                    mouseY: mouse_y,
                 };
                 unsafe {
                     ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_MouseWheelEvent, 1);
@@ -1818,8 +1818,8 @@ impl Event {
                         x: event.x,
                         y: event.y,
                         direction: mouse::MouseWheelDirection::from_ll(event.direction),
-                        precise_x: event.preciseX,
-                        precise_y: event.preciseY,
+                        mouse_x: event.mouseX,
+                        mouse_y: event.mouseY,
                     }
                 }
 
@@ -2920,10 +2920,10 @@ mod test {
                 window_id: 0,
                 which: 1,
                 mousestate: MouseState::from_sdl_state(1),
-                x: 3,
-                y: 91,
-                xrel: -1,
-                yrel: 43,
+                x: 3.,
+                y: 91.,
+                xrel: -1.,
+                yrel: 43.,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
@@ -2935,8 +2935,8 @@ mod test {
                 which: 0,
                 mouse_btn: MouseButton::Left,
                 clicks: 1,
-                x: 543,
-                y: 345,
+                x: 543.,
+                y: 345.,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
@@ -2948,8 +2948,8 @@ mod test {
                 which: 0,
                 mouse_btn: MouseButton::Left,
                 clicks: 1,
-                x: 543,
-                y: 345,
+                x: 543.,
+                y: 345.,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
@@ -2959,11 +2959,11 @@ mod test {
                 timestamp: 1,
                 window_id: 0,
                 which: 32,
-                x: 23,
-                y: 91,
+                x: 23.,
+                y: 91.,
                 direction: MouseWheelDirection::Flipped,
-                precise_x: 1.6,
-                precise_y: 2.7,
+                mouse_x: 2.,
+                mouse_y: 3.,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
