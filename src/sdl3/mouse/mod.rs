@@ -174,32 +174,32 @@ impl MouseButton {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct MouseState {
     mouse_state: u32,
-    x: i32,
-    y: i32,
+    x: f32,
+    y: f32,
 }
 
 impl MouseState {
     #[doc(alias = "SDL_GetMouseState")]
     pub fn new(_e: &EventPump) -> MouseState {
-        let mut x = 0;
-        let mut y = 0;
+        let mut x = 0.;
+        let mut y = 0.;
         let mouse_state: u32 = unsafe { sys::SDL_GetMouseState(&mut x, &mut y) };
 
         MouseState {
             mouse_state,
-            x: x as i32,
-            y: y as i32,
+            x: x as f32,
+            y: y as f32,
         }
     }
 
     pub fn from_sdl_state(state: u32) -> MouseState {
         MouseState {
             mouse_state: state,
-            x: 0,
-            y: 0,
+            x: 0.,
+            y: 0.,
         }
     }
     pub fn to_sdl_state(&self) -> u32 {
@@ -245,12 +245,12 @@ impl MouseState {
     }
 
     /// Returns the x coordinate of the state
-    pub fn x(&self) -> i32 {
+    pub fn x(&self) -> f32 {
         self.x
     }
 
     /// Returns the y coordinate of the state
-    pub fn y(&self) -> i32 {
+    pub fn y(&self) -> f32 {
         self.y
     }
 
@@ -391,7 +391,7 @@ impl MouseUtil {
     }
 
     #[doc(alias = "SDL_WarpMouseInWindow")]
-    pub fn warp_mouse_in_window(&self, window: &video::Window, x: i32, y: i32) {
+    pub fn warp_mouse_in_window(&self, window: &video::Window, x: f32, y: f32) {
         unsafe {
             sys::SDL_WarpMouseInWindow(window.raw(), x, y);
         }
@@ -416,13 +416,13 @@ impl MouseUtil {
 
     #[doc(alias = "SDL_ShowCursor")]
     pub fn is_cursor_showing(&self) -> bool {
-        unsafe { sys::SDL_ShowCursor(crate::sys::SDL_QUERY) == 1 }
+        unsafe { sys::SDL_ShowCursor() == 1 }
     }
 
     #[doc(alias = "SDL_ShowCursor")]
     pub fn show_cursor(&self, show: bool) {
         unsafe {
-            sys::SDL_ShowCursor(show as i32);
+            sys::SDL_ShowCursor();
         }
     }
 

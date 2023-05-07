@@ -32,7 +32,6 @@ use crate::common::{validate_int, IntegerOrSdlError};
 use crate::get_error;
 use crate::pixels;
 use crate::pixels::PixelFormatEnum;
-use crate::rect::Point;
 use crate::rect::Rect;
 use crate::surface;
 use crate::surface::{Surface, SurfaceContext, SurfaceRef};
@@ -41,7 +40,7 @@ use libc::c_void;
 use libc::{c_double, c_int};
 use std::convert::TryFrom;
 use std::error::Error;
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 use std::fmt;
 #[cfg(not(feature = "unsafe_textures"))]
 use std::marker::PhantomData;
@@ -1313,11 +1312,11 @@ impl<T: RenderTarget> Canvas<T> {
     /// Passing None will fill the entire rendering target.
     /// Errors if drawing fails for any reason (e.g. driver failure)
     #[doc(alias = "SDL_RenderFillRect")]
-    pub fn fill_rect<R: Into<Option<Rect>>>(&mut self, rect: R) -> Result<(), String> {
+    pub fn fill_rect<R: Into<Option<FRect>>>(&mut self, rect: R) -> Result<(), String> {
         let result = unsafe {
             sys::SDL_RenderFillRect(
                 self.context.raw,
-                rect.into().as_ref().map(|r| r.raw()).unwrap_or(ptr::null()),
+                rect.into().map_or(ptr::null(), |r| &r.to_ll()),
             )
         };
         if result != 0 {
@@ -1331,11 +1330,11 @@ impl<T: RenderTarget> Canvas<T> {
     /// the drawing color.
     /// Errors if drawing fails for any reason (e.g. driver failure)
     #[doc(alias = "SDL_RenderFillRects")]
-    pub fn fill_rects(&mut self, rects: &[Rect]) -> Result<(), String> {
+    pub fn fill_rects(&mut self, rects: &[FRect]) -> Result<(), String> {
         let result = unsafe {
             sys::SDL_RenderFillRects(
                 self.context.raw,
-                Rect::raw_slice(rects),
+                rects.iter().map(|r| r.to_ll()).collect::<Vec<_>>().as_ptr(),
                 rects.len() as c_int,
             )
         };
@@ -1357,19 +1356,19 @@ impl<T: RenderTarget> Canvas<T> {
     #[doc(alias = "SDL_RenderTexture")]
     pub fn copy<R1, R2>(&mut self, texture: &Texture, src: R1, dst: R2) -> Result<(), String>
     where
-        R1: Into<Option<Rect>>,
-        R2: Into<Option<Rect>>,
+        R1: Into<Option<FRect>>,
+        R2: Into<Option<FRect>>,
     {
         let ret = unsafe {
             sys::SDL_RenderTexture(
                 self.context.raw,
                 texture.raw,
                 match src.into() {
-                    Some(ref rect) => rect.raw(),
+                    Some(ref rect) => &rect.to_ll(),
                     None => ptr::null(),
                 },
                 match dst.into() {
-                    Some(ref rect) => rect.raw(),
+                    Some(ref rect) => &rect.to_ll(),
                     None => ptr::null(),
                 },
             )
@@ -1407,9 +1406,9 @@ impl<T: RenderTarget> Canvas<T> {
         flip_vertical: bool,
     ) -> Result<(), String>
     where
-        R1: Into<Option<Rect>>,
-        R2: Into<Option<Rect>>,
-        P: Into<Option<Point>>,
+        R1: Into<Option<FRect>>,
+        R2: Into<Option<FRect>>,
+        P: Into<Option<FPoint>>,
     {
         use crate::sys::SDL_RendererFlip::*;
         let flip = unsafe {
@@ -1429,16 +1428,16 @@ impl<T: RenderTarget> Canvas<T> {
                 self.context.raw,
                 texture.raw,
                 match src.into() {
-                    Some(ref rect) => rect.raw(),
+                    Some(ref rect) => &rect.to_ll(),
                     None => ptr::null(),
                 },
                 match dst.into() {
-                    Some(ref rect) => rect.raw(),
+                    Some(ref rect) => &rect.to_ll(),
                     None => ptr::null(),
                 },
                 angle as c_double,
                 match center.into() {
-                    Some(ref point) => point.raw(),
+                    Some(ref point) => &point.to_ll(),
                     None => ptr::null(),
                 },
                 flip,
@@ -2569,20 +2568,22 @@ pub struct DriverIterator {
 }
 
 impl Iterator for DriverIterator {
-    type Item = RendererInfo;
+    type Item = String;
 
     #[inline]
-    #[doc(alias = "SDL_GetRenderDriverInfo")]
-    fn next(&mut self) -> Option<RendererInfo> {
+    #[doc(alias = "SDL_GetRenderDriver")]
+    fn next(&mut self) -> Option<String> {
         if self.index >= self.length {
             None
         } else {
-            let mut out = mem::MaybeUninit::uninit();
-            let result = unsafe { sys::SDL_GetRenderDriverInfo(self.index, out.as_mut_ptr()) == 0 };
-            assert!(result, "{}", 0);
+            let result = unsafe { sys::SDL_GetRenderDriver(self.index) };
             self.index += 1;
 
-            unsafe { Some(RendererInfo::from_ll(&out.assume_init())) }
+            Some(
+                unsafe { CStr::from_ptr(result) }
+                    .to_string_lossy()
+                    .into_owned(),
+            )
         }
     }
 

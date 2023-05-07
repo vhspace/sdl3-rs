@@ -89,7 +89,7 @@ impl PowerLevel {
             SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_MEDIUM => PowerLevel::Medium,
             SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_FULL => PowerLevel::Full,
             SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_WIRED => PowerLevel::Wired,
-            _ => panic!("Unexpected power level: {:?}", raw),
+            _ => panic!("Unexpected power level"),
         }
     }
 

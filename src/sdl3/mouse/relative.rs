@@ -4,18 +4,18 @@ use crate::sys;
 
 use super::{MouseButton, MouseButtonIterator, PressedMouseButtonIterator};
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct RelativeMouseState {
     mouse_state: u32,
-    x: i32,
-    y: i32,
+    x: f32,
+    y: f32,
 }
 
 impl RelativeMouseState {
     #[doc(alias = "SDL_GetRelativeMouseState")]
     pub fn new(_e: &EventPump) -> RelativeMouseState {
-        let mut x = 0;
-        let mut y = 0;
+        let mut x = 0.;
+        let mut y = 0.;
         let mouse_state = unsafe {
             // This call is the only difference between MouseState
             sys::SDL_GetRelativeMouseState(&mut x, &mut y)
@@ -23,16 +23,16 @@ impl RelativeMouseState {
 
         RelativeMouseState {
             mouse_state,
-            x: x as i32,
-            y: y as i32,
+            x: x as f32,
+            y: y as f32,
         }
     }
 
     pub fn from_sdl_state(state: u32) -> RelativeMouseState {
         RelativeMouseState {
             mouse_state: state,
-            x: 0,
-            y: 0,
+            x: 0.,
+            y: 0.,
         }
     }
     pub fn to_sdl_state(&self) -> u32 {
@@ -78,12 +78,12 @@ impl RelativeMouseState {
     }
 
     /// Returns the x coordinate of the state
-    pub fn x(&self) -> i32 {
+    pub fn x(&self) -> f32 {
         self.x
     }
 
     /// Returns the y coordinate of the state
-    pub fn y(&self) -> i32 {
+    pub fn y(&self) -> f32 {
         self.y
     }
 

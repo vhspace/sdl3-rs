@@ -57,9 +57,3 @@ pub fn revision() -> String {
         CStr::from_ptr(rev as *const _).to_str().unwrap().to_owned()
     }
 }
-
-/// Get the revision number of SDL that is linked against your program.
-#[doc(alias = "SDL_GetRevisionNumber")]
-pub fn revision_number() -> i32 {
-    unsafe { sys::SDL_GetRevisionNumber() }
-}
