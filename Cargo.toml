@@ -1,9 +1,9 @@
 [package]
 name = "sdl3"
-description = "SDL3 bindings for Rust"
+description = "Cross-platform multimedia"
 repository = "https://github.com/revmisch/sdl3-rs"
-# documentation = "https://rust-sdl3.github.io/rust-sdl3/sdl3/"
-version = "0.0.2"
+documentation = "https://crates.io/crates/sdl3"
+version = "0.1.0"
 license = "MIT"
 authors = [ "Tony Aldridge <tony@angry-lawyer.com>", "Cobrand <cobrandw@gmail.com>", "Mischa Spiegelmock <me@mish.dev>"]
 keywords = ["SDL", "windowing", "graphics", "api", "engine"]
