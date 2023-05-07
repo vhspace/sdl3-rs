@@ -5,7 +5,9 @@ when upgrading from a version of sdl3 to another.
 
 ## v0.1.0 - SDL3 Migration
 
-- The barest rewrite to support libSDL3. Almost certainly broken in many ways but an attempt to jump-start SDL3 support in Rust.
+Full documentation on changes in SDL3: https://github.com/libsdl-org/SDL/blob/main/docs/README-migration.md
+
+- The barest rewrite to support SDL3. Almost certainly broken in many ways but an attempt to jump-start SDL3 support in Rust.
 - The Gamecontroller subsystem was renamed to Gamepad.
 - Most coordinates for rectangles and points now use f32 instead of u32.
 - New distinctions between screen and pixel size for scaled displays.

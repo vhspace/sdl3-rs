@@ -1,9 +1,9 @@
-extern crate sdl2;
+extern crate sdl3;
 
 fn main() -> Result<(), String> {
     // This is required for certain controllers to work on Windows without the
     // video subsystem enabled:
-    sdl2::hint::set("SDL_JOYSTICK_THREAD", "1");
+    sdl3::hint::set("SDL_JOYSTICK_THREAD", "1");
 
     let sdl_context = sdl2::init()?;
     let game_controller_subsystem = sdl_context.game_controller()?;
@@ -44,8 +44,8 @@ fn main() -> Result<(), String> {
     let (mut lo_freq, mut hi_freq) = (0, 0);
 
     for event in sdl_context.event_pump()?.wait_iter() {
-        use sdl2::controller::Axis;
-        use sdl2::event::Event;
+        use sdl3::controller::Axis;
+        use sdl3::event::Event;
 
         match event {
             Event::ControllerAxisMotion {

@@ -68,9 +68,9 @@ pub mod cpuinfo;
 #[macro_use]
 mod macros;
 pub mod audio;
-pub mod controller;
 pub mod event;
 pub mod filesystem;
+pub mod gamepad;
 pub mod haptic;
 pub mod hint;
 pub mod joystick;

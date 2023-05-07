@@ -1116,8 +1116,9 @@ impl<T: RenderTarget> Canvas<T> {
     ) {
         let mut width = 0;
         let mut height = 0;
-        let mut mode: sys::SDL_RendererLogicalPresentation;
-        let mut scale_mode: sys::SDL_ScaleMode;
+        let mut mode: sys::SDL_RendererLogicalPresentation =
+            sys::SDL_RendererLogicalPresentation::SDL_LOGICAL_PRESENTATION_DISABLED;
+        let mut scale_mode: sys::SDL_ScaleMode = sys::SDL_ScaleMode::SDL_SCALEMODE_BEST;
 
         unsafe {
             sys::SDL_GetRenderLogicalPresentation(

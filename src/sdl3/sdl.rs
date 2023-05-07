@@ -142,8 +142,8 @@ impl Sdl {
 
     /// Initializes the gamepad subsystem.
     #[inline]
-    pub fn game_controller(&self) -> Result<GamePadSubsystem, String> {
-        GamePadSubsystem::new(self)
+    pub fn game_controller(&self) -> Result<GamepadSubsystem, String> {
+        GamepadSubsystem::new(self)
     }
 
     /// Initializes the game controller subsystem.
@@ -313,7 +313,7 @@ subsystem!(
     nosync
 );
 subsystem!(
-    GamePadSubsystem,
+    GamepadSubsystem,
     SDL_InitFlags::SDL_INIT_GAMEPAD as u32,
     GAMEPAD_COUNT,
     nosync

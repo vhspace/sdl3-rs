@@ -16,8 +16,8 @@ use std::sync::Mutex;
 use libc::c_int;
 use libc::c_void;
 
-use crate::controller;
-use crate::controller::{Axis, Button};
+use crate::gamepad;
+use crate::gamepad::{Axis, Button};
 use crate::get_error;
 use crate::joystick;
 use crate::joystick::HatState;
@@ -1874,7 +1874,7 @@ impl Event {
 
                 EventType::ControllerAxisMotion => {
                     let event = raw.gaxis;
-                    let axis = controller::Axis::from_ll(transmute(event.axis as i32)).unwrap();
+                    let axis = gamepad::Axis::from_ll(transmute(event.axis as i32)).unwrap();
 
                     Event::ControllerAxisMotion {
                         timestamp: event.timestamp,
@@ -1885,8 +1885,7 @@ impl Event {
                 }
                 EventType::ControllerButtonDown => {
                     let event = raw.gbutton;
-                    let button =
-                        controller::Button::from_ll(transmute(event.button as i32)).unwrap();
+                    let button = gamepad::Button::from_ll(transmute(event.button as i32)).unwrap();
 
                     Event::ControllerButtonDown {
                         timestamp: event.timestamp,
@@ -1896,8 +1895,7 @@ impl Event {
                 }
                 EventType::ControllerButtonUp => {
                     let event = raw.gbutton;
-                    let button =
-                        controller::Button::from_ll(transmute(event.button as i32)).unwrap();
+                    let button = gamepad::Button::from_ll(transmute(event.button as i32)).unwrap();
 
                     Event::ControllerButtonUp {
                         timestamp: event.timestamp,
@@ -2854,7 +2852,7 @@ impl<'a> Iterator for EventWaitTimeoutIterator<'a> {
 
 #[cfg(test)]
 mod test {
-    use super::super::controller::{Axis, Button};
+    use super::super::gamepad::{Axis, Button};
     use super::super::joystick::HatState;
     use super::super::keyboard::{Keycode, Mod, Scancode};
     use super::super::mouse::{MouseButton, MouseState, MouseWheelDirection};
