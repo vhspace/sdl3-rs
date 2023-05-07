@@ -1,6 +1,6 @@
 use crate::get_error;
 use libc::c_void;
-use libc::{c_char, c_int, size_t};
+use libc::{c_char, c_int};
 use std::ffi::CString;
 use std::io;
 use std::marker::PhantomData;
@@ -137,16 +137,11 @@ impl<'a> Drop for RWops<'a> {
 
 impl<'a> io::Read for RWops<'a> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let out_len = buf.len() as size_t;
+        let out_len = buf.len();
         // FIXME: it's better to use as_mut_ptr().
         // number of objects read, or 0 at error or end of file.
         let ret = unsafe {
-            ((*self.raw).read.unwrap())(
-                self.raw,
-                buf.as_ptr() as *mut c_void,
-                1,
-                out_len as sys::size_t,
-            )
+            ((*self.raw).read.unwrap())(self.raw, buf.as_ptr() as *mut c_void, out_len as i64)
         };
         Ok(ret as usize)
     }
@@ -154,14 +149,9 @@ impl<'a> io::Read for RWops<'a> {
 
 impl<'a> io::Write for RWops<'a> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let in_len = buf.len() as size_t;
+        let in_len = buf.len();
         let ret = unsafe {
-            ((*self.raw).write.unwrap())(
-                self.raw,
-                buf.as_ptr() as *const c_void,
-                1,
-                in_len as sys::size_t,
-            )
+            ((*self.raw).write.unwrap())(self.raw, buf.as_ptr() as *const c_void, in_len as i64)
         };
         Ok(ret as usize)
     }
