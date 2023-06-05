@@ -1,7 +1,7 @@
 [package]
 name = "sdl3-sys"
 description = "Rust bindings to version 3 of the SDL library."
-repository = "https://github.com/Lokathor/sdl3-sys-rs"
+repository = "https://github.com/revmischa/sdl3-rs/tree/master/sdl3-sys"
 version = "0.0.5+sdl3-dev-2023-06-04"
 authors = ["Tony Aldridge <tony@angry-lawyer.com>"]
 keywords = ["SDL", "windowing", "graphics", "ffi"]
