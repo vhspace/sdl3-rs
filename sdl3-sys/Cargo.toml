@@ -2,7 +2,7 @@
 name = "sdl3-sys"
 description = "Rust bindings to version 3 of the SDL library."
 repository = "https://github.com/Lokathor/sdl3-sys-rs"
-version = "0.0.4+sdl3-dev-2023-06-04"
+version = "0.0.5+sdl3-dev-2023-06-04"
 authors = ["Tony Aldridge <tony@angry-lawyer.com>"]
 keywords = ["SDL", "windowing", "graphics", "ffi"]
 categories = ["rendering","external-ffi-bindings","game-engines","multimedia"]
