@@ -229,35 +229,35 @@ impl AudioSubsystem {
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum AudioFormat {
     /// Unsigned 8-bit samples
-    U8 = sys::SDL_AUDIO_U8 as i32,
+    U8 = sys::AUDIO_U8 as i32,
     /// Signed 8-bit samples
-    S8 = sys::SDL_AUDIO_S8 as i32,
+    S8 = sys::AUDIO_S8 as i32,
     /// Signed 16-bit samples, little-endian
-    S16LSB = sys::SDL_AUDIO_S16LSB as i32,
+    S16LSB = sys::AUDIO_S16LSB as i32,
     /// Signed 16-bit samples, big-endian
-    S16MSB = sys::SDL_AUDIO_S16MSB as i32,
+    S16MSB = sys::AUDIO_S16MSB as i32,
     /// Signed 32-bit samples, little-endian
-    S32LSB = sys::SDL_AUDIO_S32LSB as i32,
+    S32LSB = sys::AUDIO_S32LSB as i32,
     /// Signed 32-bit samples, big-endian
-    S32MSB = sys::SDL_AUDIO_S32MSB as i32,
+    S32MSB = sys::AUDIO_S32MSB as i32,
     /// 32-bit floating point samples, little-endian
-    F32LSB = sys::SDL_AUDIO_F32LSB as i32,
+    F32LSB = sys::AUDIO_F32LSB as i32,
     /// 32-bit floating point samples, big-endian
-    F32MSB = sys::SDL_AUDIO_F32MSB as i32,
+    F32MSB = sys::AUDIO_F32MSB as i32,
 }
 
 impl AudioFormat {
     fn from_ll(raw: sys::SDL_AudioFormat) -> Option<AudioFormat> {
         use self::AudioFormat::*;
         match raw as u32 {
-            sys::SDL_AUDIO_U8 => Some(U8),
-            sys::SDL_AUDIO_S8 => Some(S8),
-            sys::SDL_AUDIO_S16LSB => Some(S16LSB),
-            sys::SDL_AUDIO_S16MSB => Some(S16MSB),
-            sys::SDL_AUDIO_S32LSB => Some(S32LSB),
-            sys::SDL_AUDIO_S32MSB => Some(S32MSB),
-            sys::SDL_AUDIO_F32LSB => Some(F32LSB),
-            sys::SDL_AUDIO_F32MSB => Some(F32MSB),
+            sys::AUDIO_U8 => Some(U8),
+            sys::AUDIO_S8 => Some(S8),
+            sys::AUDIO_S16LSB => Some(S16LSB),
+            sys::AUDIO_S16MSB => Some(S16MSB),
+            sys::AUDIO_S32LSB => Some(S32LSB),
+            sys::AUDIO_S32MSB => Some(S32MSB),
+            sys::AUDIO_F32LSB => Some(F32LSB),
+            sys::AUDIO_F32MSB => Some(F32MSB),
             _ => None,
         }
     }

@@ -827,6 +827,14 @@ impl VideoSubsystem {
         }
     }
 
+    /// Get primary display ID.
+    #[doc(alias = "SDL_GetPrimaryDisplay")]
+    pub fn get_primary_display_id(&self) -> sys::SDL_DisplayID {
+        unsafe {
+            return sys::SDL_GetPrimaryDisplay();
+        }
+    }
+
     #[doc(alias = "SDL_GetCurrentDisplayMode")]
     pub fn current_display_mode(&self, display_index: u32) -> Result<DisplayMode, String> {
         unsafe {
