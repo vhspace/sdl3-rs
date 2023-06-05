@@ -1,9 +1,8 @@
 [package]
-
 name = "sdl3-sys"
-description = "Raw SDL3 FFI bindings for Rust, used internally sdl3"
-repository = "https://github.com/revmischa/sdl3-rs"
-version = "0.0.2"
+description = "Rust bindings to version 3 of the SDL library."
+repository = "https://github.com/Lokathor/sdl3-sys-rs"
+version = "0.0.4+sdl3-dev-2023-04-16"
 authors = ["Tony Aldridge <tony@angry-lawyer.com>"]
 keywords = ["SDL", "windowing", "graphics", "ffi"]
 categories = ["rendering","external-ffi-bindings","game-engines","multimedia"]
