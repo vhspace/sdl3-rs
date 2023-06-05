@@ -138,7 +138,7 @@ impl<'a> Surface<'a> {
     /// let masks = PixelFormatEnum::RGB24.into_masks().unwrap();
     /// let surface = Surface::from_pixelmasks(512, 512, &masks).unwrap();
     /// ```
-    #[doc(alias = "SDL_CreateRGBSurface")]
+    #[doc(alias = "SDL_CreateSurface")]
     pub fn from_pixelmasks(
         width: u32,
         height: u32,
@@ -148,15 +148,16 @@ impl<'a> Surface<'a> {
             if width >= (1 << 31) || height >= (1 << 31) {
                 Err("Image is too large.".to_owned())
             } else {
-                let raw = sys::SDL_CreateRGBSurface(
-                    0,
+                let raw = sys::SDL_CreateSurface(
                     width as c_int,
                     height as c_int,
-                    masks.bpp as c_int,
-                    masks.rmask,
-                    masks.gmask,
-                    masks.bmask,
-                    masks.amask,
+                    sys::SDL_GetPixelFormatEnumForMasks(
+                        masks.bpp as c_int,
+                        masks.rmask,
+                        masks.gmask,
+                        masks.bmask,
+                        masks.amask,
+                    ),
                 );
 
                 if raw.is_null() {
@@ -181,7 +182,7 @@ impl<'a> Surface<'a> {
     }
 
     /// Creates a new surface from an existing buffer, using pixel masks.
-    #[doc(alias = "SDL_CreateRGBSurfaceFrom")]
+    #[doc(alias = "SDL_CreateSurfaceFrom")]
     pub fn from_data_pixelmasks(
         data: &'a mut [u8],
         width: u32,
@@ -195,16 +196,18 @@ impl<'a> Surface<'a> {
             } else if pitch >= (1 << 31) {
                 Err("Pitch is too large.".to_owned())
             } else {
-                let raw = sys::SDL_CreateRGBSurfaceFrom(
+                let raw = sys::SDL_CreateSurfaceFrom(
                     data.as_mut_ptr() as *mut _,
                     width as c_int,
                     height as c_int,
-                    masks.bpp as c_int,
                     pitch as c_int,
-                    masks.rmask,
-                    masks.gmask,
-                    masks.bmask,
-                    masks.amask,
+                    sys::SDL_GetPixelFormatEnumForMasks(
+                        masks.bpp as c_int,
+                        masks.rmask,
+                        masks.gmask,
+                        masks.bmask,
+                        masks.amask,
+                    ),
                 );
 
                 if raw.is_null() {
@@ -490,7 +493,8 @@ impl SurfaceRef {
     #[doc(alias = "SDL_SetSurfaceColorKey")]
     pub fn set_color_key(&mut self, enable: bool, color: pixels::Color) -> Result<(), String> {
         let key = color.to_u32(&self.pixel_format());
-        let result = unsafe { sys::SDL_SetSurfaceColorKey(self.raw(), if enable { 1 } else { 0 }, key) };
+        let result =
+            unsafe { sys::SDL_SetSurfaceColorKey(self.raw(), if enable { 1 } else { 0 }, key) };
         if result == 0 {
             Ok(())
         } else {
@@ -658,7 +662,7 @@ impl SurfaceRef {
     #[doc(alias = "SDL_ConvertSurface")]
     pub fn convert(&self, format: &pixels::PixelFormat) -> Result<Surface<'static>, String> {
         // SDL_ConvertSurface takes a flag as the last parameter, which should be 0 by the docs.
-        let surface_ptr = unsafe { sys::SDL_ConvertSurface(self.raw(), format.raw(), 0u32) };
+        let surface_ptr = unsafe { sys::SDL_ConvertSurface(self.raw(), format.raw()) };
 
         if surface_ptr.is_null() {
             Err(get_error())
@@ -674,7 +678,7 @@ impl SurfaceRef {
         format: pixels::PixelFormatEnum,
     ) -> Result<Surface<'static>, String> {
         // SDL_ConvertSurfaceFormat takes a flag as the last parameter, which should be 0 by the docs.
-        let surface_ptr = unsafe { sys::SDL_ConvertSurfaceFormat(self.raw(), format as u32, 0u32) };
+        let surface_ptr = unsafe { sys::SDL_ConvertSurfaceFormat(self.raw(), format as u32) };
 
         if surface_ptr.is_null() {
             Err(get_error())

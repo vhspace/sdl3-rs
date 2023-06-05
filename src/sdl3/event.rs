@@ -16,8 +16,8 @@ use std::sync::Mutex;
 use libc::c_int;
 use libc::c_void;
 
-use crate::controller;
-use crate::controller::{Axis, Button};
+use crate::gamepad;
+use crate::gamepad::{Axis, Button};
 use crate::get_error;
 use crate::joystick;
 use crate::joystick::HatState;
@@ -273,8 +273,29 @@ pub enum EventType {
     AppWillEnterForeground = SDL_EventType::SDL_EVENT_WILL_ENTER_FOREGROUND as u32,
     AppDidEnterForeground = SDL_EventType::SDL_EVENT_DID_ENTER_FOREGROUND as u32,
 
-    Display = SDL_EventType::SDL_DISPLAYEVENT as u32,
-    Window = SDL_EventType::SDL_WINDOWEVENT as u32,
+    DisplayConnected = SDL_EventType::SDL_EVENT_DISPLAY_CONNECTED as u32,
+    DisplayDisconnected = SDL_EventType::SDL_EVENT_DISPLAY_DISCONNECTED as u32,
+    DisplayOrientation = SDL_EventType::SDL_EVENT_DISPLAY_ORIENTATION as u32,
+
+    WindowShown = SDL_EventType::SDL_EVENT_WINDOW_SHOWN as u32,
+    WindowHidden = SDL_EventType::SDL_EVENT_WINDOW_HIDDEN as u32,
+    WindowExposed = SDL_EventType::SDL_EVENT_WINDOW_EXPOSED as u32,
+    WindowMoved = SDL_EventType::SDL_EVENT_WINDOW_MOVED as u32,
+    WindowResized = SDL_EventType::SDL_EVENT_WINDOW_RESIZED as u32,
+    WindowPixelSizeChanged = SDL_EventType::SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED as u32,
+    WindowMinimized = SDL_EventType::SDL_EVENT_WINDOW_MINIMIZED as u32,
+    WindowMaximized = SDL_EventType::SDL_EVENT_WINDOW_MAXIMIZED as u32,
+    WindowRestored = SDL_EventType::SDL_EVENT_WINDOW_RESTORED as u32,
+    WindowMouseEnter = SDL_EventType::SDL_EVENT_WINDOW_MOUSE_ENTER as u32,
+    WindowMouseLeave = SDL_EventType::SDL_EVENT_WINDOW_MOUSE_LEAVE as u32,
+    WindowFocusGained = SDL_EventType::SDL_EVENT_WINDOW_FOCUS_GAINED as u32,
+    WindowFocusLost = SDL_EventType::SDL_EVENT_WINDOW_FOCUS_LOST as u32,
+    WindowCloseRequested = SDL_EventType::SDL_EVENT_WINDOW_CLOSE_REQUESTED as u32,
+    WindowTakeFocus = SDL_EventType::SDL_EVENT_WINDOW_TAKE_FOCUS as u32,
+    WindowHitTest = SDL_EventType::SDL_EVENT_WINDOW_HIT_TEST as u32,
+    WindowICCProfileChanged = SDL_EventType::SDL_EVENT_WINDOW_ICCPROF_CHANGED as u32,
+    WindowDisplayChanged = SDL_EventType::SDL_EVENT_WINDOW_DISPLAY_CHANGED as u32,
+
     // TODO: SysWM = sys::SDL_EVENT_SYSWM as u32,
     KeyDown = SDL_EventType::SDL_EVENT_KEY_DOWN as u32,
     KeyUp = SDL_EventType::SDL_EVENT_KEY_UP as u32,
@@ -287,7 +308,6 @@ pub enum EventType {
     MouseWheel = SDL_EventType::SDL_EVENT_MOUSE_WHEEL as u32,
 
     JoyAxisMotion = SDL_EventType::SDL_EVENT_JOYSTICK_AXIS_MOTION as u32,
-    JoyBallMotion = SDL_EventType::SDL_JOYBALLMOTION as u32,
     JoyHatMotion = SDL_EventType::SDL_EVENT_JOYSTICK_HAT_MOTION as u32,
     JoyButtonDown = SDL_EventType::SDL_EVENT_JOYSTICK_BUTTON_DOWN as u32,
     JoyButtonUp = SDL_EventType::SDL_EVENT_JOYSTICK_BUTTON_UP as u32,
@@ -309,10 +329,7 @@ pub enum EventType {
     FingerDown = SDL_EventType::SDL_EVENT_FINGER_DOWN as u32,
     FingerUp = SDL_EventType::SDL_EVENT_FINGER_UP as u32,
     FingerMotion = SDL_EventType::SDL_EVENT_FINGER_MOTION as u32,
-    DollarGesture = SDL_EventType::SDL_DOLLARGESTURE as u32,
-    DollarRecord = SDL_EventType::SDL_DOLLARRECORD as u32,
-    MultiGesture = SDL_EventType::SDL_MULTIGESTURE as u32,
-
+    // gestures have been removed from SD3: https://github.com/libsdl-org/SDL_gesture
     ClipboardUpdate = SDL_EventType::SDL_EVENT_CLIPBOARD_UPDATE as u32,
     DropFile = SDL_EventType::SDL_EVENT_DROP_FILE as u32,
     DropText = SDL_EventType::SDL_EVENT_DROP_TEXT as u32,
@@ -347,8 +364,23 @@ impl TryFrom<u32> for EventType {
             SDL_EVENT_WILL_ENTER_FOREGROUND => AppWillEnterForeground,
             SDL_EVENT_DID_ENTER_FOREGROUND => AppDidEnterForeground,
 
-            SDL_DISPLAYEVENT => Display,
-            SDL_WINDOWEVENT => Window,
+            SDL_EVENT_DISPLAY_CONNECTED => DisplayConnected,
+            SDL_EVENT_DISPLAY_DISCONNECTED => DisplayDisconnected,
+            SDL_EVENT_DISPLAY_ORIENTATION => DisplayOrientation,
+
+            SDL_EVENT_WINDOW_SHOWN => WindowShown,
+            SDL_EVENT_WINDOW_HIDDEN => WindowHidden,
+            SDL_EVENT_WINDOW_EXPOSED => WindowExposed,
+            SDL_EVENT_WINDOW_MOVED => WindowMoved,
+            SDL_EVENT_WINDOW_RESIZED => WindowResized,
+            SDL_EVENT_WINDOW_MINIMIZED => WindowMinimized,
+            SDL_EVENT_WINDOW_MAXIMIZED => WindowMaximized,
+            SDL_EVENT_WINDOW_RESTORED => WindowRestored,
+            SDL_EVENT_WINDOW_MOUSE_ENTER => WindowMouseEnter,
+            SDL_EVENT_WINDOW_MOUSE_LEAVE => WindowMouseLeave,
+            SDL_EVENT_WINDOW_FOCUS_GAINED => WindowFocusGained,
+            SDL_EVENT_WINDOW_FOCUS_LOST => WindowFocusLost,
+            SDL_EVENT_WINDOW_CLOSE_REQUESTED => WindowCloseRequested,
 
             SDL_EVENT_KEY_DOWN => KeyDown,
             SDL_EVENT_KEY_UP => KeyUp,
@@ -361,7 +393,6 @@ impl TryFrom<u32> for EventType {
             SDL_EVENT_MOUSE_WHEEL => MouseWheel,
 
             SDL_EVENT_JOYSTICK_AXIS_MOTION => JoyAxisMotion,
-            SDL_JOYBALLMOTION => JoyBallMotion,
             SDL_EVENT_JOYSTICK_HAT_MOTION => JoyHatMotion,
             SDL_EVENT_JOYSTICK_BUTTON_DOWN => JoyButtonDown,
             SDL_EVENT_JOYSTICK_BUTTON_UP => JoyButtonUp,
@@ -383,9 +414,6 @@ impl TryFrom<u32> for EventType {
             SDL_EVENT_FINGER_DOWN => FingerDown,
             SDL_EVENT_FINGER_UP => FingerUp,
             SDL_EVENT_FINGER_MOTION => FingerMotion,
-            SDL_DOLLARGESTURE => DollarGesture,
-            SDL_DOLLARRECORD => DollarRecord,
-            SDL_MULTIGESTURE => MultiGesture,
 
             SDL_EVENT_CLIPBOARD_UPDATE => ClipboardUpdate,
             SDL_EVENT_DROP_FILE => DropFile,
@@ -419,12 +447,8 @@ pub enum DisplayEvent {
 impl DisplayEvent {
     #[allow(clippy::match_same_arms)]
     fn from_ll(id: u8, data1: i32) -> DisplayEvent {
-        if id > sys::SDL_DisplayEventID::SDL_EVENT_DISPLAY_DISCONNECTED as u8 {
-            return DisplayEvent::None;
-        }
         match unsafe { transmute(id as u32) } {
-            sys::SDL_DisplayEventID::SDL_DISPLAYEVENT_NONE => DisplayEvent::None,
-            sys::SDL_DisplayEventID::SDL_EVENT_DISPLAY_ORIENTATION => {
+            SDL_EventType::SDL_EVENT_DISPLAY_ORIENTATION => {
                 let orientation = if data1 as u32
                     > sys::SDL_DisplayOrientation::SDL_ORIENTATION_PORTRAIT_FLIPPED as u32
                 {
@@ -434,25 +458,21 @@ impl DisplayEvent {
                 };
                 DisplayEvent::Orientation(orientation)
             }
-            sys::SDL_DisplayEventID::SDL_EVENT_DISPLAY_CONNECTED => DisplayEvent::Connected,
-            sys::SDL_DisplayEventID::SDL_EVENT_DISPLAY_DISCONNECTED => DisplayEvent::Disconnected,
+            SDL_EventType::SDL_EVENT_DISPLAY_CONNECTED => DisplayEvent::Connected,
+            SDL_EventType::SDL_EVENT_DISPLAY_DISCONNECTED => DisplayEvent::Disconnected,
+            _ => DisplayEvent::None,
         }
     }
 
-    fn to_ll(&self) -> (u8, i32) {
+    fn to_ll(&self) -> (u32, i32) {
         match *self {
-            DisplayEvent::None => (sys::SDL_DisplayEventID::SDL_DISPLAYEVENT_NONE as u8, 0),
             DisplayEvent::Orientation(orientation) => (
-                sys::SDL_DisplayEventID::SDL_EVENT_DISPLAY_ORIENTATION as u8,
+                SDL_EventType::SDL_EVENT_DISPLAY_ORIENTATION as u32,
                 orientation.to_ll() as i32,
             ),
-            DisplayEvent::Connected => {
-                (sys::SDL_DisplayEventID::SDL_EVENT_DISPLAY_CONNECTED as u8, 0)
-            }
-            DisplayEvent::Disconnected => (
-                sys::SDL_DisplayEventID::SDL_EVENT_DISPLAY_DISCONNECTED as u8,
-                0,
-            ),
+            DisplayEvent::Connected => (SDL_EventType::SDL_EVENT_DISPLAY_CONNECTED as u32, 0),
+            DisplayEvent::Disconnected => (SDL_EventType::SDL_EVENT_DISPLAY_DISCONNECTED as u32, 0),
+            DisplayEvent::None => panic!("DisplayEvent::None cannot be converted"),
         }
     }
 
@@ -476,17 +496,17 @@ pub enum WindowEvent {
     Exposed,
     Moved(i32, i32),
     Resized(i32, i32),
-    SizeChanged(i32, i32),
+    PixelSizeChanged(i32, i32),
     Minimized,
     Maximized,
     Restored,
-    Enter,
-    Leave,
+    MouseEnter,
+    MouseLeave,
     FocusGained,
     FocusLost,
-    Close,
+    CloseRequested,
     TakeFocus,
-    HitTest,
+    HitTest(i32, i32),
     ICCProfChanged,
     DisplayChanged(i32),
 }
@@ -501,17 +521,17 @@ impl WindowEvent {
             3 => WindowEvent::Exposed,
             4 => WindowEvent::Moved(data1, data2),
             5 => WindowEvent::Resized(data1, data2),
-            6 => WindowEvent::SizeChanged(data1, data2),
+            6 => WindowEvent::PixelSizeChanged(data1, data2),
             7 => WindowEvent::Minimized,
             8 => WindowEvent::Maximized,
             9 => WindowEvent::Restored,
-            10 => WindowEvent::Enter,
-            11 => WindowEvent::Leave,
+            10 => WindowEvent::MouseEnter,
+            11 => WindowEvent::MouseLeave,
             12 => WindowEvent::FocusGained,
             13 => WindowEvent::FocusLost,
-            14 => WindowEvent::Close,
+            14 => WindowEvent::CloseRequested,
             15 => WindowEvent::TakeFocus,
-            16 => WindowEvent::HitTest,
+            16 => WindowEvent::HitTest(data1, data2),
             17 => WindowEvent::ICCProfChanged,
             18 => WindowEvent::DisplayChanged(data1),
             _ => WindowEvent::None,
@@ -526,17 +546,17 @@ impl WindowEvent {
             WindowEvent::Exposed => (3, 0, 0),
             WindowEvent::Moved(d1, d2) => (4, d1, d2),
             WindowEvent::Resized(d1, d2) => (5, d1, d2),
-            WindowEvent::SizeChanged(d1, d2) => (6, d1, d2),
+            WindowEvent::PixelSizeChanged(d1, d2) => (6, d1, d2),
             WindowEvent::Minimized => (7, 0, 0),
             WindowEvent::Maximized => (8, 0, 0),
             WindowEvent::Restored => (9, 0, 0),
-            WindowEvent::Enter => (10, 0, 0),
-            WindowEvent::Leave => (11, 0, 0),
+            WindowEvent::MouseEnter => (10, 0, 0),
+            WindowEvent::MouseLeave => (11, 0, 0),
             WindowEvent::FocusGained => (12, 0, 0),
             WindowEvent::FocusLost => (13, 0, 0),
-            WindowEvent::Close => (14, 0, 0),
+            WindowEvent::CloseRequested => (14, 0, 0),
             WindowEvent::TakeFocus => (15, 0, 0),
-            WindowEvent::HitTest => (16, 0, 0),
+            WindowEvent::HitTest(d1, d2) => (16, d1, d2),
             WindowEvent::ICCProfChanged => (17, 0, 0),
             WindowEvent::DisplayChanged(d1) => (18, d1, 0),
         }
@@ -550,17 +570,17 @@ impl WindowEvent {
             | (Self::Exposed, Self::Exposed)
             | (Self::Moved(_, _), Self::Moved(_, _))
             | (Self::Resized(_, _), Self::Resized(_, _))
-            | (Self::SizeChanged(_, _), Self::SizeChanged(_, _))
+            | (Self::PixelSizeChanged(_, _), Self::PixelSizeChanged(_, _))
             | (Self::Minimized, Self::Minimized)
             | (Self::Maximized, Self::Maximized)
             | (Self::Restored, Self::Restored)
-            | (Self::Enter, Self::Enter)
-            | (Self::Leave, Self::Leave)
+            | (Self::MouseEnter, Self::MouseEnter)
+            | (Self::MouseLeave, Self::MouseLeave)
             | (Self::FocusGained, Self::FocusGained)
             | (Self::FocusLost, Self::FocusLost)
-            | (Self::Close, Self::Close)
+            | (Self::CloseRequested, Self::CloseRequested)
             | (Self::TakeFocus, Self::TakeFocus)
-            | (Self::HitTest, Self::HitTest)
+            | (Self::HitTest(_, _), Self::HitTest(_, _))
             | (Self::ICCProfChanged, Self::ICCProfChanged)
             | (Self::DisplayChanged(_), Self::DisplayChanged(_)) => true,
             _ => false,
@@ -572,40 +592,41 @@ impl WindowEvent {
 /// Different event types.
 pub enum Event {
     Quit {
-        timestamp: u32,
+        timestamp: u64,
     },
     AppTerminating {
-        timestamp: u32,
+        timestamp: u64,
     },
     AppLowMemory {
-        timestamp: u32,
+        timestamp: u64,
     },
     AppWillEnterBackground {
-        timestamp: u32,
+        timestamp: u64,
     },
     AppDidEnterBackground {
-        timestamp: u32,
+        timestamp: u64,
     },
     AppWillEnterForeground {
-        timestamp: u32,
+        timestamp: u64,
     },
     AppDidEnterForeground {
-        timestamp: u32,
+        timestamp: u64,
     },
 
     Display {
-        timestamp: u32,
+        timestamp: u64,
         display_index: i32,
         display_event: DisplayEvent,
     },
     Window {
-        timestamp: u32,
+        timestamp: u64,
         window_id: u32,
         win_event: WindowEvent,
     },
+
     // TODO: SysWMEvent
     KeyDown {
-        timestamp: u32,
+        timestamp: u64,
         window_id: u32,
         keycode: Option<Keycode>,
         scancode: Option<Scancode>,
@@ -613,7 +634,7 @@ pub enum Event {
         repeat: bool,
     },
     KeyUp {
-        timestamp: u32,
+        timestamp: u64,
         window_id: u32,
         keycode: Option<Keycode>,
         scancode: Option<Scancode>,
@@ -622,7 +643,7 @@ pub enum Event {
     },
 
     TextEditing {
-        timestamp: u32,
+        timestamp: u64,
         window_id: u32,
         text: String,
         start: i32,
@@ -630,71 +651,62 @@ pub enum Event {
     },
 
     TextInput {
-        timestamp: u32,
+        timestamp: u64,
         window_id: u32,
         text: String,
     },
 
     MouseMotion {
-        timestamp: u32,
+        timestamp: u64,
         window_id: u32,
         which: u32,
         mousestate: MouseState,
-        x: i32,
-        y: i32,
-        xrel: i32,
-        yrel: i32,
+        x: f32,
+        y: f32,
+        xrel: f32,
+        yrel: f32,
     },
 
     MouseButtonDown {
-        timestamp: u32,
+        timestamp: u64,
         window_id: u32,
         which: u32,
         mouse_btn: MouseButton,
         clicks: u8,
-        x: i32,
-        y: i32,
+        x: f32,
+        y: f32,
     },
     MouseButtonUp {
-        timestamp: u32,
+        timestamp: u64,
         window_id: u32,
         which: u32,
         mouse_btn: MouseButton,
         clicks: u8,
-        x: i32,
-        y: i32,
+        x: f32,
+        y: f32,
     },
 
     MouseWheel {
-        timestamp: u32,
+        timestamp: u64,
         window_id: u32,
         which: u32,
-        x: i32,
-        y: i32,
+        x: f32,
+        y: f32,
         direction: MouseWheelDirection,
-        precise_x: f32,
-        precise_y: f32,
+        mouse_x: f32,
+        mouse_y: f32,
     },
 
     JoyAxisMotion {
-        timestamp: u32,
+        timestamp: u64,
         /// The joystick's `id`
         which: u32,
         axis_idx: u8,
         value: i16,
     },
 
-    JoyBallMotion {
-        timestamp: u32,
-        /// The joystick's `id`
-        which: u32,
-        ball_idx: u8,
-        xrel: i16,
-        yrel: i16,
-    },
-
     JoyHatMotion {
-        timestamp: u32,
+        timestamp: u64,
         /// The joystick's `id`
         which: u32,
         hat_idx: u8,
@@ -702,31 +714,31 @@ pub enum Event {
     },
 
     JoyButtonDown {
-        timestamp: u32,
+        timestamp: u64,
         /// The joystick's `id`
         which: u32,
         button_idx: u8,
     },
     JoyButtonUp {
-        timestamp: u32,
+        timestamp: u64,
         /// The joystick's `id`
         which: u32,
         button_idx: u8,
     },
 
     JoyDeviceAdded {
-        timestamp: u32,
+        timestamp: u64,
         /// The newly added joystick's `joystick_index`
         which: u32,
     },
     JoyDeviceRemoved {
-        timestamp: u32,
+        timestamp: u64,
         /// The joystick's `id`
         which: u32,
     },
 
     ControllerAxisMotion {
-        timestamp: u32,
+        timestamp: u64,
         /// The controller's joystick `id`
         which: u32,
         axis: Axis,
@@ -734,36 +746,36 @@ pub enum Event {
     },
 
     ControllerButtonDown {
-        timestamp: u32,
+        timestamp: u64,
         /// The controller's joystick `id`
         which: u32,
         button: Button,
     },
     ControllerButtonUp {
-        timestamp: u32,
+        timestamp: u64,
         /// The controller's joystick `id`
         which: u32,
         button: Button,
     },
 
     ControllerDeviceAdded {
-        timestamp: u32,
+        timestamp: u64,
         /// The newly added controller's `joystick_index`
         which: u32,
     },
     ControllerDeviceRemoved {
-        timestamp: u32,
+        timestamp: u64,
         /// The controller's joystick `id`
         which: u32,
     },
     ControllerDeviceRemapped {
-        timestamp: u32,
+        timestamp: u64,
         /// The controller's joystick `id`
         which: u32,
     },
 
     ControllerTouchpadDown {
-        timestamp: u32,
+        timestamp: u64,
         /// The joystick instance id
         which: u32,
         /// The index of the touchpad
@@ -778,7 +790,7 @@ pub enum Event {
         pressure: f32,
     },
     ControllerTouchpadMotion {
-        timestamp: u32,
+        timestamp: u64,
         /// The joystick instance id
         which: u32,
         /// The index of the touchpad
@@ -793,7 +805,7 @@ pub enum Event {
         pressure: f32,
     },
     ControllerTouchpadUp {
-        timestamp: u32,
+        timestamp: u64,
         /// The joystick instance id
         which: u32,
         /// The index of the touchpad
@@ -811,7 +823,7 @@ pub enum Event {
     /// Triggered when the gyroscope or accelerometer is updated
     #[cfg(feature = "hidapi")]
     ControllerSensorUpdated {
-        timestamp: u32,
+        timestamp: u64,
         which: u32,
         sensor: crate::sensor::SensorType,
         /// Data from the sensor.
@@ -821,7 +833,7 @@ pub enum Event {
     },
 
     FingerDown {
-        timestamp: u32,
+        timestamp: u64,
         touch_id: i64,
         finger_id: i64,
         x: f32,
@@ -831,7 +843,7 @@ pub enum Event {
         pressure: f32,
     },
     FingerUp {
-        timestamp: u32,
+        timestamp: u64,
         touch_id: i64,
         finger_id: i64,
         x: f32,
@@ -841,7 +853,7 @@ pub enum Event {
         pressure: f32,
     },
     FingerMotion {
-        timestamp: u32,
+        timestamp: u64,
         touch_id: i64,
         finger_id: i64,
         x: f32,
@@ -851,17 +863,8 @@ pub enum Event {
         pressure: f32,
     },
 
-    DollarGesture {
-        timestamp: u32,
-        touch_id: i64,
-        gesture_id: i64,
-        num_fingers: u32,
-        error: f32,
-        x: f32,
-        y: f32,
-    },
     DollarRecord {
-        timestamp: u32,
+        timestamp: u64,
         touch_id: i64,
         gesture_id: i64,
         num_fingers: u32,
@@ -871,7 +874,7 @@ pub enum Event {
     },
 
     MultiGesture {
-        timestamp: u32,
+        timestamp: u64,
         touch_id: i64,
         d_theta: f32,
         d_dist: f32,
@@ -881,48 +884,48 @@ pub enum Event {
     },
 
     ClipboardUpdate {
-        timestamp: u32,
+        timestamp: u64,
     },
 
     DropFile {
-        timestamp: u32,
+        timestamp: u64,
         window_id: u32,
         filename: String,
     },
     DropText {
-        timestamp: u32,
+        timestamp: u64,
         window_id: u32,
         filename: String,
     },
     DropBegin {
-        timestamp: u32,
+        timestamp: u64,
         window_id: u32,
     },
     DropComplete {
-        timestamp: u32,
+        timestamp: u64,
         window_id: u32,
     },
 
     AudioDeviceAdded {
-        timestamp: u32,
+        timestamp: u64,
         which: u32,
         iscapture: bool,
     },
     AudioDeviceRemoved {
-        timestamp: u32,
+        timestamp: u64,
         which: u32,
         iscapture: bool,
     },
 
     RenderTargetsReset {
-        timestamp: u32,
+        timestamp: u64,
     },
     RenderDeviceReset {
-        timestamp: u32,
+        timestamp: u64,
     },
 
     User {
-        timestamp: u32,
+        timestamp: u64,
         window_id: u32,
         type_: u32,
         code: i32,
@@ -931,8 +934,22 @@ pub enum Event {
     },
 
     Unknown {
-        timestamp: u32,
+        timestamp: u64,
         type_: u32,
+    },
+
+    DisplayOrientation {
+        timestamp: u64,
+        display_index: u32,
+        data1: i32,
+    },
+    DisplayConnected {
+        timestamp: u64,
+        display_index: u32,
+    },
+    DisplayDisconnected {
+        timestamp: u64,
+        display_index: u32,
     },
 }
 
@@ -1018,13 +1035,9 @@ impl Event {
             } => {
                 let (display_event_id, data1) = display_event.to_ll();
                 let event = sys::SDL_DisplayEvent {
-                    type_: SDL_EventType::SDL_DISPLAYEVENT as u32,
+                    type_: display_event_id as u32,
                     timestamp,
-                    display: display_index as u32,
-                    event: display_event_id,
-                    padding1: 0,
-                    padding2: 0,
-                    padding3: 0,
+                    displayID: display_index as u32,
                     data1,
                 };
                 unsafe {
@@ -1040,13 +1053,9 @@ impl Event {
             } => {
                 let (win_event_id, data1, data2) = win_event.to_ll();
                 let event = sys::SDL_WindowEvent {
-                    type_: SDL_EventType::SDL_WINDOWEVENT as u32,
+                    type_: win_event_id as u32,
                     timestamp,
                     windowID: window_id,
-                    event: win_event_id,
-                    padding1: 0,
-                    padding2: 0,
-                    padding3: 0,
                     data1,
                     data2,
                 };
@@ -1152,9 +1161,9 @@ impl Event {
                     button: mouse_btn as u8,
                     state: sys::SDL_PRESSED as u8,
                     clicks,
-                    padding1: 0,
                     x,
                     y,
+                    padding: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -1182,7 +1191,7 @@ impl Event {
                     button: mouse_btn as u8,
                     state: sys::SDL_RELEASED as u8,
                     clicks,
-                    padding1: 0,
+                    padding: 0,
                     x,
                     y,
                 };
@@ -1203,8 +1212,8 @@ impl Event {
                 x,
                 y,
                 direction,
-                precise_x,
-                precise_y,
+                mouse_x,
+                mouse_y,
             } => {
                 let event = sys::SDL_MouseWheelEvent {
                     type_: SDL_EventType::SDL_EVENT_MOUSE_WHEEL as u32,
@@ -1214,8 +1223,8 @@ impl Event {
                     x,
                     y,
                     direction: direction.to_ll(),
-                    preciseX: precise_x,
-                    preciseY: precise_y,
+                    mouseX: mouse_x,
+                    mouseY: mouse_y,
                 };
                 unsafe {
                     ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_MouseWheelEvent, 1);
@@ -1231,7 +1240,7 @@ impl Event {
                 let event = sys::SDL_JoyAxisEvent {
                     type_: SDL_EventType::SDL_EVENT_JOYSTICK_AXIS_MOTION as u32,
                     timestamp,
-                    which: which as i32,
+                    which,
                     axis: axis_idx,
                     value,
                     padding1: 0,
@@ -1241,29 +1250,6 @@ impl Event {
                 };
                 unsafe {
                     ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_JoyAxisEvent, 1);
-                    Some(ret.assume_init())
-                }
-            }
-            Event::JoyBallMotion {
-                timestamp,
-                which,
-                ball_idx,
-                xrel,
-                yrel,
-            } => {
-                let event = sys::SDL_JoyBallEvent {
-                    type_: SDL_EventType::SDL_JOYBALLMOTION as u32,
-                    timestamp,
-                    which: which as i32,
-                    ball: ball_idx,
-                    xrel,
-                    yrel,
-                    padding1: 0,
-                    padding2: 0,
-                    padding3: 0,
-                };
-                unsafe {
-                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_JoyBallEvent, 1);
                     Some(ret.assume_init())
                 }
             }
@@ -1277,7 +1263,7 @@ impl Event {
                 let event = sys::SDL_JoyHatEvent {
                     type_: SDL_EventType::SDL_EVENT_JOYSTICK_HAT_MOTION as u32,
                     timestamp,
-                    which: which as i32,
+                    which,
                     hat: hat_idx,
                     value: hatvalue,
                     padding1: 0,
@@ -1296,7 +1282,7 @@ impl Event {
                 let event = sys::SDL_JoyButtonEvent {
                     type_: SDL_EventType::SDL_EVENT_JOYSTICK_BUTTON_DOWN as u32,
                     timestamp,
-                    which: which as i32,
+                    which,
                     button: button_idx,
                     state: sys::SDL_PRESSED as u8,
                     padding1: 0,
@@ -1316,7 +1302,7 @@ impl Event {
                 let event = sys::SDL_JoyButtonEvent {
                     type_: SDL_EventType::SDL_EVENT_JOYSTICK_BUTTON_UP as u32,
                     timestamp,
-                    which: which as i32,
+                    which,
                     button: button_idx,
                     state: sys::SDL_RELEASED as u8,
                     padding1: 0,
@@ -1332,7 +1318,7 @@ impl Event {
                 let event = sys::SDL_JoyDeviceEvent {
                     type_: SDL_EventType::SDL_EVENT_JOYSTICK_ADDED as u32,
                     timestamp,
-                    which: which as i32,
+                    which,
                 };
                 unsafe {
                     ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_JoyDeviceEvent, 1);
@@ -1344,7 +1330,7 @@ impl Event {
                 let event = sys::SDL_JoyDeviceEvent {
                     type_: SDL_EventType::SDL_EVENT_JOYSTICK_REMOVED as u32,
                     timestamp,
-                    which: which as i32,
+                    which,
                 };
                 unsafe {
                     ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_JoyDeviceEvent, 1);
@@ -1361,7 +1347,7 @@ impl Event {
                 let event = sys::SDL_GamepadAxisEvent {
                     type_: SDL_EventType::SDL_EVENT_GAMEPAD_AXIS_MOTION as u32,
                     timestamp,
-                    which: which as i32,
+                    which,
                     axis: axisval as u8,
                     value,
                     padding1: 0,
@@ -1387,7 +1373,7 @@ impl Event {
                 let event = sys::SDL_GamepadButtonEvent {
                     type_: SDL_EventType::SDL_EVENT_GAMEPAD_BUTTON_DOWN as u32,
                     timestamp,
-                    which: which as i32,
+                    which,
                     // This conversion turns an i32 into a u8; signed-to-unsigned conversions
                     // are a bit of a code smell, but that appears to be how SDL defines it.
                     button: buttonval as u8,
@@ -1414,7 +1400,7 @@ impl Event {
                 let event = sys::SDL_GamepadButtonEvent {
                     type_: SDL_EventType::SDL_EVENT_GAMEPAD_BUTTON_UP as u32,
                     timestamp,
-                    which: which as i32,
+                    which,
                     button: buttonval as u8,
                     state: sys::SDL_RELEASED as u8,
                     padding1: 0,
@@ -1434,7 +1420,7 @@ impl Event {
                 let event = sys::SDL_GamepadDeviceEvent {
                     type_: SDL_EventType::SDL_EVENT_GAMEPAD_ADDED as u32,
                     timestamp,
-                    which: which as i32,
+                    which,
                 };
                 unsafe {
                     ptr::copy(
@@ -1450,7 +1436,7 @@ impl Event {
                 let event = sys::SDL_GamepadDeviceEvent {
                     type_: SDL_EventType::SDL_EVENT_GAMEPAD_REMOVED as u32,
                     timestamp,
-                    which: which as i32,
+                    which,
                 };
                 unsafe {
                     ptr::copy(
@@ -1466,7 +1452,7 @@ impl Event {
                 let event = sys::SDL_GamepadDeviceEvent {
                     type_: SDL_EventType::SDL_EVENT_GAMEPAD_REMAPPED as u32,
                     timestamp,
-                    which: which as i32,
+                    which,
                 };
                 unsafe {
                     ptr::copy(
@@ -1481,7 +1467,6 @@ impl Event {
             Event::FingerDown { .. }
             | Event::FingerUp { .. }
             | Event::FingerMotion { .. }
-            | Event::DollarGesture { .. }
             | Event::DollarRecord { .. }
             | Event::MultiGesture { .. }
             | Event::ClipboardUpdate { .. }
@@ -1503,6 +1488,151 @@ impl Event {
         let event_type: EventType = EventType::try_from(raw_type as u32).unwrap_or(EventType::User);
         unsafe {
             match event_type {
+                EventType::WindowShown => {
+                    let event = raw.window;
+                    Event::Window {
+                        timestamp: event.timestamp,
+                        window_id: event.windowID,
+                        win_event: WindowEvent::Shown,
+                    }
+                }
+                EventType::WindowHidden => {
+                    let event = raw.window;
+                    Event::Window {
+                        timestamp: event.timestamp,
+                        window_id: event.windowID,
+                        win_event: WindowEvent::Hidden,
+                    }
+                }
+                EventType::WindowExposed => {
+                    let event = raw.window;
+                    Event::Window {
+                        timestamp: event.timestamp,
+                        window_id: event.windowID,
+                        win_event: WindowEvent::Exposed,
+                    }
+                }
+                EventType::WindowMoved => {
+                    let event = raw.window;
+                    Event::Window {
+                        timestamp: event.timestamp,
+                        window_id: event.windowID,
+                        win_event: WindowEvent::Moved(event.data1, event.data2),
+                    }
+                }
+                EventType::WindowResized => {
+                    let event = raw.window;
+                    Event::Window {
+                        timestamp: event.timestamp,
+                        window_id: event.windowID,
+                        win_event: WindowEvent::Resized(event.data1, event.data2),
+                    }
+                }
+                EventType::WindowPixelSizeChanged => {
+                    let event = raw.window;
+                    Event::Window {
+                        timestamp: event.timestamp,
+                        window_id: event.windowID,
+                        win_event: WindowEvent::PixelSizeChanged(event.data1, event.data2),
+                    }
+                }
+                EventType::WindowMinimized => {
+                    let event = raw.window;
+                    Event::Window {
+                        timestamp: event.timestamp,
+                        window_id: event.windowID,
+                        win_event: WindowEvent::Minimized,
+                    }
+                }
+                EventType::WindowMaximized => {
+                    let event = raw.window;
+                    Event::Window {
+                        timestamp: event.timestamp,
+                        window_id: event.windowID,
+                        win_event: WindowEvent::Maximized,
+                    }
+                }
+                EventType::WindowRestored => {
+                    let event = raw.window;
+                    Event::Window {
+                        timestamp: event.timestamp,
+                        window_id: event.windowID,
+                        win_event: WindowEvent::Restored,
+                    }
+                }
+                EventType::WindowMouseEnter => {
+                    let event = raw.window;
+                    Event::Window {
+                        timestamp: event.timestamp,
+                        window_id: event.windowID,
+                        win_event: WindowEvent::MouseEnter,
+                    }
+                }
+                EventType::WindowMouseLeave => {
+                    let event = raw.window;
+                    Event::Window {
+                        timestamp: event.timestamp,
+                        window_id: event.windowID,
+                        win_event: WindowEvent::MouseLeave,
+                    }
+                }
+                EventType::WindowFocusGained => {
+                    let event = raw.window;
+                    Event::Window {
+                        timestamp: event.timestamp,
+                        window_id: event.windowID,
+                        win_event: WindowEvent::FocusGained,
+                    }
+                }
+                EventType::WindowFocusLost => {
+                    let event = raw.window;
+                    Event::Window {
+                        timestamp: event.timestamp,
+                        window_id: event.windowID,
+                        win_event: WindowEvent::FocusLost,
+                    }
+                }
+                EventType::WindowCloseRequested => {
+                    let event = raw.window;
+                    Event::Window {
+                        timestamp: event.timestamp,
+                        window_id: event.windowID,
+                        win_event: WindowEvent::CloseRequested,
+                    }
+                }
+                EventType::WindowTakeFocus => {
+                    let event = raw.window;
+                    Event::Window {
+                        timestamp: event.timestamp,
+                        window_id: event.windowID,
+                        win_event: WindowEvent::TakeFocus,
+                    }
+                }
+                EventType::WindowHitTest => {
+                    let event = raw.window;
+                    Event::Window {
+                        timestamp: event.timestamp,
+                        window_id: event.windowID,
+                        win_event: WindowEvent::HitTest(event.data1 as i32, event.data2 as i32),
+                    }
+                }
+                EventType::WindowICCProfileChanged => {
+                    let event = raw.window;
+                    Event::Window {
+                        timestamp: event.timestamp,
+                        window_id: event.windowID,
+                        win_event: WindowEvent::ICCProfChanged,
+                    }
+                }
+                EventType::WindowDisplayChanged => {
+                    let event = raw.window;
+                    Event::Window {
+                        timestamp: event.timestamp,
+                        window_id: event.windowID,
+                        win_event: WindowEvent::DisplayChanged(event.data1),
+                    }
+                }
+
                 EventType::Quit => {
                     let event = raw.quit;
                     Event::Quit {
@@ -1546,24 +1676,34 @@ impl Event {
                     }
                 }
 
-                EventType::Display => {
+                EventType::DisplayOrientation => {
                     let event = raw.display;
 
-                    Event::Display {
+                    Event::DisplayOrientation {
                         timestamp: event.timestamp,
-                        display_index: event.display as i32,
-                        display_event: DisplayEvent::from_ll(event.event, event.data1),
+                        display_index: event.displayID,
+                        data1: event.data1,
                     }
                 }
-                EventType::Window => {
-                    let event = raw.window;
 
-                    Event::Window {
+                EventType::DisplayConnected => {
+                    let event = raw.display;
+
+                    Event::DisplayConnected {
                         timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::from_ll(event.event, event.data1, event.data2),
+                        display_index: event.displayID,
                     }
                 }
+
+                EventType::DisplayDisconnected => {
+                    let event = raw.display;
+
+                    Event::DisplayDisconnected {
+                        timestamp: event.timestamp,
+                        display_index: event.displayID,
+                    }
+                }
+
                 // TODO: SysWMEventType
                 EventType::KeyDown => {
                     let event = raw.key;
@@ -1678,8 +1818,8 @@ impl Event {
                         x: event.x,
                         y: event.y,
                         direction: mouse::MouseWheelDirection::from_ll(event.direction),
-                        precise_x: event.preciseX,
-                        precise_y: event.preciseY,
+                        mouse_x: event.mouseX,
+                        mouse_y: event.mouseY,
                     }
                 }
 
@@ -1690,16 +1830,6 @@ impl Event {
                         which: event.which as u32,
                         axis_idx: event.axis,
                         value: event.value,
-                    }
-                }
-                EventType::JoyBallMotion => {
-                    let event = raw.jball;
-                    Event::JoyBallMotion {
-                        timestamp: event.timestamp,
-                        which: event.which as u32,
-                        ball_idx: event.ball,
-                        xrel: event.xrel,
-                        yrel: event.yrel,
                     }
                 }
                 EventType::JoyHatMotion => {
@@ -1743,8 +1873,8 @@ impl Event {
                 }
 
                 EventType::ControllerAxisMotion => {
-                    let event = raw.caxis;
-                    let axis = controller::Axis::from_ll(transmute(event.axis as i32)).unwrap();
+                    let event = raw.gaxis;
+                    let axis = gamepad::Axis::from_ll(transmute(event.axis as i32)).unwrap();
 
                     Event::ControllerAxisMotion {
                         timestamp: event.timestamp,
@@ -1754,9 +1884,8 @@ impl Event {
                     }
                 }
                 EventType::ControllerButtonDown => {
-                    let event = raw.cbutton;
-                    let button =
-                        controller::Button::from_ll(transmute(event.button as i32)).unwrap();
+                    let event = raw.gbutton;
+                    let button = gamepad::Button::from_ll(transmute(event.button as i32)).unwrap();
 
                     Event::ControllerButtonDown {
                         timestamp: event.timestamp,
@@ -1765,9 +1894,8 @@ impl Event {
                     }
                 }
                 EventType::ControllerButtonUp => {
-                    let event = raw.cbutton;
-                    let button =
-                        controller::Button::from_ll(transmute(event.button as i32)).unwrap();
+                    let event = raw.gbutton;
+                    let button = gamepad::Button::from_ll(transmute(event.button as i32)).unwrap();
 
                     Event::ControllerButtonUp {
                         timestamp: event.timestamp,
@@ -1776,28 +1904,28 @@ impl Event {
                     }
                 }
                 EventType::ControllerDeviceAdded => {
-                    let event = raw.cdevice;
+                    let event = raw.gdevice;
                     Event::ControllerDeviceAdded {
                         timestamp: event.timestamp,
                         which: event.which as u32,
                     }
                 }
                 EventType::ControllerDeviceRemoved => {
-                    let event = raw.cdevice;
+                    let event = raw.gdevice;
                     Event::ControllerDeviceRemoved {
                         timestamp: event.timestamp,
                         which: event.which as u32,
                     }
                 }
                 EventType::ControllerDeviceRemapped => {
-                    let event = raw.cdevice;
+                    let event = raw.gdevice;
                     Event::ControllerDeviceRemapped {
                         timestamp: event.timestamp,
                         which: event.which as u32,
                     }
                 }
                 EventType::ControllerTouchpadDown => {
-                    let event = raw.ctouchpad;
+                    let event = raw.gtouchpad;
                     Event::ControllerTouchpadDown {
                         timestamp: event.timestamp,
                         which: event.which as u32,
@@ -1809,7 +1937,7 @@ impl Event {
                     }
                 }
                 EventType::ControllerTouchpadMotion => {
-                    let event = raw.ctouchpad;
+                    let event = raw.gtouchpad;
                     Event::ControllerTouchpadMotion {
                         timestamp: event.timestamp,
                         which: event.which as u32,
@@ -1821,7 +1949,7 @@ impl Event {
                     }
                 }
                 EventType::ControllerTouchpadUp => {
-                    let event = raw.ctouchpad;
+                    let event = raw.gtouchpad;
                     Event::ControllerTouchpadUp {
                         timestamp: event.timestamp,
                         which: event.which as u32,
@@ -1880,42 +2008,6 @@ impl Event {
                         dx: event.dx,
                         dy: event.dy,
                         pressure: event.pressure,
-                    }
-                }
-                EventType::DollarGesture => {
-                    let event = raw.dgesture;
-                    Event::DollarGesture {
-                        timestamp: event.timestamp,
-                        touch_id: event.touchId,
-                        gesture_id: event.gestureId,
-                        num_fingers: event.numFingers,
-                        error: event.error,
-                        x: event.x,
-                        y: event.y,
-                    }
-                }
-                EventType::DollarRecord => {
-                    let event = raw.dgesture;
-                    Event::DollarRecord {
-                        timestamp: event.timestamp,
-                        touch_id: event.touchId,
-                        gesture_id: event.gestureId,
-                        num_fingers: event.numFingers,
-                        error: event.error,
-                        x: event.x,
-                        y: event.y,
-                    }
-                }
-                EventType::MultiGesture => {
-                    let event = raw.mgesture;
-                    Event::MultiGesture {
-                        timestamp: event.timestamp,
-                        touch_id: event.touchId,
-                        d_theta: event.dTheta,
-                        d_dist: event.dDist,
-                        x: event.x,
-                        y: event.y,
-                        num_fingers: event.numFingers,
                     }
                 }
 
@@ -2100,7 +2192,6 @@ impl Event {
             | (Self::MouseButtonUp { .. }, Self::MouseButtonUp { .. })
             | (Self::MouseWheel { .. }, Self::MouseWheel { .. })
             | (Self::JoyAxisMotion { .. }, Self::JoyAxisMotion { .. })
-            | (Self::JoyBallMotion { .. }, Self::JoyBallMotion { .. })
             | (Self::JoyHatMotion { .. }, Self::JoyHatMotion { .. })
             | (Self::JoyButtonDown { .. }, Self::JoyButtonDown { .. })
             | (Self::JoyButtonUp { .. }, Self::JoyButtonUp { .. })
@@ -2115,7 +2206,6 @@ impl Event {
             | (Self::FingerDown { .. }, Self::FingerDown { .. })
             | (Self::FingerUp { .. }, Self::FingerUp { .. })
             | (Self::FingerMotion { .. }, Self::FingerMotion { .. })
-            | (Self::DollarGesture { .. }, Self::DollarGesture { .. })
             | (Self::DollarRecord { .. }, Self::DollarRecord { .. })
             | (Self::MultiGesture { .. }, Self::MultiGesture { .. })
             | (Self::ClipboardUpdate { .. }, Self::ClipboardUpdate { .. })
@@ -2149,9 +2239,13 @@ impl Event {
     /// };
     /// assert!(ev.get_timestamp() == 12);
     /// ```
-    pub fn get_timestamp(&self) -> u32 {
+    pub fn get_timestamp(&self) -> u64 {
         *match self {
             Self::Quit { timestamp, .. } => timestamp,
+            Self::Window { timestamp, .. } => timestamp,
+            Self::DisplayConnected { timestamp, .. } => timestamp,
+            Self::DisplayDisconnected { timestamp, .. } => timestamp,
+            Self::DisplayOrientation { timestamp, .. } => timestamp,
             Self::AppTerminating { timestamp, .. } => timestamp,
             Self::AppLowMemory { timestamp, .. } => timestamp,
             Self::AppWillEnterBackground { timestamp, .. } => timestamp,
@@ -2169,7 +2263,6 @@ impl Event {
             Self::MouseButtonUp { timestamp, .. } => timestamp,
             Self::MouseWheel { timestamp, .. } => timestamp,
             Self::JoyAxisMotion { timestamp, .. } => timestamp,
-            Self::JoyBallMotion { timestamp, .. } => timestamp,
             Self::JoyHatMotion { timestamp, .. } => timestamp,
             Self::JoyButtonDown { timestamp, .. } => timestamp,
             Self::JoyButtonUp { timestamp, .. } => timestamp,
@@ -2189,7 +2282,6 @@ impl Event {
             Self::FingerDown { timestamp, .. } => timestamp,
             Self::FingerUp { timestamp, .. } => timestamp,
             Self::FingerMotion { timestamp, .. } => timestamp,
-            Self::DollarGesture { timestamp, .. } => timestamp,
             Self::DollarRecord { timestamp, .. } => timestamp,
             Self::MultiGesture { timestamp, .. } => timestamp,
             Self::ClipboardUpdate { timestamp, .. } => timestamp,
@@ -2427,7 +2519,6 @@ impl Event {
     pub fn is_joy(&self) -> bool {
         match self {
             Self::JoyAxisMotion { .. }
-            | Self::JoyBallMotion { .. }
             | Self::JoyHatMotion { .. }
             | Self::JoyButtonDown { .. }
             | Self::JoyButtonUp { .. }
@@ -2464,36 +2555,6 @@ impl Event {
     pub fn is_finger(&self) -> bool {
         match self {
             Self::FingerDown { .. } | Self::FingerUp { .. } | Self::FingerMotion { .. } => true,
-            _ => false,
-        }
-    }
-
-    /// Returns `true` if this is a dollar event.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use sdl3::event::Event;
-    ///
-    /// let ev = Event::DollarGesture {
-    ///     timestamp: 0,
-    ///     touch_id: 0,
-    ///     gesture_id: 0,
-    ///     num_fingers: 0,
-    ///     error: 0.,
-    ///     x: 0.,
-    ///     y: 0.,
-    /// };
-    /// assert!(ev.is_dollar());
-    ///
-    /// let another_ev = Event::Quit {
-    ///     timestamp: 0,
-    /// };
-    /// assert!(another_ev.is_dollar() == false); // Not a dollar event!
-    /// ```
-    pub fn is_dollar(&self) -> bool {
-        match self {
-            Self::DollarGesture { .. } | Self::DollarRecord { .. } => true,
             _ => false,
         }
     }
@@ -2665,30 +2726,6 @@ unsafe fn wait_event_timeout(timeout: u32) -> Option<Event> {
 }
 
 impl crate::EventPump {
-    /// Query if an event type is enabled.
-    #[doc(alias = "SDL_EventState")]
-    pub fn is_event_enabled(&self, event_type: EventType) -> bool {
-        let result = unsafe { sys::SDL_EventState(event_type as u32, sys::SDL_QUERY) };
-
-        result != sys::SDL_DISABLE as u8
-    }
-
-    /// Enable an event type. Returns if the event type was enabled before the call.
-    #[doc(alias = "SDL_EventState")]
-    pub fn enable_event(&mut self, event_type: EventType) -> bool {
-        let result = unsafe { sys::SDL_EventState(event_type as u32, sys::SDL_ENABLE as c_int) };
-
-        result != sys::SDL_DISABLE as u8
-    }
-
-    /// Disable an event type. Returns if the event type was enabled before the call.
-    #[doc(alias = "SDL_EventState")]
-    pub fn disable_event(&mut self, event_type: EventType) -> bool {
-        let result = unsafe { sys::SDL_EventState(event_type as u32, sys::SDL_DISABLE as c_int) };
-
-        result != sys::SDL_DISABLE as u8
-    }
-
     /// Polls for currently pending events.
     ///
     /// If no events are pending, `None` is returned.
@@ -2815,7 +2852,7 @@ impl<'a> Iterator for EventWaitTimeoutIterator<'a> {
 
 #[cfg(test)]
 mod test {
-    use super::super::controller::{Axis, Button};
+    use super::super::gamepad::{Axis, Button};
     use super::super::joystick::HatState;
     use super::super::keyboard::{Keycode, Mod, Scancode};
     use super::super::mouse::{MouseButton, MouseState, MouseWheelDirection};
@@ -2881,10 +2918,10 @@ mod test {
                 window_id: 0,
                 which: 1,
                 mousestate: MouseState::from_sdl_state(1),
-                x: 3,
-                y: 91,
-                xrel: -1,
-                yrel: 43,
+                x: 3.,
+                y: 91.,
+                xrel: -1.,
+                yrel: 43.,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
@@ -2896,8 +2933,8 @@ mod test {
                 which: 0,
                 mouse_btn: MouseButton::Left,
                 clicks: 1,
-                x: 543,
-                y: 345,
+                x: 543.,
+                y: 345.,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
@@ -2909,8 +2946,8 @@ mod test {
                 which: 0,
                 mouse_btn: MouseButton::Left,
                 clicks: 1,
-                x: 543,
-                y: 345,
+                x: 543.,
+                y: 345.,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
@@ -2920,11 +2957,11 @@ mod test {
                 timestamp: 1,
                 window_id: 0,
                 which: 32,
-                x: 23,
-                y: 91,
+                x: 23.,
+                y: 91.,
                 direction: MouseWheelDirection::Flipped,
-                precise_x: 1.6,
-                precise_y: 2.7,
+                mouse_x: 2.,
+                mouse_y: 3.,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
@@ -2935,17 +2972,6 @@ mod test {
                 which: 1,
                 axis_idx: 1,
                 value: 12,
-            };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
-            assert_eq!(e, e2);
-        }
-        {
-            let e = Event::JoyBallMotion {
-                timestamp: 0,
-                which: 0,
-                ball_idx: 1,
-                xrel: 123,
-                yrel: 321,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);

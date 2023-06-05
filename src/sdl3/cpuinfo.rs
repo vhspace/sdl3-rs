@@ -13,11 +13,6 @@ pub fn cpu_cache_line_size() -> i32 {
     unsafe { sys::SDL_GetCPUCacheLineSize() }
 }
 
-#[doc(alias = "SDL_HasRDTSC")]
-pub fn has_rdtsc() -> bool {
-    unsafe { sys::SDL_HasRDTSC() == SDL_bool::SDL_TRUE }
-}
-
 #[doc(alias = "SDL_HasAltiVec")]
 pub fn has_alti_vec() -> bool {
     unsafe { sys::SDL_HasAltiVec() == SDL_bool::SDL_TRUE }
@@ -26,11 +21,6 @@ pub fn has_alti_vec() -> bool {
 #[doc(alias = "SDL_HasMMX")]
 pub fn has_mmx() -> bool {
     unsafe { sys::SDL_HasMMX() == SDL_bool::SDL_TRUE }
-}
-
-#[doc(alias = "SDL_Has3DNow")]
-pub fn has_3d_now() -> bool {
-    unsafe { sys::SDL_Has3DNow() == SDL_bool::SDL_TRUE }
 }
 
 #[doc(alias = "SDL_HasSSE")]

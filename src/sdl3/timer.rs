@@ -41,7 +41,7 @@ impl TimerSubsystem {
     /// This function is not recommended in upstream SDL2 as of 2.0.18 and internally
     /// calls the 64-bit variant and masks the result.
     #[doc(alias = "SDL_GetTicks")]
-    pub fn ticks(&self) -> u32 {
+    pub fn ticks(&self) -> u64 {
         // This is thread-safe as long as the ticks subsystem is inited, and
         // tying this to `TimerSubsystem` ensures the timer subsystem can
         // safely make calls into the ticks subsystem without invoking a

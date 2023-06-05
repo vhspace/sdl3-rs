@@ -1,7 +1,7 @@
 [package]
 
 name = "sdl3-sys"
-description = "Raw SDL3 bindings for Rust, used internally sdl3-rs"
+description = "Raw SDL3 FFI bindings for Rust, used internally sdl3"
 repository = "https://github.com/revmischa/sdl3-rs"
 version = "0.0.2"
 authors = ["Tony Aldridge <tony@angry-lawyer.com>"]

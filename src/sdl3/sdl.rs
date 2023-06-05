@@ -8,6 +8,7 @@ use std::os::raw::c_void;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 use crate::sys;
+use crate::sys::SDL_InitFlags;
 
 #[repr(i32)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
@@ -139,10 +140,10 @@ impl Sdl {
         HapticSubsystem::new(self)
     }
 
-    /// Initializes the game controller subsystem.
+    /// Initializes the gamepad subsystem.
     #[inline]
-    pub fn game_controller(&self) -> Result<GameControllerSubsystem, String> {
-        GameControllerSubsystem::new(self)
+    pub fn game_controller(&self) -> Result<GamepadSubsystem, String> {
+        GamepadSubsystem::new(self)
     }
 
     /// Initializes the game controller subsystem.
@@ -305,26 +306,56 @@ impl Drop for SubsystemDrop {
     }
 }
 
-subsystem!(AudioSubsystem, sys::SDL_INIT_AUDIO, AUDIO_COUNT, nosync);
 subsystem!(
-    GameControllerSubsystem,
-    sys::SDL_INIT_GAMEPAD,
-    GAMECONTROLLER_COUNT,
+    AudioSubsystem,
+    SDL_InitFlags::SDL_INIT_AUDIO as u32,
+    AUDIO_COUNT,
     nosync
 );
-subsystem!(HapticSubsystem, sys::SDL_INIT_HAPTIC, HAPTIC_COUNT, nosync);
+subsystem!(
+    GamepadSubsystem,
+    SDL_InitFlags::SDL_INIT_GAMEPAD as u32,
+    GAMEPAD_COUNT,
+    nosync
+);
+subsystem!(
+    HapticSubsystem,
+    SDL_InitFlags::SDL_INIT_HAPTIC as u32,
+    HAPTIC_COUNT,
+    nosync
+);
 subsystem!(
     JoystickSubsystem,
-    sys::SDL_INIT_JOYSTICK,
+    SDL_InitFlags::SDL_INIT_JOYSTICK as u32,
     JOYSTICK_COUNT,
     nosync
 );
-subsystem!(VideoSubsystem, sys::SDL_INIT_VIDEO, VIDEO_COUNT, nosync);
+subsystem!(
+    VideoSubsystem,
+    SDL_InitFlags::SDL_INIT_VIDEO as u32,
+    VIDEO_COUNT,
+    nosync
+);
 // Timers can be added on other threads.
-subsystem!(TimerSubsystem, sys::SDL_INIT_TIMER, TIMER_COUNT, sync);
+subsystem!(
+    TimerSubsystem,
+    SDL_InitFlags::SDL_INIT_TIMER as u32,
+    TIMER_COUNT,
+    sync
+);
 // The event queue can be read from other threads.
-subsystem!(EventSubsystem, sys::SDL_INIT_EVENTS, EVENTS_COUNT, sync);
-subsystem!(SensorSubsystem, sys::SDL_INIT_SENSOR, SENSOR_COUNT, sync);
+subsystem!(
+    EventSubsystem,
+    SDL_InitFlags::SDL_INIT_EVENTS as u32,
+    EVENT_COUNT,
+    sync
+);
+subsystem!(
+    SensorSubsystem,
+    SDL_InitFlags::SDL_INIT_SENSOR as u32,
+    SENSOR_COUNT,
+    nosync
+);
 
 static IS_EVENT_PUMP_ALIVE: AtomicBool = AtomicBool::new(false);
 
