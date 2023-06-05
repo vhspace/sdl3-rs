@@ -18,7 +18,7 @@ jobs:
         run: cargo install cargo-vcpkg
       - name: Install dependencies
         run: cargo vcpkg -v build
-      - name: Build SDL2
+      - name: Build sdl3
         shell: bash
         env:
           CI_BUILD_FEATURES: "use-vcpkg static-link gfx image ttf mixer"
@@ -42,7 +42,7 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v2
-      - name: Build SDL2
+      - name: Build sdl3
         shell: bash
         env:
           # Bundled doesn't yet support gfx, image, ttf, mixer.
@@ -64,8 +64,8 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update -y -qq
-          sudo apt-get install -y libsdl2-dev libsdl2-mixer-dev libsdl2-gfx-dev libsdl2-image-dev libsdl2-ttf-dev
-      - name: Build SDL2
+          sudo apt-get install -y libsdl3-dev libsdl3-mixer-dev libsdl3-gfx-dev libsdl3-image-dev libsdl3-ttf-dev
+      - name: Build sdl3
         shell: bash
         env:
           CI_BUILD_FEATURES: "gfx image ttf mixer"
