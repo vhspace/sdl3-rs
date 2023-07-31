@@ -60,7 +60,7 @@ thread_local! {
     static IS_MAIN_THREAD: Cell<bool> = Cell::new(false);
 }
 
-/// The SDL context type. Initialize with `sdl2::init()`.
+/// The SDL context type. Initialize with `sdl3::init()`.
 ///
 /// From a thread-safety perspective, `Sdl` represents the main thread.
 /// As such, `Sdl` is a useful type for ensuring that SDL types that can only
@@ -87,8 +87,12 @@ impl Sdl {
         IS_MAIN_THREAD.with(|is_main_thread| {
             if was_main_thread_declared {
                 if !is_main_thread.get() {
-                    return Err("Cannot initialize `Sdl` from more than once thread.".to_owned());
-                }
+		    // Since 'cargo test' runs its tests in a separate thread, we must disable
+		    // this safety check during testing.
+		    if !(cfg!(test) || cfg!(feature = "test-mode")) {
+			return Err("Cannot initialize `Sdl` from a thread other than the main thread.  For testing, you can disable this check with the feature 'test-mode'.".to_owned());
+                    }
+		}
             } else {
                 is_main_thread.set(true);
             }
@@ -142,7 +146,7 @@ impl Sdl {
 
     /// Initializes the gamepad subsystem.
     #[inline]
-    pub fn game_controller(&self) -> Result<GamepadSubsystem, String> {
+    pub fn gamepad(&self) -> Result<GamepadSubsystem, String> {
         GamepadSubsystem::new(self)
     }
 
@@ -402,7 +406,7 @@ pub fn get_platform() -> &'static str {
 ///
 /// # Example
 /// ```no_run
-/// let sdl_context = sdl2::init().unwrap();
+/// let sdl_context = sdl3::init().unwrap();
 /// let mut event_pump = sdl_context.event_pump().unwrap();
 ///
 /// for event in event_pump.poll_iter() {

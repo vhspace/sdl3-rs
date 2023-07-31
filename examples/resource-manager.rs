@@ -1,11 +1,11 @@
-extern crate sdl2;
+extern crate sdl3;
 
-use sdl2::event::Event;
-use sdl2::image::{InitFlag, LoadTexture};
-use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
-use sdl2::render::{Texture, TextureCreator};
-use sdl2::ttf::{Font, Sdl2TtfContext};
+use sdl3::event::Event;
+use sdl3::image::{InitFlag, LoadTexture};
+use sdl3::keyboard::Keycode;
+use sdl3::pixels::Color;
+use sdl3::render::{Texture, TextureCreator};
+use sdl3::ttf::{Font, Sdl3TtfContext};
 
 use std::borrow::Borrow;
 use std::collections::HashMap;
@@ -22,12 +22,12 @@ fn main() -> Result<(), String> {
         let image_path = &args[1];
         let font_path = &args[2];
 
-        let sdl_context = sdl2::init()?;
+        let sdl_context = sdl3::init()?;
         let video_subsystem = sdl_context.video()?;
-        let font_context = sdl2::ttf::init().map_err(|e| e.to_string())?;
-        let _image_context = sdl2::image::init(InitFlag::PNG | InitFlag::JPG)?;
+        let font_context = sdl3::ttf::init().map_err(|e| e.to_string())?;
+        let _image_context = sdl3::image::init(InitFlag::PNG | InitFlag::JPG)?;
         let window = video_subsystem
-            .window("rust-sdl2 resource-manager demo", 800, 600)
+            .window("rust-sdl3 resource-manager demo", 800, 600)
             .position_centered()
             .build()
             .map_err(|e| e.to_string())?;
@@ -81,7 +81,7 @@ fn main() -> Result<(), String> {
 }
 
 type TextureManager<'l, T> = ResourceManager<'l, String, Texture<'l>, TextureCreator<T>>;
-type FontManager<'l> = ResourceManager<'l, FontDetails, Font<'l, 'static>, Sdl2TtfContext>;
+type FontManager<'l> = ResourceManager<'l, FontDetails, Font<'l, 'static>, Sdl3TtfContext>;
 
 // Generic struct to cache any resource loaded by a ResourceLoader
 pub struct ResourceManager<'l, K, R, L>
@@ -134,7 +134,7 @@ impl<'l, T> ResourceLoader<'l, Texture<'l>> for TextureCreator<T> {
 }
 
 // Font Context knows how to load Fonts
-impl<'l> ResourceLoader<'l, Font<'l, 'static>> for Sdl2TtfContext {
+impl<'l> ResourceLoader<'l, Font<'l, 'static>> for Sdl3TtfContext {
     type Args = FontDetails;
     fn load(&'l self, details: &FontDetails) -> Result<Font<'l, 'static>, String> {
         println!("LOADED A FONT");

@@ -1,17 +1,17 @@
-extern crate sdl2;
+extern crate sdl3;
 
-use sdl2::event::Event;
-use sdl2::image::{InitFlag, LoadTexture};
-use sdl2::keyboard::Keycode;
+use sdl3::event::Event;
+use sdl3::image::{InitFlag, LoadTexture};
+use sdl3::keyboard::Keycode;
 use std::env;
 use std::path::Path;
 
 pub fn run(png: &Path) -> Result<(), String> {
-    let sdl_context = sdl2::init()?;
+    let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
-    let _image_context = sdl2::image::init(InitFlag::PNG | InitFlag::JPG)?;
+    let _image_context = sdl3::image::init(InitFlag::PNG | InitFlag::JPG)?;
     let window = video_subsystem
-        .window("rust-sdl2 demo: Video", 800, 600)
+        .window("rust-sdl3 demo: Video", 800, 600)
         .position_centered()
         .build()
         .map_err(|e| e.to_string())?;

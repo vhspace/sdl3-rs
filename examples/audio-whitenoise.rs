@@ -1,7 +1,7 @@
 extern crate rand;
-extern crate sdl2;
+extern crate sdl3;
 
-use sdl2::audio::{AudioCallback, AudioSpecDesired};
+use sdl3::audio::{AudioCallback, AudioSpecDesired};
 use std::time::Duration;
 
 struct MyCallback {
@@ -22,7 +22,7 @@ impl AudioCallback for MyCallback {
 }
 
 fn main() -> Result<(), String> {
-    let sdl_context = sdl2::init()?;
+    let sdl_context = sdl3::init()?;
     let audio_subsystem = sdl_context.audio()?;
 
     let desired_spec = AudioSpecDesired {

@@ -1,20 +1,20 @@
-extern crate sdl2;
+extern crate sdl3;
 
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::pixels;
+use sdl3::event::Event;
+use sdl3::keyboard::Keycode;
+use sdl3::pixels;
 
-use sdl2::gfx::primitives::DrawRenderer;
+use sdl3::gfx::primitives::DrawRenderer;
 
 const SCREEN_WIDTH: u32 = 800;
 const SCREEN_HEIGHT: u32 = 600;
 
 fn main() -> Result<(), String> {
-    let sdl_context = sdl2::init()?;
+    let sdl_context = sdl3::init()?;
     let video_subsys = sdl_context.video()?;
     let window = video_subsys
         .window(
-            "rust-sdl2_gfx: draw line & FPSManager",
+            "rust-sdl3_gfx: draw line & FPSManager",
             SCREEN_WIDTH,
             SCREEN_HEIGHT,
         )

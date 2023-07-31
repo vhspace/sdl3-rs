@@ -446,8 +446,8 @@ pub enum DisplayEvent {
 
 impl DisplayEvent {
     #[allow(clippy::match_same_arms)]
-    fn from_ll(id: u8, data1: i32) -> DisplayEvent {
-        match unsafe { transmute(id as u32) } {
+    fn from_ll(id: u32, data1: i32) -> DisplayEvent {
+        match unsafe { transmute(id) } {
             SDL_EventType::SDL_EVENT_DISPLAY_ORIENTATION => {
                 let orientation = if data1 as u32
                     > sys::SDL_DisplayOrientation::SDL_ORIENTATION_PORTRAIT_FLIPPED as u32
@@ -513,52 +513,91 @@ pub enum WindowEvent {
 
 impl WindowEvent {
     #[allow(clippy::match_same_arms)]
-    fn from_ll(id: u8, data1: i32, data2: i32) -> WindowEvent {
-        match id {
-            0 => WindowEvent::None,
-            1 => WindowEvent::Shown,
-            2 => WindowEvent::Hidden,
-            3 => WindowEvent::Exposed,
-            4 => WindowEvent::Moved(data1, data2),
-            5 => WindowEvent::Resized(data1, data2),
-            6 => WindowEvent::PixelSizeChanged(data1, data2),
-            7 => WindowEvent::Minimized,
-            8 => WindowEvent::Maximized,
-            9 => WindowEvent::Restored,
-            10 => WindowEvent::MouseEnter,
-            11 => WindowEvent::MouseLeave,
-            12 => WindowEvent::FocusGained,
-            13 => WindowEvent::FocusLost,
-            14 => WindowEvent::CloseRequested,
-            15 => WindowEvent::TakeFocus,
-            16 => WindowEvent::HitTest(data1, data2),
-            17 => WindowEvent::ICCProfChanged,
-            18 => WindowEvent::DisplayChanged(data1),
-            _ => WindowEvent::None,
+    fn from_ll(id: u32, data1: i32, data2: i32) -> WindowEvent {
+        match EventType::try_from(id) {
+            Ok(ev) => match ev {
+                EventType::WindowShown =>
+		    WindowEvent::Shown,
+                EventType::WindowHidden =>
+		    WindowEvent::Hidden,
+                EventType::WindowExposed =>
+		    WindowEvent::Exposed,
+                EventType::WindowMoved =>
+		    WindowEvent::Moved(data1, data2),
+                EventType::WindowResized =>
+		    WindowEvent::Resized(data1, data2),
+                EventType::WindowPixelSizeChanged =>
+		    WindowEvent::PixelSizeChanged(data1, data2),
+                EventType::WindowMinimized =>
+		    WindowEvent::Minimized,
+                EventType::WindowMaximized =>
+		    WindowEvent::Maximized,
+                EventType::WindowRestored =>
+		    WindowEvent::Restored,
+                EventType::WindowMouseEnter =>
+		    WindowEvent::MouseEnter,
+                EventType::WindowMouseLeave =>
+		    WindowEvent::MouseLeave,
+                EventType::WindowFocusGained =>
+		    WindowEvent::FocusGained,
+                EventType::WindowFocusLost =>
+		    WindowEvent::FocusLost,
+                EventType::WindowCloseRequested =>
+		    WindowEvent::CloseRequested,
+                EventType::WindowTakeFocus =>
+		    WindowEvent::TakeFocus,
+                EventType::WindowHitTest =>
+		    WindowEvent::HitTest(data1, data2),
+                EventType::WindowICCProfileChanged =>
+		    WindowEvent::ICCProfChanged,
+                EventType::WindowDisplayChanged =>
+		    WindowEvent::DisplayChanged(data1),
+		_ => WindowEvent::None,
+            }
+            Err(_) => WindowEvent::None,
         }
     }
 
-    fn to_ll(&self) -> (u8, i32, i32) {
+    fn to_ll(&self) -> (EventType, i32, i32) {
         match *self {
-            WindowEvent::None => (0, 0, 0),
-            WindowEvent::Shown => (1, 0, 0),
-            WindowEvent::Hidden => (2, 0, 0),
-            WindowEvent::Exposed => (3, 0, 0),
-            WindowEvent::Moved(d1, d2) => (4, d1, d2),
-            WindowEvent::Resized(d1, d2) => (5, d1, d2),
-            WindowEvent::PixelSizeChanged(d1, d2) => (6, d1, d2),
-            WindowEvent::Minimized => (7, 0, 0),
-            WindowEvent::Maximized => (8, 0, 0),
-            WindowEvent::Restored => (9, 0, 0),
-            WindowEvent::MouseEnter => (10, 0, 0),
-            WindowEvent::MouseLeave => (11, 0, 0),
-            WindowEvent::FocusGained => (12, 0, 0),
-            WindowEvent::FocusLost => (13, 0, 0),
-            WindowEvent::CloseRequested => (14, 0, 0),
-            WindowEvent::TakeFocus => (15, 0, 0),
-            WindowEvent::HitTest(d1, d2) => (16, d1, d2),
-            WindowEvent::ICCProfChanged => (17, 0, 0),
-            WindowEvent::DisplayChanged(d1) => (18, d1, 0),
+            WindowEvent::None =>
+		panic!("Cannot convert WindowEvent::None"),
+            WindowEvent::Shown =>
+		(EventType::WindowShown, 0, 0),
+            WindowEvent::Hidden =>
+		(EventType::WindowHidden, 0, 0),
+            WindowEvent::Exposed =>
+		(EventType::WindowExposed, 0, 0),
+            WindowEvent::Moved(d1, d2) =>
+		(EventType::WindowMoved, d1, d2),
+            WindowEvent::Resized(d1, d2) =>
+		(EventType::WindowResized, d1, d2),
+            WindowEvent::PixelSizeChanged(d1, d2) =>
+		(EventType::WindowPixelSizeChanged, d1, d2),
+            WindowEvent::Minimized =>
+		(EventType::WindowMinimized, 0, 0),
+            WindowEvent::Maximized =>
+		(EventType::WindowMaximized, 0, 0),
+            WindowEvent::Restored =>
+		(EventType::WindowRestored, 0, 0),
+            WindowEvent::MouseEnter =>
+		(EventType::WindowMouseEnter, 0, 0),
+            WindowEvent::MouseLeave =>
+		(EventType::WindowMouseLeave, 0, 0),
+            WindowEvent::FocusGained =>
+		(EventType::WindowFocusGained, 0, 0),
+            WindowEvent::FocusLost =>
+		(EventType::WindowFocusLost, 0, 0),
+            WindowEvent::CloseRequested =>
+		(EventType::WindowCloseRequested, 0, 0),
+            WindowEvent::TakeFocus =>
+		(EventType::WindowTakeFocus, 0, 0),
+            WindowEvent::HitTest(d1, d2) =>
+		(EventType::WindowHitTest, d1, d2),
+            WindowEvent::ICCProfChanged =>
+		(EventType::WindowICCProfileChanged, 0, 0),
+            WindowEvent::DisplayChanged(d1) =>
+		(EventType::WindowDisplayChanged, d1, 0),
         }
     }
 
@@ -615,7 +654,7 @@ pub enum Event {
 
     Display {
         timestamp: u64,
-        display_index: i32,
+        display_index: u32,
         display_event: DisplayEvent,
     },
     Window {
@@ -936,20 +975,6 @@ pub enum Event {
     Unknown {
         timestamp: u64,
         type_: u32,
-    },
-
-    DisplayOrientation {
-        timestamp: u64,
-        display_index: u32,
-        data1: i32,
-    },
-    DisplayConnected {
-        timestamp: u64,
-        display_index: u32,
-    },
-    DisplayDisconnected {
-        timestamp: u64,
-        display_index: u32,
     },
 }
 
@@ -1488,150 +1513,33 @@ impl Event {
         let event_type: EventType = EventType::try_from(raw_type as u32).unwrap_or(EventType::User);
         unsafe {
             match event_type {
-                EventType::WindowShown => {
-                    let event = raw.window;
-                    Event::Window {
-                        timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::Shown,
-                    }
-                }
-                EventType::WindowHidden => {
-                    let event = raw.window;
-                    Event::Window {
-                        timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::Hidden,
-                    }
-                }
-                EventType::WindowExposed => {
-                    let event = raw.window;
-                    Event::Window {
-                        timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::Exposed,
-                    }
-                }
-                EventType::WindowMoved => {
-                    let event = raw.window;
-                    Event::Window {
-                        timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::Moved(event.data1, event.data2),
-                    }
-                }
-                EventType::WindowResized => {
-                    let event = raw.window;
-                    Event::Window {
-                        timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::Resized(event.data1, event.data2),
-                    }
-                }
-                EventType::WindowPixelSizeChanged => {
-                    let event = raw.window;
-                    Event::Window {
-                        timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::PixelSizeChanged(event.data1, event.data2),
-                    }
-                }
-                EventType::WindowMinimized => {
-                    let event = raw.window;
-                    Event::Window {
-                        timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::Minimized,
-                    }
-                }
-                EventType::WindowMaximized => {
-                    let event = raw.window;
-                    Event::Window {
-                        timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::Maximized,
-                    }
-                }
-                EventType::WindowRestored => {
-                    let event = raw.window;
-                    Event::Window {
-                        timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::Restored,
-                    }
-                }
-                EventType::WindowMouseEnter => {
-                    let event = raw.window;
-                    Event::Window {
-                        timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::MouseEnter,
-                    }
-                }
-                EventType::WindowMouseLeave => {
-                    let event = raw.window;
-                    Event::Window {
-                        timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::MouseLeave,
-                    }
-                }
-                EventType::WindowFocusGained => {
-                    let event = raw.window;
-                    Event::Window {
-                        timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::FocusGained,
-                    }
-                }
-                EventType::WindowFocusLost => {
-                    let event = raw.window;
-                    Event::Window {
-                        timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::FocusLost,
-                    }
-                }
-                EventType::WindowCloseRequested => {
-                    let event = raw.window;
-                    Event::Window {
-                        timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::CloseRequested,
-                    }
-                }
-                EventType::WindowTakeFocus => {
-                    let event = raw.window;
-                    Event::Window {
-                        timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::TakeFocus,
-                    }
-                }
-                EventType::WindowHitTest => {
-                    let event = raw.window;
-                    Event::Window {
-                        timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::HitTest(event.data1 as i32, event.data2 as i32),
-                    }
-                }
-                EventType::WindowICCProfileChanged => {
-                    let event = raw.window;
-                    Event::Window {
-                        timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::ICCProfChanged,
-                    }
-                }
-                EventType::WindowDisplayChanged => {
-                    let event = raw.window;
-                    Event::Window {
-                        timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        win_event: WindowEvent::DisplayChanged(event.data1),
-                    }
-                }
+
+		EventType::WindowShown
+		    | EventType::WindowHidden
+		    | EventType::WindowExposed
+		    | EventType::WindowMoved
+		    | EventType::WindowResized
+		    | EventType::WindowPixelSizeChanged
+		    | EventType::WindowMinimized
+		    | EventType::WindowMaximized
+		    | EventType::WindowRestored
+		    | EventType::WindowMouseEnter
+		    | EventType::WindowMouseLeave
+		    | EventType::WindowFocusGained
+		    | EventType::WindowFocusLost
+		    | EventType::WindowCloseRequested
+		    | EventType::WindowTakeFocus
+		    | EventType::WindowHitTest
+		    | EventType::WindowICCProfileChanged
+		    | EventType::WindowDisplayChanged => {
+			let event = raw.window;
+			Event::Window {
+                            timestamp: event.timestamp,
+                            window_id: event.windowID,
+                            win_event: WindowEvent::from_ll(event.type_, event.data1, event.data2)
+			}
+		    }
+
 
                 EventType::Quit => {
                     let event = raw.quit;
@@ -1676,31 +1584,15 @@ impl Event {
                     }
                 }
 
-                EventType::DisplayOrientation => {
+                EventType::DisplayOrientation
+                    | EventType::DisplayConnected
+                    | EventType::DisplayDisconnected => {
                     let event = raw.display;
 
-                    Event::DisplayOrientation {
+                    Event::Display {
                         timestamp: event.timestamp,
                         display_index: event.displayID,
-                        data1: event.data1,
-                    }
-                }
-
-                EventType::DisplayConnected => {
-                    let event = raw.display;
-
-                    Event::DisplayConnected {
-                        timestamp: event.timestamp,
-                        display_index: event.displayID,
-                    }
-                }
-
-                EventType::DisplayDisconnected => {
-                    let event = raw.display;
-
-                    Event::DisplayDisconnected {
-                        timestamp: event.timestamp,
-                        display_index: event.displayID,
+                        display_event: DisplayEvent::from_ll(event.type_, event.data1),
                     }
                 }
 
@@ -2243,9 +2135,6 @@ impl Event {
         *match self {
             Self::Quit { timestamp, .. } => timestamp,
             Self::Window { timestamp, .. } => timestamp,
-            Self::DisplayConnected { timestamp, .. } => timestamp,
-            Self::DisplayDisconnected { timestamp, .. } => timestamp,
-            Self::DisplayOrientation { timestamp, .. } => timestamp,
             Self::AppTerminating { timestamp, .. } => timestamp,
             Self::AppLowMemory { timestamp, .. } => timestamp,
             Self::AppWillEnterBackground { timestamp, .. } => timestamp,
@@ -2253,7 +2142,6 @@ impl Event {
             Self::AppWillEnterForeground { timestamp, .. } => timestamp,
             Self::AppDidEnterForeground { timestamp, .. } => timestamp,
             Self::Display { timestamp, .. } => timestamp,
-            Self::Window { timestamp, .. } => timestamp,
             Self::KeyDown { timestamp, .. } => timestamp,
             Self::KeyUp { timestamp, .. } => timestamp,
             Self::TextEditing { timestamp, .. } => timestamp,

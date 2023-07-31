@@ -1,10 +1,10 @@
-extern crate sdl2;
+extern crate sdl3;
 
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
-use sdl2::rect::Rect;
-use sdl2::video::Window;
+use sdl3::event::Event;
+use sdl3::keyboard::Keycode;
+use sdl3::pixels::Color;
+use sdl3::rect::Rect;
+use sdl3::video::Window;
 use std::time::Duration;
 
 const WINDOW_WIDTH: u32 = 800;
@@ -21,7 +21,7 @@ enum Gradient {
 
 fn set_window_gradient(
     window: &mut Window,
-    event_pump: &sdl2::EventPump,
+    event_pump: &sdl3::EventPump,
     gradient: Gradient,
 ) -> Result<(), String> {
     let mut surface = window.surface(event_pump)?;
@@ -52,11 +52,11 @@ fn next_gradient(gradient: Gradient) -> Gradient {
 }
 
 pub fn main() -> Result<(), String> {
-    let sdl_context = sdl2::init()?;
+    let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
 
     let mut window = video_subsystem
-        .window("rust-sdl2 demo: No Renderer", WINDOW_WIDTH, WINDOW_HEIGHT)
+        .window("rust-sdl3 demo: No Renderer", WINDOW_WIDTH, WINDOW_HEIGHT)
         .position_centered()
         .build()
         .map_err(|e| e.to_string())?;

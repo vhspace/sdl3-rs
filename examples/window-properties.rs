@@ -1,15 +1,15 @@
-extern crate sdl2;
+extern crate sdl3;
 
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
+use sdl3::event::Event;
+use sdl3::keyboard::Keycode;
+use sdl3::pixels::Color;
 
 pub fn main() -> Result<(), String> {
-    let sdl_context = sdl2::init()?;
+    let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
 
     let window = video_subsystem
-        .window("rust-sdl2 demo: Window", 800, 600)
+        .window("rust-sdl3 demo: Window", 800, 600)
         .resizable()
         .build()
         .map_err(|e| e.to_string())?;

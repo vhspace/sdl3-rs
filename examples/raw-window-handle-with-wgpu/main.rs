@@ -1,19 +1,19 @@
-/// Minimal example for getting sdl2 and wgpu working together with raw-window-handle.
+/// Minimal example for getting sdl3 and wgpu working together with raw-window-handle.
 extern crate pollster;
-extern crate sdl2;
+extern crate sdl3;
 extern crate wgpu;
 
 use std::borrow::Cow;
 use wgpu::SurfaceError;
 
-use sdl2::event::{Event, WindowEvent};
-use sdl2::keyboard::Keycode;
+use sdl3::event::{Event, WindowEvent};
+use sdl3::keyboard::Keycode;
 
 fn main() -> Result<(), String> {
     // Show logs from wgpu
     env_logger::init();
 
-    let sdl_context = sdl2::init()?;
+    let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
     let window = video_subsystem
         .window("Raw Window Handle Example", 800, 600)

@@ -54,18 +54,18 @@ impl error::Error for AddMappingError {
 }
 
 impl GamepadSubsystem {
-    /// Retrieve the total number of attached joysticks *and* controllers identified by SDL.
+    /// Retrieve the total number of attached gamepads identified by SDL.
     #[doc(alias = "SDL_GetJoysticks")]
-    pub fn num_joysticks(&self, joystick_id: u32) -> Result<u32, String> {
-        let mut num_joysticks: i32 = 0;
+    pub fn num_gamepads(&self) -> Result<u32, String> {
+        let mut num_gamepads: i32 = 0;
         unsafe {
             // see: https://github.com/libsdl-org/SDL/blob/main/docs/README-migration.md#sdl_joystickh
-            let joystick_ids = sys::SDL_GetJoysticks(&mut num_joysticks);
-            if (joystick_ids as *mut sys::SDL_Joystick) == std::ptr::null_mut() {
+            let gamepad_ids = sys::SDL_GetGamepads(&mut num_gamepads);
+            if (gamepad_ids as *mut sys::SDL_Gamepad) == std::ptr::null_mut() {
                 return Err(get_error());
             } else {
-                sys::SDL_free(joystick_ids as *mut c_void);
-                return Ok(num_joysticks as u32);
+                sys::SDL_free(gamepad_ids as *mut c_void);
+                return Ok(num_gamepads as u32);
             };
         };
     }
@@ -424,13 +424,7 @@ impl Gamepad {
             let joystick = sys::SDL_GetGamepadJoystick(self.raw);
             sys::SDL_GetJoystickInstanceID(joystick)
         };
-
-        if result < 0 {
-            // Should only fail if the joystick is NULL.
-            panic!("{}", get_error())
-        } else {
-            result as u32
-        }
+        result as u32
     }
 
     /// Get the position of the given `axis`

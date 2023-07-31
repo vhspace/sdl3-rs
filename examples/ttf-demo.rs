@@ -1,13 +1,13 @@
-extern crate sdl2;
+extern crate sdl3;
 
 use std::env;
 use std::path::Path;
 
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
-use sdl2::rect::Rect;
-use sdl2::render::TextureQuery;
+use sdl3::event::Event;
+use sdl3::keyboard::Keycode;
+use sdl3::pixels::Color;
+use sdl3::rect::Rect;
+use sdl3::render::TextureQuery;
 
 static SCREEN_WIDTH: u32 = 800;
 static SCREEN_HEIGHT: u32 = 600;
@@ -44,12 +44,12 @@ fn get_centered_rect(rect_width: u32, rect_height: u32, cons_width: u32, cons_he
 }
 
 fn run(font_path: &Path) -> Result<(), String> {
-    let sdl_context = sdl2::init()?;
+    let sdl_context = sdl3::init()?;
     let video_subsys = sdl_context.video()?;
-    let ttf_context = sdl2::ttf::init().map_err(|e| e.to_string())?;
+    let ttf_context = sdl3::ttf::init().map_err(|e| e.to_string())?;
 
     let window = video_subsys
-        .window("SDL2_TTF Example", SCREEN_WIDTH, SCREEN_HEIGHT)
+        .window("SDL3_TTF Example", SCREEN_WIDTH, SCREEN_HEIGHT)
         .position_centered()
         .opengl()
         .build()
@@ -60,7 +60,7 @@ fn run(font_path: &Path) -> Result<(), String> {
 
     // Load a font
     let mut font = ttf_context.load_font(font_path, 128)?;
-    font.set_style(sdl2::ttf::FontStyle::BOLD);
+    font.set_style(sdl3::ttf::FontStyle::BOLD);
 
     // render a surface, and convert it to a texture bound to the canvas
     let surface = font
@@ -107,7 +107,7 @@ fn run(font_path: &Path) -> Result<(), String> {
 fn main() -> Result<(), String> {
     let args: Vec<_> = env::args().collect();
 
-    println!("linked sdl2_ttf: {}", sdl2::ttf::get_linked_version());
+    println!("linked sdl3_ttf: {}", sdl3::ttf::get_linked_version());
 
     if args.len() < 2 {
         println!("Usage: ./demo font.[ttf|ttc|fon]")

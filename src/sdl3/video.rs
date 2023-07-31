@@ -447,11 +447,9 @@ pub mod gl_attr {
 pub struct DisplayMode {
     pub display_id: sys::SDL_DisplayID,
     pub format: PixelFormatEnum,
-    pub screen_w: i32,
-    pub screen_h: i32,
-    pub pixel_w: i32,
-    pub pixel_h: i32,
-    pub display_scale: f32,
+    pub w: i32,
+    pub h: i32,
+    pub pixel_density: f32,
     pub refresh_rate: f32,
 }
 
@@ -459,21 +457,17 @@ impl DisplayMode {
     pub fn new(
         display_id: sys::SDL_DisplayID,
         format: PixelFormatEnum,
-        screen_w: i32,
-        screen_h: i32,
-        pixel_w: i32,
-        pixel_h: i32,
-        display_scale: f32,
+        w: i32,
+        h: i32,
+        pixel_density: f32,
         refresh_rate: f32,
     ) -> DisplayMode {
         DisplayMode {
             display_id,
             format,
-            screen_w,
-            screen_h,
-            pixel_w,
-            pixel_h,
-            display_scale,
+            w,
+            h,
+	    pixel_density,
             refresh_rate,
         }
     }
@@ -482,11 +476,9 @@ impl DisplayMode {
         DisplayMode::new(
             raw.displayID,
             PixelFormatEnum::try_from(raw.format as u32).unwrap_or(PixelFormatEnum::Unknown),
-            raw.screen_w,
-            raw.screen_h,
-            raw.pixel_w,
-            raw.pixel_h,
-            raw.display_scale,
+            raw.w,
+            raw.h,
+            raw.pixel_density,
             raw.refresh_rate,
         )
     }
@@ -495,11 +487,9 @@ impl DisplayMode {
         sys::SDL_DisplayMode {
             displayID: self.display_id,
             format: self.format as u32,
-            screen_w: self.screen_w,
-            screen_h: self.screen_h,
-            pixel_w: self.pixel_w,
-            pixel_h: self.pixel_h,
-            display_scale: self.display_scale,
+            w: self.w,
+            h: self.h,
+            pixel_density: self.pixel_density,
             refresh_rate: self.refresh_rate,
             driverdata: ptr::null_mut(),
         }
@@ -854,13 +844,19 @@ impl VideoSubsystem {
         &self,
         display_index: u32,
         mode: &DisplayMode,
+	include_high_density_modes: bool
     ) -> Result<DisplayMode, String> {
         unsafe {
             let mode = sys::SDL_GetClosestFullscreenDisplayMode(
                 display_index,
-                mode.pixel_w,
-                mode.pixel_h,
+                mode.w,
+                mode.h,
                 mode.refresh_rate,
+		if include_high_density_modes {
+		    sys::SDL_bool::SDL_TRUE
+		} else {
+		    sys::SDL_bool::SDL_FALSE
+		},
             );
             if mode.is_null() {
                 Err(get_error())
@@ -873,7 +869,7 @@ impl VideoSubsystem {
     /// Return orientation of a display or Unknown if orientation could not be determined.
     #[doc(alias = "SDL_GetDisplayOrientation")]
     pub fn display_orientation(&self, display_index: u32) -> Orientation {
-        Orientation::from_ll(unsafe { sys::SDL_GetDisplayOrientation(display_index) })
+        Orientation::from_ll(unsafe { sys::SDL_GetCurrentDisplayOrientation(display_index) })
     }
 
     #[doc(alias = "SDL_ScreenSaverEnabled")]

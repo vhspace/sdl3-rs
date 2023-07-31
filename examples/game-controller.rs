@@ -5,26 +5,22 @@ fn main() -> Result<(), String> {
     // video subsystem enabled:
     sdl3::hint::set("SDL_JOYSTICK_THREAD", "1");
 
-    let sdl_context = sdl2::init()?;
-    let game_controller_subsystem = sdl_context.game_controller()?;
+    let sdl_context = sdl3::init()?;
+    let gamepad_subsystem = sdl_context.gamepad()?;
 
-    let available = game_controller_subsystem
-        .num_joysticks()
-        .map_err(|e| format!("can't enumerate joysticks: {}", e))?;
+    let available = gamepad_subsystem
+        .num_gamepads()
+        .map_err(|e| format!("can't enumerate gamepads: {}", e))?;
 
-    println!("{} joysticks available", available);
+    println!("{} gamepads available", available);
 
     // Iterate over all available joysticks and look for game controllers.
     let mut controller = (0..available)
         .find_map(|id| {
-            if !game_controller_subsystem.is_game_controller(id) {
-                println!("{} is not a game controller", id);
-                return None;
-            }
 
-            println!("Attempting to open controller {}", id);
+            println!("Attempting to open gamepad {}", id);
 
-            match game_controller_subsystem.open(id) {
+            match gamepad_subsystem.open(id) {
                 Ok(c) => {
                     // We managed to find and open a game controller,
                     // exit the loop
@@ -37,14 +33,14 @@ fn main() -> Result<(), String> {
                 }
             }
         })
-        .expect("Couldn't open any controller");
+        .expect("Couldn't open any gamepad");
 
     println!("Controller mapping: {}", controller.mapping());
 
     let (mut lo_freq, mut hi_freq) = (0, 0);
 
     for event in sdl_context.event_pump()?.wait_iter() {
-        use sdl3::controller::Axis;
+        use sdl3::gamepad::Axis;
         use sdl3::event::Event;
 
         match event {

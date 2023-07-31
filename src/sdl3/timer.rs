@@ -136,12 +136,6 @@ mod test {
     use std::time::Duration;
 
     #[test]
-    fn test_timer() {
-        test_timer_runs_multiple_times();
-        test_timer_runs_at_least_once();
-        test_timer_can_be_recreated();
-    }
-
     fn test_timer_runs_multiple_times() {
         let sdl_context = crate::sdl::init().unwrap();
         let timer_subsystem = sdl_context.timer().unwrap();
@@ -169,8 +163,10 @@ mod test {
         ::std::thread::sleep(Duration::from_millis(250));
         let num = local_num.lock().unwrap(); // read the number back
         assert_eq!(*num, 9); // it should have incremented at least 10 times...
+	sdl_context.sdldrop();
     }
 
+    #[test]
     fn test_timer_runs_at_least_once() {
         let sdl_context = crate::sdl::init().unwrap();
         let timer_subsystem = sdl_context.timer().unwrap();
@@ -192,6 +188,7 @@ mod test {
         assert_eq!(*flag, true);
     }
 
+    #[test]
     fn test_timer_can_be_recreated() {
         let sdl_context = crate::sdl::init().unwrap();
         let timer_subsystem = sdl_context.timer().unwrap();

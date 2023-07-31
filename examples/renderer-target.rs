@@ -1,15 +1,15 @@
-extern crate sdl2;
+extern crate sdl3;
 
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::pixels::{Color, PixelFormatEnum};
-use sdl2::rect::{Point, Rect};
+use sdl3::event::Event;
+use sdl3::keyboard::Keycode;
+use sdl3::pixels::{Color, PixelFormatEnum};
+use sdl3::render::{FPoint, FRect};
 
 fn main() -> Result<(), String> {
-    let sdl_context = sdl2::init()?;
+    let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
     let window = video_subsystem
-        .window("rust-sdl2 resource-manager demo", 800, 600)
+        .window("rust-sdl3 resource-manager demo", 800, 600)
         .position_centered()
         .build()
         .map_err(|e| e.to_string())?;
@@ -42,19 +42,18 @@ fn main() -> Result<(), String> {
                 texture_canvas.clear();
                 texture_canvas.set_draw_color(Color::RGBA(255, 0, 0, 255));
                 texture_canvas
-                    .fill_rect(Rect::new(0, 0, 400, 300))
+                    .fill_rect(FRect::new(0.0, 0.0, 400.0, 300.0))
                     .expect("could not fill rect");
-            })
-            .map_err(|e| e.to_string())?;
+            });
         canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
-        let dst = Some(Rect::new(0, 0, 400, 300));
+        let dst = Some(FRect::new(0.0, 0.0, 400.0, 300.0));
         canvas.clear();
         canvas.copy_ex(
             &texture,
             None,
             dst,
             angle,
-            Some(Point::new(400, 300)),
+            Some(FPoint::new(400.0, 300.0)),
             false,
             false,
         )?;
