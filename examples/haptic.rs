@@ -1,7 +1,7 @@
-extern crate sdl2;
+extern crate sdl3;
 
 fn main() -> Result<(), String> {
-    let sdl_context = sdl2::init()?;
+    let sdl_context = sdl3::init()?;
     let joystick_subsystem = sdl_context.joystick()?;
     let haptic_subsystem = sdl_context.haptic()?;
 
@@ -30,7 +30,7 @@ fn main() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     for event in sdl_context.event_pump()?.wait_iter() {
-        use sdl2::event::Event;
+        use sdl3::event::Event;
 
         match event {
             Event::JoyAxisMotion {

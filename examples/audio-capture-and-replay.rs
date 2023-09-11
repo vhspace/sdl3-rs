@@ -1,7 +1,7 @@
-extern crate sdl2;
+extern crate sdl3;
 
-use sdl2::audio::{AudioCallback, AudioSpecDesired};
-use sdl2::AudioSubsystem;
+use sdl3::audio::{AudioCallback, AudioSpecDesired};
+use sdl3::AudioSubsystem;
 use std::i16;
 use std::sync::mpsc;
 use std::time::Duration;
@@ -140,7 +140,7 @@ fn replay_recorded_vec(
 }
 
 fn main() -> Result<(), String> {
-    let sdl_context = sdl2::init()?;
+    let sdl_context = sdl3::init()?;
     let audio_subsystem = sdl_context.audio()?;
 
     let desired_spec = AudioSpecDesired {

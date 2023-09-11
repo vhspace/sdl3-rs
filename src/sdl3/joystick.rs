@@ -5,11 +5,27 @@ use crate::clear_error;
 use crate::common::{validate_int, IntegerOrSdlError};
 use crate::get_error;
 use crate::JoystickSubsystem;
-use libc::c_char;
+use libc::{c_char, c_void};
 use std::ffi::{CStr, CString, NulError};
 use std::fmt::{Display, Error, Formatter};
 
 impl JoystickSubsystem {
+    /// Retrieve the total number of attached joysticks identified by SDL.
+    #[doc(alias = "SDL_GetJoysticks")]
+    pub fn num_joysticks(&self) -> Result<u32, String> {
+        let mut num_joysticks: i32 = 0;
+        unsafe {
+            // see: https://github.com/libsdl-org/SDL/blob/main/docs/README-migration.md#sdl_joystickh
+            let joystick_ids = sys::SDL_GetJoysticks(&mut num_joysticks);
+            if (joystick_ids as *mut sys::SDL_Joystick) == std::ptr::null_mut() {
+                return Err(get_error());
+            } else {
+                sys::SDL_free(joystick_ids as *mut c_void);
+                return Ok(num_joysticks as u32);
+            };
+        };
+    }
+
     /// Attempt to open the joystick at index `joystick_index` and return it.
     #[doc(alias = "SDL_OpenJoystick")]
     pub fn open(&self, joystick_index: u32) -> Result<Joystick, IntegerOrSdlError> {

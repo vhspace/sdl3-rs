@@ -32,6 +32,7 @@ use crate::common::{validate_int, IntegerOrSdlError};
 use crate::get_error;
 use crate::pixels;
 use crate::pixels::PixelFormatEnum;
+use crate::rect::Point;
 use crate::rect::Rect;
 use crate::surface;
 use crate::surface::{Surface, SurfaceContext, SurfaceRef};
@@ -125,6 +126,15 @@ impl FPoint {
     }
 }
 
+impl From<Point> for FPoint {
+    fn from(point: Point) -> Self {
+	FPoint::new(
+	    point.x as f32,
+	    point.y as f32,
+	    )
+    }
+}
+
 // floating-point rectangle
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct FRect {
@@ -144,6 +154,33 @@ impl FRect {
             w: self.w,
             h: self.h,
         }
+    }
+    pub fn set_x(&mut self, update: f32) {
+	self.x = update;
+    }
+    pub fn set_y(&mut self, update: f32) {
+	self.y = update;
+    }
+    pub fn set_w(&mut self, update: f32) {
+	self.w = update;
+    }
+    pub fn set_h(&mut self, update: f32) {
+	self.h = update;
+    }
+    pub fn set_xy(&mut self, update: FPoint) {
+	self.x = update.x;
+	self.y = update.y;
+    }
+}
+
+impl From<Rect> for FRect {
+    fn from(rect: Rect) -> Self {
+	FRect::new(
+	    rect.x as f32,
+	    rect.y as f32,
+	    rect.w as f32,
+	    rect.h as f32,
+	)
     }
 }
 

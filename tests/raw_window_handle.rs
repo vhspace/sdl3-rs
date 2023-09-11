@@ -1,12 +1,12 @@
 #[cfg(feature = "raw-window-handle")]
 mod raw_window_handle_test {
     extern crate raw_window_handle;
-    extern crate sdl2;
+    extern crate sdl3;
 
     use self::raw_window_handle::{
         HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle,
     };
-    use self::sdl2::video::Window;
+    use self::sdl3::video::Window;
 
     #[cfg(target_os = "windows")]
     #[test]
@@ -115,7 +115,7 @@ mod raw_window_handle_test {
     }
 
     pub fn new_hidden_window() -> Window {
-        let context = sdl2::init().unwrap();
+        let context = sdl3::init().unwrap();
         let video_subsystem = context.video().unwrap();
         video_subsystem
             .window("Hello, World!", 800, 600)

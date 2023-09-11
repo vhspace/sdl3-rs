@@ -1,12 +1,12 @@
-extern crate sdl2;
+extern crate sdl3;
 
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::mouse::MouseButton;
+use sdl3::event::Event;
+use sdl3::keyboard::Keycode;
+use sdl3::mouse::MouseButton;
 use std::time::Duration;
 
 pub fn main() -> Result<(), String> {
-    let sdl_context = sdl2::init()?;
+    let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
 
     let _window = video_subsystem

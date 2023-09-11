@@ -289,7 +289,7 @@ impl<'a> Surface<'a> {
 
     #[doc(alias = "SDL_LoadBMP_RW")]
     pub fn load_bmp_rw(rwops: &mut RWops) -> Result<Surface<'static>, String> {
-        let raw = unsafe { sys::SDL_LoadBMP_RW(rwops.raw(), 0) };
+        let raw = unsafe { sys::SDL_LoadBMP_RW(rwops.raw(), sys::SDL_bool::SDL_FALSE) };
 
         if raw.is_null() {
             Err(get_error())

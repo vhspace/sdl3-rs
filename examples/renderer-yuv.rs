@@ -1,16 +1,16 @@
-extern crate sdl2;
+extern crate sdl3;
 
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::pixels::PixelFormatEnum;
-use sdl2::rect::Rect;
+use sdl3::event::Event;
+use sdl3::keyboard::Keycode;
+use sdl3::pixels::PixelFormatEnum;
+use sdl3::render::FRect;
 
 pub fn main() -> Result<(), String> {
-    let sdl_context = sdl2::init()?;
+    let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
 
     let window = video_subsystem
-        .window("rust-sdl2 demo: Video", 800, 600)
+        .window("rust-sdl3 demo: Video", 800, 600)
         .position_centered()
         .opengl()
         .build()
@@ -52,7 +52,7 @@ pub fn main() -> Result<(), String> {
     })?;
 
     canvas.clear();
-    canvas.copy(&texture, None, Some(Rect::new(100, 100, 256, 256)))?;
+    canvas.copy(&texture, None, Some(FRect::new(100.0, 100.0, 256.0, 256.0)))?;
     canvas.present();
 
     let mut event_pump = sdl_context.event_pump()?;

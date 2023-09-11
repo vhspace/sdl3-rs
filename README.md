@@ -725,6 +725,14 @@ the latest version of both Rust and Cargo, check that you've updated sdl3-rs
 to the latest version, and run `cargo clean`. If that fails, please let us know
 on the issue tracker.
 
+# Testing
+
+You can run the test suite via:
+```
+cargo test --features=test-mode
+```
+The `test-mode` feature allows running `Sdl::new()` from a thread other than the main thread, which is necessary for running the integration tests (`test/*.rs`).
+
 # Contributing
 
 We're looking for people to help get SDL3 support in Rust built, tested, and completed. You can help out!

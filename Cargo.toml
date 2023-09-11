@@ -48,6 +48,8 @@ image = ["sdl3-sys/image"]
 ttf = ["sdl3-sys/ttf"]
 # Use hidapi support in SDL. Only 2.0.12 and after
 hidapi = []
+# test_mode allows SDL to be initialised from a thread that is not the main thread
+test-mode = []
 
 use-bindgen = ["sdl3-sys/use-bindgen"]
 use-pkgconfig = ["sdl3-sys/use-pkgconfig"]

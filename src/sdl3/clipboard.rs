@@ -10,7 +10,7 @@ use crate::sys;
 /// These functions require the video subsystem to be initialized.
 ///
 /// ```no_run
-/// let sdl_context = sdl2::init().unwrap();
+/// let sdl_context = sdl3::init().unwrap();
 /// let video_subsystem = sdl_context.video().unwrap();
 ///
 /// video_subsystem.clipboard().set_clipboard_text("Hello World!").unwrap();

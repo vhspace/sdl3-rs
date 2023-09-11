@@ -1,13 +1,13 @@
-extern crate sdl2;
+extern crate sdl3;
 
 use crate::game_of_life::{PLAYGROUND_HEIGHT, PLAYGROUND_WIDTH, SQUARE_SIZE};
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::mouse::MouseButton;
-use sdl2::pixels::Color;
-use sdl2::rect::{Point, Rect};
-use sdl2::render::{Canvas, Texture, TextureCreator};
-use sdl2::video::{Window, WindowContext};
+use sdl3::event::Event;
+use sdl3::keyboard::Keycode;
+use sdl3::mouse::MouseButton;
+use sdl3::pixels::Color;
+use sdl3::rect::Point;
+use sdl3::render::{Canvas, Texture, TextureCreator, FRect};
+use sdl3::video::{Window, WindowContext};
 
 mod game_of_life {
     pub const SQUARE_SIZE: u32 = 16;
@@ -197,14 +197,13 @@ fn dummy_texture<'a>(
                         }
                     }
                 }
-            })
-            .map_err(|e| e.to_string())?;
+            });
     }
     Ok((square_texture1, square_texture2))
 }
 
 pub fn main() -> Result<(), String> {
-    let sdl_context = sdl2::init()?;
+    let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
 
     // the window is the representation of a window in your operating system,
@@ -213,7 +212,7 @@ pub fn main() -> Result<(), String> {
     // `surface()` method.
     let window = video_subsystem
         .window(
-            "rust-sdl2 demo: Game of Life",
+            "rust-sdl3 demo: Game of Life",
             SQUARE_SIZE * PLAYGROUND_WIDTH,
             SQUARE_SIZE * PLAYGROUND_HEIGHT,
         )
@@ -225,7 +224,7 @@ pub fn main() -> Result<(), String> {
     // via hardware or software rendering. See CanvasBuilder for more info.
     let mut canvas = window
         .into_canvas()
-        .target_texture()
+        //.target_texture() //FIXME: Unclear how to migrate this to SDL3, cf: https://github.com/libsdl-org/SDL/issues/8059
         .present_vsync()
         .build()
         .map_err(|e| e.to_string())?;
@@ -303,11 +302,11 @@ pub fn main() -> Result<(), String> {
                 canvas.copy(
                     square_texture,
                     None,
-                    Rect::new(
-                        ((i % PLAYGROUND_WIDTH) * SQUARE_SIZE) as i32,
-                        ((i / PLAYGROUND_WIDTH) * SQUARE_SIZE) as i32,
-                        SQUARE_SIZE,
-                        SQUARE_SIZE,
+                    FRect::new(
+                        ((i % PLAYGROUND_WIDTH) * SQUARE_SIZE) as f32,
+                        ((i / PLAYGROUND_WIDTH) * SQUARE_SIZE) as f32,
+                        SQUARE_SIZE as f32,
+                        SQUARE_SIZE as f32,
                     ),
                 )?;
             }

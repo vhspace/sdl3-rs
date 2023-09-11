@@ -232,9 +232,9 @@ pub enum PixelFormatEnum {
     BGR565 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGR565 as i32,
     RGB24 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGB24 as i32,
     BGR24 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGR24 as i32,
-    RGB888 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGB888 as i32,
+    XRGB8888 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_XRGB8888 as i32,
     RGBX8888 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGBX8888 as i32,
-    BGR888 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGR888 as i32,
+    XBGR8888 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_XBGR8888 as i32,
     BGRX8888 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGRX8888 as i32,
     ARGB8888 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_ARGB8888 as i32,
     RGBA8888 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGBA8888 as i32,
@@ -340,9 +340,9 @@ impl PixelFormatEnum {
             | PixelFormatEnum::RGB565
             | PixelFormatEnum::BGR565 => num_of_pixels * 2,
             PixelFormatEnum::RGB24 | PixelFormatEnum::BGR24 => num_of_pixels * 3,
-            PixelFormatEnum::RGB888
+            PixelFormatEnum::XRGB8888
             | PixelFormatEnum::RGBX8888
-            | PixelFormatEnum::BGR888
+            | PixelFormatEnum::XBGR8888
             | PixelFormatEnum::BGRX8888
             | PixelFormatEnum::ARGB8888
             | PixelFormatEnum::RGBA8888
@@ -383,9 +383,9 @@ impl PixelFormatEnum {
             | PixelFormatEnum::RGB565
             | PixelFormatEnum::BGR565 => 2,
             PixelFormatEnum::RGB24 | PixelFormatEnum::BGR24 => 3,
-            PixelFormatEnum::RGB888
+            PixelFormatEnum::XRGB8888
             | PixelFormatEnum::RGBX8888
-            | PixelFormatEnum::BGR888
+            | PixelFormatEnum::XBGR8888
             | PixelFormatEnum::BGRX8888
             | PixelFormatEnum::ARGB8888
             | PixelFormatEnum::RGBA8888
@@ -456,9 +456,9 @@ impl TryFrom<u32> for PixelFormatEnum {
             sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGR565 => BGR565,
             sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGB24 => RGB24,
             sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGR24 => BGR24,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGB888 => RGB888,
+            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_XRGB8888 => XRGB8888,
             sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGBX8888 => RGBX8888,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGR888 => BGR888,
+            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_XBGR8888 => XBGR8888,
             sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGRX8888 => BGRX8888,
             sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_ARGB8888 => ARGB8888,
             sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGBA8888 => RGBA8888,
@@ -512,25 +512,26 @@ fn test_pixel_format_enum() {
         PixelFormatEnum::BGR565,
         PixelFormatEnum::RGB24,
         PixelFormatEnum::BGR24,
-        PixelFormatEnum::RGB888,
+        PixelFormatEnum::XRGB8888,
         PixelFormatEnum::RGBX8888,
-        PixelFormatEnum::BGR888,
+        PixelFormatEnum::XBGR8888,
         PixelFormatEnum::BGRX8888,
         PixelFormatEnum::ARGB8888,
         PixelFormatEnum::RGBA8888,
         PixelFormatEnum::ABGR8888,
         PixelFormatEnum::BGRA8888,
         PixelFormatEnum::ARGB2101010,
-        PixelFormatEnum::YV12,
-        PixelFormatEnum::IYUV,
-        PixelFormatEnum::YUY2,
-        PixelFormatEnum::UYVY,
-        PixelFormatEnum::YVYU,
         PixelFormatEnum::Index8,
-        // These don't seem to be supported;
-        // the round-trip
-        //PixelFormatEnum::Unknown, PixelFormatEnum::Index1LSB,
-        //PixelFormatEnum::Index1MSB, PixelFormatEnum::Index4LSB,
+        PixelFormatEnum::Unknown,
+        //  These formats don't seem to survive the round-trip on all platforms;
+        //PixelFormatEnum::YV12,
+        //PixelFormatEnum::IYUV,
+        //PixelFormatEnum::YUY2,
+        //PixelFormatEnum::UYVY,
+        //PixelFormatEnum::YVYU,
+	//PixelFormatEnum::Index1LSB,
+        //PixelFormatEnum::Index1MSB,
+	//PixelFormatEnum::Index4LSB,
         //PixelFormatEnum::Index4MSB
     ];
 

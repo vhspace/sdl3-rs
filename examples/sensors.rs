@@ -1,11 +1,11 @@
 use std::time::{Duration, Instant};
 
-use sdl2::{event::Event, sensor::SensorType};
+use sdl3::{event::Event, sensor::SensorType};
 
-extern crate sdl2;
+extern crate sdl3;
 
 fn main() -> Result<(), String> {
-    let sdl_context = sdl2::init()?;
+    let sdl_context = sdl3::init()?;
     let game_controller_subsystem = sdl_context.game_controller()?;
 
     let available = game_controller_subsystem

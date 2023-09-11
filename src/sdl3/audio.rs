@@ -404,7 +404,7 @@ impl AudioSpecWAV {
         unsafe {
             let ret = sys::SDL_LoadWAV_RW(
                 src.raw(),
-                0,
+                sys::SDL_bool::SDL_FALSE,
                 desired.as_mut_ptr(),
                 &mut audio_buf,
                 &mut audio_len,
