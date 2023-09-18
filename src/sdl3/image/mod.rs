@@ -1,5 +1,5 @@
 //!
-//! A binding for the library `SDL2_image`
+//! A binding for the library `sdl3_image`
 //!
 //!
 //! Note that you need to build with the
@@ -14,7 +14,7 @@
 //! crate, you will need to add this in your Cargo.toml
 //!
 //! ```toml
-//! [dependencies.sdl2]
+//! [dependencies.sdl3]
 //! version = ...
 //! default-features = false
 //! features = ["image"]
@@ -153,9 +153,10 @@ impl<T> LoadTexture for TextureCreator<T> {
 
     #[doc(alias = "IMG_LoadTexture")]
     fn load_texture_bytes(&self, buf: &[u8]) -> Result<Texture, String> {
-        //! Loads an SDL Texture from a buffer that the format must be something supported by SDL2_image (png, jpeg, ect, but NOT RGBA8888 bytes for instance)
+        //! Loads an SDL Texture from a buffer that the format must be something supported by sdl3_image (png, jpeg, ect, but NOT RGBA8888 bytes for instance)
         unsafe {
-            let buf = sdl2_sys::SDL_RWFromMem(buf.as_ptr() as *mut libc::c_void, buf.len() as i32);
+            let buf =
+                sdl3_sys::SDL_RWFromMem(buf.as_ptr() as *mut libc::c_void, buf.len() as usize);
             let raw = image::IMG_LoadTexture_RW(self.raw(), buf, 1); // close(free) buff after load
             if (raw as *mut ()).is_null() {
                 Err(get_error())
@@ -166,11 +167,11 @@ impl<T> LoadTexture for TextureCreator<T> {
     }
 }
 
-/// Context manager for `sdl2_image` to manage quitting. Can't do much with it but
+/// Context manager for `sdl3_image` to manage quitting. Can't do much with it but
 /// keep it alive while you are using it.
-pub struct Sdl2ImageContext;
+pub struct sdl3ImageContext;
 
-impl Drop for Sdl2ImageContext {
+impl Drop for sdl3ImageContext {
     fn drop(&mut self) {
         unsafe {
             image::IMG_Quit();
@@ -178,9 +179,9 @@ impl Drop for Sdl2ImageContext {
     }
 }
 
-/// Initializes `SDL2_image` with `InitFlags`.
+/// Initializes `sdl3_image` with `InitFlags`.
 /// If not every flag is set it returns an error
-pub fn init(flags: InitFlag) -> Result<Sdl2ImageContext, String> {
+pub fn init(flags: InitFlag) -> Result<sdl3ImageContext, String> {
     let return_flags = unsafe {
         let used = image::IMG_Init(flags.bits() as c_int);
         InitFlag::from_bits_truncate(used as u32)
@@ -195,7 +196,7 @@ pub fn init(flags: InitFlag) -> Result<Sdl2ImageContext, String> {
         }
         Err(error)
     } else {
-        Ok(Sdl2ImageContext)
+        Ok(sdl3ImageContext)
     }
 }
 
