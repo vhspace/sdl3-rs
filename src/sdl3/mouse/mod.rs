@@ -420,7 +420,7 @@ impl MouseUtil {
     }
 
     #[doc(alias = "SDL_ShowCursor")]
-    pub fn show_cursor(&self, show: bool) {
+    pub fn show_cursor(&self, _show: bool) {
         unsafe {
             sys::SDL_ShowCursor();
         }
