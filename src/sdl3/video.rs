@@ -467,7 +467,7 @@ impl DisplayMode {
             format,
             w,
             h,
-	    pixel_density,
+            pixel_density,
             refresh_rate,
         }
     }
@@ -852,7 +852,7 @@ impl VideoSubsystem {
         &self,
         display_index: u32,
         mode: &DisplayMode,
-	include_high_density_modes: bool
+        include_high_density_modes: bool,
     ) -> Result<DisplayMode, String> {
         unsafe {
             let mode = sys::SDL_GetClosestFullscreenDisplayMode(
@@ -860,11 +860,11 @@ impl VideoSubsystem {
                 mode.w,
                 mode.h,
                 mode.refresh_rate,
-		if include_high_density_modes {
-		    sys::SDL_bool::SDL_TRUE
-		} else {
-		    sys::SDL_bool::SDL_FALSE
-		},
+                if include_high_density_modes {
+                    sys::SDL_bool::SDL_TRUE
+                } else {
+                    sys::SDL_bool::SDL_FALSE
+                },
             );
             if mode.is_null() {
                 Err(get_error())
@@ -1152,7 +1152,6 @@ impl WindowBuilder {
 
         let raw_width = self.width as c_int;
         let raw_height = self.height as c_int;
-        println!("raw_width: {}, raw_height: {}", raw_width, raw_height);
         unsafe {
             // use SDL_CreateWindowWithPosition if x and y are not undefined
             // otherwise use SDL_CreateWindow
@@ -1601,11 +1600,32 @@ impl Window {
         Ok(())
     }
 
+    // see notes about getting window sizes on high DPI displays:
+    // https://github.com/libsdl-org/SDL/blob/main/docs/README-highdpi.md
+
     #[doc(alias = "SDL_GetWindowSize")]
     pub fn size(&self) -> (u32, u32) {
         let mut w: c_int = 0;
         let mut h: c_int = 0;
         unsafe { sys::SDL_GetWindowSize(self.context.raw, &mut w, &mut h) };
+        (w as u32, h as u32)
+    }
+
+    #[doc(alias = "SDL_GetDisplayContentScale")]
+    pub fn display_content_scale(&self, display_id: sys::SDL_DisplayID) -> f32 {
+        unsafe { sys::SDL_GetDisplayContentScale(display_id) }
+    }
+
+    #[doc(alias = "SDL_GetWindowPixelDensity")]
+    pub fn pixel_density(&self) -> f32 {
+        unsafe { sys::SDL_GetWindowPixelDensity(self.context.raw) }
+    }
+
+    #[doc(alias = "SDL_GetWindowSizeInPixels")]
+    pub fn size_in_pixels(&self) -> (u32, u32) {
+        let mut w: c_int = 0;
+        let mut h: c_int = 0;
+        unsafe { sys::SDL_GetWindowSizeInPixels(self.context.raw, &mut w, &mut h) };
         (w as u32, h as u32)
     }
 
