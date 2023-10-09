@@ -1172,7 +1172,7 @@ impl WindowBuilder {
                     self.window_flags,
                 )
             };
-            let mut metal_view = 0 as sys::SDL_MetalView;
+            let metal_view = 0 as sys::SDL_MetalView;
             #[cfg(target_os = "macos")]
             if self.create_metal_view {
                 metal_view = sys::SDL_Metal_CreateView(raw);
