@@ -281,10 +281,10 @@ pub enum Button {
     DPadLeft = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_LEFT as i32,
     DPadRight = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_RIGHT as i32,
     Misc1 = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_MISC1 as i32,
-    Paddle1 = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE1 as i32,
-    Paddle2 = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE2 as i32,
-    Paddle3 = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE3 as i32,
-    Paddle4 = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE4 as i32,
+    Paddle1 = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1 as i32,
+    Paddle2 = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_PADDLE1 as i32,
+    Paddle3 = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2 as i32,
+    Paddle4 = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_PADDLE2 as i32,
     Touchpad = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_TOUCHPAD as i32,
 }
 

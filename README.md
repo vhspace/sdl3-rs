@@ -461,10 +461,10 @@ you may sometimes face trouble when using platform-specific features of sdl3, fo
 
 The feature "use-bindgen" allows you to avoid this limitation by generating the proper bindings depending on your target. It will take
 the headers based on what `pkg-config` outputs (if you enabled the feature "use-pkg-config") and generate bindings based on them.
-If you don't have pkg-config or disabled the feature, it will try to get the headers in `SDL-2.0.8/include` of this crate instead.
+If you don't have pkg-config or disabled the feature, it will try to get the headers in `SDL/include` of this crate instead.
 
 If somehow you have your own headers that you want to use (use a beta version, an older version, ...),
-you can set the environment variable "sdl3_INCLUDE_PATH" and those headers will be used by bindgen instead.
+you can set the environment variable "SDL3_INCLUDE_PATH" and those headers will be used by bindgen instead.
 
 # Using sdl3-sys to provide sdl3 headers/library
 
