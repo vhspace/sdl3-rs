@@ -94,19 +94,19 @@ impl AudioSubsystem {
         AudioDevice::open_capture(self, device, spec)
     }
 
-    /// Opens a new audio device which uses queueing rather than older callback method.
-    #[inline]
-    pub fn open_queue<'a, Channel, D>(
-        &self,
-        device: D,
-        spec: &AudioSpecDesired,
-    ) -> Result<AudioQueue<Channel>, String>
-    where
-        Channel: AudioFormatNum,
-        D: Into<Option<&'a str>>,
-    {
-        AudioQueue::open_queue(self, device, spec)
-    }
+    // /// Opens a new audio device which uses queueing rather than older callback method.
+    // #[inline]
+    // pub fn open_queue<'a, Channel, D>(
+    //     &self,
+    //     device: D,
+    //     spec: &AudioSpecDesired,
+    // ) -> Result<AudioQueue<Channel>, String>
+    // where
+    //     Channel: AudioFormatNum,
+    //     D: Into<Option<&'a str>>,
+    // {
+    //     AudioQueue::open_queue(self, device, spec)
+    // }
 
     #[doc(alias = "SDL_GetCurrentAudioDriver")]
     pub fn current_audio_driver(&self) -> &'static str {
@@ -447,7 +447,7 @@ impl AudioSpecDesired {
     fn convert_to_ll<R, C, F>(rate: R, channels: C, format: F) -> sys::SDL_AudioSpec
     where
         R: Into<Option<i32>>,
-        C: Into<Option<u8>>,
+        C: Into<Option<i32>>,
         F: Into<Option<AudioFormat>>,
     {
         let channels = channels.into();
@@ -466,7 +466,7 @@ impl AudioSpecDesired {
         sys::SDL_AudioSpec {
             format: format.unwrap_or(AudioFormat::U8).to_ll(),
             channels: channels.unwrap_or(0),
-            rate: rate.unwrap_or(0),
+            freq: rate.unwrap_or(0),
         }
     }
 
@@ -557,91 +557,91 @@ impl Drop for AudioDeviceID {
     }
 }
 
-/// Wraps `SDL_AudioDeviceID` and owns the callback data used by the audio device.
-pub struct AudioQueue<Channel: AudioFormatNum> {
-    subsystem: AudioSubsystem,
-    device_id: AudioDeviceID,
-    phantom: PhantomData<Channel>,
-    spec: AudioSpec,
-}
-
-impl<'a, Channel: AudioFormatNum> AudioQueue<Channel> {
-    /// Opens a new audio device given the desired parameters and callback.
-    #[doc(alias = "SDL_OpenAudioDevice")]
-    pub fn open_queue<D: Into<Option<&'a str>>>(
-        a: &AudioSubsystem,
-        device: D,
-        spec: &AudioSpecDesired,
-    ) -> Result<AudioQueue<Channel>, String> {
-        use std::mem::MaybeUninit;
-
-        let desired = AudioSpecDesired::convert_queue_to_ll::<
-            Channel,
-            Option<i32>,
-            Option<u8>,
-            Option<u16>,
-        >(spec.freq, spec.channels, spec.samples);
-
-        let mut obtained = MaybeUninit::uninit();
-        unsafe {
-            let device = match device.into() {
-                Some(device) => Some(CString::new(device).unwrap()),
-                None => None,
-            };
-            // Warning: map_or consumes its argument; `device.map_or()` would therefore consume the
-            // CString and drop it, making device_ptr a dangling pointer! To avoid that we downgrade
-            // device to an Option<&_> first.
-            let device_ptr = device.as_ref().map_or(ptr::null(), |s| s.as_ptr());
-
-            let iscapture_flag = 0;
-            let device_id = sys::SDL_OpenAudioDevice(
-                device_ptr as *const c_char,
-                iscapture_flag,
-                &desired,
-                obtained.as_mut_ptr(),
-                0,
-            );
-            match device_id {
-                0 => Err(get_error()),
-                id => {
-                    let obtained = obtained.assume_init();
-                    let device_id = AudioDeviceID::PlaybackDevice(id);
-                    let spec = AudioSpec::convert_from_ll(obtained);
-
-                    Ok(AudioQueue {
-                        subsystem: a.clone(),
-                        device_id,
-                        phantom: PhantomData::default(),
-                        spec,
-                    })
-                }
-            }
-        }
-    }
-
-    #[inline]
-    #[doc(alias = "SDL_GetAudioDeviceStatus")]
-    pub fn subsystem(&self) -> &AudioSubsystem {
-        &self.subsystem
-    }
-
-    #[inline]
-    pub fn spec(&self) -> &AudioSpec {
-        &self.spec
-    }
-
-    /// Pauses playback of the audio device.
-    #[doc(alias = "SDL_PauseAudioDevice")]
-    pub fn pause(&self) -> i32 {
-        unsafe { sys::SDL_PauseAudioDevice(self.device_id.id()) }
-    }
-
-    /// (Re-)starts playback of the audio device.
-    #[doc(alias = "SDL_ResumeAudioDevice")]
-    pub fn resume(&self) -> i32 {
-        unsafe { sys::SDL_ResumeAudioDevice(self.device_id.id()) }
-    }
-}
+// /// Wraps `SDL_AudioDeviceID` and owns the callback data used by the audio device.
+// pub struct AudioQueue<Channel: AudioFormatNum> {
+//     subsystem: AudioSubsystem,
+//     device_id: AudioDeviceID,
+//     phantom: PhantomData<Channel>,
+//     spec: AudioSpec,
+// }
+//
+// impl<'a, Channel: AudioFormatNum> AudioQueue<Channel> {
+//     /// Opens a new audio device given the desired parameters and callback.
+//     #[doc(alias = "SDL_OpenAudioDevice")]
+//     pub fn open_queue<D: Into<Option<&'a str>>>(
+//         a: &AudioSubsystem,
+//         device: D,
+//         spec: &AudioSpecDesired,
+//     ) -> Result<AudioQueue<Channel>, String> {
+//         use std::mem::MaybeUninit;
+//
+//         let desired = AudioSpecDesired::convert_queue_to_ll::<
+//             Channel,
+//             Option<i32>,
+//             Option<u8>,
+//             Option<u16>,
+//         >(spec.freq, spec.channels, spec.samples);
+//
+//         let mut obtained = MaybeUninit::uninit();
+//         unsafe {
+//             let device = match device.into() {
+//                 Some(device) => Some(CString::new(device).unwrap()),
+//                 None => None,
+//             };
+//             // Warning: map_or consumes its argument; `device.map_or()` would therefore consume the
+//             // CString and drop it, making device_ptr a dangling pointer! To avoid that we downgrade
+//             // device to an Option<&_> first.
+//             let device_ptr = device.as_ref().map_or(ptr::null(), |s| s.as_ptr());
+//
+//             let iscapture_flag = 0;
+//             let device_id = sys::SDL_OpenAudioDevice(
+//                 device_ptr as *const c_char,
+//                 iscapture_flag,
+//                 &desired,
+//                 obtained.as_mut_ptr(),
+//                 0,
+//             );
+//             match device_id {
+//                 0 => Err(get_error()),
+//                 id => {
+//                     let obtained = obtained.assume_init();
+//                     let device_id = AudioDeviceID::PlaybackDevice(id);
+//                     let spec = AudioSpec::convert_from_ll(obtained);
+//
+//                     Ok(AudioQueue {
+//                         subsystem: a.clone(),
+//                         device_id,
+//                         phantom: PhantomData::default(),
+//                         spec,
+//                     })
+//                 }
+//             }
+//         }
+//     }
+//
+//     #[inline]
+//     #[doc(alias = "SDL_GetAudioDeviceStatus")]
+//     pub fn subsystem(&self) -> &AudioSubsystem {
+//         &self.subsystem
+//     }
+//
+//     #[inline]
+//     pub fn spec(&self) -> &AudioSpec {
+//         &self.spec
+//     }
+//
+//     /// Pauses playback of the audio device.
+//     #[doc(alias = "SDL_PauseAudioDevice")]
+//     pub fn pause(&self) -> i32 {
+//         unsafe { sys::SDL_PauseAudioDevice(self.device_id.id()) }
+//     }
+//
+//     /// (Re-)starts playback of the audio device.
+//     #[doc(alias = "SDL_ResumeAudioDevice")]
+//     pub fn resume(&self) -> i32 {
+//         unsafe { sys::SDL_ResumeAudioDevice(self.device_id.id()) }
+//     }
+// }
 
 /// Wraps `SDL_AudioDeviceID` and owns the streams attached to the audio device.
 pub struct AudioDevice {
@@ -781,12 +781,20 @@ impl AudioDevice {
         userdata: Option<CB>,
     ) -> Result<AudioStream<CB>, String> {
         //  Returns an audio stream on success, ready to use. NULL on error; call SDL_GetError() for more information. When done with this stream, call SDL_DestroyAudioStream to free resources and close the device.
-        let stream = unsafe { sys::SDL_OpenAudioDeviceStream(self.device_id.id()) };
+        let stream = unsafe {
+            sys::SDL_OpenAudioDeviceStream(
+                self.device_id.id(),
+                AudioSpecDesired::convert_to_ll(spec.rate, spec.channels, spec.format),
+                callback,
+                userdata,
+            )
+        };
         if stream.is_null() {
             Err(get_error())
         } else {
             Ok(AudioStream {
-                _audio_stream: stream,
+                stream,
+                callback: userdata,
             })
         }
     }
@@ -795,17 +803,29 @@ impl AudioDevice {
 /// Represents a stream of audio attached to a device.
 /// See [SDL_AudioStream](https://wiki.libsdl.org/SDL_AudioStream)
 pub struct AudioStream<CB: AudioCallback> {
-    pub _audio_stream: *mut sys::SDL_AudioStream,
+    stream: *mut sys::SDL_AudioStream,
+
+    callback: Option<CB>,
+    userdata: Option<CB>,
 }
 
 impl<CB: AudioCallback> AudioStream<CB> {
+    pub fn get_stream(&mut self) -> *mut sys::SDL_AudioStream {
+        self.stream
+    }
+
+    fn get_device_id(&mut self) -> &mut AudioDeviceID {
+        let device = unsafe { sys::SDL_GetAudioStreamDevice(self.stream) };
+        unsafe { &mut *(device as *mut AudioDeviceID) }
+    }
+
     /// Locks the audio stream using `SDL_LockAudioStream`.
     ///
     /// If the app assigns a callback to a specific stream, it can use the stream's lock through
     /// SDL_LockAudioStream() if necessary.
     #[doc(alias = "SDL_LockAudioStream")]
     pub fn lock(&mut self) -> AudioStreamLockGuard<CB> {
-        unsafe { sys::SDL_LockAudioStream(self._audio_stream) }
+        unsafe { sys::SDL_LockAudioStream(self.get_stream()) };
         AudioStreamLockGuard {
             stream: self,
             _nosend: PhantomData,
