@@ -802,7 +802,7 @@ impl<'a> Music<'a> {
     #[doc(alias = "SDL_RWFromConstMem")]
     pub fn from_static_bytes(buf: &'static [u8]) -> Result<Music<'static>, String> {
         let rw =
-            unsafe { sys::SDL_RWFromConstMem(buf.as_ptr() as *const c_void, buf.len() as c_int) };
+            unsafe { sys::SDL_RWFromConstMem(buf.as_ptr() as *const c_void, (buf.len() as c_int).try_into().unwrap() ) };
 
         if rw.is_null() {
             return Err(get_error());

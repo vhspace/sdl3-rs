@@ -23,10 +23,11 @@ lazy_static = "1.4.0"
 
 [dependencies.sdl3-sys]
 # path = "sdl3-sys"
+version = "0.0.7+sdl3-dev-2023-10-08"
 # version = "0.0.6+sdl3-dev-2023-07-31"
 # git = "https://github.com/Lokathor/sdl3-sys-rs"
-git = "https://github.com/revmischa/sdl3-sys-rs"
-branch = "sdl-update-I"
+# git = "https://github.com/revmischa/sdl3-sys-rs"
+# branch = "sdl-update-I"
 
 [dependencies.c_vec]
 # allow both 1.* and 2.0 versions
