@@ -121,7 +121,7 @@ impl AudioSubsystem {
     #[doc(alias = "SDL_GetAudioDeviceName")]
     pub fn audio_playback_device_name(&self, index: u32) -> Result<String, String> {
         unsafe {
-            let dev_name = sys::SDL_GetAudioDeviceName(index as c_int, 0);
+            let dev_name = sys::SDL_GetAudioDeviceName(index);
             if dev_name.is_null() {
                 Err(get_error())
             } else {
@@ -134,7 +134,7 @@ impl AudioSubsystem {
     #[doc(alias = "SDL_GetAudioDeviceName")]
     pub fn audio_capture_device_name(&self, index: u32) -> Result<String, String> {
         unsafe {
-            let dev_name = sys::SDL_GetAudioDeviceName(index as c_int, 1);
+            let dev_name = sys::SDL_GetAudioDeviceName(index);
             if dev_name.is_null() {
                 Err(get_error())
             } else {
@@ -193,17 +193,17 @@ impl AudioFormat {
     /// Signed 16-bit samples, native endian
     #[inline]
     pub const fn s16_sys() -> AudioFormat {
-        AudioFormat::S16LSB
+        AudioFormat::S16LE
     }
     /// Signed 32-bit samples, native endian
     #[inline]
     pub const fn s32_sys() -> AudioFormat {
-        AudioFormat::S32LSB
+        AudioFormat::S32LE
     }
     /// 32-bit floating point samples, native endian
     #[inline]
     pub const fn f32_sys() -> AudioFormat {
-        AudioFormat::F32LSB
+        AudioFormat::F32LE
     }
 }
 
@@ -306,14 +306,14 @@ impl AudioSpecWAV {
                 &mut audio_buf,
                 &mut audio_len,
             );
-            if ret.is_null() {
+            if ret == -1 {
                 Err(get_error())
             } else {
                 let desired = desired.assume_init();
                 Ok(AudioSpecWAV {
                     freq: desired.freq,
                     format: AudioFormat::from_ll(desired.format).unwrap(),
-                    channels: desired.channels,
+                    channels: desired.channels.try_into().unwrap(),
                     audio_buf,
                     audio_len,
                 })
@@ -436,7 +436,7 @@ extern "C" fn audio_callback_marshall<CB: AudioCallback>(
 #[derive(Clone)]
 pub struct AudioSpecDesired {
     /// DSP frequency (samples per second). Set to None for the device's fallback frequency.
-    pub rate: Option<i32>,
+    pub freq: Option<i32>,
     /// Number of separate audio channels. Set to None for the device's fallback number of channels.
     pub channels: Option<u8>,
     /// Audio format. Set to None for the device's fallback audio format.
@@ -447,18 +447,18 @@ impl AudioSpecDesired {
     fn convert_to_ll<R, C, F>(rate: R, channels: C, format: F) -> sys::SDL_AudioSpec
     where
         R: Into<Option<i32>>,
-        C: Into<Option<i32>>,
+        C: Into<Option<u8>>,
         F: Into<Option<AudioFormat>>,
     {
         let channels = channels.into();
-        let rate = rate.into();
+        let freq = rate.into();
         let format = format.into();
 
         if let Some(channels) = channels {
             assert!(channels > 0);
         }
-        if let Some(rate) = rate {
-            assert!(rate > 0);
+        if let Some(freq) = freq {
+            assert!(freq > 0);
         }
 
         // A value of 0 means "fallback" or "default".
@@ -466,7 +466,7 @@ impl AudioSpecDesired {
         sys::SDL_AudioSpec {
             format: format.unwrap_or(AudioFormat::U8).to_ll(),
             channels: channels.unwrap_or(0),
-            freq: rate.unwrap_or(0),
+            freq: freq.unwrap_or(0),
         }
     }
 
@@ -513,13 +513,6 @@ pub struct AudioSpec {
     pub freq: i32,
     pub format: AudioFormat,
     pub channels: u8,
-    /// The silence value calculated by SDL2. Note that it's inconvenient to use if your channel
-    /// type is not u8 and [incorrect in case of u16](https://bugzilla.libsdl.org/show_bug.cgi?id=4805).
-    /// You're likely to find [the `AudioFormatNum.SILENCE` associated constant](
-    /// trait.AudioFormatNum.html#associatedconstant.SILENCE) more useful.
-    pub silence: u8,
-    pub samples: u16,
-    pub size: u32,
 }
 
 impl AudioSpec {
@@ -527,10 +520,7 @@ impl AudioSpec {
         AudioSpec {
             freq: spec.freq,
             format: AudioFormat::from_ll(spec.format).unwrap(),
-            channels: spec.channels,
-            silence: spec.silence,
-            samples: spec.samples,
-            size: spec.size,
+            channels: spec.channels.try_into().unwrap(),
         }
     }
 }
@@ -669,27 +659,21 @@ impl AudioDevice {
     {
         use std::mem::MaybeUninit;
 
-        let desired = AudioSpecDesired::convert_to_ll(spec.freq, spec.channels, spec.samples);
+        let desired = AudioSpecDesired::convert_to_ll(spec.freq, spec.channels, spec.format);
 
         let mut obtained = MaybeUninit::uninit();
         unsafe {
-            let device = match device.into() {
-                Some(device) => Some(CString::new(device).unwrap()),
-                None => None,
-            };
+            // let device = match device.into() {
+            //     Some(device) => Some(CString::new(device).unwrap()),
+            //     None => None,
+            // };
             // Warning: map_or consumes its argument; `device.map_or()` would therefore consume the
             // CString and drop it, making device_ptr a dangling pointer! To avoid that we downgrade
             // device to an Option<&_> first.
+            // let device_ptr = device.as_ref().map_or(ptr::null(), |s| s.as_ptr());
             let device_ptr = device.as_ref().map_or(ptr::null(), |s| s.as_ptr());
 
-            let iscapture_flag = if capture { 1 } else { 0 };
-            let device_id = sys::SDL_OpenAudioDevice(
-                device_ptr as *const c_char,
-                iscapture_flag,
-                &desired,
-                obtained.as_mut_ptr(),
-                0,
-            );
+            let device_id = sys::SDL_OpenAudioDevice(device_ptr, &desired);
             match device_id {
                 0 => Err(get_error()),
                 id => {
