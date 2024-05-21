@@ -724,6 +724,11 @@ impl VideoSubsystem {
         WindowBuilder::new(self, title, width, height)
     }
 
+    /// Initializes a new `PopupWindowBuilder`; a convenience method that calls `PopupWindowBuilder::new()`.
+    pub unsafe fn popup_window(&self, window: &Window, width: u32, height: u32) -> PopupWindowBuilder {
+        PopupWindowBuilder::new(self, window, width, height)
+    }
+
     #[doc(alias = "SDL_GetCurrentVideoDriver")]
     pub fn current_video_driver(&self) -> &'static str {
         use std::str;
@@ -1271,6 +1276,158 @@ impl WindowBuilder {
     /// Has no effect no other platforms.
     pub fn metal_view(&mut self) -> &mut WindowBuilder {
         self.create_metal_view = true;
+        self
+    }
+}
+
+/// The type that allows you to build popup windows.
+pub struct PopupWindowBuilder {
+    parent_window: Window,
+    width: u32,
+    height: u32,
+    offset_x: i32,
+    offset_y: i32,
+    window_flags: u32,
+    create_metal_view: bool,
+    /// The window builder cannot be built on a non-main thread, so prevent cross-threaded moves and references.
+    /// `!Send` and `!Sync`,
+    subsystem: VideoSubsystem,
+}
+
+impl PopupWindowBuilder {
+    /// Initializes a new `PopupWindowBuilder`.
+    pub unsafe fn new(v: &VideoSubsystem, parent_window: &Window, width: u32, height: u32) -> PopupWindowBuilder {
+        PopupWindowBuilder {
+            parent_window: Window::from_ref(parent_window.context()),
+            width,
+            height,
+            offset_x: 0,
+            offset_y: 0,
+            window_flags: 0,
+            subsystem: v.clone(),
+            create_metal_view: false,
+        }
+    }
+
+    /// Builds the popup window
+    #[doc(alias = "SDL_CreatePopupWindow")]
+    pub fn build(&self) -> Result<Window, WindowBuildError> {
+        use self::WindowBuildError::*;
+        if self.width >= (1 << 31) {
+            return Err(WidthOverflows(self.width));
+        }
+        if self.height >= (1 << 31) {
+            return Err(HeightOverflows(self.width));
+        }
+        if (self.window_flags & sys::SDL_WindowFlags::SDL_WINDOW_TOOLTIP as u32 != 0) && (self.window_flags & sys::SDL_WindowFlags::SDL_WINDOW_POPUP_MENU as u32 != 0) {
+            return Err(SdlError("SDL_WINDOW_TOOLTIP and SDL_WINDOW_POPUP are mutually exclusive".to_owned()));
+        }
+        if (self.window_flags & sys::SDL_WindowFlags::SDL_WINDOW_TOOLTIP as u32 == 0) && (self.window_flags & sys::SDL_WindowFlags::SDL_WINDOW_POPUP_MENU as u32 == 0) {
+            return Err(SdlError("SDL_WINDOW_TOOLTIP or SDL_WINDOW_POPUP are required for popup windows".to_owned()));
+        }
+
+        let raw_width = self.width as c_int;
+        let raw_height = self.height as c_int;
+        unsafe {
+            let raw = sys::SDL_CreatePopupWindow(
+                self.parent_window.raw(),
+                self.offset_x,
+                self.offset_y,
+                raw_width,
+                raw_height,
+                self.window_flags,
+            );
+            let metal_view = 0 as sys::SDL_MetalView;
+            #[cfg(target_os = "macos")]
+            if self.create_metal_view {
+                metal_view = sys::SDL_Metal_CreateView(raw);
+            }
+
+            if raw.is_null() {
+                Err(SdlError(get_error()))
+            } else {
+                Ok(Window::from_ll(self.subsystem.clone(), raw, metal_view))
+            }
+        }
+    }
+
+
+    /// Gets the underlying window flags.
+    pub fn window_flags(&self) -> u32 { self.window_flags }
+
+    /// Sets the underlying window flags.
+    /// This will effectively undo any previous build operations, excluding window size and position.
+    pub fn set_window_flags(&mut self, flags: u32) -> &mut PopupWindowBuilder {
+        self.window_flags = flags;
+        self
+    }
+
+    /// Sets the window offset relative to the parent window.
+    pub fn offset(&mut self, x: i32, y: i32) -> &mut PopupWindowBuilder {
+        self.offset_x = x;
+        self.offset_y = y;
+        self
+    }
+
+    /// Sets the window to be usable with an OpenGL context
+    pub fn opengl(&mut self) -> &mut PopupWindowBuilder {
+        self.window_flags |= sys::SDL_WindowFlags::SDL_WINDOW_OPENGL as u32;
+        self
+    }
+
+    /// Sets the window to be usable with a Vulkan instance
+    pub fn vulkan(&mut self) -> &mut PopupWindowBuilder {
+        self.window_flags |= sys::SDL_WindowFlags::SDL_WINDOW_VULKAN as u32;
+        self
+    }
+
+    /// Hides the window.
+    pub fn hidden(&mut self) -> &mut PopupWindowBuilder {
+        self.window_flags |= sys::SDL_WindowFlags::SDL_WINDOW_HIDDEN as u32;
+        self
+    }
+
+    /// Sets the window to be resizable.
+    pub fn resizable(&mut self) -> &mut PopupWindowBuilder {
+        self.window_flags |= sys::SDL_WindowFlags::SDL_WINDOW_RESIZABLE as u32;
+        self
+    }
+
+    /// Sets the window to have grabbed input focus.
+    pub fn input_grabbed(&mut self) -> &mut PopupWindowBuilder {
+        self.window_flags |= sys::SDL_WindowFlags::SDL_WINDOW_MOUSE_GRABBED as u32;
+        self
+    }
+
+    /// Create a SDL_MetalView when constructing the window.
+    /// This is required when using the raw_window_handle feature on MacOS.
+    /// Has no effect no other platforms.
+    pub fn metal_view(&mut self) -> &mut PopupWindowBuilder {
+        self.create_metal_view = true;
+        self
+    }
+
+    /// Sets the window to be a tooltip.
+    pub fn tooltip(&mut self) -> &mut PopupWindowBuilder {
+        self.window_flags |= sys::SDL_WindowFlags::SDL_WINDOW_TOOLTIP as u32;
+        self
+    }
+
+    /// Sets the window to be a popup menu.
+    pub fn popup_menu(&mut self) -> &mut PopupWindowBuilder {
+        self.window_flags |= sys::SDL_WindowFlags::SDL_WINDOW_POPUP_MENU as u32;
+        self
+    }
+
+    /// Sets the window to be transparent
+    pub fn transparent(&mut self) -> &mut PopupWindowBuilder {
+        self.window_flags |= sys::SDL_WindowFlags::SDL_WINDOW_TRANSPARENT as u32;
+        self
+    }
+
+    /// Sets the window to be shown on top of all other windows
+    pub fn always_on_top(&mut self) -> &mut PopupWindowBuilder {
+        self.window_flags |= sys::SDL_WindowFlags::SDL_WINDOW_ALWAYS_ON_TOP as u32;
         self
     }
 }
