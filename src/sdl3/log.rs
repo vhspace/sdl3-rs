@@ -20,23 +20,23 @@ pub enum Category {
 impl Category {
     #[allow(dead_code)]
     fn from_ll(value: u32) -> Category {
-        if value == sys::SDL_LogCategory::SDL_LOG_CATEGORY_APPLICATION as u32 {
+        if value == sys::log::SDL_LogCategory::SDL_LOG_CATEGORY_APPLICATION as u32 {
             Category::Application
-        } else if value == sys::SDL_LogCategory::SDL_LOG_CATEGORY_ERROR as u32 {
+        } else if value == sys::log::SDL_LogCategory::SDL_LOG_CATEGORY_ERROR as u32 {
             Category::Error
-        } else if value == sys::SDL_LogCategory::SDL_LOG_CATEGORY_ASSERT as u32 {
+        } else if value == sys::log::SDL_LogCategory::SDL_LOG_CATEGORY_ASSERT as u32 {
             Category::Assert
-        } else if value == sys::SDL_LogCategory::SDL_LOG_CATEGORY_SYSTEM as u32 {
+        } else if value == sys::log::SDL_LogCategory::SDL_LOG_CATEGORY_SYSTEM as u32 {
             Category::System
-        } else if value == sys::SDL_LogCategory::SDL_LOG_CATEGORY_AUDIO as u32 {
+        } else if value == sys::log::SDL_LogCategory::SDL_LOG_CATEGORY_AUDIO as u32 {
             Category::Audio
-        } else if value == sys::SDL_LogCategory::SDL_LOG_CATEGORY_VIDEO as u32 {
+        } else if value == sys::log::SDL_LogCategory::SDL_LOG_CATEGORY_VIDEO as u32 {
             Category::Video
-        } else if value == sys::SDL_LogCategory::SDL_LOG_CATEGORY_RENDER as u32 {
+        } else if value == sys::log::SDL_LogCategory::SDL_LOG_CATEGORY_RENDER as u32 {
             Category::Render
-        } else if value == sys::SDL_LogCategory::SDL_LOG_CATEGORY_INPUT as u32 {
+        } else if value == sys::log::SDL_LogCategory::SDL_LOG_CATEGORY_INPUT as u32 {
             Category::Input
-        } else if value == sys::SDL_LogCategory::SDL_LOG_CATEGORY_TEST as u32 {
+        } else if value == sys::log::SDL_LogCategory::SDL_LOG_CATEGORY_TEST as u32 {
             Category::Test
         } else {
             Category::Custom
@@ -55,8 +55,8 @@ pub enum Priority {
 }
 
 impl Priority {
-    fn from_ll(value: sys::SDL_LogPriority) -> Priority {
-        use crate::sys::SDL_LogPriority::*;
+    fn from_ll(value: sys::log::SDL_LogPriority) -> Priority {
+        use crate::sys::log::SDL_LogPriority::*;
         match value {
             SDL_LOG_PRIORITY_VERBOSE => Priority::Verbose,
             SDL_LOG_PRIORITY_DEBUG => Priority::Debug,
@@ -77,7 +77,7 @@ static mut custom_log_fn: fn(Priority, Category, &str) = dummy;
 unsafe extern "C" fn rust_sdl2_log_fn(
     _userdata: *mut libc::c_void,
     category: libc::c_int,
-    priority: sys::SDL_LogPriority,
+    priority: sys::log::SDL_LogPriority,
     message: *const libc::c_char,
 ) {
     let category = Category::from_ll(category as u32);
@@ -86,11 +86,11 @@ unsafe extern "C" fn rust_sdl2_log_fn(
     custom_log_fn(priority, category, &*message);
 }
 
-#[doc(alias = "SDL_LogSetOutputFunction")]
+#[doc(alias = "SDL_SetLogOutputFunction")]
 pub fn set_output_function(callback: fn(Priority, Category, &str)) {
     unsafe {
         custom_log_fn = callback;
-        sys::SDL_LogSetOutputFunction(Some(rust_sdl2_log_fn), null_mut());
+        sys::log::SDL_SetLogOutputFunction(Some(rust_sdl2_log_fn), null_mut());
     };
 }
 
@@ -101,6 +101,6 @@ pub fn log(message: &str) {
     let message = message.replace('%', "%%");
     let message = CString::new(message).unwrap();
     unsafe {
-        crate::sys::SDL_Log(message.into_raw());
+        crate::sys::log::SDL_Log(message.into_raw());
     }
 }
