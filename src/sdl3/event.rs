@@ -28,8 +28,8 @@ use crate::keyboard::Scancode;
 use crate::mouse;
 use crate::mouse::{MouseButton, MouseState, MouseWheelDirection};
 use crate::sys;
-use crate::sys::SDL_EventFilter;
-use crate::sys::SDL_EventType;
+use crate::sys::events::SDL_EventFilter;
+use crate::sys::events::SDL_EventType;
 use crate::video::Orientation;
 
 struct CustomEventTypeMaps {
@@ -55,13 +55,13 @@ impl crate::EventSubsystem {
     /// Removes all events in the event queue that match the specified event type.
     #[doc(alias = "SDL_FlushEvent")]
     pub fn flush_event(&self, event_type: EventType) {
-        unsafe { sys::SDL_FlushEvent(event_type as u32) };
+        unsafe { sys::events::SDL_FlushEvent(event_type as u32) };
     }
 
     /// Removes all events in the event queue that match the specified type range.
     #[doc(alias = "SDL_FlushEvents")]
     pub fn flush_events(&self, min_type: u32, max_type: u32) {
-        unsafe { sys::SDL_FlushEvents(min_type, max_type) };
+        unsafe { sys::events::SDL_FlushEvents(min_type, max_type) };
     }
 
     /// Reads the events at the front of the event queue, until the maximum amount
@@ -95,10 +95,10 @@ impl crate::EventSubsystem {
             let result = {
                 let events_ptr = events.as_mut_ptr();
 
-                sys::SDL_PeepEvents(
+                sys::events::SDL_PeepEvents(
                     events_ptr,
                     max_amount as c_int,
-                    sys::SDL_eventaction::SDL_PEEKEVENT,
+                    sys::events::SDL_EventAction::SDL_PEEKEVENT,
                     SDL_EventType::SDL_EVENT_FIRST as u32,
                     SDL_EventType::SDL_EVENT_LAST as u32,
                 )
@@ -159,7 +159,7 @@ impl crate::EventSubsystem {
     ///
     /// Returns an error, if no more user events can be created.
     pub unsafe fn register_events(&self, nr: u32) -> Result<Vec<u32>, String> {
-        let result = sys::SDL_RegisterEvents(nr as ::libc::c_int);
+        let result = sys::events::SDL_RegisterEvents(nr as ::libc::c_int);
         const ERR_NR: u32 = ::std::u32::MAX - 1;
 
         match result {
@@ -296,7 +296,7 @@ pub enum EventType {
     WindowICCProfileChanged = SDL_EventType::SDL_EVENT_WINDOW_ICCPROF_CHANGED as u32,
     WindowDisplayChanged = SDL_EventType::SDL_EVENT_WINDOW_DISPLAY_CHANGED as u32,
 
-    // TODO: SysWM = sys::SDL_EVENT_SYSWM as u32,
+    // TODO: SysWM = sys::events::SDL_EVENT_SYSWM as u32,
     KeyDown = SDL_EventType::SDL_EVENT_KEY_DOWN as u32,
     KeyUp = SDL_EventType::SDL_EVENT_KEY_UP as u32,
     TextEditing = SDL_EventType::SDL_EVENT_TEXT_EDITING as u32,
@@ -351,7 +351,7 @@ impl TryFrom<u32> for EventType {
 
     fn try_from(n: u32) -> Result<Self, Self::Error> {
         use self::EventType::*;
-        use crate::sys::SDL_EventType::*;
+        use crate::sys::events::SDL_EventType::*;
 
         Ok(match unsafe { transmute(n) } {
             SDL_EVENT_FIRST => First,
@@ -450,7 +450,7 @@ impl DisplayEvent {
         match unsafe { transmute(id) } {
             SDL_EventType::SDL_EVENT_DISPLAY_ORIENTATION => {
                 let orientation = if data1 as u32
-                    > sys::SDL_DisplayOrientation::SDL_ORIENTATION_PORTRAIT_FLIPPED as u32
+                    > sys::events::SDL_DisplayOrientation::SDL_ORIENTATION_PORTRAIT_FLIPPED as u32
                 {
                     Orientation::Unknown
                 } else {
@@ -988,36 +988,11 @@ unsafe impl Send for Event {}
 /// requires using `unsafe` and ensuring your own safety guarantees.
 unsafe impl Sync for Event {}
 
-/// Helper function to make converting scancodes
-/// and keycodes to primitive `SDL_Keysym` types.
-#[doc(alias = "SDL_Keysym")]
-fn mk_keysym<S, K>(scancode: S, keycode: K, keymod: Mod) -> sys::SDL_Keysym
-where
-    S: Into<Option<Scancode>>,
-    K: Into<Option<Keycode>>,
-{
-    let scancode = scancode
-        .into()
-        .map(|sc| unsafe { transmute::<u32, sys::SDL_Scancode>(sc as u32) })
-        .unwrap_or(sys::SDL_Scancode::SDL_SCANCODE_UNKNOWN);
-    let keycode = keycode
-        .into()
-        .map(|kc| kc as sys::SDL_Keycode)
-        .unwrap_or(sys::SDL_KeyCode::SDLK_UNKNOWN as i32);
-    let keymod = keymod.bits() as u16;
-    sys::SDL_Keysym {
-        scancode,
-        sym: keycode,
-        mod_: keymod,
-        unused: 0,
-    }
-}
-
 // TODO: Remove this when from_utf8 is updated in Rust
 // This would honestly be nice if it took &self instead of self,
 // but Event::User's raw pointers kind of removes that possibility.
 impl Event {
-    fn to_ll(&self) -> Option<sys::SDL_Event> {
+    fn to_ll(&self) -> Option<sys::events::SDL_Event> {
         let mut ret = mem::MaybeUninit::uninit();
         match *self {
             Event::User {
@@ -1028,7 +1003,7 @@ impl Event {
                 data2,
                 timestamp,
             } => {
-                let event = sys::SDL_UserEvent {
+                let event = sys::events::SDL_Event::SDL_EVENT_USER {
                     type_: type_ as u32,
                     timestamp,
                     windowID: window_id,
@@ -1037,18 +1012,18 @@ impl Event {
                     data2,
                 };
                 unsafe {
-                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_UserEvent, 1);
+                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::events::SDL_UserEvent, 1);
                     Some(ret.assume_init())
                 }
             }
 
             Event::Quit { timestamp } => {
-                let event = sys::SDL_QuitEvent {
+                let event = sys::events::SDL_Event::SDL_QuitEvent {
                     type_: SDL_EventType::SDL_EVENT_QUIT as u32,
                     timestamp,
                 };
                 unsafe {
-                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_QuitEvent, 1);
+                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::events::SDL_QuitEvent, 1);
                     Some(ret.assume_init())
                 }
             }
@@ -1059,14 +1034,14 @@ impl Event {
                 display_event,
             } => {
                 let (display_event_id, data1) = display_event.to_ll();
-                let event = sys::SDL_DisplayEvent {
+                let event = sys::events::SDL_Event::SDL_DisplayEvent {
                     type_: display_event_id as u32,
                     timestamp,
                     displayID: display_index as u32,
                     data1,
                 };
                 unsafe {
-                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_DisplayEvent, 1);
+                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::events::SDL_DisplayEvent, 1);
                     Some(ret.assume_init())
                 }
             }
@@ -1077,7 +1052,7 @@ impl Event {
                 win_event,
             } => {
                 let (win_event_id, data1, data2) = win_event.to_ll();
-                let event = sys::SDL_WindowEvent {
+                let event = sys::events::SDL_Event::SDL_WindowEvent {
                     type_: win_event_id as u32,
                     timestamp,
                     windowID: window_id,
@@ -1085,7 +1060,7 @@ impl Event {
                     data2,
                 };
                 unsafe {
-                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_WindowEvent, 1);
+                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::events::SDL_WindowEvent, 1);
                     Some(ret.assume_init())
                 }
             }
@@ -1098,19 +1073,18 @@ impl Event {
                 keymod,
                 repeat,
             } => {
-                let keysym = mk_keysym(scancode, keycode, keymod);
-                let event = sys::SDL_KeyboardEvent {
+                let event = sys::events::SDL_Event::SDL_KeyboardEvent {
                     type_: SDL_EventType::SDL_EVENT_KEY_DOWN as u32,
                     timestamp,
                     windowID: window_id,
-                    state: sys::SDL_PRESSED as u8,
+                    state: sys::events::SDL_Event::SDL_PRESSED as u8,
                     repeat: repeat as u8,
                     padding2: 0,
                     padding3: 0,
                     keysym,
                 };
                 unsafe {
-                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_KeyboardEvent, 1);
+                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::events::SDL_KeyboardEvent, 1);
                     Some(ret.assume_init())
                 }
             }
@@ -1122,19 +1096,18 @@ impl Event {
                 keymod,
                 repeat,
             } => {
-                let keysym = mk_keysym(scancode, keycode, keymod);
-                let event = sys::SDL_KeyboardEvent {
+                let event = sys::events::SDL_Event::SDL_KeyboardEvent {
                     type_: SDL_EventType::SDL_EVENT_KEY_UP as u32,
                     timestamp,
                     windowID: window_id,
-                    state: sys::SDL_RELEASED as u8,
+                    state: sys::events::SDL_Event::SDL_RELEASED as u8,
                     repeat: repeat as u8,
                     padding2: 0,
                     padding3: 0,
                     keysym,
                 };
                 unsafe {
-                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_KeyboardEvent, 1);
+                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::events::SDL_KeyboardEvent, 1);
                     Some(ret.assume_init())
                 }
             }
@@ -1149,7 +1122,7 @@ impl Event {
                 yrel,
             } => {
                 let state = mousestate.to_sdl_state();
-                let event = sys::SDL_MouseMotionEvent {
+                let event = sys::events::SDL_Event::SDL_MouseMotionEvent {
                     type_: SDL_EventType::SDL_EVENT_MOUSE_MOTION as u32,
                     timestamp,
                     windowID: window_id,
@@ -1163,7 +1136,7 @@ impl Event {
                 unsafe {
                     ptr::copy(
                         &event,
-                        ret.as_mut_ptr() as *mut sys::SDL_MouseMotionEvent,
+                        ret.as_mut_ptr() as *mut sys::events::SDL_MouseMotionEvent,
                         1,
                     );
                     Some(ret.assume_init())
@@ -1178,13 +1151,13 @@ impl Event {
                 x,
                 y,
             } => {
-                let event = sys::SDL_MouseButtonEvent {
+                let event = sys::events::SDL_Event::SDL_MouseButtonEvent {
                     type_: SDL_EventType::SDL_EVENT_MOUSE_BUTTON_DOWN as u32,
                     timestamp,
                     windowID: window_id,
                     which,
                     button: mouse_btn as u8,
-                    state: sys::SDL_PRESSED as u8,
+                    state: sys::events::SDL_Event::SDL_PRESSED as u8,
                     clicks,
                     x,
                     y,
@@ -1193,7 +1166,7 @@ impl Event {
                 unsafe {
                     ptr::copy(
                         &event,
-                        ret.as_mut_ptr() as *mut sys::SDL_MouseButtonEvent,
+                        ret.as_mut_ptr() as *mut sys::events::SDL_MouseButtonEvent,
                         1,
                     );
                     Some(ret.assume_init())
@@ -1208,13 +1181,13 @@ impl Event {
                 x,
                 y,
             } => {
-                let event = sys::SDL_MouseButtonEvent {
+                let event = sys::events::SDL_Event::SDL_MouseButtonEvent {
                     type_: SDL_EventType::SDL_EVENT_MOUSE_BUTTON_UP as u32,
                     timestamp,
                     windowID: window_id,
                     which,
                     button: mouse_btn as u8,
-                    state: sys::SDL_RELEASED as u8,
+                    state: sys::events::SDL_Event::SDL_RELEASED as u8,
                     clicks,
                     padding: 0,
                     x,
@@ -1223,7 +1196,7 @@ impl Event {
                 unsafe {
                     ptr::copy(
                         &event,
-                        ret.as_mut_ptr() as *mut sys::SDL_MouseButtonEvent,
+                        ret.as_mut_ptr() as *mut sys::events::SDL_MouseButtonEvent,
                         1,
                     );
                     Some(ret.assume_init())
@@ -1240,7 +1213,7 @@ impl Event {
                 mouse_x,
                 mouse_y,
             } => {
-                let event = sys::SDL_MouseWheelEvent {
+                let event = sys::events::SDL_Event::SDL_MouseWheelEvent {
                     type_: SDL_EventType::SDL_EVENT_MOUSE_WHEEL as u32,
                     timestamp,
                     windowID: window_id,
@@ -1252,7 +1225,7 @@ impl Event {
                     mouseY: mouse_y,
                 };
                 unsafe {
-                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_MouseWheelEvent, 1);
+                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::events::SDL_MouseWheelEvent, 1);
                     Some(ret.assume_init())
                 }
             }
@@ -1262,7 +1235,7 @@ impl Event {
                 axis_idx,
                 value,
             } => {
-                let event = sys::SDL_JoyAxisEvent {
+                let event = sys::events::SDL_Event::SDL_JoyAxisEvent {
                     type_: SDL_EventType::SDL_EVENT_JOYSTICK_AXIS_MOTION as u32,
                     timestamp,
                     which,
@@ -1274,7 +1247,7 @@ impl Event {
                     padding4: 0,
                 };
                 unsafe {
-                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_JoyAxisEvent, 1);
+                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::events::SDL_JoyAxisEvent, 1);
                     Some(ret.assume_init())
                 }
             }
@@ -1285,7 +1258,7 @@ impl Event {
                 state,
             } => {
                 let hatvalue = state.to_raw();
-                let event = sys::SDL_JoyHatEvent {
+                let event = sys::events::SDL_Event::SDL_JoyHatEvent {
                     type_: SDL_EventType::SDL_EVENT_JOYSTICK_HAT_MOTION as u32,
                     timestamp,
                     which,
@@ -1295,7 +1268,7 @@ impl Event {
                     padding2: 0,
                 };
                 unsafe {
-                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_JoyHatEvent, 1);
+                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::events::SDL_JoyHatEvent, 1);
                     Some(ret.assume_init())
                 }
             }
@@ -1304,17 +1277,17 @@ impl Event {
                 which,
                 button_idx,
             } => {
-                let event = sys::SDL_JoyButtonEvent {
+                let event = sys::events::SDL_Event::SDL_JoyButtonEvent {
                     type_: SDL_EventType::SDL_EVENT_JOYSTICK_BUTTON_DOWN as u32,
                     timestamp,
                     which,
                     button: button_idx,
-                    state: sys::SDL_PRESSED as u8,
+                    state: sys::events::SDL_Event::SDL_PRESSED as u8,
                     padding1: 0,
                     padding2: 0,
                 };
                 unsafe {
-                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_JoyButtonEvent, 1);
+                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::events::SDL_JoyButtonEvent, 1);
                     Some(ret.assume_init())
                 }
             }
@@ -1324,41 +1297,41 @@ impl Event {
                 which,
                 button_idx,
             } => {
-                let event = sys::SDL_JoyButtonEvent {
+                let event = sys::events::SDL_Event::SDL_JoyButtonEvent {
                     type_: SDL_EventType::SDL_EVENT_JOYSTICK_BUTTON_UP as u32,
                     timestamp,
                     which,
                     button: button_idx,
-                    state: sys::SDL_RELEASED as u8,
+                    state: sys::events::SDL_Event::SDL_RELEASED as u8,
                     padding1: 0,
                     padding2: 0,
                 };
                 unsafe {
-                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_JoyButtonEvent, 1);
+                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::events::SDL_JoyButtonEvent, 1);
                     Some(ret.assume_init())
                 }
             }
 
             Event::JoyDeviceAdded { timestamp, which } => {
-                let event = sys::SDL_JoyDeviceEvent {
+                let event = sys::events::SDL_Event::SDL_JoyDeviceEvent {
                     type_: SDL_EventType::SDL_EVENT_JOYSTICK_ADDED as u32,
                     timestamp,
                     which,
                 };
                 unsafe {
-                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_JoyDeviceEvent, 1);
+                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::events::SDL_JoyDeviceEvent, 1);
                     Some(ret.assume_init())
                 }
             }
 
             Event::JoyDeviceRemoved { timestamp, which } => {
-                let event = sys::SDL_JoyDeviceEvent {
+                let event = sys::events::SDL_Event::SDL_JoyDeviceEvent {
                     type_: SDL_EventType::SDL_EVENT_JOYSTICK_REMOVED as u32,
                     timestamp,
                     which,
                 };
                 unsafe {
-                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::SDL_JoyDeviceEvent, 1);
+                    ptr::copy(&event, ret.as_mut_ptr() as *mut sys::events::SDL_JoyDeviceEvent, 1);
                     Some(ret.assume_init())
                 }
             }
@@ -1369,7 +1342,7 @@ impl Event {
                 value,
             } => {
                 let axisval = axis.to_ll();
-                let event = sys::SDL_GamepadAxisEvent {
+                let event = sys::events::SDL_Event::SDL_GamepadAxisEvent {
                     type_: SDL_EventType::SDL_EVENT_GAMEPAD_AXIS_MOTION as u32,
                     timestamp,
                     which,
@@ -1383,7 +1356,7 @@ impl Event {
                 unsafe {
                     ptr::copy(
                         &event,
-                        ret.as_mut_ptr() as *mut sys::SDL_GamepadAxisEvent,
+                        ret.as_mut_ptr() as *mut sys::events::SDL_GamepadAxisEvent,
                         1,
                     );
                     Some(ret.assume_init())
@@ -1395,21 +1368,21 @@ impl Event {
                 button,
             } => {
                 let buttonval = button.to_ll();
-                let event = sys::SDL_GamepadButtonEvent {
+                let event = sys::events::SDL_Event::SDL_GamepadButtonEvent {
                     type_: SDL_EventType::SDL_EVENT_GAMEPAD_BUTTON_DOWN as u32,
                     timestamp,
                     which,
                     // This conversion turns an i32 into a u8; signed-to-unsigned conversions
                     // are a bit of a code smell, but that appears to be how SDL defines it.
                     button: buttonval as u8,
-                    state: sys::SDL_PRESSED as u8,
+                    state: sys::events::SDL_Event::SDL_PRESSED as u8,
                     padding1: 0,
                     padding2: 0,
                 };
                 unsafe {
                     ptr::copy(
                         &event,
-                        ret.as_mut_ptr() as *mut sys::SDL_GamepadButtonEvent,
+                        ret.as_mut_ptr() as *mut sys::events::SDL_GamepadButtonEvent,
                         1,
                     );
                     Some(ret.assume_init())
@@ -1422,19 +1395,19 @@ impl Event {
                 button,
             } => {
                 let buttonval = button.to_ll();
-                let event = sys::SDL_GamepadButtonEvent {
+                let event = sys::events::SDL_Event::SDL_GamepadButtonEvent {
                     type_: SDL_EventType::SDL_EVENT_GAMEPAD_BUTTON_UP as u32,
                     timestamp,
                     which,
                     button: buttonval as u8,
-                    state: sys::SDL_RELEASED as u8,
+                    state: sys::events::SDL_Event::SDL_RELEASED as u8,
                     padding1: 0,
                     padding2: 0,
                 };
                 unsafe {
                     ptr::copy(
                         &event,
-                        ret.as_mut_ptr() as *mut sys::SDL_GamepadButtonEvent,
+                        ret.as_mut_ptr() as *mut sys::events::SDL_GamepadButtonEvent,
                         1,
                     );
                     Some(ret.assume_init())
@@ -1442,7 +1415,7 @@ impl Event {
             }
 
             Event::ControllerDeviceAdded { timestamp, which } => {
-                let event = sys::SDL_GamepadDeviceEvent {
+                let event = sys::events::SDL_Event::SDL_GamepadDeviceEvent {
                     type_: SDL_EventType::SDL_EVENT_GAMEPAD_ADDED as u32,
                     timestamp,
                     which,
@@ -1450,7 +1423,7 @@ impl Event {
                 unsafe {
                     ptr::copy(
                         &event,
-                        ret.as_mut_ptr() as *mut sys::SDL_GamepadDeviceEvent,
+                        ret.as_mut_ptr() as *mut sys::events::SDL_GamepadDeviceEvent,
                         1,
                     );
                     Some(ret.assume_init())
@@ -1458,7 +1431,7 @@ impl Event {
             }
 
             Event::ControllerDeviceRemoved { timestamp, which } => {
-                let event = sys::SDL_GamepadDeviceEvent {
+                let event = sys::events::SDL_Event::SDL_GamepadDeviceEvent {
                     type_: SDL_EventType::SDL_EVENT_GAMEPAD_REMOVED as u32,
                     timestamp,
                     which,
@@ -1466,7 +1439,7 @@ impl Event {
                 unsafe {
                     ptr::copy(
                         &event,
-                        ret.as_mut_ptr() as *mut sys::SDL_GamepadDeviceEvent,
+                        ret.as_mut_ptr() as *mut sys::events::SDL_GamepadDeviceEvent,
                         1,
                     );
                     Some(ret.assume_init())
@@ -1474,7 +1447,7 @@ impl Event {
             }
 
             Event::ControllerDeviceRemapped { timestamp, which } => {
-                let event = sys::SDL_GamepadDeviceEvent {
+                let event = sys::events::SDL_Event::SDL_GamepadDeviceEvent {
                     type_: SDL_EventType::SDL_EVENT_GAMEPAD_REMAPPED as u32,
                     timestamp,
                     which,
@@ -1482,7 +1455,7 @@ impl Event {
                 unsafe {
                     ptr::copy(
                         &event,
-                        ret.as_mut_ptr() as *mut sys::SDL_GamepadDeviceEvent,
+                        ret.as_mut_ptr() as *mut sys::events::SDL_GamepadDeviceEvent,
                         1,
                     );
                     Some(ret.assume_init())
@@ -1506,8 +1479,8 @@ impl Event {
         }
     }
 
-    pub fn from_ll(raw: sys::SDL_Event) -> Event {
-        let raw_type = unsafe { raw.type_ };
+    pub fn from_ll(raw: sys::events::SDL_Event) -> Event {
+        let raw_type = unsafe { raw.r#type };
 
         // if event type has not been defined, treat it as a UserEvent
         let event_type: EventType = EventType::try_from(raw_type as u32).unwrap_or(EventType::User);
@@ -1536,7 +1509,7 @@ impl Event {
 			Event::Window {
                             timestamp: event.timestamp,
                             window_id: event.windowID,
-                            win_event: WindowEvent::from_ll(event.type_, event.data1, event.data2)
+                            win_event: WindowEvent::from_ll(event.r#type.into(), event.data1, event.data2)
 			}
 		    }
 
@@ -1592,7 +1565,7 @@ impl Event {
                     Event::Display {
                         timestamp: event.timestamp,
                         display_index: event.displayID,
-                        display_event: DisplayEvent::from_ll(event.type_, event.data1),
+                        display_event: DisplayEvent::from_ll(event.r#type.into(), event.data1),
                     }
                 }
 
@@ -1603,10 +1576,10 @@ impl Event {
                     Event::KeyDown {
                         timestamp: event.timestamp,
                         window_id: event.windowID,
-                        keycode: Keycode::from_i32(event.keysym.sym as i32),
-                        scancode: Scancode::from_i32(event.keysym.scancode as i32),
-                        keymod: keyboard::Mod::from_bits_truncate(event.keysym.mod_),
-                        repeat: event.repeat != 0,
+                        keycode: Keycode::from_i32(event.key as i32),
+                        scancode: Scancode::from_i32(event.scancode.into()),
+                        keymod: keyboard::Mod::from_bits_truncate(event.r#mod),
+                        repeat: event.repeat,
                     }
                 }
                 EventType::KeyUp => {
@@ -1615,10 +1588,10 @@ impl Event {
                     Event::KeyUp {
                         timestamp: event.timestamp,
                         window_id: event.windowID,
-                        keycode: Keycode::from_i32(event.keysym.sym as i32),
-                        scancode: Scancode::from_i32(event.keysym.scancode as i32),
-                        keymod: keyboard::Mod::from_bits_truncate(event.keysym.mod_),
-                        repeat: event.repeat != 0,
+                        keycode: Keycode::from_i32(event.key as i32),
+                        scancode: Scancode::from_i32(event.scancode.into() ),
+                        keymod: keyboard::Mod::from_bits_truncate(event.r#mod),
+                        repeat: event.repeat,
                     }
                 }
                 EventType::TextEditing => {
@@ -1710,8 +1683,8 @@ impl Event {
                         x: event.x,
                         y: event.y,
                         direction: mouse::MouseWheelDirection::from_ll(event.direction),
-                        mouse_x: event.mouseX,
-                        mouse_y: event.mouseY,
+                        mouse_x: event.mouse_x,
+                        mouse_y: event.mouse_y,
                     }
                 }
 
@@ -1854,7 +1827,7 @@ impl Event {
                 }
                 #[cfg(feature = "hidapi")]
                 EventType::ControllerSensorUpdated => {
-                    let event = raw.csensor;
+                    let event = raw.gsensor;
                     Event::ControllerSensorUpdated {
                         timestamp: event.timestamp,
                         which: event.which as u32,
@@ -1867,8 +1840,8 @@ impl Event {
                     let event = raw.tfinger;
                     Event::FingerDown {
                         timestamp: event.timestamp,
-                        touch_id: event.touchId,
-                        finger_id: event.fingerId,
+                        touch_id: event.touchID,
+                        finger_id: event.fingerID,
                         x: event.x,
                         y: event.y,
                         dx: event.dx,
@@ -1880,8 +1853,8 @@ impl Event {
                     let event = raw.tfinger;
                     Event::FingerUp {
                         timestamp: event.timestamp,
-                        touch_id: event.touchId,
-                        finger_id: event.fingerId,
+                        touch_id: event.touchID,
+                        finger_id: event.fingerID,
                         x: event.x,
                         y: event.y,
                         dx: event.dx,
@@ -1893,8 +1866,8 @@ impl Event {
                     let event = raw.tfinger;
                     Event::FingerMotion {
                         timestamp: event.timestamp,
-                        touch_id: event.touchId,
-                        finger_id: event.fingerId,
+                        touch_id: event.touchID,
+                        finger_id: event.fingerID,
                         x: event.x,
                         y: event.y,
                         dx: event.dx,
@@ -1912,9 +1885,8 @@ impl Event {
                 EventType::DropFile => {
                     let event = raw.drop;
 
-                    let buf = CStr::from_ptr(event.file as *const _).to_bytes();
+                    let buf = CStr::from_ptr(event.data as *const _).to_bytes();
                     let text = String::from_utf8_lossy(buf).to_string();
-                    sys::SDL_free(event.file as *mut c_void);
 
                     Event::DropFile {
                         timestamp: event.timestamp,
@@ -1925,9 +1897,8 @@ impl Event {
                 EventType::DropText => {
                     let event = raw.drop;
 
-                    let buf = CStr::from_ptr(event.file as *const _).to_bytes();
+                    let buf = CStr::from_ptr(event.data as *const _).to_bytes();
                     let text = String::from_utf8_lossy(buf).to_string();
-                    sys::SDL_free(event.file as *mut c_void);
 
                     Event::DropText {
                         timestamp: event.timestamp,
@@ -1957,7 +1928,7 @@ impl Event {
                         timestamp: event.timestamp,
                         which: event.which,
                         // zero if an audio output device, non-zero if an audio capture device
-                        iscapture: event.iscapture != 0,
+                        iscapture: event.recording != 0,
                     }
                 }
                 EventType::AudioDeviceRemoved => {
@@ -1966,7 +1937,7 @@ impl Event {
                         timestamp: event.timestamp,
                         which: event.which,
                         // zero if an audio output device, non-zero if an audio capture device
-                        iscapture: event.iscapture != 0,
+                        iscapture: event.recording != 0,
                     }
                 }
 
@@ -1990,7 +1961,7 @@ impl Event {
 
                         Event::Unknown {
                             timestamp: event.timestamp,
-                            type_: event.type_,
+                            type_: event.r#type,
                         }
                     } else {
                         let event = raw.user;
@@ -2332,10 +2303,10 @@ impl Event {
     ///     timestamp: 0,
     ///     window_id: 0,
     ///     which: 0,
-    ///     precise_x: 0.0,
-    ///     precise_y: 0.0,
-    ///     x: 0,
-    ///     y: 0,
+    ///     mouse_x: 0.0,
+    ///     mouse_y: 0.0,
+    ///     x: 0.0,
+    ///     y: 0.0,
     ///     direction: MouseWheelDirection::Normal,
     /// };
     /// assert!(ev.is_mouse());
@@ -2582,7 +2553,7 @@ impl Event {
 
 unsafe fn poll_event() -> Option<Event> {
     let mut raw = mem::MaybeUninit::uninit();
-    let has_pending = sys::SDL_PollEvent(raw.as_mut_ptr()) == 1;
+    let has_pending = sys::events::SDL_PollEvent(raw.as_mut_ptr());
 
     if has_pending {
         Some(Event::from_ll(raw.assume_init()))
@@ -2593,7 +2564,7 @@ unsafe fn poll_event() -> Option<Event> {
 
 unsafe fn wait_event() -> Event {
     let mut raw = mem::MaybeUninit::uninit();
-    let success = sys::SDL_WaitEvent(raw.as_mut_ptr()) == 1;
+    let success = sys::events::SDL_WaitEvent(raw.as_mut_ptr());
 
     if success {
         Event::from_ll(raw.assume_init())
@@ -2604,7 +2575,7 @@ unsafe fn wait_event() -> Event {
 
 unsafe fn wait_event_timeout(timeout: u32) -> Option<Event> {
     let mut raw = mem::MaybeUninit::uninit();
-    let success = sys::SDL_WaitEventTimeout(raw.as_mut_ptr(), timeout as c_int) == 1;
+    let success = sys::events::SDL_WaitEventTimeout(raw.as_mut_ptr(), timeout as c_int) ;
 
     if success {
         Some(Event::from_ll(raw.assume_init()))
@@ -2647,7 +2618,7 @@ impl crate::EventPump {
     #[doc(alias = "SDL_PumpEvents")]
     pub fn pump_events(&mut self) {
         unsafe {
-            sys::SDL_PumpEvents();
+            sys::events::SDL_PumpEvents();
         };
     }
 
@@ -2972,11 +2943,11 @@ mod test {
             keymod: Mod::empty(),
             repeat: false,
         }
-        .to_ll()
-        .unwrap();
+            .to_ll()
+            .unwrap();
 
         // Simulate SDL setting bits unknown to us, see PR #780
-        raw_event.key.keysym.mod_ = 0xffff;
+        unsafe {        raw_event.key.r#mod = 0xffff; }
 
         if let Event::KeyDown { keymod, .. } = Event::from_ll(raw_event) {
             assert_eq!(keymod, Mod::all());
@@ -2999,7 +2970,7 @@ mod test {
         .unwrap();
 
         // Simulate SDL setting bits unknown to us, see PR #780
-        raw_event.key.keysym.mod_ = 0xffff;
+        unsafe { raw_event.key.r#mod = 0xffff; }
 
         if let Event::KeyUp { keymod, .. } = Event::from_ll(raw_event) {
             assert_eq!(keymod, Mod::all());
@@ -3020,7 +2991,7 @@ impl EventSender {
     pub fn push_event(&self, event: Event) -> Result<(), String> {
         match event.to_ll() {
             Some(mut raw_event) => {
-                let ok = unsafe { sys::SDL_PushEvent(&mut raw_event) == 1 };
+                let ok = unsafe { sys::events::SDL_PushEvent(&mut raw_event)  };
                 if ok {
                     Ok(())
                 } else {
@@ -3120,7 +3091,7 @@ impl<'a, CB: EventWatchCallback + 'a> EventWatch<'a, CB> {
     pub fn activate(&mut self) {
         if !self.activated {
             self.activated = true;
-            unsafe { sys::SDL_AddEventWatch(self.filter(), self.callback()) };
+            unsafe { sys::events::SDL_AddEventWatch(self.filter(), self.callback()) };
         }
     }
 
@@ -3129,7 +3100,7 @@ impl<'a, CB: EventWatchCallback + 'a> EventWatch<'a, CB> {
     pub fn deactivate(&mut self) {
         if self.activated {
             self.activated = false;
-            unsafe { sys::SDL_DelEventWatch(self.filter(), self.callback()) };
+            unsafe { sys::events::SDL_RemoveEventWatch(self.filter(), self.callback()) };
         }
     }
 
@@ -3164,7 +3135,7 @@ impl<'a, CB: EventWatchCallback + 'a> Drop for EventWatch<'a, CB> {
 
 extern "C" fn event_callback_marshall<CB: EventWatchCallback>(
     user_data: *mut c_void,
-    event: *mut sdl3_sys::SDL_Event,
+    event: *mut sdl3_sys::events::SDL_Event,
 ) -> i32 {
     let f: &mut CB = unsafe { &mut *(user_data as *mut _) };
     let event = Event::from_ll(unsafe { *event });
