@@ -277,21 +277,21 @@ impl PixelFormatEnum {
 }
 
 impl PixelFormatEnum {
-    #[doc(alias = "SDL_GetPixelFormatEnumForMasks")]
+    #[doc(alias = "SDL_GetPixelFormatForMasks")]
     pub fn from_masks(masks: PixelMasks) -> PixelFormatEnum {
         unsafe {
-            let format = sys::pixels::SDL_GetPixelFormatEnumForMasks(
+            let format = sys::pixels::SDL_GetPixelFormatForMasks(
                 masks.bpp as i32,
                 masks.rmask,
                 masks.gmask,
                 masks.bmask,
                 masks.amask,
             );
-            PixelFormatEnum::try_from(format as u32).unwrap()
+            PixelFormatEnum::try_from(format).unwrap()
         }
     }
 
-    #[doc(alias = "SDL_GetMasksForPixelFormatEnum")]
+    #[doc(alias = "SDL_GetMasksForPixelFormat")]
     pub fn into_masks(self) -> Result<PixelMasks, String> {
         let format: u32 = self as u32;
         let mut bpp = 0;
@@ -300,12 +300,11 @@ impl PixelFormatEnum {
         let mut bmask = 0;
         let mut amask = 0;
         let result = unsafe {
-            sys::pixels::SDL_GetMasksForPixelFormatEnum(
-                format, &mut bpp, &mut rmask, &mut gmask, &mut bmask, &mut amask,
+            sys::pixels::SDL_GetMasksForPixelFormat(
+                format.into(), &mut bpp, &mut rmask, &mut gmask, &mut bmask, &mut amask,
             )
         };
-        if result == sys::pixels::SDL_bool::SDL_FALSE {
-            // SDL_FALSE
+        if !result  {
             Err(get_error())
         } else {
             Ok(PixelMasks {
@@ -430,9 +429,9 @@ impl From<PixelFormat> for PixelFormatEnum {
     fn from(pf: PixelFormat) -> PixelFormatEnum {
         unsafe {
             let sdl_pf = *pf.raw;
-            match PixelFormatEnum::try_from(sdl_pf.format as u32) {
+            match PixelFormatEnum::try_from(sdl_pf.format()) {
                 Ok(pfe) => pfe,
-                Err(()) => panic!("Unknown pixel format: {:?}", sdl_pf.format),
+                Err(()) => panic!("Unknown pixel format: {:?}", sdl_pf.format().into()),
             }
         }
     }
@@ -489,14 +488,16 @@ impl TryFrom<u32> for PixelFormatEnum {
 impl TryFrom<PixelFormatEnum> for PixelFormat {
     type Error = String;
 
-    #[doc(alias = "SDL_CreatePixelFormat")]
+    #[doc(alias = "SDL_GetPixelFormatDetails")]
     fn try_from(pfe: PixelFormatEnum) -> Result<Self, Self::Error> {
         unsafe {
-            let pf_ptr = sys::pixels::SDL_CreatePixelFormat(pfe as u32);
+            let pf_ptr = sys::pixels::SDL_GetPixelFormatDetails(pfe.into());
+            let surface = SurfaceRef::null();
             if pf_ptr.is_null() {
                 Err(get_error())
             } else {
-                Ok(PixelFormat::from_ll(pf_ptr))
+                // not sure what surface should be here
+                Ok(PixelFormat::from_ll(pf_ptr.format(), surface))
             }
         }
     }
