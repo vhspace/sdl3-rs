@@ -1,5 +1,5 @@
 use crate::sys;
-use crate::sys::SDL_JoystickPowerLevel;
+// use crate::sys::joystick::joystick::SDL_PowerState;
 
 use crate::clear_error;
 use crate::common::{validate_int, IntegerOrSdlError};
@@ -8,29 +8,44 @@ use crate::JoystickSubsystem;
 use libc::{c_char, c_void};
 use std::ffi::{CStr, CString, NulError};
 use std::fmt::{Display, Error, Formatter};
+use sys::joystick::SDL_JoystickID;
+use sys::power::{SDL_PowerState, SDL_POWERSTATE_UNKNOWN};
+use guid::Guid;
+
+pub struct JoystickInstance {
+id:  SDL_JoystickID,
+    name: String,
+    path: String,
+}
 
 impl JoystickSubsystem {
-    /// Retrieve the total number of attached joysticks identified by SDL.
+    /// Get joystick instance IDs and names.
     #[doc(alias = "SDL_GetJoysticks")]
-    pub fn num_joysticks(&self) -> Result<u32, String> {
+    pub fn joysticks(&self) -> Result<Vec<JoystickInstance>, String> {
         let mut num_joysticks: i32 = 0;
         unsafe {
-            // see: https://github.com/libsdl-org/SDL/blob/main/docs/README-migration.md#sdl_joystickh
-            let joystick_ids = sys::SDL_GetJoysticks(&mut num_joysticks);
-            if (joystick_ids as *mut sys::SDL_Joystick) == std::ptr::null_mut() {
+            let joystick_ids = sys::joystick::SDL_GetJoysticks(&mut num_joysticks);
+            if joystick_ids.is_null() {
                 return Err(get_error());
             } else {
-                sys::SDL_free(joystick_ids as *mut c_void);
-                return Ok(num_joysticks as u32);
-            };
-        };
+                let mut instances = Vec::new();
+                for i in 0..num_joysticks {
+                    let id = *joystick_ids.offset(i as isize);
+                    let name = (sys::joystick::SDL_GetJoystickNameForID(id)).to_string();
+                    let path = (sys::joystick::SDL_GetJoystickPathForID(id)).to_string();
+                    instances.push(JoystickInstance { id, name, path });
+                }
+                sys::joystick::SDL_free(joystick_ids as *mut c_void);
+                Ok(instances)
+            }
+        }
     }
 
     /// Attempt to open the joystick at index `joystick_index` and return it.
     #[doc(alias = "SDL_OpenJoystick")]
-    pub fn open(&self, joystick_index: u32) -> Result<Joystick, IntegerOrSdlError> {
+    pub fn open(&self, joystick_instance: JoystickInstance) -> Result<Joystick, IntegerOrSdlError> {
         use crate::common::IntegerOrSdlError::*;
-        let joystick = unsafe { sys::SDL_OpenJoystick(joystick_index) };
+        let joystick = unsafe { sys::joystick::SDL_OpenJoystick(joystick_instance.id) };
 
         if joystick.is_null() {
             Err(SdlError(get_error()))
@@ -42,81 +57,67 @@ impl JoystickSubsystem {
         }
     }
 
-    /// Get the GUID for the joystick at index `joystick_index`
-    #[doc(alias = "SDL_GetJoystickInstanceGUID")]
-    pub fn device_guid(&self, joystick_index: u32) -> Result<Guid, IntegerOrSdlError> {
-        use crate::common::IntegerOrSdlError::*;
-
-        let raw = unsafe { sys::SDL_GetJoystickInstanceGUID(joystick_index) };
-
-        let guid = Guid { raw };
-
-        if guid.is_zero() {
-            Err(SdlError(get_error()))
-        } else {
-            Ok(guid)
-        }
-    }
-
     /// If state is `true` joystick events are processed, otherwise
     /// they're ignored.
     #[doc(alias = "SDL_SetJoystickEventsEnabled")]
     pub fn set_joystick_events_enabled(&self, state: bool) {
         unsafe {
-            sys::SDL_SetJoystickEventsEnabled(if state {
-                sys::SDL_bool::SDL_TRUE
-            } else {
-                sys::SDL_bool::SDL_FALSE
-            })
+            sys::joystick::SDL_SetJoystickEventsEnabled(state)
         };
     }
 
     /// Return `true` if joystick events are processed.
     #[doc(alias = "SDL_JoystickEventsEnabled")]
     pub fn event_state(&self) -> bool {
-        unsafe { sys::SDL_JoystickEventsEnabled() == sys::SDL_bool::SDL_TRUE }
+        unsafe { sys::joystick::SDL_JoystickEventsEnabled() }
     }
 
     /// Force joystick update when not using the event loop
     #[inline]
     #[doc(alias = "SDL_UpdateJoysticks")]
     pub fn update(&self) {
-        unsafe { sys::SDL_UpdateJoysticks() };
+        unsafe { sys::joystick::SDL_UpdateJoysticks() };
     }
+}
+
+// power level and percentage together
+pub struct PowerInfo {
+    pub state: PowerLevel,
+    pub percentage: i32,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 #[repr(i32)]
 pub enum PowerLevel {
-    Unknown = SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_UNKNOWN as i32,
-    Empty = SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_EMPTY as i32,
-    Low = SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_LOW as i32,
-    Medium = SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_MEDIUM as i32,
-    Full = SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_FULL as i32,
-    Wired = SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_WIRED as i32,
+    Unknown = SDL_PowerState::SDL_JOYSTICK_POWER_UNKNOWN as i32,
+    Empty = SDL_PowerState::SDL_JOYSTICK_POWER_EMPTY as i32,
+    Low = SDL_PowerState::SDL_JOYSTICK_POWER_LOW as i32,
+    Medium = SDL_PowerState::SDL_JOYSTICK_POWER_MEDIUM as i32,
+    Full = SDL_PowerState::SDL_JOYSTICK_POWER_FULL as i32,
+    Wired = SDL_PowerState::SDL_JOYSTICK_POWER_WIRED as i32,
 }
 
 impl PowerLevel {
-    pub fn from_ll(raw: SDL_JoystickPowerLevel) -> PowerLevel {
+    pub fn from_ll(raw: SDL_PowerState) -> PowerLevel {
         match raw {
-            SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_UNKNOWN => PowerLevel::Unknown,
-            SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_EMPTY => PowerLevel::Empty,
-            SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_LOW => PowerLevel::Low,
-            SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_MEDIUM => PowerLevel::Medium,
-            SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_FULL => PowerLevel::Full,
-            SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_WIRED => PowerLevel::Wired,
+            SDL_PowerState::SDL_JOYSTICK_POWER_UNKNOWN => PowerLevel::Unknown,
+            SDL_PowerState::SDL_JOYSTICK_POWER_EMPTY => PowerLevel::Empty,
+            SDL_PowerState::SDL_JOYSTICK_POWER_LOW => PowerLevel::Low,
+            SDL_PowerState::SDL_JOYSTICK_POWER_MEDIUM => PowerLevel::Medium,
+            SDL_PowerState::SDL_JOYSTICK_POWER_FULL => PowerLevel::Full,
+            SDL_PowerState::SDL_JOYSTICK_POWER_WIRED => PowerLevel::Wired,
             _ => panic!("Unexpected power level"),
         }
     }
 
-    pub fn to_ll(self) -> SDL_JoystickPowerLevel {
+    pub fn to_ll(self) -> SDL_PowerState {
         match self {
-            PowerLevel::Unknown => SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_UNKNOWN,
-            PowerLevel::Empty => SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_EMPTY,
-            PowerLevel::Low => SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_LOW,
-            PowerLevel::Medium => SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_MEDIUM,
-            PowerLevel::Full => SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_FULL,
-            PowerLevel::Wired => SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_WIRED,
+            PowerLevel::Unknown => SDL_PowerState::SDL_JOYSTICK_POWER_UNKNOWN,
+            PowerLevel::Empty => SDL_PowerState::SDL_JOYSTICK_POWER_EMPTY,
+            PowerLevel::Low => SDL_PowerState::SDL_JOYSTICK_POWER_LOW,
+            PowerLevel::Medium => SDL_PowerState::SDL_JOYSTICK_POWER_MEDIUM,
+            PowerLevel::Full => SDL_PowerState::SDL_JOYSTICK_POWER_FULL,
+            PowerLevel::Wired => SDL_PowerState::SDL_JOYSTICK_POWER_WIRED,
         }
     }
 }
@@ -124,7 +125,7 @@ impl PowerLevel {
 /// Wrapper around the `SDL_Joystick` object
 pub struct Joystick {
     subsystem: JoystickSubsystem,
-    raw: *mut sys::SDL_Joystick,
+    raw: *mut sys::joystick::SDL_Joystick,
 }
 
 impl Joystick {
@@ -137,7 +138,7 @@ impl Joystick {
     /// is found.
     #[doc(alias = "SDL_GetJoystickName")]
     pub fn name(&self) -> String {
-        let name = unsafe { sys::SDL_GetJoystickName(self.raw) };
+        let name = unsafe { sys::joystick::SDL_GetJoystickName(self.raw) };
 
         c_str_to_string(name)
     }
@@ -146,12 +147,12 @@ impl Joystick {
     /// connected.
     #[doc(alias = "SDL_JoystickConnected")]
     pub fn attached(&self) -> bool {
-        unsafe { sys::SDL_JoystickConnected(self.raw) != sys::SDL_bool::SDL_FALSE }
+        unsafe { sys::joystick::SDL_JoystickConnected(self.raw)  }
     }
 
-    #[doc(alias = "SDL_GetJoystickInstanceID")]
+    #[doc(alias = "SDL_GetJoystickID")]
     pub fn instance_id(&self) -> u32 {
-        let result = unsafe { sys::SDL_GetJoystickInstanceID(self.raw) };
+        let result = unsafe { sys::joystick::SDL_GetJoystickID(self.raw) };
 
         if result < 0 {
             // Should only fail if the joystick is NULL.
@@ -164,7 +165,7 @@ impl Joystick {
     /// Retrieve the joystick's GUID
     #[doc(alias = "SDL_GetJoystickGUID")]
     pub fn guid(&self) -> Guid {
-        let raw = unsafe { sys::SDL_GetJoystickGUID(self.raw) };
+        let raw = unsafe { sys::joystick::SDL_GetJoystickGUID(self.raw) };
 
         let guid = Guid { raw };
 
@@ -178,21 +179,28 @@ impl Joystick {
 
     /// Retrieve the battery level of this joystick
     #[doc(alias = "SDL_GetJoystickPowerLevel")]
-    pub fn power_level(&self) -> Result<PowerLevel, IntegerOrSdlError> {
+    pub fn power_level(&self) -> Result<PowerInfo, IntegerOrSdlError> {
         use crate::common::IntegerOrSdlError::*;
         clear_error();
 
-        let result = unsafe { sys::SDL_GetJoystickPowerLevel(self.raw) };
+        let mut power_pct: core::ffi::c_int = 0;
+        let result = unsafe { sys::joystick::SDL_GetJoystickPowerInfo(self.raw, &mut power_pct) };
 
         let state = PowerLevel::from_ll(result);
 
-        if result != SDL_JoystickPowerLevel::SDL_JOYSTICK_POWER_UNKNOWN {
-            Ok(state)
+        if result != SDL_POWERSTATE_UNKNOWN {
+            Ok(PowerInfo {
+                state,
+                percentage: power_pct,
+            })
         } else {
             let err = get_error();
 
             if err.is_empty() {
-                Ok(state)
+                Ok(PowerInfo {
+                    state,
+                    percentage: power_pct,
+                })
             } else {
                 Err(SdlError(err))
             }
@@ -202,7 +210,7 @@ impl Joystick {
     /// Retrieve the number of axes for this joystick
     #[doc(alias = "SDL_GetNumJoystickAxes")]
     pub fn num_axes(&self) -> u32 {
-        let result = unsafe { sys::SDL_GetNumJoystickAxes(self.raw) };
+        let result = unsafe { sys::joystick::SDL_GetNumJoystickAxes(self.raw) };
 
         if result < 0 {
             // Should only fail if the joystick is NULL.
@@ -225,7 +233,7 @@ impl Joystick {
         clear_error();
 
         let axis = validate_int(axis, "axis")?;
-        let pos = unsafe { sys::SDL_GetJoystickAxis(self.raw, axis) };
+        let pos = unsafe { sys::joystick::SDL_GetJoystickAxis(self.raw, axis) };
 
         if pos != 0 {
             Ok(pos)
@@ -243,7 +251,7 @@ impl Joystick {
     /// Retrieve the number of buttons for this joystick
     #[doc(alias = "SDL_GetNumJoystickButtons")]
     pub fn num_buttons(&self) -> u32 {
-        let result = unsafe { sys::SDL_GetNumJoystickButtons(self.raw) };
+        let result = unsafe { sys::joystick::SDL_GetNumJoystickButtons(self.raw) };
 
         if result < 0 {
             // Should only fail if the joystick is NULL.
@@ -264,11 +272,11 @@ impl Joystick {
         clear_error();
 
         let button = validate_int(button, "button")?;
-        let pressed = unsafe { sys::SDL_GetJoystickButton(self.raw, button) };
+        let pressed = unsafe { sys::joystick::SDL_GetJoystickButton(self.raw, button) };
 
         match pressed {
-            1 => Ok(true),
-            0 => {
+            true => Ok(true),
+            false => {
                 let err = get_error();
 
                 if err.is_empty() {
@@ -286,7 +294,7 @@ impl Joystick {
     /// Retrieve the number of balls for this joystick
     #[doc(alias = "SDL_GetNumJoystickHats")]
     pub fn num_hats(&self) -> u32 {
-        let result = unsafe { sys::SDL_GetNumJoystickHats(self.raw) };
+        let result = unsafe { sys::joystick::SDL_GetNumJoystickHats(self.raw) };
 
         if result < 0 {
             // Should only fail if the joystick is NULL.
@@ -306,7 +314,7 @@ impl Joystick {
         clear_error();
 
         let hat = validate_int(hat, "hat")?;
-        let result = unsafe { sys::SDL_GetJoystickHat(self.raw, hat) };
+        let result = unsafe { sys::joystick::SDL_GetJoystickHat(self.raw, hat) };
 
         let state = HatState::from_raw(result as u8);
 
@@ -334,26 +342,22 @@ impl Joystick {
     /// the rumble effect to keep playing for a long time, as this results in
     /// the effect ending immediately after starting due to an overflow.
     /// Use some smaller, "huge enough" number instead.
+    ///
+    /// Returns false if the gamepad doesn't support rumble.
     #[doc(alias = "SDL_RumbleJoystick")]
     pub fn set_rumble(
         &mut self,
         low_frequency_rumble: u16,
         high_frequency_rumble: u16,
         duration_ms: u32,
-    ) -> Result<(), IntegerOrSdlError> {
-        let result = unsafe {
-            sys::SDL_RumbleJoystick(
+    ) -> bool {
+        unsafe {
+            sys::joystick::SDL_RumbleJoystick(
                 self.raw,
                 low_frequency_rumble,
                 high_frequency_rumble,
                 duration_ms,
             )
-        };
-
-        if result != 0 {
-            Err(IntegerOrSdlError::SdlError(get_error()))
-        } else {
-            Ok(())
         }
     }
 
@@ -366,10 +370,10 @@ impl Joystick {
         duration_ms: u32,
     ) -> Result<(), IntegerOrSdlError> {
         let result = unsafe {
-            sys::SDL_RumbleJoystickTriggers(self.raw, left_rumble, right_rumble, duration_ms)
+            sys::joystick::SDL_RumbleJoystickTriggers(self.raw, left_rumble, right_rumble, duration_ms)
         };
 
-        if result != 0 {
+        if !result {
             Err(IntegerOrSdlError::SdlError(get_error()))
         } else {
             Ok(())
@@ -377,44 +381,32 @@ impl Joystick {
     }
 
     /// Query whether a joystick has an LED.
-    #[doc(alias = "SDL_JoystickHasLED")]
-    pub fn has_led(&self) -> bool {
-        let result = unsafe { sys::SDL_JoystickHasLED(self.raw) };
-
-        match result {
-            sys::SDL_bool::SDL_FALSE => false,
-            sys::SDL_bool::SDL_TRUE => true,
-        }
+    #[doc(alias = "SDL_PROP_JOYSTICK_CAP_RGB_LED_BOOLEAN")]
+    pub unsafe fn has_led(&self) -> bool {
+        let props = unsafe { sys::joystick::SDL_GetJoystickProperties(self.raw) };
+        sys::properties::SDL_GetBooleanProperty(props, sys::joystick::SDL_PROP_JOYSTICK_CAP_RGB_LED_BOOLEAN.into(), false)
     }
 
     /// Query whether a joystick has rumble support.
-    #[doc(alias = "SDL_JoystickHasRumble")]
-    pub fn has_rumble(&self) -> bool {
-        let result = unsafe { sys::SDL_JoystickHasRumble(self.raw) };
-
-        match result {
-            sys::SDL_bool::SDL_FALSE => false,
-            sys::SDL_bool::SDL_TRUE => true,
-        }
+    #[doc(alias = "SDL_PROP_JOYSTICK_CAP_RUMBLE_BOOLEAN")]
+    pub unsafe  fn has_rumble(&self) -> bool {
+        let props = unsafe { sys::joystick::SDL_GetJoystickProperties(self.raw) };
+        sys::properties::SDL_GetBooleanProperty(props, sys::joystick::SDL_PROP_JOYSTICK_CAP_RUMBLE_BOOLEAN.into(), false)
     }
 
     /// Query whether a joystick has rumble support on triggers.
-    #[doc(alias = "SDL_JoystickHasRumbleTriggers")]
-    pub fn has_rumble_triggers(&self) -> bool {
-        let result = unsafe { sys::SDL_JoystickHasRumbleTriggers(self.raw) };
-
-        match result {
-            sys::SDL_bool::SDL_FALSE => false,
-            sys::SDL_bool::SDL_TRUE => true,
-        }
+    #[doc(alias = "SDL_PROP_JOYSTICK_CAP_TRIGGER_RUMBLE_BOOLEAN")]
+    pub unsafe fn has_rumble_triggers(&self) -> bool {
+        let props = unsafe { sys::joystick::SDL_GetJoystickProperties(self.raw) };
+        sys::properties::SDL_GetBooleanProperty(props, sys::joystick::SDL_PROP_JOYSTICK_CAP_TRIGGER_RUMBLE_BOOLEAN.into(), false)
     }
 
     /// Update a joystick's LED color.
     #[doc(alias = "SDL_SetJoystickLED")]
     pub fn set_led(&mut self, red: u8, green: u8, blue: u8) -> Result<(), IntegerOrSdlError> {
-        let result = unsafe { sys::SDL_SetJoystickLED(self.raw, red, green, blue) };
+        let result = unsafe { sys::joystick::SDL_SetJoystickLED(self.raw, red, green, blue) };
 
-        if result != 0 {
+        if !result  {
             Err(IntegerOrSdlError::SdlError(get_error()))
         } else {
             Ok(())
@@ -425,14 +417,14 @@ impl Joystick {
     #[doc(alias = "SDL_SendJoystickEffect")]
     pub fn send_effect(&mut self, data: &[u8]) -> Result<(), IntegerOrSdlError> {
         let result = unsafe {
-            sys::SDL_SendJoystickEffect(
+            sys::joystick::SDL_SendJoystickEffect(
                 self.raw,
                 data.as_ptr() as *const libc::c_void,
                 data.len() as i32,
             )
         };
 
-        if result != 0 {
+        if !result  {
             Err(IntegerOrSdlError::SdlError(get_error()))
         } else {
             Ok(())
@@ -444,89 +436,11 @@ impl Drop for Joystick {
     #[doc(alias = "SDL_CloseJoystick")]
     fn drop(&mut self) {
         if self.attached() {
-            unsafe { sys::SDL_CloseJoystick(self.raw) }
+            unsafe { sys::joystick::SDL_CloseJoystick(self.raw) }
         }
     }
 }
 
-/// Wrapper around a `SDL_JoystickGUID`, a globally unique identifier
-/// for a joystick.
-#[derive(Copy, Clone)]
-pub struct Guid {
-    raw: sys::SDL_JoystickGUID,
-}
-
-impl PartialEq for Guid {
-    fn eq(&self, other: &Guid) -> bool {
-        self.raw.data == other.raw.data
-    }
-}
-
-impl Eq for Guid {}
-
-impl Guid {
-    /// Create a GUID from a string representation.
-    #[doc(alias = "SDL_GetJoystickGUIDFromString")]
-    pub fn from_string(guid: &str) -> Result<Guid, NulError> {
-        let guid = CString::new(guid)?;
-
-        let raw = unsafe { sys::SDL_GetJoystickGUIDFromString(guid.as_ptr() as *const c_char) };
-
-        Ok(Guid { raw })
-    }
-
-    /// Return `true` if GUID is full 0s
-    pub fn is_zero(&self) -> bool {
-        for &i in &self.raw.data {
-            if i != 0 {
-                return false;
-            }
-        }
-
-        true
-    }
-
-    /// Return a String representation of GUID
-    #[doc(alias = "SDL_GetJoystickGUIDString")]
-    pub fn string(&self) -> String {
-        // Doc says "buf should supply at least 33bytes". I took that
-        // to mean that 33bytes should be enough in all cases, but
-        // maybe I'm wrong?
-        let mut buf = [0; 33];
-
-        let len = buf.len() as i32;
-        let c_str = buf.as_mut_ptr();
-
-        unsafe {
-            sys::SDL_GetJoystickGUIDString(self.raw, c_str, len);
-        }
-
-        // The buffer should always be NUL terminated (the
-        // documentation doesn't explicitly say it but I checked the
-        // code)
-        if c_str.is_null() {
-            String::new()
-        } else {
-            unsafe {
-                CStr::from_ptr(c_str as *const _)
-                    .to_str()
-                    .unwrap()
-                    .to_string()
-            }
-        }
-    }
-
-    /// Return a copy of the internal SDL_JoystickGUID
-    pub fn raw(self) -> sys::SDL_JoystickGUID {
-        self.raw
-    }
-}
-
-impl Display for Guid {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "{}", self.string())
-    }
-}
 
 /// This is represented in SDL2 as a bitfield but obviously not all
 /// combinations make sense: 5 for instance would mean up and down at

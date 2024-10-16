@@ -366,7 +366,7 @@ impl SurfaceRef {
     }
 
     pub fn pixel_format(&self) -> pixels::PixelFormat {
-        unsafe { pixels::PixelFormat::from_ll(self.raw_ref().format) }
+        unsafe { pixels::PixelFormat::from_ll(self.raw_ref().format, self) }
     }
 
     pub fn pixel_format_enum(&self) -> pixels::PixelFormatEnum {

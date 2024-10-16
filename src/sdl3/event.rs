@@ -1346,7 +1346,7 @@ impl Event {
                     type_: SDL_EventType::SDL_EVENT_GAMEPAD_AXIS_MOTION as u32,
                     timestamp,
                     which,
-                    axis: axisval as u8,
+                    axis: axisval.into(),
                     value,
                     padding1: 0,
                     padding2: 0,
@@ -1374,7 +1374,7 @@ impl Event {
                     which,
                     // This conversion turns an i32 into a u8; signed-to-unsigned conversions
                     // are a bit of a code smell, but that appears to be how SDL defines it.
-                    button: buttonval as u8,
+                    button: buttonval .into(),
                     state: sys::events::SDL_Event::SDL_PRESSED as u8,
                     padding1: 0,
                     padding2: 0,
@@ -1399,7 +1399,7 @@ impl Event {
                     type_: SDL_EventType::SDL_EVENT_GAMEPAD_BUTTON_UP as u32,
                     timestamp,
                     which,
-                    button: buttonval as u8,
+                    button: buttonval .into(),
                     state: sys::events::SDL_Event::SDL_RELEASED as u8,
                     padding1: 0,
                     padding2: 0,
@@ -3119,7 +3119,7 @@ impl<'a, CB: EventWatchCallback + 'a> EventWatch<'a, CB> {
     }
 
     fn filter(&self) -> SDL_EventFilter {
-        Some(event_callback_marshall::<CB> as _)
+        Some(event_callback_marshall::<CB>.into())
     }
 
     fn callback(&mut self) -> *mut c_void {
