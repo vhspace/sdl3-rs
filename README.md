@@ -5,6 +5,8 @@ Bindings for SDL3 in Rust. Work in progress.
 Now that the SDL3 API is mostly stabilized, we are working on a new version of the Rust bindings for SDL3.
 The migration is in progress, and we are looking for contributors to help us complete it.
 
+Right now the project isn't building because the migration is in progress.
+
 Please refer to the [sdl3-rs](https://github.com/revmischa/sdl3-rs) repository for the latest updates.
 
 The low-level bindings are being worked on in the [sdl3-sys](https://github.com/maia-s/sdl3-sys-rs) repository.
