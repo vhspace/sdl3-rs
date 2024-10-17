@@ -1,4 +1,5 @@
 use libc::c_char;
+use sys::init::{SDL_INIT_AUDIO, SDL_INIT_CAMERA, SDL_INIT_EVENTS, SDL_INIT_GAMEPAD, SDL_INIT_HAPTIC, SDL_INIT_JOYSTICK, SDL_INIT_SENSOR, SDL_INIT_VIDEO};
 use std::cell::Cell;
 use std::error;
 use std::ffi::{CStr, CString, NulError};
@@ -8,7 +9,7 @@ use std::os::raw::c_void;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 
 use crate::sys;
-use crate::sys::SDL_InitFlags;
+use crate::sys::init::SDL_InitFlags;
 
 #[repr(i32)]
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
@@ -312,51 +313,50 @@ impl Drop for SubsystemDrop {
 
 subsystem!(
     AudioSubsystem,
-    SDL_InitFlags::SDL_INIT_AUDIO as u32,
+    SDL_INIT_AUDIO as u32,
     AUDIO_COUNT,
     nosync
 );
 subsystem!(
-    GamepadSubsystem,
-    SDL_InitFlags::SDL_INIT_GAMEPAD as u32,
-    GAMEPAD_COUNT,
-    nosync
-);
-subsystem!(
-    HapticSubsystem,
-    SDL_InitFlags::SDL_INIT_HAPTIC as u32,
-    HAPTIC_COUNT,
+    VideoSubsystem,
+    SDL_INIT_VIDEO as u32,
+    VIDEO_COUNT,
     nosync
 );
 subsystem!(
     JoystickSubsystem,
-    SDL_InitFlags::SDL_INIT_JOYSTICK as u32,
+    SDL_INIT_JOYSTICK as u32,
     JOYSTICK_COUNT,
     nosync
 );
 subsystem!(
-    VideoSubsystem,
-    SDL_InitFlags::SDL_INIT_VIDEO as u32,
-    VIDEO_COUNT,
+    HapticSubsystem,
+    SDL_INIT_HAPTIC as u32,
+    HAPTIC_COUNT,
     nosync
 );
-// Timers can be added on other threads.
 subsystem!(
-    TimerSubsystem,
-    SDL_InitFlags::SDL_INIT_TIMER as u32,
-    TIMER_COUNT,
-    sync
+    GamepadSubsystem,
+    SDL_INIT_GAMEPAD as u32,
+    GAMEPAD_COUNT,
+    nosync
 );
 // The event queue can be read from other threads.
 subsystem!(
     EventSubsystem,
-    SDL_InitFlags::SDL_INIT_EVENTS as u32,
+    SDL_INIT_EVENTS as u32,
     EVENT_COUNT,
     sync
 );
 subsystem!(
     SensorSubsystem,
-    SDL_InitFlags::SDL_INIT_SENSOR as u32,
+    SDL_INIT_SENSOR as u32,
+    SENSOR_COUNT,
+    nosync
+);
+subsystem!(
+    CameraSubsystem,
+    SDL_INIT_CAMERA as u32,
     SENSOR_COUNT,
     nosync
 );
