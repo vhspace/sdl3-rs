@@ -357,7 +357,7 @@ subsystem!(
 subsystem!(
     CameraSubsystem,
     SDL_INIT_CAMERA as u32,
-    SENSOR_COUNT,
+    CAMERA_COUNT,
     nosync
 );
 

@@ -62,7 +62,32 @@ pub fn has_avx512f() -> bool {
     unsafe { sys::cpuinfo::SDL_HasAVX512F() }
 }
 
+#[doc(alias = "SDL_HasARMSIMD")]
+pub fn has_arm_simd() -> bool {
+    unsafe { sys::cpuinfo::SDL_HasARMSIMD() }
+}
+
+#[doc(alias = "SDL_HasNEON")]
+pub fn has_neon() -> bool {
+    unsafe { sys::cpuinfo::SDL_HasNEON() }
+}
+
+#[doc(alias = "SDL_HasLSX")]
+pub fn has_lsx() -> bool {
+    unsafe { sys::cpuinfo::SDL_HasLSX() }
+}
+
+#[doc(alias = "SDL_HasLASX")]
+pub fn has_lasx() -> bool {
+    unsafe { sys::cpuinfo::SDL_HasLASX() }
+}
+
 #[doc(alias = "SDL_GetSystemRAM")]
 pub fn system_ram() -> i32 {
     unsafe { sys::cpuinfo::SDL_GetSystemRAM() }
+}
+
+#[doc(alias = "SDL_GetSIMDAlignment")]
+pub fn simd_alignment() -> usize {
+    unsafe { sys::cpuinfo::SDL_GetSIMDAlignment() }
 }
