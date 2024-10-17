@@ -1,6 +1,8 @@
 use crate::sys;
 use std::ffi::{CStr, CString};
+use std::mem::transmute;
 use std::ptr::null_mut;
+use sys::log::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Category {
@@ -13,6 +15,7 @@ pub enum Category {
     Render,
     Input,
     Test,
+    Gpu,
     Custom,
     Unknown,
 }
@@ -20,26 +23,19 @@ pub enum Category {
 impl Category {
     #[allow(dead_code)]
     fn from_ll(value: u32) -> Category {
-        if value == sys::log::SDL_LogCategory::SDL_LOG_CATEGORY_APPLICATION as u32 {
-            Category::Application
-        } else if value == sys::log::SDL_LogCategory::SDL_LOG_CATEGORY_ERROR as u32 {
-            Category::Error
-        } else if value == sys::log::SDL_LogCategory::SDL_LOG_CATEGORY_ASSERT as u32 {
-            Category::Assert
-        } else if value == sys::log::SDL_LogCategory::SDL_LOG_CATEGORY_SYSTEM as u32 {
-            Category::System
-        } else if value == sys::log::SDL_LogCategory::SDL_LOG_CATEGORY_AUDIO as u32 {
-            Category::Audio
-        } else if value == sys::log::SDL_LogCategory::SDL_LOG_CATEGORY_VIDEO as u32 {
-            Category::Video
-        } else if value == sys::log::SDL_LogCategory::SDL_LOG_CATEGORY_RENDER as u32 {
-            Category::Render
-        } else if value == sys::log::SDL_LogCategory::SDL_LOG_CATEGORY_INPUT as u32 {
-            Category::Input
-        } else if value == sys::log::SDL_LogCategory::SDL_LOG_CATEGORY_TEST as u32 {
-            Category::Test
-        } else {
-            Category::Custom
+        match unsafe { transmute::<u32, SDL_LogCategory>(src) } {
+            SDL_LOG_CATEGORY_APPLICATION => Self::Application,
+            SDL_LOG_CATEGORY_ERROR => Self::Error,
+            SDL_LOG_CATEGORY_ASSERT => Self::Assert,
+            SDL_LOG_CATEGORY_SYSTEM => Self::System,
+            SDL_LOG_CATEGORY_AUDIO => Self::Audio,
+            SDL_LOG_CATEGORY_VIDEO => Self::Video,
+            SDL_LOG_CATEGORY_RENDER => Self::Render,
+            SDL_LOG_CATEGORY_INPUT => Self::Input,
+            SDL_LOG_CATEGORY_TEST => Self::Test,
+            SDL_LOG_CATEGORY_GPU => Self::Gpu,
+            SDL_LOG_CATEGORY_CUSTOM => Self::Custom,
+            _ => Self::Unknown,
         }
     }
 }
@@ -55,8 +51,7 @@ pub enum Priority {
 }
 
 impl Priority {
-    fn from_ll(value: sys::log::SDL_LogPriority) -> Priority {
-        use crate::sys::log::SDL_LogPriority::*;
+    fn from_ll(value: SDL_LogPriority) -> Priority {
         match value {
             SDL_LOG_PRIORITY_VERBOSE => Priority::Verbose,
             SDL_LOG_PRIORITY_DEBUG => Priority::Debug,
@@ -77,7 +72,7 @@ static mut custom_log_fn: fn(Priority, Category, &str) = dummy;
 unsafe extern "C" fn rust_sdl2_log_fn(
     _userdata: *mut libc::c_void,
     category: libc::c_int,
-    priority: sys::log::SDL_LogPriority,
+    priority: SDL_LogPriority,
     message: *const libc::c_char,
 ) {
     let category = Category::from_ll(category as u32);
