@@ -678,72 +678,35 @@ pub struct TextureCreator<T> {
     default_pixel_format: PixelFormatEnum,
 }
 
-/// The type that allows you to build Window-based renderers.
-///
-/// By default, the renderer builder will prioritize for a hardware-accelerated
-/// renderer, which is probably what you want.
-pub struct CanvasBuilder {
-    window: Window,
-    renderer_name: Option<String>,
-    renderer_flags: u32,
-}
 
-impl CanvasBuilder {
-    /// Initializes a new `CanvasBuilder`.
-    pub fn new(window: Window) -> CanvasBuilder {
-        CanvasBuilder {
-            window,
-            // None means to initialize the first rendering driver supporting the
-            // renderer flags
-            renderer_name: None,
-            // no flags gives priority to available SDL_RENDERER_ACCELERATED
-            // renderers
-            renderer_flags: 0,
-        }
+
+/// Create a new renderer for a window.
+#[doc(alias = "SDL_CreateRenderer")]
+pub fn create_renderer(window: Window, renderer_name: Option<&str>)
+    -> Result<WindowCanvas, IntegerOrSdlError> {
+    use crate::common::IntegerOrSdlError::*;
+    let raw = unsafe {
+        sys::render::SDL_CreateRenderer(
+            window.raw(),
+            if renderer_name.is_none() {
+                std::ptr::null()
+            } else {
+                renderer_name.unwrap().as_ptr() as *const _
+            },
+        )
+    };
+
+    if raw.is_null() {
+        Err(SdlError(get_error()))
+    } else {
+        let context = Rc::new(unsafe { RendererContext::from_ll(raw, window.context()) });
+        let default_pixel_format = window.window_pixel_format();
+        Ok(Canvas {
+            context,
+            target: window,
+            default_pixel_format,
+        })
     }
-
-    /// Builds the renderer.
-    #[doc(alias = "SDL_CreateRenderer")]
-    pub fn build(self) -> Result<WindowCanvas, IntegerOrSdlError> {
-        use crate::common::IntegerOrSdlError::*;
-        let raw = unsafe {
-            sys::render::SDL_CreateRenderer(
-                self.window.raw(),
-                if self.renderer_name.is_none() {
-                    std::ptr::null()
-                } else {
-                    self.renderer_name.unwrap().as_ptr() as *const _
-                },
-                self.renderer_flags,
-            )
-        };
-
-        if raw.is_null() {
-            Err(SdlError(get_error()))
-        } else {
-            let context = Rc::new(unsafe { RendererContext::from_ll(raw, self.window.context()) });
-            let default_pixel_format = self.window.window_pixel_format();
-            Ok(Canvas {
-                context,
-                target: self.window,
-                default_pixel_format,
-            })
-        }
-    }
-
-    /// Sets the rendering driver to initialize.
-    pub fn renderer_name(mut self, renderer_name: String) -> CanvasBuilder {
-        self.renderer_name = Some(renderer_name);
-        self
-    }
-
-    /// Set the renderer to a software fallback.
-    /// This flag is accumulative, and may be specified with other flags.
-    pub fn software(mut self) -> CanvasBuilder {
-        self.renderer_name = Some(sys::render::SDL_SOFTWARE_RENDERER.into());
-        self
-    }
-
 }
 
 #[derive(Debug, Clone)]

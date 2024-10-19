@@ -6,7 +6,7 @@ use sdl3::keyboard::Keycode;
 use sdl3::mouse::MouseButton;
 use sdl3::pixels::Color;
 use sdl3::rect::Point;
-use sdl3::render::{Canvas, Texture, TextureCreator, FRect};
+use sdl3::render::{Canvas, FRect, Texture, TextureCreator};
 use sdl3::video::{Window, WindowContext};
 
 mod game_of_life {
@@ -131,73 +131,72 @@ fn dummy_texture<'a>(
             (&mut square_texture1, TextureColor::Yellow),
             (&mut square_texture2, TextureColor::White),
         ];
-        canvas
-            .with_multiple_texture_canvas(textures.iter(), |texture_canvas, user_context| {
-                texture_canvas.set_draw_color(Color::RGB(0, 0, 0));
-                texture_canvas.clear();
-                match *user_context {
-                    TextureColor::Yellow => {
-                        for i in 0..SQUARE_SIZE {
-                            for j in 0..SQUARE_SIZE {
-                                if (i + j) % 4 == 0 {
-                                    texture_canvas.set_draw_color(Color::RGB(255, 255, 0));
-                                    texture_canvas
-                                        .draw_point(Point::new(i as i32, j as i32))
-                                        .expect("could not draw point");
-                                }
-                                if (i + j * 2) % 9 == 0 {
-                                    texture_canvas.set_draw_color(Color::RGB(200, 200, 0));
-                                    texture_canvas
-                                        .draw_point(Point::new(i as i32, j as i32))
-                                        .expect("could not draw point");
-                                }
+        canvas.with_multiple_texture_canvas(textures.iter(), |texture_canvas, user_context| {
+            texture_canvas.set_draw_color(Color::RGB(0, 0, 0));
+            texture_canvas.clear();
+            match *user_context {
+                TextureColor::Yellow => {
+                    for i in 0..SQUARE_SIZE {
+                        for j in 0..SQUARE_SIZE {
+                            if (i + j) % 4 == 0 {
+                                texture_canvas.set_draw_color(Color::RGB(255, 255, 0));
+                                texture_canvas
+                                    .draw_point(Point::new(i as i32, j as i32))
+                                    .expect("could not draw point");
                             }
-                        }
-                    }
-                    TextureColor::White => {
-                        for i in 0..SQUARE_SIZE {
-                            for j in 0..SQUARE_SIZE {
-                                // drawing pixel by pixel isn't very effective, but we only do it once and store
-                                // the texture afterwards so it's still alright!
-                                if (i + j) % 7 == 0 {
-                                    // this doesn't mean anything, there was some trial and error to find
-                                    // something that wasn't too ugly
-                                    texture_canvas.set_draw_color(Color::RGB(192, 192, 192));
-                                    texture_canvas
-                                        .draw_point(Point::new(i as i32, j as i32))
-                                        .expect("could not draw point");
-                                }
-                                if (i + j * 2) % 5 == 0 {
-                                    texture_canvas.set_draw_color(Color::RGB(64, 64, 64));
-                                    texture_canvas
-                                        .draw_point(Point::new(i as i32, j as i32))
-                                        .expect("could not draw point");
-                                }
+                            if (i + j * 2) % 9 == 0 {
+                                texture_canvas.set_draw_color(Color::RGB(200, 200, 0));
+                                texture_canvas
+                                    .draw_point(Point::new(i as i32, j as i32))
+                                    .expect("could not draw point");
                             }
-                        }
-                    }
-                };
-                for i in 0..SQUARE_SIZE {
-                    for j in 0..SQUARE_SIZE {
-                        // drawing pixel by pixel isn't very effective, but we only do it once and store
-                        // the texture afterwards so it's still alright!
-                        if (i + j) % 7 == 0 {
-                            // this doesn't mean anything, there was some trial and serror to find
-                            // something that wasn't too ugly
-                            texture_canvas.set_draw_color(Color::RGB(192, 192, 192));
-                            texture_canvas
-                                .draw_point(Point::new(i as i32, j as i32))
-                                .expect("could not draw point");
-                        }
-                        if (i + j * 2) % 5 == 0 {
-                            texture_canvas.set_draw_color(Color::RGB(64, 64, 64));
-                            texture_canvas
-                                .draw_point(Point::new(i as i32, j as i32))
-                                .expect("could not draw point");
                         }
                     }
                 }
-            });
+                TextureColor::White => {
+                    for i in 0..SQUARE_SIZE {
+                        for j in 0..SQUARE_SIZE {
+                            // drawing pixel by pixel isn't very effective, but we only do it once and store
+                            // the texture afterwards so it's still alright!
+                            if (i + j) % 7 == 0 {
+                                // this doesn't mean anything, there was some trial and error to find
+                                // something that wasn't too ugly
+                                texture_canvas.set_draw_color(Color::RGB(192, 192, 192));
+                                texture_canvas
+                                    .draw_point(Point::new(i as i32, j as i32))
+                                    .expect("could not draw point");
+                            }
+                            if (i + j * 2) % 5 == 0 {
+                                texture_canvas.set_draw_color(Color::RGB(64, 64, 64));
+                                texture_canvas
+                                    .draw_point(Point::new(i as i32, j as i32))
+                                    .expect("could not draw point");
+                            }
+                        }
+                    }
+                }
+            };
+            for i in 0..SQUARE_SIZE {
+                for j in 0..SQUARE_SIZE {
+                    // drawing pixel by pixel isn't very effective, but we only do it once and store
+                    // the texture afterwards so it's still alright!
+                    if (i + j) % 7 == 0 {
+                        // this doesn't mean anything, there was some trial and serror to find
+                        // something that wasn't too ugly
+                        texture_canvas.set_draw_color(Color::RGB(192, 192, 192));
+                        texture_canvas
+                            .draw_point(Point::new(i as i32, j as i32))
+                            .expect("could not draw point");
+                    }
+                    if (i + j * 2) % 5 == 0 {
+                        texture_canvas.set_draw_color(Color::RGB(64, 64, 64));
+                        texture_canvas
+                            .draw_point(Point::new(i as i32, j as i32))
+                            .expect("could not draw point");
+                    }
+                }
+            }
+        });
     }
     Ok((square_texture1, square_texture2))
 }
@@ -221,7 +220,7 @@ pub fn main() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     // the canvas allows us to both manipulate the property of the window and to change its content
-    // via hardware or software rendering. See CanvasBuilder for more info.
+    // via hardware or software rendering.
     let mut canvas = window
         .into_canvas()
         //.target_texture() //FIXME: Unclear how to migrate this to SDL3, cf: https://github.com/libsdl-org/SDL/issues/8059
