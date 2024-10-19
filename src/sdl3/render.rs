@@ -128,10 +128,7 @@ impl FPoint {
 
 impl From<Point> for FPoint {
     fn from(point: Point) -> Self {
-	FPoint::new(
-	    point.x as f32,
-	    point.y as f32,
-	    )
+        FPoint::new(point.x as f32, point.y as f32)
     }
 }
 
@@ -156,31 +153,26 @@ impl FRect {
         }
     }
     pub fn set_x(&mut self, update: f32) {
-	self.x = update;
+        self.x = update;
     }
     pub fn set_y(&mut self, update: f32) {
-	self.y = update;
+        self.y = update;
     }
     pub fn set_w(&mut self, update: f32) {
-	self.w = update;
+        self.w = update;
     }
     pub fn set_h(&mut self, update: f32) {
-	self.h = update;
+        self.h = update;
     }
     pub fn set_xy(&mut self, update: FPoint) {
-	self.x = update.x;
-	self.y = update.y;
+        self.x = update.x;
+        self.y = update.y;
     }
 }
 
 impl From<Rect> for FRect {
     fn from(rect: Rect) -> Self {
-	FRect::new(
-	    rect.x as f32,
-	    rect.y as f32,
-	    rect.w as f32,
-	    rect.h as f32,
-	)
+        FRect::new(rect.x as f32, rect.y as f32, rect.w as f32, rect.h as f32)
     }
 }
 
@@ -289,7 +281,10 @@ impl<T> RendererContext<T> {
         }
     }
 
-    unsafe fn set_raw_target(&self, raw_texture: *mut sys::render::SDL_Texture) -> Result<(), SdlError> {
+    unsafe fn set_raw_target(
+        &self,
+        raw_texture: *mut sys::render::SDL_Texture,
+    ) -> Result<(), SdlError> {
         if sys::render::SDL_SetRenderTarget(self.raw, raw_texture) == true {
             Ok(())
         } else {
@@ -349,8 +344,7 @@ impl<'s> RenderTarget for Surface<'s> {
 /// let window = video_subsystem.window("Example", 800, 600).build().unwrap();
 ///
 /// // Let's create a Canvas which we will use to draw in our Window
-/// let mut canvas : Canvas<Window> = window.into_canvas()
-///     .build().unwrap();
+/// let mut canvas : Canvas<Window> = window.into_canvas();
 ///
 /// canvas.set_draw_color(Color::RGB(0, 0, 0));
 /// // fills the canvas with the color we set in `set_draw_color`.
@@ -678,12 +672,12 @@ pub struct TextureCreator<T> {
     default_pixel_format: PixelFormatEnum,
 }
 
-
-
 /// Create a new renderer for a window.
 #[doc(alias = "SDL_CreateRenderer")]
-pub fn create_renderer(window: Window, renderer_name: Option<&str>)
-    -> Result<WindowCanvas, IntegerOrSdlError> {
+pub fn create_renderer(
+    window: Window,
+    renderer_name: Option<&str>,
+) -> Result<WindowCanvas, IntegerOrSdlError> {
     use crate::common::IntegerOrSdlError::*;
     let raw = unsafe {
         sys::render::SDL_CreateRenderer(
@@ -778,7 +772,9 @@ fn ll_create_texture(
         _ => (),
     };
 
-    Ok(unsafe { sys::render::SDL_CreateTexture(context, pixel_format as u32, access as c_int, w, h) })
+    Ok(unsafe {
+        sys::render::SDL_CreateTexture(context, pixel_format as u32, access as c_int, w, h)
+    })
 }
 
 /// Texture-creating methods for the renderer
@@ -903,8 +899,9 @@ impl<T> TextureCreator<T> {
         surface: S,
     ) -> Result<Texture, TextureValueError> {
         use self::TextureValueError::*;
-        let result =
-            unsafe { sys::render::SDL_CreateTextureFromSurface(self.context.raw, surface.as_ref().raw()) };
+        let result = unsafe {
+            sys::render::SDL_CreateTextureFromSurface(self.context.raw, surface.as_ref().raw())
+        };
         if result.is_null() {
             Err(SdlError(get_error()))
         } else {
@@ -967,8 +964,9 @@ impl<T: RenderTarget> Canvas<T> {
     /// Sets the blend mode used for drawing operations (Fill and Line).
     #[doc(alias = "SDL_SetRenderDrawBlendMode")]
     pub fn set_blend_mode(&mut self, blend: BlendMode) {
-        let ret =
-            unsafe { sys::render::SDL_SetRenderDrawBlendMode(self.context.raw, transmute(blend as u32)) };
+        let ret = unsafe {
+            sys::render::SDL_SetRenderDrawBlendMode(self.context.raw, transmute(blend as u32))
+        };
         // Should only fail on an invalid renderer
         if !ret {
             panic!("{}", get_error())
@@ -979,7 +977,9 @@ impl<T: RenderTarget> Canvas<T> {
     #[doc(alias = "SDL_GetRenderDrawBlendMode")]
     pub fn blend_mode(&self) -> BlendMode {
         let mut blend: MaybeUninit<SDL_BlendMode> = mem::MaybeUninit::uninit();
-        let ret = unsafe { sys::render::SDL_GetRenderDrawBlendMode(self.context.raw, blend.as_mut_ptr()) };
+        let ret = unsafe {
+            sys::render::SDL_GetRenderDrawBlendMode(self.context.raw, blend.as_mut_ptr())
+        };
         // Should only fail on an invalid renderer
         if !ret {
             panic!("{}", get_error())
@@ -1040,7 +1040,13 @@ impl<T: RenderTarget> Canvas<T> {
         let width = validate_int(width, "width")?;
         let height = validate_int(height, "height")?;
         let result = unsafe {
-            sys::render::SDL_SetRenderLogicalPresentation(self.context.raw, width, height, mode, scale_mode)
+            sys::render::SDL_SetRenderLogicalPresentation(
+                self.context.raw,
+                width,
+                height,
+                mode,
+                scale_mode,
+            )
         };
         match result {
             0 => Ok(()),
@@ -1062,7 +1068,8 @@ impl<T: RenderTarget> Canvas<T> {
         let mut height = 0;
         let mut mode: sys::render::SDL_RendererLogicalPresentation =
             sys::render::SDL_RendererLogicalPresentation::SDL_LOGICAL_PRESENTATION_DISABLED;
-        let mut scale_mode: sys::render::SDL_ScaleMode = sys::render::SDL_ScaleMode::SDL_SCALEMODE_BEST;
+        let mut scale_mode: sys::render::SDL_ScaleMode =
+            sys::render::SDL_ScaleMode::SDL_SCALEMODE_BEST;
 
         unsafe {
             sys::render::SDL_GetRenderLogicalPresentation(
@@ -1190,8 +1197,9 @@ impl<T: RenderTarget> Canvas<T> {
     ) -> Result<(), String> {
         let start = start.into();
         let end = end.into();
-        let result =
-            unsafe { sys::render::SDL_RenderLine(self.context.raw, start.x, start.y, end.x, end.y) };
+        let result = unsafe {
+            sys::render::SDL_RenderLine(self.context.raw, start.x, start.y, end.x, end.y)
+        };
         if result != 0 {
             Err(get_error())
         } else {
@@ -1550,8 +1558,9 @@ impl<T: RenderTarget> Canvas<T> {
         surface: S,
     ) -> Result<Texture, TextureValueError> {
         use self::TextureValueError::*;
-        let result =
-            unsafe { sys::render::SDL_CreateTextureFromSurface(self.context.raw, surface.as_ref().raw()) };
+        let result = unsafe {
+            sys::render::SDL_CreateTextureFromSurface(self.context.raw, surface.as_ref().raw())
+        };
         if result.is_null() {
             Err(SdlError(get_error()))
         } else {
@@ -1823,7 +1832,13 @@ impl InternalTexture {
         let mut height = 0;
 
         let ret = unsafe {
-            sys::render::SDL_QueryTexture(self.raw, &mut format, &mut access, &mut width, &mut height)
+            sys::render::SDL_QueryTexture(
+                self.raw,
+                &mut format,
+                &mut access,
+                &mut width,
+                &mut height,
+            )
         };
         // Should only fail on an invalid texture
         if !ret {
@@ -1884,7 +1899,8 @@ impl InternalTexture {
 
     #[doc(alias = "SDL_SetTextureBlendMode")]
     pub fn set_blend_mode(&mut self, blend: BlendMode) {
-        let ret = unsafe { sys::render::SDL_SetTextureBlendMode(self.raw, transmute(blend as u32)) };
+        let ret =
+            unsafe { sys::render::SDL_SetTextureBlendMode(self.raw, transmute(blend as u32)) };
 
         if !ret {
             panic!("Error setting blend: {}", get_error())
