@@ -1,18 +1,18 @@
+use crate::common::{validate_int, IntegerOrSdlError};
+use crate::pixels::PixelFormatEnum;
+use crate::rect::Rect;
+use crate::render::create_renderer;
+use crate::surface::SurfaceRef;
+use crate::EventPump;
+use crate::VideoSubsystem;
 use libc::{c_char, c_int, c_uint, c_void};
+use render::WindowCanvas;
 use std::convert::TryFrom;
 use std::error::Error;
 use std::ffi::{CStr, CString, NulError};
 use std::ops::{Deref, DerefMut};
 use std::rc::Rc;
 use std::{fmt, mem, ptr};
-
-use crate::common::{validate_int, IntegerOrSdlError};
-use crate::pixels::PixelFormatEnum;
-use crate::rect::Rect;
-use crate::render::CanvasBuilder;
-use crate::surface::SurfaceRef;
-use crate::EventPump;
-use crate::VideoSubsystem;
 
 use crate::get_error;
 
@@ -725,7 +725,12 @@ impl VideoSubsystem {
     }
 
     /// Initializes a new `PopupWindowBuilder`; a convenience method that calls `PopupWindowBuilder::new()`.
-    pub unsafe fn popup_window(&self, window: &Window, width: u32, height: u32) -> PopupWindowBuilder {
+    pub unsafe fn popup_window(
+        &self,
+        window: &Window,
+        width: u32,
+        height: u32,
+    ) -> PopupWindowBuilder {
         PopupWindowBuilder::new(self, window, width, height)
     }
 
@@ -1296,7 +1301,12 @@ pub struct PopupWindowBuilder {
 
 impl PopupWindowBuilder {
     /// Initializes a new `PopupWindowBuilder`.
-    pub unsafe fn new(v: &VideoSubsystem, parent_window: &Window, width: u32, height: u32) -> PopupWindowBuilder {
+    pub unsafe fn new(
+        v: &VideoSubsystem,
+        parent_window: &Window,
+        width: u32,
+        height: u32,
+    ) -> PopupWindowBuilder {
         PopupWindowBuilder {
             parent_window: Window::from_ref(parent_window.context()),
             width,
@@ -1319,11 +1329,19 @@ impl PopupWindowBuilder {
         if self.height >= (1 << 31) {
             return Err(HeightOverflows(self.width));
         }
-        if (self.window_flags & sys::SDL_WindowFlags::SDL_WINDOW_TOOLTIP as u32 != 0) && (self.window_flags & sys::SDL_WindowFlags::SDL_WINDOW_POPUP_MENU as u32 != 0) {
-            return Err(SdlError("SDL_WINDOW_TOOLTIP and SDL_WINDOW_POPUP are mutually exclusive".to_owned()));
+        if (self.window_flags & sys::SDL_WindowFlags::SDL_WINDOW_TOOLTIP as u32 != 0)
+            && (self.window_flags & sys::SDL_WindowFlags::SDL_WINDOW_POPUP_MENU as u32 != 0)
+        {
+            return Err(SdlError(
+                "SDL_WINDOW_TOOLTIP and SDL_WINDOW_POPUP are mutually exclusive".to_owned(),
+            ));
         }
-        if (self.window_flags & sys::SDL_WindowFlags::SDL_WINDOW_TOOLTIP as u32 == 0) && (self.window_flags & sys::SDL_WindowFlags::SDL_WINDOW_POPUP_MENU as u32 == 0) {
-            return Err(SdlError("SDL_WINDOW_TOOLTIP or SDL_WINDOW_POPUP are required for popup windows".to_owned()));
+        if (self.window_flags & sys::SDL_WindowFlags::SDL_WINDOW_TOOLTIP as u32 == 0)
+            && (self.window_flags & sys::SDL_WindowFlags::SDL_WINDOW_POPUP_MENU as u32 == 0)
+        {
+            return Err(SdlError(
+                "SDL_WINDOW_TOOLTIP or SDL_WINDOW_POPUP are required for popup windows".to_owned(),
+            ));
         }
 
         let raw_width = self.width as c_int;
@@ -1351,9 +1369,10 @@ impl PopupWindowBuilder {
         }
     }
 
-
     /// Gets the underlying window flags.
-    pub fn window_flags(&self) -> u32 { self.window_flags }
+    pub fn window_flags(&self) -> u32 {
+        self.window_flags
+    }
 
     /// Sets the underlying window flags.
     /// This will effectively undo any previous build operations, excluding window size and position.
@@ -1432,9 +1451,9 @@ impl PopupWindowBuilder {
     }
 }
 
-impl From<Window> for CanvasBuilder {
-    fn from(window: Window) -> CanvasBuilder {
-        CanvasBuilder::new(window)
+impl From<Window> for WindowCanvas {
+    fn from(window: Window) -> Result<WindowCanvas, IntegerOrSdlError> {
+        create_renderer(window, None)
     }
 }
 
@@ -1468,8 +1487,8 @@ impl Window {
         &self.context.subsystem
     }
 
-    /// Initializes a new `CanvasBuilder`; a convenience method that calls `CanvasBuilder::new()`.
-    pub fn into_canvas(self) -> CanvasBuilder {
+    /// Initializes a new `WindowCanvas';
+    pub fn into_canvas(self) -> WindowCanvas {
         self.into()
     }
 
