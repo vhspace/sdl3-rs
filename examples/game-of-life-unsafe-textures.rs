@@ -230,7 +230,7 @@ pub fn main() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     // the canvas allows us to both manipulate the property of the window and to change its content
-    // via hardware or software rendering. See CanvasBuilder for more info.
+    // via hardware or software rendering.
     let mut canvas = window
         .into_canvas()
         .target_texture()
