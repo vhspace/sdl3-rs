@@ -1,4 +1,4 @@
-use crate::rwops::RWops;
+use crate::iostream::RWops;
 use libc::{c_char, c_void};
 use std::error;
 use std::ffi::{CStr, CString, NulError};
@@ -140,7 +140,8 @@ impl GamepadSubsystem {
             Err(err) => return Err(InvalidMapping(err)),
         };
 
-        let result = unsafe { sys::gamepad::SDL_AddGamepadMapping(mapping.as_ptr() as *const c_char) };
+        let result =
+            unsafe { sys::gamepad::SDL_AddGamepadMapping(mapping.as_ptr() as *const c_char) };
 
         match result {
             1 => Ok(MappingStatus::Added),
@@ -330,8 +331,12 @@ impl Button {
             sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_START => Button::Start,
             sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_STICK => Button::LeftStick,
             sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_STICK => Button::RightStick,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_SHOULDER => Button::LeftShoulder,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER => Button::RightShoulder,
+            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_SHOULDER => {
+                Button::LeftShoulder
+            }
+            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER => {
+                Button::RightShoulder
+            }
             sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_UP => Button::DPadUp,
             sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_DOWN => Button::DPadDown,
             sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_LEFT => Button::DPadLeft,
@@ -357,8 +362,12 @@ impl Button {
             Button::Start => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_START,
             Button::LeftStick => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_STICK,
             Button::RightStick => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_STICK,
-            Button::LeftShoulder => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_SHOULDER,
-            Button::RightShoulder => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER,
+            Button::LeftShoulder => {
+                sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_SHOULDER
+            }
+            Button::RightShoulder => {
+                sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER
+            }
             Button::DPadUp => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_UP,
             Button::DPadDown => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_DOWN,
             Button::DPadLeft => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_LEFT,
@@ -502,7 +511,12 @@ impl Gamepad {
         duration_ms: u32,
     ) -> Result<(), IntegerOrSdlError> {
         let result = unsafe {
-            sys::gamepad::SDL_RumbleGamepadTriggers(self.raw, left_rumble, right_rumble, duration_ms)
+            sys::gamepad::SDL_RumbleGamepadTriggers(
+                self.raw,
+                left_rumble,
+                right_rumble,
+                duration_ms,
+            )
         };
 
         if !result {
@@ -516,22 +530,33 @@ impl Gamepad {
     #[doc(alias = "SDL_PROP_JOYSTICK_CAP_RGB_LED_BOOLEAN")]
     pub unsafe fn has_led(&self) -> bool {
         let props = sys::gamepad::SDL_GetGamepadProperties(self.raw);
-         sys::properties::SDL_GetBooleanProperty(props, sys::gamepad::SDL_PROP_GAMEPAD_CAP_RGB_LED_BOOLEAN.into(), false)
+        sys::properties::SDL_GetBooleanProperty(
+            props,
+            sys::gamepad::SDL_PROP_GAMEPAD_CAP_RGB_LED_BOOLEAN.into(),
+            false,
+        )
     }
 
     /// Query whether a game controller has rumble support.
     #[doc(alias = "SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN")]
     pub unsafe fn has_rumble(&self) -> bool {
         let props = sys::gamepad::SDL_GetGamepadProperties(self.raw);
-        sys::properties::SDL_GetBooleanProperty(props, sys::gamepad::SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN.into(), false)
-
+        sys::properties::SDL_GetBooleanProperty(
+            props,
+            sys::gamepad::SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN.into(),
+            false,
+        )
     }
 
     /// Query whether a game controller has rumble support on triggers.
     #[doc(alias = "SDL_PROP_GAMEPAD_CAP_TRIGGER_RUMBLE_BOOLEAN")]
     pub unsafe fn has_rumble_triggers(&self) -> bool {
-        let props =  sys::gamepad::SDL_GetGamepadProperties(self.raw) ;
-        sys::properties::SDL_GetBooleanProperty(props, sys::gamepad::SDL_PROP_GAMEPAD_CAP_TRIGGER_RUMBLE_BOOLEAN.into(), false)
+        let props = sys::gamepad::SDL_GetGamepadProperties(self.raw);
+        sys::properties::SDL_GetBooleanProperty(
+            props,
+            sys::gamepad::SDL_PROP_GAMEPAD_CAP_TRIGGER_RUMBLE_BOOLEAN.into(),
+            false,
+        )
     }
 
     /// Update a game controller's LED color.
@@ -574,8 +599,7 @@ impl Gamepad {
 
     #[doc(alias = "SDL_GamepadSensorEnabled")]
     pub fn sensor_enabled(&self, sensor_type: crate::sensor::SensorType) -> bool {
-      unsafe  { sys::gamepad::SDL_GamepadSensorEnabled(self.raw, sensor_type.into()) }
-
+        unsafe { sys::gamepad::SDL_GamepadSensorEnabled(self.raw, sensor_type.into()) }
     }
 
     #[doc(alias = "SDL_SetGamepadSensorEnabled")]
@@ -588,11 +612,7 @@ impl Gamepad {
             sys::gamepad::SDL_SetGamepadSensorEnabled(
                 self.raw,
                 sensor_type.into(),
-                if enabled {
-                    true
-                } else {
-                    false
-                },
+                if enabled { true } else { false },
             )
         };
 

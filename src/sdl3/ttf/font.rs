@@ -1,6 +1,6 @@
 use get_error;
+use iostream::RWops;
 use pixels::Color;
-use rwops::RWops;
 use std::error;
 use std::error::Error;
 use std::ffi::NulError;
