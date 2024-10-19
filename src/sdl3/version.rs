@@ -2,7 +2,6 @@
 Querying SDL Version
  */
 
-use std::ffi::CStr;
 use std::fmt;
 
 use crate::sys;
@@ -19,12 +18,13 @@ pub struct Version {
 }
 
 impl Version {
-    /// Convert a raw *SDL_version to Version.
-    pub fn from_ll(v: sys::SDL_version) -> Version {
+    /// Convert a raw sdl version number to Version.
+    pub fn from_ll(v: i32) -> Version {
+        // pub const SDL_VERSION: i32 = _; // 3_001_003i32
         Version {
-            major: v.major,
-            minor: v.minor,
-            patch: v.patch,
+            major: (v >> 16) as u8,
+            minor: ((v >> 8) & 0xFF) as u8,
+            patch: (v & 0xFF) as u8,
         }
     }
 }
@@ -39,21 +39,7 @@ impl fmt::Display for Version {
 #[doc(alias = "SDL_GetVersion")]
 pub fn version() -> Version {
     unsafe {
-        let mut cver = sys::SDL_version {
-            major: 0,
-            minor: 0,
-            patch: 0,
-        };
-        sys::SDL_GetVersion(&mut cver);
-        Version::from_ll(cver)
-    }
-}
-
-/// Get the code revision of SDL that is linked against your program.
-#[doc(alias = "SDL_GetRevision")]
-pub fn revision() -> String {
-    unsafe {
-        let rev = sys::SDL_GetRevision();
-        CStr::from_ptr(rev as *const _).to_str().unwrap().to_owned()
+        let version = sys::version::SDL_GetVersion();
+        Version::from_ll(version)
     }
 }
