@@ -22,9 +22,9 @@
 
 use audio::AudioFormatNum;
 use get_error;
+use iostream::RWops;
 use libc::c_void;
 use libc::{c_double, c_int, c_uint};
-use rwops::RWops;
 use std::borrow::ToOwned;
 use std::convert::TryInto;
 use std::default;
@@ -801,8 +801,12 @@ impl<'a> Music<'a> {
     /// Load music from a static byte buffer.
     #[doc(alias = "SDL_RWFromConstMem")]
     pub fn from_static_bytes(buf: &'static [u8]) -> Result<Music<'static>, String> {
-        let rw =
-            unsafe { sys::SDL_RWFromConstMem(buf.as_ptr() as *const c_void, (buf.len() as c_int).try_into().unwrap() ) };
+        let rw = unsafe {
+            sys::SDL_RWFromConstMem(
+                buf.as_ptr() as *const c_void,
+                (buf.len() as c_int).try_into().unwrap(),
+            )
+        };
 
         if rw.is_null() {
             return Err(get_error());

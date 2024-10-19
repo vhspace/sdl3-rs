@@ -49,19 +49,16 @@
 #![crate_type = "lib"]
 #![allow(clippy::cast_lossless, clippy::transmute_ptr_to_ref)]
 
-pub extern crate libc;
-
-#[macro_use]
-extern crate lazy_static;
-
 #[macro_use]
 extern crate bitflags;
-
-pub extern crate sdl3_sys as sys;
-// use sdl3_sys as sys;
-
 #[cfg(feature = "gfx")]
 extern crate c_vec;
+#[macro_use]
+extern crate lazy_static;
+pub extern crate libc;
+pub extern crate sdl3_sys as sys;
+
+// use sdl3_sys as sys;
 
 pub use crate::sdl::*;
 
@@ -75,6 +72,7 @@ pub mod filesystem;
 pub mod gamepad;
 pub mod haptic;
 pub mod hint;
+pub mod iostream;
 pub mod joystick;
 pub mod keyboard;
 pub mod log;
@@ -83,7 +81,6 @@ pub mod mouse;
 pub mod pixels;
 pub mod rect;
 pub mod render;
-pub mod rwops;
 mod sdl;
 #[cfg(feature = "hidapi")]
 pub mod sensor;
@@ -108,6 +105,6 @@ mod common;
 // Export return types and such from the common module.
 pub use crate::common::IntegerOrSdlError;
 
+mod guid;
 #[cfg(feature = "raw-window-handle")]
 pub mod raw_window_handle;
-mod guid;

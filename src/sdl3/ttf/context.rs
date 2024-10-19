@@ -1,5 +1,5 @@
 use get_error;
-use rwops::RWops;
+use iostream::RWops;
 use std::error;
 use std::fmt;
 use std::io;

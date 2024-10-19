@@ -21,8 +21,8 @@
 //! ```
 
 use get_error;
+use iostream::RWops;
 use render::{Texture, TextureCreator};
-use rwops::RWops;
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
 use std::path::Path;

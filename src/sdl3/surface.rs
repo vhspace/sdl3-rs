@@ -5,11 +5,11 @@ use std::path::Path;
 use std::rc::Rc;
 
 use crate::get_error;
+use crate::iostream::RWops;
 use crate::pixels;
 use crate::rect::Rect;
 use crate::render::{BlendMode, Canvas};
 use crate::render::{Texture, TextureCreator, TextureValueError};
-use crate::rwops::RWops;
 use libc::c_int;
 use std::convert::TryFrom;
 use std::mem::transmute;

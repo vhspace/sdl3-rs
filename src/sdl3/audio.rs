@@ -62,7 +62,7 @@ use std::path::Path;
 use std::ptr;
 
 use crate::get_error;
-use crate::rwops::RWops;
+use crate::iostream::RWops;
 use crate::AudioSubsystem;
 
 use crate::sys;

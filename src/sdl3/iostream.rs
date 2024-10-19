@@ -1,6 +1,6 @@
 use crate::get_error;
-use libc::c_void;
 use libc::c_char;
+use libc::c_void;
 use std::ffi::CString;
 use std::io;
 use std::marker::PhantomData;
@@ -10,33 +10,30 @@ use std::path::Path;
 use crate::sys;
 
 /// A structure that provides an abstract interface to stream I/O.
-pub struct RWops<'a> {
-    raw: *mut sys::SDL_RWops,
+pub struct IOStream<'a> {
+    raw: *mut sys::iostream::SDL_IOStream,
     _marker: PhantomData<&'a ()>,
 }
 
-impl<'a> RWops<'a> {
-    // this can prevent introducing UB until
-    // https://github.com/rust-lang/rust-clippy/issues/5953 is fixed
-    #[allow(clippy::trivially_copy_pass_by_ref)]
-    pub unsafe fn raw(&self) -> *mut sys::SDL_RWops {
+impl<'a> IOStream<'a> {
+    pub unsafe fn raw(&self) -> *mut sys::iostream::SDL_IOStream {
         self.raw
     }
 
-    pub unsafe fn from_ll<'b>(raw: *mut sys::SDL_RWops) -> RWops<'b> {
-        RWops {
+    pub unsafe fn from_ll<'b>(raw: *mut sys::iostream::SDL_IOStream) -> IOStream<'b> {
+        IOStream {
             raw,
             _marker: PhantomData,
         }
     }
 
     /// Creates an SDL file stream.
-    #[doc(alias = "SDL_RWFromFile")]
-    pub fn from_file<P: AsRef<Path>>(path: P, mode: &str) -> Result<RWops<'static>, String> {
+    #[doc(alias = "SDL_IOFromFile")]
+    pub fn from_file<P: AsRef<Path>>(path: P, mode: &str) -> Result<IOStream<'static>, String> {
         let raw = unsafe {
             let path_c = CString::new(path.as_ref().to_str().unwrap()).unwrap();
             let mode_c = CString::new(mode).unwrap();
-            sys::SDL_RWFromFile(
+            sys::iostream::SDL_IOFromFile(
                 path_c.as_ptr() as *const c_char,
                 mode_c.as_ptr() as *const c_char,
             )
@@ -45,41 +42,41 @@ impl<'a> RWops<'a> {
         if raw.is_null() {
             Err(get_error())
         } else {
-            Ok(RWops {
+            Ok(IOStream {
                 raw,
                 _marker: PhantomData,
             })
         }
     }
 
-    /// Prepares a read-only memory buffer for use with `RWops`.
+    /// Prepares a read-only memory buffer for use with `IOStream`.
     ///
     /// This method can only fail if the buffer size is zero.
-    #[doc(alias = "SDL_RWFromConstMem")]
-    pub fn from_bytes(buf: &'a [u8]) -> Result<RWops<'a>, String> {
+    #[doc(alias = "SDL_IOFromConstMem")]
+    pub fn from_bytes(buf: &'a [u8]) -> Result<IOStream<'a>, String> {
         let raw =
-            unsafe { sys::SDL_RWFromConstMem(buf.as_ptr() as *const c_void, buf.len()) };
+            unsafe { sys::iostream::SDL_IOFromConstMem(buf.as_ptr() as *const c_void, buf.len()) };
 
         if raw.is_null() {
             Err(get_error())
         } else {
-            Ok(RWops {
+            Ok(IOStream {
                 raw,
                 _marker: PhantomData,
             })
         }
     }
 
-    /// Reads a `Read` object into a buffer and then passes it to `RWops.from_bytes`.
+    /// Reads a `Read` object into a buffer and then passes it to `IOStream.from_bytes`.
     ///
     /// The buffer must be provided to this function and must live as long as the
-    /// `RWops`, but the `RWops` does not take ownership of it.
-    pub fn from_read<T>(r: &mut T, buffer: &'a mut Vec<u8>) -> Result<RWops<'a>, String>
+    /// `IOStream`, but the `IOStream` does not take ownership of it.
+    pub fn from_read<T>(r: &mut T, buffer: &'a mut Vec<u8>) -> Result<IOStream<'a>, String>
     where
         T: io::Read + Sized,
     {
         match r.read_to_end(buffer) {
-            Ok(_size) => RWops::from_bytes(buffer),
+            Ok(_size) => IOStream::from_bytes(buffer),
             Err(ioerror) => {
                 let msg = format!("IO error: {}", ioerror);
                 Err(msg)
@@ -87,17 +84,17 @@ impl<'a> RWops<'a> {
         }
     }
 
-    /// Prepares a read-write memory buffer for use with `RWops`.
+    /// Prepares a read-write memory buffer for use with `IOStream`.
     ///
     /// This method can only fail if the buffer size is zero.
-    #[doc(alias = "SDL_RWFromMem")]
-    pub fn from_bytes_mut(buf: &'a mut [u8]) -> Result<RWops<'a>, String> {
-        let raw = unsafe { sys::SDL_RWFromMem(buf.as_ptr() as *mut c_void, buf.len()) };
+    #[doc(alias = "SDL_IOFromMem")]
+    pub fn from_bytes_mut(buf: &'a mut [u8]) -> Result<IOStream<'a>, String> {
+        let raw = unsafe { sys::iostream::SDL_IOFromMem(buf.as_ptr() as *mut c_void, buf.len()) };
 
         if raw.is_null() {
             Err(get_error())
         } else {
-            Ok(RWops {
+            Ok(IOStream {
                 raw,
                 _marker: PhantomData,
             })
@@ -109,7 +106,7 @@ impl<'a> RWops<'a> {
     /// Returns `None` if the stream size can't be determined
     /// (either because it doesn't make sense for the stream type, or there was an error).
     pub fn len(&self) -> Option<usize> {
-        let result = unsafe { ((*self.raw).size.unwrap())(self.raw) };
+        let result = unsafe { sys::iostream::SDL_GetIOSize(self.raw) };
 
         match result {
             -1 => None,
@@ -126,33 +123,29 @@ impl<'a> RWops<'a> {
     }
 }
 
-impl<'a> Drop for RWops<'a> {
+impl<'a> Drop for IOStream<'a> {
     fn drop(&mut self) {
-        let ret = unsafe { ((*self.raw).close.unwrap())(self.raw) };
-        if ret != 0 {
+        let ret = unsafe { sys::iostream::SDL_CloseIO(self.raw) };
+        if !ret {
             panic!("{}", get_error());
         }
     }
 }
 
-impl<'a> io::Read for RWops<'a> {
+impl<'a> io::Read for IOStream<'a> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let out_len = buf.len();
-        // FIXME: it's better to use as_mut_ptr().
-        // number of objects read, or 0 at error or end of file.
-        let ret = unsafe {
-            ((*self.raw).read.unwrap())(self.raw, buf.as_ptr() as *mut c_void, out_len as i64)
-        };
+        let ret =
+            unsafe { sys::iostream::SDL_ReadIO(self.raw, buf.as_ptr() as *mut c_void, out_len) };
         Ok(ret as usize)
     }
 }
 
-impl<'a> io::Write for RWops<'a> {
+impl<'a> io::Write for IOStream<'a> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let in_len = buf.len();
-        let ret = unsafe {
-            ((*self.raw).write.unwrap())(self.raw, buf.as_ptr() as *const c_void, in_len as i64)
-        };
+        let ret =
+            unsafe { sys::iostream::SDL_WriteIO(self.raw, buf.as_ptr() as *const c_void, in_len) };
         Ok(ret as usize)
     }
 
@@ -161,15 +154,14 @@ impl<'a> io::Write for RWops<'a> {
     }
 }
 
-impl<'a> io::Seek for RWops<'a> {
+impl<'a> io::Seek for IOStream<'a> {
     fn seek(&mut self, pos: io::SeekFrom) -> io::Result<u64> {
-        // whence code is different from SeekStyle
         let (whence, offset) = match pos {
-            io::SeekFrom::Start(pos) => (sys::SDL_RW_SEEK_SET, pos as i64),
-            io::SeekFrom::End(pos) => (sys::SDL_RW_SEEK_END, pos),
-            io::SeekFrom::Current(pos) => (sys::SDL_RW_SEEK_CUR, pos),
+            io::SeekFrom::Start(pos) => (sys::iostream::SDL_IO_SEEK_SET, pos as i64),
+            io::SeekFrom::End(pos) => (sys::iostream::SDL_IO_SEEK_END, pos),
+            io::SeekFrom::Current(pos) => (sys::iostream::SDL_IO_SEEK_CUR, pos),
         };
-        let ret = unsafe { ((*self.raw).seek.unwrap())(self.raw, offset, transmute(whence)) };
+        let ret = unsafe { sys::iostream::SDL_SeekIO(self.raw, offset, transmute(whence)) };
         if ret == -1 {
             Err(io::Error::last_os_error())
         } else {
