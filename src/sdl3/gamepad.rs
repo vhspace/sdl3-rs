@@ -1,4 +1,4 @@
-use crate::iostream::RWops;
+use crate::iostream::IOStream;
 use libc::{c_char, c_void};
 use std::error;
 use std::ffi::{CStr, CString, NulError};
@@ -14,10 +14,9 @@ use std::convert::TryInto;
 use crate::common::IntegerOrSdlError;
 use crate::get_error;
 use crate::joystick;
+use crate::sys;
 use crate::GamepadSubsystem;
 use std::mem::transmute;
-
-use crate::sys;
 
 #[derive(Debug, Clone)]
 pub enum AddMappingError {
@@ -154,7 +153,7 @@ impl GamepadSubsystem {
     pub fn load_mappings<P: AsRef<Path>>(&self, path: P) -> Result<i32, AddMappingError> {
         use self::AddMappingError::*;
 
-        let rw = RWops::from_file(path, "r").map_err(InvalidFilePath)?;
+        let rw = IOStream::from_file(path, "r").map_err(InvalidFilePath)?;
         self.load_mappings_from_rw(rw)
     }
 
@@ -166,13 +165,13 @@ impl GamepadSubsystem {
         use self::AddMappingError::*;
 
         let mut buffer = Vec::with_capacity(1024);
-        let rw = RWops::from_read(read, &mut buffer).map_err(ReadError)?;
+        let rw = IOStream::from_read(read, &mut buffer).map_err(ReadError)?;
         self.load_mappings_from_rw(rw)
     }
 
-    /// Load controller input mappings from an SDL [`RWops`] object.
+    /// Load controller input mappings from an SDL [`IOStream`] object.
     #[doc(alias = "SDL_AddGamepadMappingsFromIO")]
-    pub fn load_mappings_from_rw<'a>(&self, rw: RWops<'a>) -> Result<i32, AddMappingError> {
+    pub fn load_mappings_from_rw<'a>(&self, rw: IOStream<'a>) -> Result<i32, AddMappingError> {
         use self::AddMappingError::*;
 
         let result = unsafe { sys::gamepad::SDL_AddGamepadMappingsFromIO(rw.raw(), false) };

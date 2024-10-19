@@ -5,17 +5,16 @@ use std::path::Path;
 use std::rc::Rc;
 
 use crate::get_error;
-use crate::iostream::RWops;
 use crate::pixels;
 use crate::rect::Rect;
 use crate::render::{BlendMode, Canvas};
 use crate::render::{Texture, TextureCreator, TextureValueError};
+use crate::sys;
+use iostream::IOStream;
 use libc::c_int;
 use std::convert::TryFrom;
 use std::mem::transmute;
 use std::ptr;
-
-use crate::sys;
 
 /// Holds a `SDL_Surface`
 ///
@@ -288,8 +287,8 @@ impl<'a> Surface<'a> {
     }
 
     #[doc(alias = "SDL_LoadBMP_RW")]
-    pub fn load_bmp_rw(rwops: &mut RWops) -> Result<Surface<'static>, String> {
-        let raw = unsafe { sys::SDL_LoadBMP_RW(rwops.raw(), sys::SDL_bool::SDL_FALSE) };
+    pub fn load_bmp_rw(iostream: &mut IOStream) -> Result<Surface<'static>, String> {
+        let raw = unsafe { sys::SDL_LoadBMP_RW(iostream.raw(), sys::SDL_bool::SDL_FALSE) };
 
         if raw.is_null() {
             Err(get_error())
@@ -299,7 +298,7 @@ impl<'a> Surface<'a> {
     }
 
     pub fn load_bmp<P: AsRef<Path>>(path: P) -> Result<Surface<'static>, String> {
-        let mut file = RWops::from_file(path, "rb")?;
+        let mut file = IOStream::from_file(path, "rb")?;
         Surface::load_bmp_rw(&mut file)
     }
 
@@ -444,8 +443,8 @@ impl SurfaceRef {
     }
 
     #[doc(alias = "SDL_SaveBMP_RW")]
-    pub fn save_bmp_rw(&self, rwops: &mut RWops) -> Result<(), String> {
-        let ret = unsafe { sys::SDL_SaveBMP_RW(self.raw(), rwops.raw(), 0) };
+    pub fn save_bmp_rw(&self, iostream: &mut Iostream) -> Result<(), String> {
+        let ret = unsafe { sys::SDL_SaveBMP_RW(self.raw(), iostream.raw(), 0) };
         if ret == 0 {
             Ok(())
         } else {
@@ -454,7 +453,7 @@ impl SurfaceRef {
     }
 
     pub fn save_bmp<P: AsRef<Path>>(&self, path: P) -> Result<(), String> {
-        let mut file = RWops::from_file(path, "wb")?;
+        let mut file = Iostream::from_file(path, "wb")?;
         self.save_bmp_rw(&mut file)
     }
 

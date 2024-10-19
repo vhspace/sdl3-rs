@@ -1,5 +1,5 @@
 use get_error;
-use iostream::RWops;
+use iostream::IOStream;
 use pixels::Color;
 use std::error;
 use std::error::Error;
@@ -229,16 +229,16 @@ impl<'f, 'text> PartialRendering<'f, 'text> {
 }
 
 /// A loaded TTF font.
-pub struct Font<'ttf_module, 'rwops> {
+pub struct Font<'ttf_module, 'iostream> {
     raw: *mut ttf::TTF_Font,
-    // RWops is only stored here because it must not outlive
-    // the Font struct, and this RWops should not be used by
+    // Iostream is only stored here because it must not outlive
+    // the Font struct, and this Iostream should not be used by
     // anything else
-    // None means that the RWops is handled by SDL itself,
-    // and Some(rwops) means that the RWops is handled by the Rust
+    // None means that the Iostream is handled by SDL itself,
+    // and Some(iostream) means that the Iostream is handled by the Rust
     // side
     #[allow(dead_code)]
-    rwops: Option<RWops<'rwops>>,
+    iostream: Option<IOStream<'iostream>>,
     #[allow(dead_code)]
     _marker: PhantomData<&'ttf_module ()>,
 }
@@ -267,7 +267,7 @@ pub fn internal_load_font<'ttf, P: AsRef<Path>>(
         } else {
             Ok(Font {
                 raw: raw,
-                rwops: None,
+                iostream: None,
                 _marker: PhantomData,
             })
         }
@@ -275,13 +275,16 @@ pub fn internal_load_font<'ttf, P: AsRef<Path>>(
 }
 
 /// Internally used to load a font (for internal visibility).
-pub fn internal_load_font_from_ll<'ttf, 'r, R>(raw: *mut ttf::TTF_Font, rwops: R) -> Font<'ttf, 'r>
+pub fn internal_load_font_from_ll<'ttf, 'r, R>(
+    raw: *mut ttf::TTF_Font,
+    iostream: R,
+) -> Font<'ttf, 'r>
 where
-    R: Into<Option<RWops<'r>>>,
+    R: Into<Option<Iostream<'r>>>,
 {
     Font {
         raw: raw,
-        rwops: rwops.into(),
+        iostream: iostream.into(),
         _marker: PhantomData,
     }
 }
@@ -300,7 +303,7 @@ pub fn internal_load_font_at_index<'ttf, P: AsRef<Path>>(
         } else {
             Ok(Font {
                 raw: raw,
-                rwops: None,
+                iostream: None,
                 _marker: PhantomData,
             })
         }
