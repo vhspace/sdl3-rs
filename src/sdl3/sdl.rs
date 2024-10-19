@@ -1,5 +1,4 @@
 use libc::c_char;
-use sys::init::{SDL_INIT_AUDIO, SDL_INIT_CAMERA, SDL_INIT_EVENTS, SDL_INIT_GAMEPAD, SDL_INIT_HAPTIC, SDL_INIT_JOYSTICK, SDL_INIT_SENSOR, SDL_INIT_VIDEO};
 use std::cell::Cell;
 use std::error;
 use std::ffi::{CStr, CString, NulError};
@@ -7,47 +6,52 @@ use std::fmt;
 use std::mem::transmute;
 use std::os::raw::c_void;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use sys::init::{
+    SDL_INIT_AUDIO, SDL_INIT_CAMERA, SDL_INIT_EVENTS, SDL_INIT_GAMEPAD, SDL_INIT_HAPTIC,
+    SDL_INIT_JOYSTICK, SDL_INIT_SENSOR, SDL_INIT_VIDEO,
+};
 
 use crate::sys;
 use crate::sys::init::SDL_InitFlags;
 
-#[repr(i32)]
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub enum Error {
-    NoMemError = sys::SDL_errorcode::SDL_ENOMEM as i32,
-    ReadError = sys::SDL_errorcode::SDL_EFREAD as i32,
-    WriteError = sys::SDL_errorcode::SDL_EFWRITE as i32,
-    SeekError = sys::SDL_errorcode::SDL_EFSEEK as i32,
-    UnsupportedError = sys::SDL_errorcode::SDL_UNSUPPORTED as i32,
-}
+// seems like these are gone?
+// #[repr(i32)]
+// #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+// pub enum Error {
+//     NoMemError = sys::SDL_errorcode::SDL_ENOMEM as i32,
+//     ReadError = SDL_errorcode::SDL_EFREAD as i32,
+//     WriteError = sys::SDL_errorcode::SDL_EFWRITE as i32,
+//     SeekError = sys::SDL_errorcode::SDL_EFSEEK as i32,
+//     UnsupportedError = sys::SDL_errorcode::SDL_UNSUPPORTED as i32,
+// }
 
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use self::Error::*;
+// impl fmt::Display for Error {
+//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//         use self::Error::*;
+//
+//         match *self {
+//             NoMemError => write!(f, "Out of memory"),
+//             ReadError => write!(f, "Error reading from datastream"),
+//             WriteError => write!(f, "Error writing to datastream"),
+//             SeekError => write!(f, "Error seeking in datastream"),
+//             UnsupportedError => write!(f, "Unknown SDL error"),
+//         }
+//     }
+// }
 
-        match *self {
-            NoMemError => write!(f, "Out of memory"),
-            ReadError => write!(f, "Error reading from datastream"),
-            WriteError => write!(f, "Error writing to datastream"),
-            SeekError => write!(f, "Error seeking in datastream"),
-            UnsupportedError => write!(f, "Unknown SDL error"),
-        }
-    }
-}
-
-impl error::Error for Error {
-    fn description(&self) -> &str {
-        use self::Error::*;
-
-        match *self {
-            NoMemError => "out of memory",
-            ReadError => "error reading from datastream",
-            WriteError => "error writing to datastream",
-            SeekError => "error seeking in datastream",
-            UnsupportedError => "unknown SDL error",
-        }
-    }
-}
+// impl error::Error for Error {
+//     fn description(&self) -> &str {
+//         use self::Error::*;
+//
+//         match *self {
+//             NoMemError => "out of memory",
+//             ReadError => "error reading from datastream",
+//             WriteError => "error writing to datastream",
+//             SeekError => "error seeking in datastream",
+//             UnsupportedError => "unknown SDL error",
+//         }
+//     }
+// }
 
 /// True if the main thread has been declared. The main thread is declared when
 /// SDL is first initialized.
@@ -105,10 +109,10 @@ impl Sdl {
             let result;
 
             unsafe {
-                result = sys::SDL_Init(0);
+                result = sys::init::SDL_Init(0);
             }
 
-            if result != 0 {
+            if !result {
                 SDL_COUNT.store(0, Ordering::Relaxed);
                 return Err(get_error());
             }
@@ -155,12 +159,6 @@ impl Sdl {
     #[inline]
     pub fn sensor(&self) -> Result<SensorSubsystem, String> {
         SensorSubsystem::new(self)
-    }
-
-    /// Initializes the timer subsystem.
-    #[inline]
-    pub fn timer(&self) -> Result<TimerSubsystem, String> {
-        TimerSubsystem::new(self)
     }
 
     /// Initializes the video subsystem.
@@ -213,7 +211,7 @@ impl Drop for SdlDrop {
         assert!(prev_count > 0);
         if prev_count == 1 {
             unsafe {
-                sys::SDL_Quit();
+                sys::init::SDL_Quit();
             }
         }
     }
@@ -305,24 +303,14 @@ impl Drop for SubsystemDrop {
         assert!(prev_count > 0);
         if prev_count == 1 {
             unsafe {
-                sys::SDL_QuitSubSystem(self.flag);
+                sys::init::SDL_QuitSubSystem(self.flag);
             }
         }
     }
 }
 
-subsystem!(
-    AudioSubsystem,
-    SDL_INIT_AUDIO as u32,
-    AUDIO_COUNT,
-    nosync
-);
-subsystem!(
-    VideoSubsystem,
-    SDL_INIT_VIDEO as u32,
-    VIDEO_COUNT,
-    nosync
-);
+subsystem!(AudioSubsystem, SDL_INIT_AUDIO as u32, AUDIO_COUNT, nosync);
+subsystem!(VideoSubsystem, SDL_INIT_VIDEO as u32, VIDEO_COUNT, nosync);
 subsystem!(
     JoystickSubsystem,
     SDL_INIT_JOYSTICK as u32,
@@ -342,12 +330,7 @@ subsystem!(
     nosync
 );
 // The event queue can be read from other threads.
-subsystem!(
-    EventSubsystem,
-    SDL_INIT_EVENTS as u32,
-    EVENT_COUNT,
-    sync
-);
+subsystem!(EventSubsystem, SDL_INIT_EVENTS as u32, EVENT_COUNT, sync);
 subsystem!(
     SensorSubsystem,
     SDL_INIT_SENSOR as u32,
@@ -398,7 +381,11 @@ impl Drop for EventPump {
 #[inline]
 #[doc(alias = "SDL_GetPlatform")]
 pub fn get_platform() -> &'static str {
-    unsafe { CStr::from_ptr(sys::SDL_GetPlatform()).to_str().unwrap() }
+    unsafe {
+        CStr::from_ptr(sys::platform::SDL_GetPlatform())
+            .to_str()
+            .unwrap()
+    }
 }
 
 /// Initializes the SDL library.
@@ -423,7 +410,7 @@ pub fn init() -> Result<Sdl, String> {
 
 pub fn get_error() -> String {
     unsafe {
-        let err = sys::SDL_GetError();
+        let err = sys::error::SDL_GetError();
         CStr::from_ptr(err as *const _).to_str().unwrap().to_owned()
     }
 }
@@ -432,7 +419,7 @@ pub fn get_error() -> String {
 pub fn set_error(err: &str) -> Result<(), NulError> {
     let c_string = CString::new(err)?;
     unsafe {
-        sys::SDL_SetError(
+        sys::error::SDL_SetError(
             b"%s\0".as_ptr() as *const c_char,
             c_string.as_ptr() as *const c_char,
         );
@@ -440,16 +427,16 @@ pub fn set_error(err: &str) -> Result<(), NulError> {
     Ok(())
 }
 
-#[doc(alias = "SDL_Error")]
-pub fn set_error_from_code(err: Error) {
-    unsafe {
-        sys::SDL_Error(transmute(err));
-    }
-}
+// #[doc(alias = "SDL_Error")]
+// pub fn set_error_from_code(err: Error) {
+//     unsafe {
+//         sys::error::SDL_Error(transmute(err));
+//     }
+// }
 
 #[doc(alias = "SDL_ClearError")]
 pub fn clear_error() {
     unsafe {
-        sys::SDL_ClearError();
+        sys::error::SDL_ClearError();
     }
 }
