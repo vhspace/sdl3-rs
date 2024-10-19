@@ -443,7 +443,7 @@ impl SurfaceRef {
     }
 
     #[doc(alias = "SDL_SaveBMP_RW")]
-    pub fn save_bmp_rw(&self, iostream: &mut Iostream) -> Result<(), String> {
+    pub fn save_bmp_rw(&self, iostream: &mut IOStream) -> Result<(), String> {
         let ret = unsafe { sys::SDL_SaveBMP_RW(self.raw(), iostream.raw(), 0) };
         if ret == 0 {
             Ok(())
@@ -453,7 +453,7 @@ impl SurfaceRef {
     }
 
     pub fn save_bmp<P: AsRef<Path>>(&self, path: P) -> Result<(), String> {
-        let mut file = Iostream::from_file(path, "wb")?;
+        let mut file = IOStream::from_file(path, "wb")?;
         self.save_bmp_rw(&mut file)
     }
 
