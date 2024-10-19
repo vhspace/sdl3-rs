@@ -22,7 +22,7 @@
 
 use audio::AudioFormatNum;
 use get_error;
-use iostream::RWops;
+use iostream::IOStream;
 use libc::c_void;
 use libc::{c_double, c_int, c_uint};
 use std::borrow::ToOwned;
@@ -254,7 +254,7 @@ impl Drop for Chunk {
 impl Chunk {
     /// Load file for use as a sample.
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Chunk, String> {
-        let raw = unsafe { mixer::Mix_LoadWAV_RW(RWops::from_file(path, "rb")?.raw(), 0) };
+        let raw = unsafe { mixer::Mix_LoadWAV_RW(IOStream::from_file(path, "rb")?.raw(), 0) };
         Self::from_owned_raw(raw)
     }
 
@@ -292,15 +292,15 @@ impl Chunk {
     }
 }
 
-/// Loader trait for `RWops`
-pub trait LoaderRWops<'a> {
+/// Loader trait for `IOStream`
+pub trait LoaderIOStream<'a> {
     /// Load src for use as a sample.
     fn load_wav(&self) -> Result<Chunk, String>;
 
     fn load_music(&'a self) -> Result<Music<'a>, String>;
 }
 
-impl<'a> LoaderRWops<'a> for RWops<'a> {
+impl<'a> LoaderIOStream<'a> for IOStream<'a> {
     /// Load src for use as a sample.
     fn load_wav(&self) -> Result<Chunk, String> {
         let raw = unsafe { mixer::Mix_LoadWAV_RW(self.raw(), 0) };

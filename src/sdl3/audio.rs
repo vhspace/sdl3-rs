@@ -52,6 +52,9 @@
 //! std::thread::sleep(Duration::from_millis(2000));
 //! ```
 
+use crate::get_error;
+use crate::AudioSubsystem;
+use iostream::IOStream;
 use libc::{c_char, c_int, c_void};
 use std::convert::TryFrom;
 use std::ffi::{CStr, CString};
@@ -60,10 +63,6 @@ use std::mem;
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
 use std::ptr;
-
-use crate::get_error;
-use crate::iostream::RWops;
-use crate::AudioSubsystem;
 
 use crate::sys;
 use crate::sys::SDL_AudioStatus;
@@ -388,13 +387,13 @@ pub struct AudioSpecWAV {
 impl AudioSpecWAV {
     /// Loads a WAVE from the file path.
     pub fn load_wav<P: AsRef<Path>>(path: P) -> Result<AudioSpecWAV, String> {
-        let mut file = RWops::from_file(path, "rb")?;
+        let mut file = IOStream::from_file(path, "rb")?;
         AudioSpecWAV::load_wav_rw(&mut file)
     }
 
     /// Loads a WAVE from the data source.
     #[doc(alias = "SDL_LoadWAV_RW")]
-    pub fn load_wav_rw(src: &mut RWops) -> Result<AudioSpecWAV, String> {
+    pub fn load_wav_rw(src: &mut IOStream) -> Result<AudioSpecWAV, String> {
         use std::mem::MaybeUninit;
         use std::ptr::null_mut;
 

@@ -21,7 +21,7 @@
 //! ```
 
 use get_error;
-use iostream::RWops;
+use iostream::IOStream;
 use render::{Texture, TextureCreator};
 use std::ffi::CString;
 use std::os::raw::{c_char, c_int};
@@ -73,7 +73,7 @@ pub trait LoadSurface: Sized {
 /// Method extensions to Surface for saving to disk
 pub trait SaveSurface {
     fn save<P: AsRef<Path>>(&self, filename: P) -> Result<(), String>;
-    fn save_rw(&self, dst: &mut RWops) -> Result<(), String>;
+    fn save_rw(&self, dst: &mut IOStream) -> Result<(), String>;
 }
 
 impl<'a> LoadSurface for Surface<'a> {
@@ -117,8 +117,8 @@ impl<'a> SaveSurface for Surface<'a> {
         }
     }
 
-    fn save_rw(&self, dst: &mut RWops) -> Result<(), String> {
-        //! Saves an SDL Surface to an RWops
+    fn save_rw(&self, dst: &mut IOStream) -> Result<(), String> {
+        //! Saves an SDL Surface to an IOStream
         unsafe {
             let status = image::IMG_SavePNG_RW(self.raw(), dst.raw(), 0);
 
@@ -214,7 +214,7 @@ fn to_surface_result<'a>(raw: *mut sys::SDL_Surface) -> Result<Surface<'a>, Stri
     }
 }
 
-pub trait ImageRWops {
+pub trait ImageIOStream {
     /// load as a surface. except TGA
     fn load(&self) -> Result<Surface<'static>, String>;
     /// load as a surface. This can load all supported image formats.
@@ -252,7 +252,7 @@ pub trait ImageRWops {
     fn is_webp(&self) -> bool;
 }
 
-impl<'a> ImageRWops for RWops<'a> {
+impl<'a> ImageIOStream for IOStream<'a> {
     fn load(&self) -> Result<Surface<'static>, String> {
         let raw = unsafe { image::IMG_Load_RW(self.raw(), 0) };
         to_surface_result(raw)
