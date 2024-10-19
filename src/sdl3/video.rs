@@ -12,9 +12,10 @@ use std::convert::TryFrom;
 use std::error::Error;
 use std::ffi::{CStr, CString, NulError};
 use std::ops::{Deref, DerefMut};
+use std::ptr::{null, null_mut};
 use std::rc::Rc;
 use std::{fmt, mem, ptr};
-use sys::video::SDL_DisplayMode;
+use sys::video::{SDL_DisplayMode, SDL_DisplayModeData, SDL_WindowFlags};
 
 use crate::sys;
 
@@ -188,7 +189,7 @@ macro_rules! gl_attr {
 /// gl_attr.set_multisample_buffers(1);
 /// gl_attr.set_multisample_samples(4);
 ///
-/// let window = video_subsystem.window("rust-sdl3 demo: Video", 800, 600).opengl().build().unwrap();
+/// let window = video_subsystem.window("sdl3 demo: Video", 800, 600).build().unwrap();
 ///
 /// // Yes, we're still using the Core profile
 /// assert_eq!(gl_attr.context_profile(), GLProfile::Core);
@@ -220,7 +221,7 @@ pub mod gl_attr {
             let result =
                 unsafe { sys::video::SDL_GL_SetAttribute(sys::video::SDL_GLattr::$attr, $value) };
 
-            if result != 0 {
+            if result == false {
                 // Panic and print the attribute that failed.
                 panic!(
                     "couldn't set attribute {}: {}",
@@ -237,7 +238,7 @@ pub mod gl_attr {
             let result = unsafe {
                 sys::video::SDL_GL_GetAttribute(sys::video::SDL_GLattr::$attr, &mut value)
             };
-            if result != 0 {
+            if result == false {
                 // Panic and print the attribute that failed.
                 panic!(
                     "couldn't get attribute {}: {}",
@@ -405,6 +406,9 @@ pub struct DisplayMode {
     pub h: i32,
     pub pixel_density: f32,
     pub refresh_rate: f32,
+    pub refresh_rate_numerator: i32,
+    pub refresh_rate_denominator: i32,
+    internal: *mut SDL_DisplayModeData,
 }
 
 impl DisplayMode {
@@ -415,6 +419,9 @@ impl DisplayMode {
         h: i32,
         pixel_density: f32,
         refresh_rate: f32,
+        refresh_rate_numerator: i32,
+        refresh_rate_denominator: i32,
+        internal: *mut SDL_DisplayModeData,
     ) -> DisplayMode {
         DisplayMode {
             display_id,
@@ -423,29 +430,37 @@ impl DisplayMode {
             h,
             pixel_density,
             refresh_rate,
+            refresh_rate_numerator,
+            refresh_rate_denominator,
+            internal,
         }
     }
 
-    pub fn from_ll(raw: &sys::video::SDL_DisplayMode) -> DisplayMode {
+    pub fn from_ll(raw: &SDL_DisplayMode) -> DisplayMode {
         DisplayMode::new(
             raw.displayID,
-            PixelFormatEnum::try_from(raw.format as u32).unwrap_or(PixelFormatEnum::Unknown),
+            PixelFormatEnum::try_from(raw.format).unwrap_or(PixelFormatEnum::Unknown),
             raw.w,
             raw.h,
             raw.pixel_density,
             raw.refresh_rate,
+            raw.refresh_rate_numerator,
+            raw.refresh_rate_denominator,
+            raw.internal,
         )
     }
 
-    pub fn to_ll(&self) -> sys::video::SDL_DisplayMode {
-        sys::video::SDL_DisplayMode {
+    pub fn to_ll(&self) -> SDL_DisplayMode {
+        SDL_DisplayMode {
             displayID: self.display_id,
-            format: self.format as u32,
+            format: self.format.into(),
             w: self.w,
             h: self.h,
             pixel_density: self.pixel_density,
             refresh_rate: self.refresh_rate,
-            driverdata: ptr::null_mut(),
+            refresh_rate_numerator: self.refresh_rate_numerator,
+            refresh_rate_denominator: self.refresh_rate_denominator,
+            internal: self.internal,
         }
     }
 }
@@ -497,7 +512,7 @@ pub struct GLContext {
 impl Drop for GLContext {
     #[doc(alias = "SDL_GL_DeleteContext")]
     fn drop(&mut self) {
-        unsafe { sys::video::SDL_GL_DeleteContext(self.raw) };
+        unsafe { sys::video::SDL_GL_DestroyContext(self.raw) };
         return;
     }
 }
@@ -765,7 +780,7 @@ impl VideoSubsystem {
             let modes = sys::video::SDL_GetFullscreenDisplayModes(display_id, &mut num_modes);
             // modes is a pointer to an array of DisplayMode
             // num_modes is the number of DisplayMode in the array
-            return if modes.is_null() {
+            if modes.is_null() {
                 Err(get_error())
             } else {
                 let mut result = Vec::with_capacity(num_modes as usize);
@@ -776,7 +791,7 @@ impl VideoSubsystem {
                 }
                 sys::video::SDL_free(modes as *mut c_void);
                 Ok(result)
-            };
+            }
         }
     }
 
@@ -788,16 +803,14 @@ impl VideoSubsystem {
                 return Err(get_error());
             }
             let mode = *raw_mode;
-            return Ok(DisplayMode::from_ll(&mode));
+            Ok(DisplayMode::from_ll(&mode))
         }
     }
 
     /// Get primary display ID.
     #[doc(alias = "SDL_GetPrimaryDisplay")]
     pub fn get_primary_display_id(&self) -> sys::video::SDL_DisplayID {
-        unsafe {
-            return sys::video::SDL_GetPrimaryDisplay();
-        }
+        unsafe { sys::video::SDL_GetPrimaryDisplay() }
     }
 
     #[doc(alias = "SDL_GetCurrentDisplayMode")]
@@ -808,7 +821,7 @@ impl VideoSubsystem {
                 return Err(get_error());
             }
             let mode = *raw_mode;
-            return Ok(DisplayMode::from_ll(&mode));
+            Ok(DisplayMode::from_ll(&mode))
         }
     }
 
@@ -820,7 +833,7 @@ impl VideoSubsystem {
         include_high_density_modes: bool,
     ) -> Result<DisplayMode, String> {
         unsafe {
-            let mut mode_out = SDL_DisplayMode::default();
+            let mode_out = SDL_DisplayMode::default();
             let ok = sys::video::SDL_GetClosestFullscreenDisplayMode(
                 display_index,
                 mode.w,
@@ -985,7 +998,7 @@ impl VideoSubsystem {
     #[doc(alias = "SDL_Vulkan_LoadLibrary")]
     pub fn vulkan_load_library_default(&self) -> Result<(), String> {
         unsafe {
-            if sys::video::SDL_Vulkan_LoadLibrary(ptr::null()) == 0 {
+            if sys::vulkan::SDL_Vulkan_LoadLibrary(ptr::null()) {
                 Ok(())
             } else {
                 Err(get_error())
@@ -1004,7 +1017,7 @@ impl VideoSubsystem {
         unsafe {
             // TODO: use OsStr::to_cstring() once it's stable
             let path = CString::new(path.as_ref().to_str().unwrap()).unwrap();
-            if sys::video::SDL_Vulkan_LoadLibrary(path.as_ptr() as *const c_char) == 0 {
+            if sys::vulkan::SDL_Vulkan_LoadLibrary(path.as_ptr() as *const c_char) {
                 Ok(())
             } else {
                 Err(get_error())
@@ -1019,7 +1032,7 @@ impl VideoSubsystem {
     #[doc(alias = "SDL_Vulkan_UnloadLibrary")]
     pub fn vulkan_unload_library(&self) {
         unsafe {
-            sys::video::SDL_Vulkan_UnloadLibrary();
+            sys::vulkan::SDL_Vulkan_UnloadLibrary();
         }
     }
 
@@ -1029,7 +1042,7 @@ impl VideoSubsystem {
     /// functions.
     #[doc(alias = "SDL_Vulkan_GetVkGetInstanceProcAddr")]
     pub fn vulkan_get_proc_address_function(&self) -> sys::video::SDL_FunctionPointer {
-        unsafe { sys::video::SDL_Vulkan_GetVkGetInstanceProcAddr() }
+        unsafe { sys::vulkan::SDL_Vulkan_GetVkGetInstanceProcAddr() }
     }
 }
 
@@ -1115,35 +1128,57 @@ impl WindowBuilder {
         let raw_width = self.width as c_int;
         let raw_height = self.height as c_int;
         unsafe {
-            // use SDL_CreateWindowWithPosition if x and y are not undefined
-            // otherwise use SDL_CreateWindow
-            let raw = if self.x != WindowPos::Undefined && self.y != WindowPos::Undefined {
-                sys::video::SDL_CreateWindowWithPosition(
-                    title.as_ptr() as *const c_char,
-                    to_ll_windowpos(self.x),
-                    to_ll_windowpos(self.y),
-                    raw_width,
-                    raw_height,
-                    self.window_flags,
-                )
-            } else {
-                sys::video::SDL_CreateWindow(
-                    title.as_ptr() as *const c_char,
-                    raw_width,
-                    raw_height,
-                    self.window_flags,
-                )
-            };
-            let metal_view = 0 as sys::video::SDL_MetalView;
+            let props = sys::video::SDL_CreateProperties();
+            sys::video::SDL_SetStringProperty(
+                props,
+                sys::video::SDL_PROP_WINDOW_CREATE_TITLE_STRING.as_ptr(),
+                title.as_ptr(),
+            );
+
+            if self.x != WindowPos::Undefined {
+                sys::video::SDL_SetNumberProperty(
+                    props,
+                    sys::video::SDL_PROP_WINDOW_CREATE_X_NUMBER.as_ptr(),
+                    to_ll_windowpos(self.x).into(),
+                );
+            }
+            if self.y != WindowPos::Undefined {
+                sys::video::SDL_SetNumberProperty(
+                    props,
+                    sys::video::SDL_PROP_WINDOW_CREATE_Y_NUMBER.as_ptr(),
+                    to_ll_windowpos(self.y).into(),
+                );
+            }
+
+            sys::video::SDL_SetNumberProperty(
+                props,
+                sys::video::SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER.as_ptr(),
+                raw_width.into(),
+            );
+            sys::video::SDL_SetNumberProperty(
+                props,
+                sys::video::SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER.as_ptr(),
+                raw_height.into(),
+            );
+            let flags_cstr = CString::new("flags").unwrap();
+            sys::video::SDL_SetNumberProperty(props, flags_cstr.as_ptr(), self.window_flags.into());
+
+            let raw = sys::video::SDL_CreateWindowWithProperties(props);
+            sys::video::SDL_DestroyProperties(props);
+            let mut metal_view = 0 as sys::metal::SDL_MetalView;
             #[cfg(target_os = "macos")]
             if self.create_metal_view {
-                metal_view = sys::video::SDL_Metal_CreateView(raw);
+                {
+                    metal_view = sys::metal::SDL_Metal_CreateView(raw);
+                }
             }
 
             if raw.is_null() {
                 Err(SdlError(get_error()))
             } else {
-                Ok(Window::from_ll(self.subsystem.clone(), raw, metal_view))
+                {
+                    Ok(Window::from_ll(self.subsystem.clone(), raw, metal_view))
+                }
             }
         }
     }
@@ -1305,12 +1340,12 @@ impl PopupWindowBuilder {
                 self.offset_y,
                 raw_width,
                 raw_height,
-                self.window_flags,
+                self.window_flags.into(),
             );
-            let metal_view = 0 as sys::video::SDL_MetalView;
+            let mut metal_view = 0 as sys::metal::SDL_MetalView;
             #[cfg(target_os = "macos")]
             if self.create_metal_view {
-                metal_view = sys::video::SDL_Metal_CreateView(raw);
+                metal_view = sys::metal::SDL_Metal_CreateView(raw);
             }
 
             if raw.is_null() {
@@ -1422,7 +1457,7 @@ impl Window {
     pub unsafe fn from_ll(
         subsystem: VideoSubsystem,
         raw: *mut sys::video::SDL_Window,
-        metal_view: sys::video::SDL_MetalView,
+        metal_view: sys::metal::SDL_MetalView,
     ) -> Window {
         let context = WindowContext::from_ll(subsystem, raw, metal_view);
         context.into()
@@ -1481,7 +1516,7 @@ impl Window {
             let context_raw = sys::video::SDL_GL_GetCurrentContext();
 
             if !context_raw.is_null()
-                && sys::video::SDL_GL_MakeCurrent(self.context.raw, context_raw) == 0
+                && sys::video::SDL_GL_MakeCurrent(self.context.raw, context_raw) == true
             {
                 Ok(())
             } else {
@@ -1493,7 +1528,7 @@ impl Window {
     #[doc(alias = "SDL_GL_MakeCurrent")]
     pub fn gl_make_current(&self, context: &GLContext) -> Result<(), String> {
         unsafe {
-            if sys::video::SDL_GL_MakeCurrent(self.context.raw, context.raw) == 0 {
+            if sys::video::SDL_GL_MakeCurrent(self.context.raw, context.raw) == true {
                 Ok(())
             } else {
                 Err(get_error())
@@ -1510,18 +1545,11 @@ impl Window {
     #[doc(alias = "SDL_Vulkan_GetInstanceExtensions")]
     pub fn vulkan_instance_extensions(&self) -> Result<Vec<&'static str>, String> {
         let mut count: c_uint = 0;
-        if unsafe { sys::video::SDL_Vulkan_GetInstanceExtensions(&mut count, ptr::null_mut()) }
-            == sys::video::SDL_bool::SDL_FALSE
-        {
+        let extension_names = unsafe { sys::vulkan::SDL_Vulkan_GetInstanceExtensions(&mut count) };
+        if unsafe { sys::vulkan::SDL_Vulkan_GetInstanceExtensions(&mut count) } == null() {
             return Err(get_error());
         }
-        let mut names: Vec<*const c_char> = vec![ptr::null(); count as usize];
-        if unsafe { sys::video::SDL_Vulkan_GetInstanceExtensions(&mut count, names.as_mut_ptr()) }
-            == sys::video::SDL_bool::SDL_FALSE
-        {
-            return Err(get_error());
-        }
-        Ok(names
+        Ok(extension_names
             .iter()
             .map(|&val| unsafe { CStr::from_ptr(val) }.to_str().unwrap())
             .collect())
@@ -1534,9 +1562,10 @@ impl Window {
     /// function in the Vulkan library.
     #[doc(alias = "SDL_Vulkan_CreateSurface")]
     pub fn vulkan_create_surface(&self, instance: VkInstance) -> Result<VkSurfaceKHR, String> {
-        let mut surface: VkSurfaceKHR = 0;
-        if unsafe { sys::video::SDL_Vulkan_CreateSurface(self.context.raw, instance, &mut surface) }
-            == sys::video::SDL_bool::SDL_FALSE
+        let mut surface: VkSurfaceKHR = null_mut();
+        if unsafe {
+            sys::vulkan::SDL_Vulkan_CreateSurface(self.context.raw, instance, null(), &mut surface)
+        } == false
         {
             Err(get_error())
         } else {
@@ -1567,7 +1596,7 @@ impl Window {
                     None => ptr::null(),
                 },
             );
-            if result < 0 {
+            if result == false {
                 Err(get_error())
             } else {
                 Ok(())
@@ -1606,39 +1635,40 @@ impl Window {
     #[doc(alias = "SDL_GetWindowPixelFormat")]
     pub fn window_pixel_format(&self) -> PixelFormatEnum {
         unsafe {
-            PixelFormatEnum::try_from(sys::video::SDL_GetWindowPixelFormat(self.context.raw) as u32)
+            PixelFormatEnum::try_from(sys::video::SDL_GetWindowPixelFormat(self.context.raw))
                 .unwrap()
         }
     }
 
     #[doc(alias = "SDL_GetWindowFlags")]
-    pub fn window_flags(&self) -> u32 {
+    pub fn window_flags(&self) -> SDL_WindowFlags {
         unsafe { sys::video::SDL_GetWindowFlags(self.context.raw) }
     }
 
     /// Does the window have input focus?
     pub fn has_input_focus(&self) -> bool {
-        0 != self.window_flags() & sys::video::SDL_WindowFlags::SDL_WINDOW_INPUT_FOCUS as u32
+        0 != self.window_flags().into() & sys::video::SDL_WindowFlags::SDL_WINDOW_INPUT_FOCUS as u32
     }
 
     /// Has the window grabbed input focus?
     pub fn has_input_grabbed(&self) -> bool {
-        0 != self.window_flags() & sys::video::SDL_WindowFlags::SDL_WINDOW_MOUSE_GRABBED as u32
+        0 != self.window_flags().into()
+            & sys::video::SDL_WindowFlags::SDL_WINDOW_MOUSE_GRABBED as u32
     }
 
     /// Does the window have mouse focus?
     pub fn has_mouse_focus(&self) -> bool {
-        0 != self.window_flags() & sys::video::SDL_WindowFlags::SDL_WINDOW_MOUSE_FOCUS as u32
+        0 != self.window_flags().into() & sys::video::SDL_WindowFlags::SDL_WINDOW_MOUSE_FOCUS as u32
     }
 
     /// Is the window maximized?
     pub fn is_maximized(&self) -> bool {
-        0 != self.window_flags() & sys::video::SDL_WindowFlags::SDL_WINDOW_MAXIMIZED as u32
+        0 != self.window_flags().into() & sys::video::SDL_WindowFlags::SDL_WINDOW_MAXIMIZED as u32
     }
 
     /// Is the window minimized?
     pub fn is_minimized(&self) -> bool {
-        0 != self.window_flags() & sys::video::SDL_WindowFlags::SDL_WINDOW_MINIMIZED as u32
+        0 != self.window_flags().into() & sys::video::SDL_WindowFlags::SDL_WINDOW_MINIMIZED as u32
     }
 
     #[doc(alias = "SDL_SetWindowTitle")]
@@ -1671,7 +1701,7 @@ impl Window {
     /// window.set_icon(window_icon);
     /// ```
     #[doc(alias = "SDL_SetWindowIcon")]
-    pub fn set_icon<S: AsRef<SurfaceRef>>(&mut self, icon: S) -> c_int {
+    pub fn set_icon<S: AsRef<SurfaceRef>>(&mut self, icon: S) -> bool {
         unsafe { sys::video::SDL_SetWindowIcon(self.context.raw, icon.as_ref().raw()) }
     }
 
@@ -1716,7 +1746,7 @@ impl Window {
                 &mut right,
             )
         };
-        if result < 0 {
+        if result == false {
             Err(get_error())
         } else {
             Ok((top as u16, left as u16, bottom as u16, right as u16))
@@ -1799,65 +1829,49 @@ impl Window {
     }
 
     #[doc(alias = "SDL_SetWindowBordered")]
-    pub fn set_bordered(&mut self, bordered: bool) -> c_int {
-        unsafe {
-            sys::video::SDL_SetWindowBordered(
-                self.context.raw,
-                if bordered {
-                    sys::video::SDL_bool::SDL_TRUE
-                } else {
-                    sys::video::SDL_bool::SDL_FALSE
-                },
-            )
-        }
+    pub fn set_bordered(&mut self, bordered: bool) -> bool {
+        unsafe { sys::video::SDL_SetWindowBordered(self.context.raw, bordered) }
     }
 
     #[doc(alias = "SDL_ShowWindow")]
-    pub fn show(&mut self) -> c_int {
+    pub fn show(&mut self) -> bool {
         unsafe { sys::video::SDL_ShowWindow(self.context.raw) }
     }
 
     #[doc(alias = "SDL_HideWindow")]
-    pub fn hide(&mut self) -> c_int {
+    pub fn hide(&mut self) -> bool {
         unsafe { sys::video::SDL_HideWindow(self.context.raw) }
     }
 
     #[doc(alias = "SDL_RaiseWindow")]
-    pub fn raise(&mut self) -> c_int {
+    pub fn raise(&mut self) -> bool {
         unsafe { sys::video::SDL_RaiseWindow(self.context.raw) }
     }
 
     #[doc(alias = "SDL_MaximizeWindow")]
-    pub fn maximize(&mut self) -> c_int {
+    pub fn maximize(&mut self) -> bool {
         unsafe { sys::video::SDL_MaximizeWindow(self.context.raw) }
     }
 
     #[doc(alias = "SDL_MinimizeWindow")]
-    pub fn minimize(&mut self) -> c_int {
+    pub fn minimize(&mut self) -> bool {
         unsafe { sys::video::SDL_MinimizeWindow(self.context.raw) }
     }
 
     #[doc(alias = "SDL_RestoreWindow")]
-    pub fn restore(&mut self) -> c_int {
+    pub fn restore(&mut self) -> bool {
         unsafe { sys::video::SDL_RestoreWindow(self.context.raw) }
     }
 
     pub fn fullscreen_state(&self) -> FullscreenType {
-        FullscreenType::from_window_flags(self.window_flags())
+        FullscreenType::from_window_flags(self.window_flags().into())
     }
 
     #[doc(alias = "SDL_SetWindowFullscreen")]
     pub fn set_fullscreen(&mut self, fullscreen: bool) -> Result<(), String> {
         unsafe {
-            let result = sys::video::SDL_SetWindowFullscreen(
-                self.context.raw,
-                if fullscreen {
-                    sys::video::SDL_bool::SDL_TRUE
-                } else {
-                    sys::video::SDL_bool::SDL_FALSE
-                },
-            );
-            if result == 0 {
+            let result = sys::video::SDL_SetWindowFullscreen(self.context.raw, fullscreen);
+            if !result {
                 Ok(())
             } else {
                 Err(get_error())
@@ -1921,7 +1935,7 @@ impl Window {
         };
 
         unsafe {
-            if sys::video::SDL_SetWindowMouseRect(self.context.raw, rect_raw_ptr) == 0 {
+            if sys::video::SDL_SetWindowMouseRect(self.context.raw, rect_raw_ptr) == false {
                 Ok(())
             } else {
                 Err(get_error())
@@ -1953,7 +1967,7 @@ impl Window {
     #[doc(alias = "SDL_SetWindowOpacity")]
     pub fn set_opacity(&mut self, opacity: f32) -> Result<(), String> {
         let result = unsafe { sys::video::SDL_SetWindowOpacity(self.context.raw, opacity) };
-        if result < 0 {
+        if !result {
             Err(get_error())
         } else {
             Ok(())
