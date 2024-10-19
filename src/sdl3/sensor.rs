@@ -18,34 +18,43 @@
 /// - -z ... +z is roll from right to left
 use crate::sys;
 
+
 use crate::common::{validate_int, IntegerOrSdlError};
 use crate::get_error;
 use crate::SensorSubsystem;
 use libc::c_char;
-use std::ffi::CStr;
-use sys::SDL_GetSensorData;
-use sys::SDL_SensorType;
+use std::ffi::{c_int, CStr};
+use sys::sensor::{SDL_GetSensorData, SDL_Sensor, SDL_SensorType};
+use sys::stdinc::SDL_free;
+
+type SensorId = u32;
 
 impl SensorSubsystem {
-    /// Retrieve the total number of attached sensor *and* controllers identified by SDL.
-    #[doc(alias = "SDL_NumSensors")]
-    pub fn num_sensors(&self) -> Result<u32, String> {
-        let result = unsafe { sys::SDL_NumSensors() };
+    /// Get a list of currently connected sensors.
+    #[doc(alias = "SDL_GetSensors")]
+    pub fn num_sensors(&self) -> Result<Vec<SensorId>, String> {
+        let mut count: c_int = 0;
+        let sensor_ids = unsafe { sys::sensor::SDL_GetSensors(&mut count) };
 
-        if result >= 0 {
-            Ok(result as u32)
-        } else {
+        if sensor_ids.is_null() {
             Err(get_error())
+        } else {
+            let ids = unsafe { std::slice::from_raw_parts(sensor_ids, count as usize) }
+                .iter()
+                .copied()
+                .collect();
+            unsafe { SDL_free(sensor_ids as *mut _) };
+            Ok(ids)
         }
     }
 
-    /// Attempt to open the sensor at index `sensor_index` and return it.
+    /// Attempt to open the sensor at index `sensor_id` and return it.
     #[doc(alias = "SDL_OpenSensor")]
-    pub fn open(&self, sensor_index: u32) -> Result<Sensor, IntegerOrSdlError> {
+    pub fn open(&self, sensor_id: SensorId) -> Result<Sensor, IntegerOrSdlError> {
         use crate::common::IntegerOrSdlError::*;
-        let sensor_index = validate_int(sensor_index, "sensor_index")?;
+        let sensor_id = validate_int(sensor_id, "sensor_id")?;
 
-        let sensor = unsafe { sys::SDL_OpenSensor(sensor_index) };
+        let sensor = unsafe { sys::sensor::SDL_OpenSensor(sensor_id.into()) };
 
         if sensor.is_null() {
             Err(SdlError(get_error()))
@@ -61,7 +70,7 @@ impl SensorSubsystem {
     #[inline]
     #[doc(alias = "SDL_UpdateSensors")]
     pub fn update(&self) {
-        unsafe { sys::SDL_UpdateSensors() };
+        unsafe { sys::sensor::SDL_UpdateSensors() };
     }
 }
 
@@ -95,7 +104,7 @@ impl Into<SDL_SensorType> for SensorType {
 /// Wrapper around the `SDL_Sensor` object
 pub struct Sensor {
     subsystem: SensorSubsystem,
-    raw: *mut sys::SDL_Sensor,
+    raw: *mut SDL_Sensor,
 }
 
 impl Sensor {
@@ -108,14 +117,14 @@ impl Sensor {
     /// is found.
     #[doc(alias = "SDL_GetSensorName")]
     pub fn name(&self) -> String {
-        let name = unsafe { sys::SDL_GetSensorName(self.raw) };
+        let name = unsafe { sys::sensor::SDL_GetSensorName(self.raw) };
 
         c_str_to_string(name)
     }
 
-    #[doc(alias = "SDL_GetSensorInstanceID")]
+    #[doc(alias = "SDL_GetSensorID")]
     pub fn instance_id(&self) -> u32 {
-        let result = unsafe { sys::SDL_GetSensorInstanceID(self.raw) };
+        let result = unsafe { sys::sensor::SDL_GetSensorID(self.raw) };
 
         if result < 0 {
             // Should only fail if the joystick is NULL.
@@ -128,15 +137,15 @@ impl Sensor {
     /// Return the type of the sensor or `Unknown` if unsupported.
     #[doc(alias = "SDL_GetSensorType")]
     pub fn sensor_type(&self) -> SensorType {
-        let result = unsafe { sys::SDL_GetSensorType(self.raw) };
+        let result = unsafe { sys::sensor::SDL_GetSensorType(self.raw) };
 
         match result {
-            sys::SDL_SensorType::SDL_SENSOR_INVALID => {
+            SDL_SensorType::SDL_SENSOR_INVALID => {
                 panic!("{}", get_error())
             }
-            sys::SDL_SensorType::SDL_SENSOR_UNKNOWN => SensorType::Unknown,
-            sys::SDL_SensorType::SDL_SENSOR_ACCEL => SensorType::Accelerometer,
-            sys::SDL_SensorType::SDL_SENSOR_GYRO => SensorType::Gyroscope,
+            SDL_SensorType::SDL_SENSOR_UNKNOWN => SensorType::Unknown,
+            SDL_SensorType::SDL_SENSOR_ACCEL => SensorType::Accelerometer,
+            SDL_SensorType::SDL_SENSOR_GYRO => SensorType::Gyroscope,
         }
     }
 
@@ -148,7 +157,7 @@ impl Sensor {
         let mut data = [0f32; 16];
         let result = unsafe { SDL_GetSensorData(self.raw, data.as_mut_ptr(), data.len() as i32) };
 
-        if result != 0 {
+        if !result {
             Err(IntegerOrSdlError::SdlError(get_error()))
         } else {
             Ok(match self.sensor_type() {
@@ -170,7 +179,7 @@ pub enum SensorData {
 impl Drop for Sensor {
     #[doc(alias = "SDL_CloseSensor")]
     fn drop(&mut self) {
-        unsafe { sys::SDL_CloseSensor(self.raw) }
+        unsafe { sys::sensor::SDL_CloseSensor(self.raw) }
     }
 }
 
