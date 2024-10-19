@@ -1,6 +1,7 @@
 //! Rectangles and points.
 
 use crate::sys;
+use render::FRect;
 use std::convert::{AsMut, AsRef};
 use std::hash::{Hash, Hasher};
 use std::mem;
@@ -514,7 +515,6 @@ impl Rect {
 
         let success = unsafe {
             sys::rect::SDL_GetRectIntersection(self.raw(), other.raw(), out.as_mut_ptr())
-
         };
 
         if success {
@@ -623,6 +623,17 @@ impl Into<(i32, i32, u32, u32)> for Rect {
 impl From<sys::rect::SDL_Rect> for Rect {
     fn from(raw: sys::rect::SDL_Rect) -> Rect {
         Rect { raw }
+    }
+}
+
+impl Into<Option<FRect>> for Rect {
+    fn into(self) -> Option<FRect> {
+        Some(FRect::new(
+            self.raw.x as f32,
+            self.raw.y as f32,
+            self.raw.w as f32,
+            self.raw.h as f32,
+        ))
     }
 }
 
