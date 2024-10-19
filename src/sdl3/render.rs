@@ -36,8 +36,10 @@ use crate::rect::Point;
 use crate::rect::Rect;
 use crate::surface;
 use crate::surface::{Surface, SurfaceContext, SurfaceRef};
+use crate::sys;
+use crate::sys::render::SDL_BlendMode;
+use crate::sys::render::SDL_TextureAccess;
 use crate::video::{Window, WindowContext};
-use libc::c_void;
 use libc::{c_double, c_int};
 use std::convert::TryFrom;
 use std::error::Error;
@@ -50,10 +52,10 @@ use std::mem::{transmute, MaybeUninit};
 use std::ops::Deref;
 use std::ptr;
 use std::rc::Rc;
-
-use crate::sys;
-use crate::sys::render::SDL_BlendMode;
-use crate::sys::render::SDL_TextureAccess;
+use sys::everything::SDL_PropertiesID;
+use sys::render::SDL_GetTextureProperties;
+use sys::stdinc::Sint64;
+use sys::surface::{SDL_FLIP_HORIZONTAL, SDL_FLIP_NONE, SDL_FLIP_VERTICAL};
 
 /// Contains the description of an error returned by SDL
 #[derive(Debug, Clone)]
@@ -772,9 +774,11 @@ fn ll_create_texture(
         _ => (),
     };
 
-    Ok(unsafe {
-        sys::render::SDL_CreateTexture(context, pixel_format as u32, access as c_int, w, h)
-    })
+    Ok(
+        unsafe {
+            sys::render::SDL_CreateTexture(context, pixel_format.into(), access.into(), w, h)
+        },
+    )
 }
 
 /// Texture-creating methods for the renderer
@@ -885,9 +889,7 @@ impl<T> TextureCreator<T> {
     ///     .expect("failed to build window");
     ///
     /// // We get the canvas from which we can get the `TextureCreator`.
-    /// let mut canvas: Canvas<Window> = window.into_canvas()
-    ///     .build()
-    ///     .expect("failed to build window's canvas");
+    /// let mut canvas: Canvas<Window> = window.into_canvas();
     /// let texture_creator = canvas.texture_creator();
     ///
     /// let surface = Surface::new(512, 512, PixelFormatEnum::RGB24).unwrap();
@@ -1005,8 +1007,10 @@ impl<T: RenderTarget> Canvas<T> {
     /// the screen, but rather updates the backbuffer.
     /// As such, you compose your entire scene and present the composed
     /// backbuffer to the screen as a complete picture.
+    ///
+    /// Returns `true` on success, or `false` on error. Call `get_error()` for more information.
     #[doc(alias = "SDL_RenderPresent")]
-    pub fn present(&mut self) -> i32 {
+    pub fn present(&mut self) -> bool {
         unsafe { sys::render::SDL_RenderPresent(self.context.raw) }
     }
 
@@ -1020,7 +1024,7 @@ impl<T: RenderTarget> Canvas<T> {
             sys::render::SDL_GetCurrentRenderOutputSize(self.context.raw, &mut width, &mut height)
         };
 
-        if result == 0 {
+        if result {
             Ok((width as u32, height as u32))
         } else {
             Err(get_error())
@@ -1034,42 +1038,26 @@ impl<T: RenderTarget> Canvas<T> {
         width: u32,
         height: u32,
         mode: sys::render::SDL_RendererLogicalPresentation,
-        scale_mode: sys::render::SDL_ScaleMode,
     ) -> Result<(), IntegerOrSdlError> {
         use crate::common::IntegerOrSdlError::*;
         let width = validate_int(width, "width")?;
         let height = validate_int(height, "height")?;
         let result = unsafe {
-            sys::render::SDL_SetRenderLogicalPresentation(
-                self.context.raw,
-                width,
-                height,
-                mode,
-                scale_mode,
-            )
+            sys::render::SDL_SetRenderLogicalPresentation(self.context.raw, width, height, mode)
         };
         match result {
-            0 => Ok(()),
-            _ => Err(SdlError(get_error())),
+            true => Ok(()),
+            false => Err(SdlError(get_error())),
         }
     }
 
     /// Gets device independent resolution for rendering.
     #[doc(alias = "SDL_GetRenderLogicalPresentation")]
-    pub fn logical_size(
-        &self,
-    ) -> (
-        u32,
-        u32,
-        sys::render::SDL_RendererLogicalPresentation,
-        sys::render::SDL_ScaleMode,
-    ) {
+    pub fn logical_size(&self) -> (u32, u32, sys::render::SDL_RendererLogicalPresentation) {
         let mut width = 0;
         let mut height = 0;
         let mut mode: sys::render::SDL_RendererLogicalPresentation =
             sys::render::SDL_RendererLogicalPresentation::SDL_LOGICAL_PRESENTATION_DISABLED;
-        let mut scale_mode: sys::render::SDL_ScaleMode =
-            sys::render::SDL_ScaleMode::SDL_SCALEMODE_BEST;
 
         unsafe {
             sys::render::SDL_GetRenderLogicalPresentation(
@@ -1077,11 +1065,10 @@ impl<T: RenderTarget> Canvas<T> {
                 &mut width,
                 &mut height,
                 &mut mode,
-                &mut scale_mode,
             )
         };
 
-        (width as u32, height as u32, mode, scale_mode)
+        (width as u32, height as u32, mode)
     }
 
     /// Sets the drawing area for rendering on the current target.
@@ -1161,7 +1148,7 @@ impl<T: RenderTarget> Canvas<T> {
     pub fn draw_point<P: Into<FPoint>>(&mut self, point: P) -> Result<(), String> {
         let point = point.into();
         let result = unsafe { sys::render::SDL_RenderPoint(self.context.raw, point.x, point.y) };
-        if result != 0 {
+        if !result {
             Err(get_error())
         } else {
             Ok(())
@@ -1180,7 +1167,7 @@ impl<T: RenderTarget> Canvas<T> {
                 points.len() as c_int,
             )
         };
-        if result != 0 {
+        if !result {
             Err(get_error())
         } else {
             Ok(())
@@ -1200,7 +1187,7 @@ impl<T: RenderTarget> Canvas<T> {
         let result = unsafe {
             sys::render::SDL_RenderLine(self.context.raw, start.x, start.y, end.x, end.y)
         };
-        if result != 0 {
+        if !result {
             Err(get_error())
         } else {
             Ok(())
@@ -1223,7 +1210,7 @@ impl<T: RenderTarget> Canvas<T> {
                 points.len() as c_int,
             )
         };
-        if result != 0 {
+        if !result {
             Err(get_error())
         } else {
             Ok(())
@@ -1235,7 +1222,7 @@ impl<T: RenderTarget> Canvas<T> {
     #[doc(alias = "SDL_RenderRect")]
     pub fn draw_rect(&mut self, rect: FRect) -> Result<(), String> {
         let result = unsafe { sys::render::SDL_RenderRect(self.context.raw, &rect.to_ll()) };
-        if result != 0 {
+        if !result {
             Err(get_error())
         } else {
             Ok(())
@@ -1253,7 +1240,7 @@ impl<T: RenderTarget> Canvas<T> {
                 rects.len() as c_int,
             )
         };
-        if result != 0 {
+        if !result {
             Err(get_error())
         } else {
             Ok(())
@@ -1272,7 +1259,7 @@ impl<T: RenderTarget> Canvas<T> {
                 rect.into().map_or(ptr::null(), |r| &r.to_ll()),
             )
         };
-        if result != 0 {
+        if !result {
             Err(get_error())
         } else {
             Ok(())
@@ -1291,7 +1278,7 @@ impl<T: RenderTarget> Canvas<T> {
                 rects.len() as c_int,
             )
         };
-        if result != 0 {
+        if !result {
             Err(get_error())
         } else {
             Ok(())
@@ -1363,15 +1350,15 @@ impl<T: RenderTarget> Canvas<T> {
         R2: Into<Option<FRect>>,
         P: Into<Option<FPoint>>,
     {
-        use crate::sys::render::SDL_RendererFlip::*;
+        use crate::sys::surface::SDL_FlipMode::*;
         let flip = unsafe {
             match (flip_horizontal, flip_vertical) {
                 (false, false) => SDL_FLIP_NONE,
                 (true, false) => SDL_FLIP_HORIZONTAL,
                 (false, true) => SDL_FLIP_VERTICAL,
-                (true, true) => transmute::<u32, sys::render::SDL_RendererFlip>(
-                    transmute::<sys::render::SDL_RendererFlip, u32>(SDL_FLIP_HORIZONTAL)
-                        | transmute::<sys::render::SDL_RendererFlip, u32>(SDL_FLIP_VERTICAL),
+                (true, true) => transmute::<u32, sys::surface::SDL_FlipMode>(
+                    transmute::<sys::surface::SDL_FlipMode, u32>(SDL_FLIP_HORIZONTAL)
+                        | transmute::<sys::surface::SDL_FlipMode, u32>(SDL_FLIP_VERTICAL),
                 ),
             }
         };
@@ -1423,27 +1410,21 @@ impl<T: RenderTarget> Canvas<T> {
                 }
             };
 
-            let pitch = w * format.byte_size_per_pixel(); // calculated pitch
+            let surface_ptr = sys::render::SDL_RenderReadPixels(self.context.raw, actual_rect);
+            if surface_ptr.is_null() {
+                return Err(get_error());
+            }
+
+            let surface = SurfaceRef::from_ll(surface_ptr);
+            let pitch = w * format.byte_size_per_pixel();
             let size = format.byte_size_of_pixels(w * h);
             let mut pixels = Vec::with_capacity(size);
             pixels.set_len(size);
 
-            // Pass the interior of `pixels: Vec<u8>` to SDL
-            let ret = {
-                sys::render::SDL_RenderReadPixels(
-                    self.context.raw,
-                    actual_rect,
-                    format as u32,
-                    pixels.as_mut_ptr() as *mut c_void,
-                    pitch as c_int,
-                )
-            };
+            std::ptr::copy_nonoverlapping(surface.pixels(), pixels.as_mut_ptr(), size);
+            sys::surface::SDL_DestroySurface(surface_ptr);
 
-            if ret == 0 {
-                Ok(pixels)
-            } else {
-                Err(get_error())
-            }
+            Ok(pixels)
         }
     }
 
@@ -1578,12 +1559,12 @@ impl<T: RenderTarget> Canvas<T> {
         Texture { raw }
     }
 
-    #[doc(alias = "SDL_RenderFlush")]
-    pub unsafe fn render_flush(&self) {
-        let ret = sys::render::SDL_RenderFlush(self.context.raw);
+    #[doc(alias = "SDL_FlushRenderer")]
+    pub unsafe fn flush_renderer(&self) {
+        let ret = sys::render::SDL_FlushRenderer(self.context.raw);
 
         if !ret {
-            panic!("Error setting blend: {}", get_error())
+            panic!("Error flushing renderer: {}", get_error())
         }
     }
 }
@@ -1824,32 +1805,50 @@ struct InternalTexture {
 }
 
 impl InternalTexture {
-    #[doc(alias = "SDL_QueryTexture")]
-    pub fn query(&self) -> TextureQuery {
-        let mut format = 0;
-        let mut access = 0;
-        let mut width = 0;
-        let mut height = 0;
+    #[doc(alias = "SDL_GetTextureProperties")]
+    pub fn get_properties(&self) -> SDL_PropertiesID {
+        unsafe { sys::render::SDL_GetTextureProperties(self.raw.into()) }
+    }
 
-        let ret = unsafe {
-            sys::render::SDL_QueryTexture(
-                self.raw,
-                &mut format,
-                &mut access,
-                &mut width,
-                &mut height,
+    pub fn get_format(&self) -> PixelFormatEnum {
+        let format = unsafe {
+            sys::properties::SDL_GetNumberProperty(
+                self.get_properties(),
+                sys::render::SDL_PROP_TEXTURE_FORMAT_NUMBER.into(),
+                0,
             )
         };
-        // Should only fail on an invalid texture
-        if !ret {
-            panic!("{}", get_error())
-        } else {
-            TextureQuery {
-                format: PixelFormatEnum::try_from(format as u32).unwrap(),
-                access: TextureAccess::try_from(access as u32).unwrap(),
-                width: width as u32,
-                height: height as u32,
-            }
+        PixelFormatEnum::from(format)
+    }
+
+    pub fn get_access(&self) -> TextureAccess {
+        let access = unsafe {
+            sys::properties::SDL_GetNumberProperty(
+                self.get_properties(),
+                sys::render::SDL_PROP_TEXTURE_ACCESS_NUMBER.into(),
+                0,
+            )
+        };
+        TextureAccess::from(access.into())
+    }
+
+    pub fn get_width(&self) -> u32 {
+        unsafe {
+            sys::properties::SDL_GetNumberProperty(
+                self.get_properties(),
+                sys::render::SDL_PROP_TEXTURE_WIDTH_NUMBER.into(),
+                0,
+            ) as u32
+        }
+    }
+
+    pub fn get_height(&self) -> u32 {
+        unsafe {
+            sys::properties::SDL_GetNumberProperty(
+                self.get_properties(),
+                sys::render::SDL_PROP_TEXTURE_HEIGHT_NUMBER.into(),
+                0,
+            ) as u32
         }
     }
 
@@ -2157,43 +2156,59 @@ impl InternalTexture {
         }
     }
 
-    pub unsafe fn gl_bind_texture(&mut self) -> (f32, f32) {
-        let mut texw = 0.0;
-        let mut texh = 0.0;
-
-        if sys::render::SDL_GL_BindTexture(self.raw, &mut texw, &mut texh) == 0 {
-            (texw, texh)
-        } else {
-            panic!("OpenGL texture binding not supported");
-        }
-    }
-
-    pub unsafe fn gl_unbind_texture(&mut self) {
-        if sys::render::SDL_GL_UnbindTexture(self.raw) != 0 {
-            panic!("OpenGL texture unbinding not supported");
-        }
-    }
-
-    #[doc(alias = "SDL_GL_BindTexture")]
-    pub fn gl_with_bind<R, F: FnOnce(f32, f32) -> R>(&mut self, f: F) -> R {
+    // not really sure about this!
+    unsafe fn get_gl_texture_id(&self) -> Sint64 {
+        let props_id = unsafe { SDL_GetTextureProperties(self.raw) };
         unsafe {
-            let mut texw = 0.0;
-            let mut texh = 0.0;
-
-            if sys::render::SDL_GL_BindTexture(self.raw, &mut texw, &mut texh) == 0 {
-                let return_value = f(texw, texh);
-
-                if sys::render::SDL_GL_UnbindTexture(self.raw) == 0 {
-                    return_value
-                } else {
-                    // This should never happen...
-                    panic!();
-                }
-            } else {
-                panic!("OpenGL texture binding not supported");
-            }
+            sys::properties::SDL_GetNumberProperty(
+                props_id,
+                sys::render::SDL_PROP_TEXTURE_OPENGL_TEXTURE_NUMBER.into(),
+                0,
+            )
         }
     }
+
+    // removed:
+    // SDL_GL_BindTexture() - use SDL_GetTextureProperties() to get the OpenGL texture ID and bind the texture directly
+    // SDL_GL_UnbindTexture() - use SDL_GetTextureProperties() to get the OpenGL texture ID and unbind the texture directly
+
+    // pub unsafe fn gl_bind_texture(&mut self) -> (f32, f32) {
+    //     let mut texw = 0.0;
+    //     let mut texh = 0.0;
+    //
+    //     if sys::render::SDL_GL_BindTexture(self.raw, &mut texw, &mut texh) == 0 {
+    //         (texw, texh)
+    //     } else {
+    //         panic!("OpenGL texture binding not supported");
+    //     }
+    // }
+    //
+    // pub unsafe fn gl_unbind_texture(&mut self) {
+    //     if sys::render::SDL_GL_UnbindTexture(self.raw) != 0 {
+    //         panic!("OpenGL texture unbinding not supported");
+    //     }
+    // }
+
+    // #[doc(alias = "SDL_GL_BindTexture")]
+    // pub fn gl_with_bind<R, F: FnOnce(f32, f32) -> R>(&mut self, f: F) -> R {
+    //     unsafe {
+    //         let mut texw = 0.0;
+    //         let mut texh = 0.0;
+    //
+    //         if sys::render::SDL_GL_BindTexture(self.raw, &mut texw, &mut texh) == 0 {
+    //             let return_value = f(texw, texh);
+    //
+    //             if sys::render::SDL_GL_UnbindTexture(self.raw) == 0 {
+    //                 return_value
+    //             } else {
+    //                 // This should never happen...
+    //                 panic!();
+    //             }
+    //         } else {
+    //             panic!("OpenGL texture binding not supported");
+    //         }
+    //     }
+    // }
 }
 
 #[cfg(not(feature = "unsafe_textures"))]
@@ -2342,9 +2357,7 @@ impl<'r> Texture<'r> {
     ///     .expect("failed to build window");
     ///
     /// // We get the canvas from which we can get the `TextureCreator`.
-    /// let mut canvas: Canvas<Window> = window.into_canvas()
-    ///     .build()
-    ///     .expect("failed to build window's canvas");
+    /// let mut canvas: Canvas<Window> = window.into_canvas();
     /// let texture_creator = canvas.texture_creator();
     ///
     /// let surface = Surface::new(512, 512, PixelFormatEnum::RGB24).unwrap();
@@ -2376,9 +2389,7 @@ impl<'r> Texture<'r> {
     ///     .expect("failed to build window");
     ///
     /// // We get the canvas from which we can get the `TextureCreator`.
-    /// let mut canvas: Canvas<Window> = window.into_canvas()
-    ///     .build()
-    ///     .expect("failed to build window's canvas");
+    /// let mut canvas: Canvas<Window> = window.into_canvas();
     /// let texture_creator = canvas.texture_creator();
     ///
     /// let surface = Surface::new(512, 512, PixelFormatEnum::RGB24).unwrap();
@@ -2395,10 +2406,28 @@ impl<'r> Texture<'r> {
 
 #[cfg(feature = "unsafe_textures")]
 impl Texture {
-    /// Queries the attributes of the texture.
+    /// Get the format of the texture.
     #[inline]
-    pub fn query(&self) -> TextureQuery {
-        InternalTexture { raw: self.raw }.query()
+    pub fn format(&self) -> PixelFormatEnum {
+        InternalTexture { raw: self.raw }.get_format()
+    }
+
+    /// Get the access of the texture.
+    #[inline]
+    pub fn access(&self) -> TextureAccess {
+        InternalTexture { raw: self.raw }.get_access()
+    }
+
+    /// Get the width of the texture.
+    #[inline]
+    pub fn width(&self) -> u32 {
+        InternalTexture { raw: self.raw }.get_width()
+    }
+
+    /// Get the height of the texture.
+    #[inline]
+    pub fn height(&self) -> u32 {
+        InternalTexture { raw: self.raw }.get_height()
     }
 
     /// Sets an additional color value multiplied into render copy operations.
@@ -2494,24 +2523,26 @@ impl Texture {
         InternalTexture { raw: self.raw }.with_lock(rect, func)
     }
 
-    /// Binds an OpenGL/ES/ES2 texture to the current
-    /// context for use with when rendering OpenGL primitives directly.
-    #[inline]
-    pub unsafe fn gl_bind_texture(&mut self) -> (f32, f32) {
-        InternalTexture { raw: self.raw }.gl_bind_texture()
-    }
-
-    /// Unbinds an OpenGL/ES/ES2 texture from the current context.
-    #[inline]
-    pub unsafe fn gl_unbind_texture(&mut self) {
-        InternalTexture { raw: self.raw }.gl_unbind_texture()
-    }
-
-    /// Binds and unbinds an OpenGL/ES/ES2 texture from the current context.
-    #[inline]
-    pub fn gl_with_bind<R, F: FnOnce(f32, f32) -> R>(&mut self, f: F) -> R {
-        InternalTexture { raw: self.raw }.gl_with_bind(f)
-    }
+    // these are not supplied by SDL anymore
+    // not sure if we should support them since we'd need to pull in OpenGL
+    // /// Binds an OpenGL/ES/ES2 texture to the current
+    // /// context for use with when rendering OpenGL primitives directly.
+    // #[inline]
+    // pub unsafe fn gl_bind_texture(&mut self) -> (f32, f32) {
+    //     InternalTexture { raw: self.raw }.gl_bind_texture()
+    // }
+    //
+    // /// Unbinds an OpenGL/ES/ES2 texture from the current context.
+    // #[inline]
+    // pub unsafe fn gl_unbind_texture(&mut self) {
+    //     InternalTexture { raw: self.raw }.gl_unbind_texture()
+    // }
+    //
+    // /// Binds and unbinds an OpenGL/ES/ES2 texture from the current context.
+    // #[inline]
+    // pub fn gl_with_bind<R, F: FnOnce(f32, f32) -> R>(&mut self, f: F) -> R {
+    //     InternalTexture { raw: self.raw }.gl_with_bind(f)
+    // }
 
     #[inline]
     // this can prevent introducing UB until
