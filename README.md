@@ -7,6 +7,13 @@ The migration is in progress, and we are looking for contributors to help us com
 
 Right now the project isn't building because the migration is in progress.
 
+## Migration Progress
+
+- [ ] Update all modules to SDL3, use new [sdl3-sys](https://github.com/maia-s/sdl3-sys-rs) bindings,
+  follow [migration guide](https://github.com/libsdl-org/SDL/blob/main/docs/README-migration.md).
+- [ ] Fix tests.
+- [ ] Update examples to SDL3.
+
 Please refer to the [sdl3-rs](https://github.com/revmischa/sdl3-rs) repository for the latest updates.
 
 The low-level bindings are being worked on in the [sdl3-sys](https://github.com/maia-s/sdl3-sys-rs) repository.
@@ -27,6 +34,9 @@ abstract away inappropriate manual memory management.
 
 We're looking for people to help get SDL3 support in Rust built, tested, and completed. You can help out!
 
+Many examples and documentation requires updating. Interfaces have changed from SDL2 to SDL3, and the Rust bindings need
+to be updated to reflect these changes.
+
 If you see anything wrong, missing, or suboptimal, please feel free to open a PR with your improvements.
 
 If you would like to discuss ideas or ask questions, join the #rust channel on [Discord](https://discord.gg/qMyEpKVnCD).
@@ -36,4 +46,5 @@ If you would like to discuss ideas or ask questions, join the #rust channel on [
 This project was forked from [Rust-sdl2](https://github.com/Rust-sdl2/rust-sdl2) and the SDL2 code migrated to SDL3
 according to the [SDL2->SDL3 migration guide](https://github.com/libsdl-org/SDL/blob/main/docs/README-migration.md).
 
-If you want a library compatible with earlier versions of SDL, please see [Rust-sdl2](https://github.com/Rust-sdl2/rust-sdl2).
+If you want a library compatible with earlier versions of SDL, please
+see [Rust-sdl2](https://github.com/Rust-sdl2/rust-sdl2).

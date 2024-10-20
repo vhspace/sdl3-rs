@@ -1,3 +1,4 @@
+use std::convert::TryInto;
 use crate::get_error;
 use crate::surface::SurfaceRef;
 use crate::sys;
@@ -166,7 +167,7 @@ impl From<SDL_MouseWheelDirection> for MouseWheelDirection {
         match direction {
             sys::mouse::SDL_MOUSEWHEEL_NORMAL => MouseWheelDirection::Normal,
             sys::mouse::SDL_MOUSEWHEEL_FLIPPED => MouseWheelDirection::Flipped,
-            _ => MouseWheelDirection::Unknown(direction as u32),
+            _ => MouseWheelDirection::Unknown(direction.0.try_into().unwrap()),
         }
     }
 }

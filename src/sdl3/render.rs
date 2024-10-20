@@ -2244,12 +2244,6 @@ impl InternalTexture {
 
 #[cfg(not(feature = "unsafe_textures"))]
 impl<'r> Texture<'r> {
-    /// Queries the attributes of the texture.
-    #[inline]
-    pub fn query(&self) -> TextureQuery {
-        InternalTexture { raw: self.raw }.query()
-    }
-
     /// Sets an additional color value multiplied into render copy operations.
     #[inline]
     pub fn set_color_mod(&mut self, red: u8, green: u8, blue: u8) {
@@ -2343,24 +2337,24 @@ impl<'r> Texture<'r> {
         InternalTexture { raw: self.raw }.with_lock(rect, func)
     }
 
-    /// Binds an OpenGL/ES/ES2 texture to the current
-    /// context for use with when rendering OpenGL primitives directly.
-    #[inline]
-    pub unsafe fn gl_bind_texture(&mut self) -> (f32, f32) {
-        InternalTexture { raw: self.raw }.gl_bind_texture()
-    }
+    // /// Binds an OpenGL/ES/ES2 texture to the current
+    // /// context for use with when rendering OpenGL primitives directly.
+    // #[inline]
+    // pub unsafe fn gl_bind_texture(&mut self) -> (f32, f32) {
+    //     InternalTexture { raw: self.raw }.gl_bind_texture()
+    // }
+    //
+    // /// Unbinds an OpenGL/ES/ES2 texture from the current context.
+    // #[inline]
+    // pub unsafe fn gl_unbind_texture(&mut self) {
+    //     InternalTexture { raw: self.raw }.gl_unbind_texture()
+    // }
 
-    /// Unbinds an OpenGL/ES/ES2 texture from the current context.
-    #[inline]
-    pub unsafe fn gl_unbind_texture(&mut self) {
-        InternalTexture { raw: self.raw }.gl_unbind_texture()
-    }
-
-    /// Binds and unbinds an OpenGL/ES/ES2 texture from the current context.
-    #[inline]
-    pub fn gl_with_bind<R, F: FnOnce(f32, f32) -> R>(&mut self, f: F) -> R {
-        InternalTexture { raw: self.raw }.gl_with_bind(f)
-    }
+    // /// Binds and unbinds an OpenGL/ES/ES2 texture from the current context.
+    // #[inline]
+    // pub fn gl_with_bind<R, F: FnOnce(f32, f32) -> R>(&mut self, f: F) -> R {
+    //     InternalTexture { raw: self.raw }.gl_with_bind(f)
+    // }
 
     #[inline]
     // this can prevent introducing UB until
