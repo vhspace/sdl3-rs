@@ -31,17 +31,15 @@
 use crate::common::{validate_int, IntegerOrSdlError};
 use crate::get_error;
 use crate::pixels;
-use crate::pixels::PixelFormatEnum;
 use crate::rect::Point;
 use crate::rect::Rect;
 use crate::surface;
 use crate::surface::{Surface, SurfaceContext, SurfaceRef};
 use crate::sys;
-use crate::sys::render::SDL_BlendMode;
-use crate::sys::render::SDL_TextureAccess;
 use crate::video::{Window, WindowContext};
 use libc::{c_double, c_int};
-use std::convert::TryFrom;
+use pixels::PixelFormat;
+use std::convert::{Into, TryFrom};
 use std::error::Error;
 use std::ffi::CStr;
 use std::fmt;
@@ -52,8 +50,9 @@ use std::mem::{transmute, MaybeUninit};
 use std::ops::Deref;
 use std::ptr;
 use std::rc::Rc;
+use sys::blendmode::SDL_BlendMode;
 use sys::everything::SDL_PropertiesID;
-use sys::render::SDL_GetTextureProperties;
+use sys::render::{SDL_GetTextureProperties, SDL_TextureAccess};
 use sys::stdinc::Sint64;
 use sys::surface::{SDL_FLIP_HORIZONTAL, SDL_FLIP_NONE, SDL_FLIP_VERTICAL};
 
@@ -65,7 +64,6 @@ pub struct SdlError(String);
 #[derive(Debug, Clone)]
 pub enum TargetRenderError {
     SdlError(SdlError),
-    NotSupported,
 }
 
 impl fmt::Display for SdlError {
@@ -87,7 +85,6 @@ impl fmt::Display for TargetRenderError {
         use self::TargetRenderError::*;
         match *self {
             SdlError(ref e) => e.fmt(f),
-            NotSupported => write!(f, "The renderer does not support the use of render targets"),
         }
     }
 }
@@ -97,7 +94,6 @@ impl Error for TargetRenderError {
         use self::TargetRenderError::*;
         match *self {
             SdlError(self::SdlError(ref e)) => e.as_str(),
-            NotSupported => "The renderer does not support the use of render targets",
         }
     }
 }
@@ -105,9 +101,15 @@ impl Error for TargetRenderError {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 #[repr(i32)]
 pub enum TextureAccess {
-    Static = SDL_TextureAccess::SDL_TEXTUREACCESS_STATIC as i32,
-    Streaming = SDL_TextureAccess::SDL_TEXTUREACCESS_STREAMING as i32,
-    Target = SDL_TextureAccess::SDL_TEXTUREACCESS_TARGET as i32,
+    Static = sys::render::SDL_TEXTUREACCESS_STATIC.0,
+    Streaming = sys::render::SDL_TEXTUREACCESS_STREAMING.0,
+    Target = sys::render::SDL_TEXTUREACCESS_TARGET.0,
+}
+
+impl From<TextureAccess> for sys::render::SDL_TextureAccess {
+    fn from(access: TextureAccess) -> sys::render::SDL_TextureAccess {
+        sys::render::SDL_TextureAccess(access as i32)
+    }
 }
 
 // floating-point point
@@ -178,18 +180,34 @@ impl From<Rect> for FRect {
     }
 }
 
+#[derive(Debug)]
+pub struct InvalidTextureAccess(u32);
+
+impl std::fmt::Display for InvalidTextureAccess {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "Invalid texture access value: {}", self.0)
+    }
+}
+
+impl std::error::Error for InvalidTextureAccess {}
+
 impl TryFrom<u32> for TextureAccess {
-    type Error = ();
+    type Error = InvalidTextureAccess;
 
     fn try_from(n: u32) -> Result<Self, Self::Error> {
-        use self::TextureAccess::*;
-        use crate::sys::render::SDL_TextureAccess::*;
+        // Convert the u32 to SDL_TextureAccess
+        let sdl_access = SDL_TextureAccess(n as i32);
 
-        Ok(match unsafe { transmute(n) } {
-            SDL_TEXTUREACCESS_STATIC => Static,
-            SDL_TEXTUREACCESS_STREAMING => Streaming,
-            SDL_TEXTUREACCESS_TARGET => Target,
-        })
+        // Match against the SDL_TextureAccess constants
+        if sdl_access == SDL_TextureAccess::STATIC {
+            Ok(TextureAccess::Static)
+        } else if sdl_access == SDL_TextureAccess::STREAMING {
+            Ok(TextureAccess::Streaming)
+        } else if sdl_access == SDL_TextureAccess::TARGET {
+            Ok(TextureAccess::Target)
+        } else {
+            Err(InvalidTextureAccess(n))
+        }
     }
 }
 
@@ -199,7 +217,7 @@ impl TryFrom<u32> for TextureAccess {
 pub struct RendererInfo {
     pub name: &'static str,
     pub flags: u32,
-    pub texture_formats: Vec<PixelFormatEnum>,
+    pub texture_formats: Vec<PixelFormat>,
     pub max_texture_width: u32,
     pub max_texture_height: u32,
 }
@@ -209,27 +227,27 @@ pub struct RendererInfo {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum BlendMode {
     /// no blending (replace destination with source).
-    None = SDL_BlendMode::SDL_BLENDMODE_NONE as i32,
+    None = sys::blendmode::SDL_BLENDMODE_NONE as i32,
     /// Alpha blending
     ///
     /// dstRGB = (srcRGB * srcA) + (dstRGB * (1-srcA))
     ///
     /// dstA = srcA + (dstA * (1-srcA))
-    Blend = SDL_BlendMode::SDL_BLENDMODE_BLEND as i32,
+    Blend = sys::blendmode::SDL_BLENDMODE_BLEND as i32,
     /// Additive blending
     ///
     /// dstRGB = (srcRGB * srcA) + dstRGB
     ///
     /// dstA = dstA (keep original alpha)
-    Add = SDL_BlendMode::SDL_BLENDMODE_ADD as i32,
+    Add = sys::blendmode::SDL_BLENDMODE_ADD as i32,
     /// Color modulate
     ///
     /// dstRGB = srcRGB * dstRGB
-    Mod = SDL_BlendMode::SDL_BLENDMODE_MOD as i32,
+    Mod = sys::blendmode::SDL_BLENDMODE_MOD as i32,
     /// Color multiply
-    Mul = SDL_BlendMode::SDL_BLENDMODE_MUL as i32,
+    Mul = sys::blendmode::SDL_BLENDMODE_MUL as i32,
     /// Invalid blending mode (indicates error)
-    Invalid = SDL_BlendMode::SDL_BLENDMODE_INVALID as i32,
+    Invalid = sys::blendmode::SDL_BLENDMODE_INVALID as i32,
 }
 
 impl TryFrom<u32> for BlendMode {
@@ -237,15 +255,15 @@ impl TryFrom<u32> for BlendMode {
 
     fn try_from(n: u32) -> Result<Self, Self::Error> {
         use self::BlendMode::*;
-        use crate::sys::render::SDL_BlendMode::*;
 
         Ok(match unsafe { transmute(n) } {
-            SDL_BLENDMODE_NONE => None,
-            SDL_BLENDMODE_BLEND => Blend,
-            SDL_BLENDMODE_ADD => Add,
-            SDL_BLENDMODE_MOD => Mod,
-            SDL_BLENDMODE_MUL => Mul,
-            SDL_BLENDMODE_INVALID => Invalid,
+            sys::blendmode::SDL_BLENDMODE_NONE => None,
+            sys::blendmode::SDL_BLENDMODE_BLEND => Blend,
+            sys::blendmode::SDL_BLENDMODE_ADD => Add,
+            sys::blendmode::SDL_BLENDMODE_MOD => Mod,
+            sys::blendmode::SDL_BLENDMODE_MUL => Mul,
+            sys::blendmode::SDL_BLENDMODE_INVALID => Invalid,
+            _ => return Err(()),
         })
     }
 }
@@ -375,7 +393,7 @@ impl<'s> RenderTarget for Surface<'s> {
 pub struct Canvas<T: RenderTarget> {
     target: T,
     context: Rc<RendererContext<T::Context>>,
-    default_pixel_format: PixelFormatEnum,
+    default_pixel_format: PixelFormat,
 }
 
 /// Alias for a `Canvas` that was created out of a `Surface`
@@ -463,7 +481,7 @@ impl Canvas<Window> {
     }
 
     #[inline]
-    pub fn default_pixel_format(&self) -> PixelFormatEnum {
+    pub fn default_pixel_format(&self) -> PixelFormat {
         self.window().window_pixel_format()
     }
 
@@ -641,19 +659,15 @@ impl<T: RenderTarget> Canvas<T> {
         for<'r> F: FnMut(&'r mut Canvas<T>, &U),
         I: Iterator<Item = &'s (&'a mut Texture, U)>,
     {
-        if self.render_target_supported() {
-            for &(ref texture, ref user_context) in textures {
-                unsafe { self.set_raw_target(texture.raw) }
-                    .map_err(|e| TargetRenderError::SdlError(e))?;
-                f(self, &user_context);
-            }
-            // reset the target to its source
-            unsafe { self.set_raw_target(ptr::null_mut()) }
+        for &(ref texture, ref user_context) in textures {
+            unsafe { self.set_raw_target(texture.raw) }
                 .map_err(|e| TargetRenderError::SdlError(e))?;
-            Ok(())
-        } else {
-            Err(TargetRenderError::NotSupported)
+            f(self, &user_context);
         }
+        // reset the target to its source
+        unsafe { self.set_raw_target(ptr::null_mut()) }
+            .map_err(|e| TargetRenderError::SdlError(e))?;
+        Ok(())
     }
 }
 
@@ -671,7 +685,7 @@ impl<T: RenderTarget> Canvas<T> {
 /// behavior.
 pub struct TextureCreator<T> {
     context: Rc<RendererContext<T>>,
-    default_pixel_format: PixelFormatEnum,
+    default_pixel_format: PixelFormat,
 }
 
 /// Create a new renderer for a window.
@@ -709,7 +723,7 @@ pub fn create_renderer(
 pub enum TextureValueError {
     WidthOverflows(u32),
     HeightOverflows(u32),
-    WidthMustBeMultipleOfTwoForFormat(u32, PixelFormatEnum),
+    WidthMustBeMultipleOfTwoForFormat(u32, PixelFormat),
     SdlError(String),
 }
 
@@ -748,7 +762,7 @@ impl Error for TextureValueError {
 #[doc(alias = "SDL_CreateTexture")]
 fn ll_create_texture(
     context: *mut sys::render::SDL_Renderer,
-    pixel_format: PixelFormatEnum,
+    pixel_format: PixelFormat,
     access: TextureAccess,
     width: u32,
     height: u32,
@@ -766,7 +780,7 @@ fn ll_create_texture(
     // If the pixel format is YUV 4:2:0 and planar, the width and height must
     // be multiples-of-two. See issue #334 for details.
     match pixel_format {
-        PixelFormatEnum::YV12 | PixelFormatEnum::IYUV => {
+        YV12 | IYUV => {
             if w % 2 != 0 || h % 2 != 0 {
                 return Err(WidthMustBeMultipleOfTwoForFormat(width, pixel_format));
             }
@@ -790,7 +804,7 @@ impl<T> TextureCreator<T> {
         self.context.raw()
     }
 
-    pub fn default_pixel_format(&self) -> PixelFormatEnum {
+    pub fn default_pixel_format(&self) -> PixelFormat {
         self.default_pixel_format
     }
 
@@ -813,10 +827,10 @@ impl<T> TextureCreator<T> {
         height: u32,
     ) -> Result<Texture, TextureValueError>
     where
-        F: Into<Option<PixelFormatEnum>>,
+        F: Into<Option<PixelFormat>>,
     {
         use self::TextureValueError::*;
-        let format: PixelFormatEnum = format.into().unwrap_or(self.default_pixel_format);
+        let format: PixelFormat = format.into().unwrap_or(self.default_pixel_format);
         let result = ll_create_texture(self.context.raw(), format, access, width, height)?;
         if result.is_null() {
             Err(SdlError(get_error()))
@@ -834,7 +848,7 @@ impl<T> TextureCreator<T> {
         height: u32,
     ) -> Result<Texture, TextureValueError>
     where
-        F: Into<Option<PixelFormatEnum>>,
+        F: Into<Option<PixelFormat>>,
     {
         self.create_texture(format, TextureAccess::Static, width, height)
     }
@@ -848,7 +862,7 @@ impl<T> TextureCreator<T> {
         height: u32,
     ) -> Result<Texture, TextureValueError>
     where
-        F: Into<Option<PixelFormatEnum>>,
+        F: Into<Option<PixelFormat>>,
     {
         self.create_texture(format, TextureAccess::Streaming, width, height)
     }
@@ -862,7 +876,7 @@ impl<T> TextureCreator<T> {
         height: u32,
     ) -> Result<Texture, TextureValueError>
     where
-        F: Into<Option<PixelFormatEnum>>,
+        F: Into<Option<PixelFormat>>,
     {
         self.create_texture(format, TextureAccess::Target, width, height)
     }
@@ -874,7 +888,7 @@ impl<T> TextureCreator<T> {
     /// The access hint for the created texture is [`TextureAccess::Static`].
     ///
     /// ```no_run
-    /// use sdl3::pixels::PixelFormatEnum;
+    /// use sdl3::pixels::PixelFormat;
     /// use sdl3::surface::Surface;
     /// use sdl3::render::{Canvas, Texture};
     /// use sdl3::video::Window;
@@ -892,7 +906,7 @@ impl<T> TextureCreator<T> {
     /// let mut canvas: Canvas<Window> = window.into_canvas();
     /// let texture_creator = canvas.texture_creator();
     ///
-    /// let surface = Surface::new(512, 512, PixelFormatEnum::RGB24).unwrap();
+    /// let surface = Surface::new(512, 512, PixelFormat::RGB24).unwrap();
     /// let texture = texture_creator.create_texture_from_surface(surface).unwrap();
     /// ```
     #[doc(alias = "SDL_CreateTextureFromSurface")]
@@ -1057,7 +1071,7 @@ impl<T: RenderTarget> Canvas<T> {
         let mut width = 0;
         let mut height = 0;
         let mut mode: sys::render::SDL_RendererLogicalPresentation =
-            sys::render::SDL_RendererLogicalPresentation::SDL_LOGICAL_PRESENTATION_DISABLED;
+            sys::render::SDL_LOGICAL_PRESENTATION_DISABLED;
 
         unsafe {
             sys::render::SDL_GetRenderLogicalPresentation(
@@ -1350,7 +1364,6 @@ impl<T: RenderTarget> Canvas<T> {
         R2: Into<Option<FRect>>,
         P: Into<Option<FPoint>>,
     {
-        use crate::sys::surface::SDL_FlipMode::*;
         let flip = unsafe {
             match (flip_horizontal, flip_vertical) {
                 (false, false) => SDL_FLIP_NONE,
@@ -1398,8 +1411,8 @@ impl<T: RenderTarget> Canvas<T> {
     pub fn read_pixels<R: Into<Option<Rect>>>(
         &self,
         rect: R,
-        format: pixels::PixelFormatEnum,
-    ) -> Result<Vec<u8>, String> {
+        // format: pixels::PixelFormat,
+    ) -> Result<Surface, String> {
         unsafe {
             let rect = rect.into();
             let (actual_rect, w, h) = match rect {
@@ -1415,16 +1428,8 @@ impl<T: RenderTarget> Canvas<T> {
                 return Err(get_error());
             }
 
-            let surface = SurfaceRef::from_ll(surface_ptr);
-            let pitch = w * format.byte_size_per_pixel();
-            let size = format.byte_size_of_pixels(w * h);
-            let mut pixels = Vec::with_capacity(size);
-            pixels.set_len(size);
-
-            std::ptr::copy_nonoverlapping(surface.pixels(), pixels.as_mut_ptr(), size);
-            sys::surface::SDL_DestroySurface(surface_ptr);
-
-            Ok(pixels)
+            let surface = Surface::from_ll(surface_ptr);
+            Ok(surface)
         }
     }
 
@@ -1454,10 +1459,10 @@ impl<T: RenderTarget> Canvas<T> {
         height: u32,
     ) -> Result<Texture, TextureValueError>
     where
-        F: Into<Option<PixelFormatEnum>>,
+        F: Into<Option<PixelFormat>>,
     {
         use self::TextureValueError::*;
-        let format: PixelFormatEnum = format.into().unwrap_or(self.default_pixel_format);
+        let format: PixelFormat = format.into().unwrap_or(self.default_pixel_format);
         let result = ll_create_texture(self.context.raw(), format, access, width, height)?;
         if result.is_null() {
             Err(SdlError(get_error()))
@@ -1480,7 +1485,7 @@ impl<T: RenderTarget> Canvas<T> {
         height: u32,
     ) -> Result<Texture, TextureValueError>
     where
-        F: Into<Option<PixelFormatEnum>>,
+        F: Into<Option<PixelFormat>>,
     {
         self.create_texture(format, TextureAccess::Static, width, height)
     }
@@ -1499,7 +1504,7 @@ impl<T: RenderTarget> Canvas<T> {
         height: u32,
     ) -> Result<Texture, TextureValueError>
     where
-        F: Into<Option<PixelFormatEnum>>,
+        F: Into<Option<PixelFormat>>,
     {
         self.create_texture(format, TextureAccess::Streaming, width, height)
     }
@@ -1518,7 +1523,7 @@ impl<T: RenderTarget> Canvas<T> {
         height: u32,
     ) -> Result<Texture, TextureValueError>
     where
-        F: Into<Option<PixelFormatEnum>>,
+        F: Into<Option<PixelFormat>>,
     {
         self.create_texture(format, TextureAccess::Target, width, height)
     }
@@ -1571,7 +1576,7 @@ impl<T: RenderTarget> Canvas<T> {
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct TextureQuery {
-    pub format: pixels::PixelFormatEnum,
+    pub format: pixels::PixelFormat,
     pub access: TextureAccess,
     pub width: u32,
     pub height: u32,
@@ -1655,11 +1660,11 @@ impl Texture {
 #[derive(Debug, Clone)]
 pub enum UpdateTextureError {
     PitchOverflows(usize),
-    PitchMustBeMultipleOfTwoForFormat(usize, PixelFormatEnum),
-    XMustBeMultipleOfTwoForFormat(i32, PixelFormatEnum),
-    YMustBeMultipleOfTwoForFormat(i32, PixelFormatEnum),
-    WidthMustBeMultipleOfTwoForFormat(u32, PixelFormatEnum),
-    HeightMustBeMultipleOfTwoForFormat(u32, PixelFormatEnum),
+    PitchMustBeMultipleOfTwoForFormat(usize, PixelFormat),
+    XMustBeMultipleOfTwoForFormat(i32, PixelFormat),
+    YMustBeMultipleOfTwoForFormat(i32, PixelFormat),
+    WidthMustBeMultipleOfTwoForFormat(u32, PixelFormat),
+    HeightMustBeMultipleOfTwoForFormat(u32, PixelFormat),
     SdlError(String),
 }
 
@@ -1810,7 +1815,7 @@ impl InternalTexture {
         unsafe { sys::render::SDL_GetTextureProperties(self.raw.into()) }
     }
 
-    pub fn get_format(&self) -> PixelFormatEnum {
+    pub fn get_format(&self) -> PixelFormat {
         let format = unsafe {
             sys::properties::SDL_GetNumberProperty(
                 self.get_properties(),
@@ -1818,7 +1823,7 @@ impl InternalTexture {
                 0,
             )
         };
-        PixelFormatEnum::from(format)
+        PixelFormat::from(format)
     }
 
     pub fn get_access(&self) -> TextureAccess {
@@ -1942,7 +1947,7 @@ impl InternalTexture {
         // See issue #334 for details.
         let TextureQuery { format, .. } = self.query();
         match format {
-            PixelFormatEnum::YV12 | PixelFormatEnum::IYUV => {
+            PixelFormat::YV12 | PixelFormat::IYUV => {
                 if let Some(r) = rect {
                     if r.x() % 2 != 0 {
                         return Err(XMustBeMultipleOfTwoForFormat(r.x(), format));
@@ -2342,7 +2347,7 @@ impl<'r> Texture<'r> {
     /// A convenience function for [`TextureCreator::create_texture_from_surface`].
     ///
     /// ```no_run
-    /// use sdl3::pixels::PixelFormatEnum;
+    /// use sdl3::pixels::PixelFormat;
     /// use sdl3::surface::Surface;
     /// use sdl3::render::{Canvas, Texture};
     /// use sdl3::video::Window;
@@ -2360,7 +2365,7 @@ impl<'r> Texture<'r> {
     /// let mut canvas: Canvas<Window> = window.into_canvas();
     /// let texture_creator = canvas.texture_creator();
     ///
-    /// let surface = Surface::new(512, 512, PixelFormatEnum::RGB24).unwrap();
+    /// let surface = Surface::new(512, 512, PixelFormat::RGB24).unwrap();
     /// let texture = Texture::from_surface(&surface, &texture_creator).unwrap();
     /// ```
     #[cfg(not(feature = "unsafe_textures"))]
@@ -2374,7 +2379,7 @@ impl<'r> Texture<'r> {
     /// A convenience function for [`TextureCreator::create_texture_from_surface`].
     ///
     /// ```no_run
-    /// use sdl3::pixels::PixelFormatEnum;
+    /// use sdl3::pixels::PixelFormat;
     /// use sdl3::surface::Surface;
     /// use sdl3::render::{Canvas, Texture};
     /// use sdl3::video::Window;
@@ -2392,7 +2397,7 @@ impl<'r> Texture<'r> {
     /// let mut canvas: Canvas<Window> = window.into_canvas();
     /// let texture_creator = canvas.texture_creator();
     ///
-    /// let surface = Surface::new(512, 512, PixelFormatEnum::RGB24).unwrap();
+    /// let surface = Surface::new(512, 512, PixelFormat::RGB24).unwrap();
     /// let texture = Texture::from_surface(&surface, &texture_creator).unwrap();
     /// ```
     #[cfg(feature = "unsafe_textures")]
@@ -2408,7 +2413,7 @@ impl<'r> Texture<'r> {
 impl Texture {
     /// Get the format of the texture.
     #[inline]
-    pub fn format(&self) -> PixelFormatEnum {
+    pub fn format(&self) -> PixelFormat {
         InternalTexture { raw: self.raw }.get_format()
     }
 

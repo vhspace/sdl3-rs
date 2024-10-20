@@ -4,15 +4,16 @@ fn main() -> Result<(), String> {
     let sdl_context = sdl3::init()?;
     let joystick_subsystem = sdl_context.joystick()?;
 
-    let available = joystick_subsystem
-        .num_joysticks()
-        .map_err(|e| format!("can't enumerate joysticks: {}", e))?;
+    let joysticks = joystick_subsystem
+        .joysticks()
+        .map_err(|e| format!("can't get joysticks: {}", e))?;
 
-    println!("{} joysticks available", available);
+    println!("{} joysticks available", joysticks.len());
 
     // Iterate over all available joysticks and stop once we manage to open one.
-    let mut joystick = (0..available)
-        .find_map(|id| match joystick_subsystem.open(id) {
+    let mut joystick = joysticks
+        .iter()
+        .find_map(|joystick_instance| match joystick_subsystem.open(*joystick_instance.id) {
             Ok(c) => {
                 println!("Success: opened \"{}\"", c.name());
                 Some(c)

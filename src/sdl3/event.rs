@@ -455,9 +455,9 @@ impl DisplayEvent {
         match unsafe { transmute(id) } {
             sys::events::SDL_EVENT_DISPLAY_ORIENTATION => {
                 let orientation = if data1 > SDL_DisplayOrientation::PORTRAIT_FLIPPED.into() {
-                    Orientation::Unknown
+                    SDL_DisplayOrientation::UNKNOWN
                 } else {
-                    Orientation::from_ll(data1.into())
+                    (data1.into())
                 };
                 DisplayEvent::Orientation(orientation)
             }

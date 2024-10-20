@@ -15,7 +15,12 @@ use std::ops::{Deref, DerefMut};
 use std::ptr::{null, null_mut};
 use std::rc::Rc;
 use std::{fmt, mem, ptr};
-use sys::video::{SDL_DisplayMode, SDL_DisplayModeData, SDL_WindowFlags};
+use sys::pixels::SDL_PixelFormat;
+use sys::properties::{
+    SDL_CreateProperties, SDL_DestroyProperties, SDL_SetNumberProperty, SDL_SetStringProperty,
+};
+use sys::stdinc::{SDL_FunctionPointer, SDL_free};
+use sys::video::{SDL_DisplayMode, SDL_DisplayModeData, SDL_DisplayOrientation, SDL_WindowFlags};
 
 use crate::sys;
 
@@ -439,7 +444,7 @@ impl DisplayMode {
     pub fn from_ll(raw: &SDL_DisplayMode) -> DisplayMode {
         DisplayMode::new(
             raw.displayID,
-            PixelFormat::try_from(raw.format).unwrap_or(PixelFormat::Unknown),
+            PixelFormat::try_from(raw.format).unwrap_or(SDL_PixelFormat::UNKNOWN.into()),
             raw.w,
             raw.h,
             raw.pixel_density,
@@ -587,81 +592,77 @@ impl From<i32> for SwapInterval {
     }
 }
 
-/// Represents orientation of a display.
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-#[repr(i32)]
-pub enum Orientation {
-    /// The display orientation can’t be determined
-    Unknown = sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_UNKNOWN as i32,
-    /// The display is in landscape mode, with the right side up, relative to portrait mode
-    Landscape = sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_LANDSCAPE as i32,
-    /// The display is in landscape mode, with the left side up, relative to portrait mode
-    LandscapeFlipped = sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_LANDSCAPE_FLIPPED as i32,
-    /// The display is in portrait mode
-    Portrait = sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_PORTRAIT as i32,
-    /// The display is in portrait mode, upside down
-    PortraitFlipped = sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_PORTRAIT_FLIPPED as i32,
-}
-
-impl Orientation {
-    pub fn from_ll(orientation: sys::video::SDL_DisplayOrientation) -> Orientation {
-        match orientation {
-            sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_UNKNOWN => Orientation::Unknown,
-            sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_LANDSCAPE => Orientation::Landscape,
-            sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_LANDSCAPE_FLIPPED => {
-                Orientation::LandscapeFlipped
-            }
-            sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_PORTRAIT => Orientation::Portrait,
-            sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_PORTRAIT_FLIPPED => {
-                Orientation::PortraitFlipped
-            }
-        }
-    }
-
-    pub fn to_ll(self) -> sys::video::SDL_DisplayOrientation {
-        match self {
-            Orientation::Unknown => sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_UNKNOWN,
-            Orientation::Landscape => sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_LANDSCAPE,
-            Orientation::LandscapeFlipped => {
-                sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_LANDSCAPE_FLIPPED
-            }
-            Orientation::Portrait => sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_PORTRAIT,
-            Orientation::PortraitFlipped => {
-                sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_PORTRAIT_FLIPPED
-            }
-        }
-    }
-}
-
-/// Represents a setting for a window flash operation.
-#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-#[repr(i32)]
-pub enum FlashOperation {
-    /// Cancel any window flash state
-    Cancel = sys::video::SDL_FlashOperation::SDL_FLASH_CANCEL as i32,
-    /// Flash the window briefly to get attention
-    Briefly = sys::video::SDL_FlashOperation::SDL_FLASH_BRIEFLY as i32,
-    /// Flash the window until it gets focus
-    UntilFocused = sys::video::SDL_FlashOperation::SDL_FLASH_UNTIL_FOCUSED as i32,
-}
-
-impl FlashOperation {
-    pub fn from_ll(flash_operation: sys::video::SDL_FlashOperation) -> FlashOperation {
-        match flash_operation {
-            sys::video::SDL_FlashOperation::SDL_FLASH_CANCEL => FlashOperation::Cancel,
-            sys::video::SDL_FlashOperation::SDL_FLASH_BRIEFLY => FlashOperation::Briefly,
-            sys::video::SDL_FlashOperation::SDL_FLASH_UNTIL_FOCUSED => FlashOperation::UntilFocused,
-        }
-    }
-
-    pub fn to_ll(self) -> sys::video::SDL_FlashOperation {
-        match self {
-            FlashOperation::Cancel => sys::video::SDL_FlashOperation::SDL_FLASH_CANCEL,
-            FlashOperation::Briefly => sys::video::SDL_FlashOperation::SDL_FLASH_BRIEFLY,
-            FlashOperation::UntilFocused => sys::video::SDL_FlashOperation::SDL_FLASH_UNTIL_FOCUSED,
-        }
-    }
-}
+// /// Represents orientation of a display.
+// #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+// #[repr(i32)]
+// pub enum Orientation {
+//     /// The display orientation can’t be determined
+//     Unknown = sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_UNKNOWN as i32,
+//     /// The display is in landscape mode, with the right side up, relative to portrait mode
+//     Landscape = sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_LANDSCAPE as i32,
+//     /// The display is in landscape mode, with the left side up, relative to portrait mode
+//     LandscapeFlipped = sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_LANDSCAPE_FLIPPED as i32,
+//     /// The display is in portrait mode
+//     Portrait = sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_PORTRAIT as i32,
+//     /// The display is in portrait mode, upside down
+//     PortraitFlipped = sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_PORTRAIT_FLIPPED as i32,
+// }
+//
+// impl Orientation {
+//     pub fn from_ll(orientation: sys::video::SDL_DisplayOrientation) -> Orientation {
+//         match orientation {
+//             sys::video::SDL_DisplayOrientation::UNKNOWN => Orientation::Unknown,
+//             sys::video::SDL_DisplayOrientation::LANDSCAPE => Orientation::Landscape,
+//             sys::video::SDL_DisplayOrientation::LANDSCAPE_FLIPPED => Orientation::LandscapeFlipped,
+//             sys::video::SDL_DisplayOrientation::PORTRAIT => Orientation::Portrait,
+//             sys::video::SDL_DisplayOrientation::PORTRAIT_FLIPPED => Orientation::PortraitFlipped,
+//         }
+//     }
+//
+//     pub fn to_ll(self) -> sys::video::SDL_DisplayOrientation {
+//         match self {
+//             Orientation::Unknown => sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_UNKNOWN,
+//             Orientation::Landscape => sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_LANDSCAPE,
+//             Orientation::LandscapeFlipped => {
+//                 sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_LANDSCAPE_FLIPPED
+//             }
+//             Orientation::Portrait => sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_PORTRAIT,
+//             Orientation::PortraitFlipped => {
+//                 sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_PORTRAIT_FLIPPED
+//             }
+//         }
+//     }
+// }
+//
+// /// Represents a setting for a window flash operation.
+// #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+// #[repr(i32)]
+// pub enum FlashOperation {
+//     /// Cancel any window flash state
+//     Cancel = sys::video::SDL_FlashOperation::SDL_FLASH_CANCEL as i32,
+//     /// Flash the window briefly to get attention
+//     Briefly = sys::video::SDL_FlashOperation::SDL_FLASH_BRIEFLY as i32,
+//     /// Flash the window until it gets focus
+//     UntilFocused = sys::video::SDL_FlashOperation::SDL_FLASH_UNTIL_FOCUSED as i32,
+// }
+//
+// impl FlashOperation {
+//     pub fn from_ll(flash_operation: sys::video::SDL_FlashOperation) -> FlashOperation {
+//         match flash_operation {
+//             sys::video::SDL_FlashOperation::SDL_FLASH_CANCEL => FlashOperation::Cancel,
+//             sys::video::SDL_FlashOperation::SDL_FLASH_BRIEFLY => FlashOperation::Briefly,
+//             sys::video::SDL_FlashOperation::SDL_FLASH_UNTIL_FOCUSED => FlashOperation::UntilFocused,
+//         }
+//     }
+//
+//     pub fn to_ll(self) -> sys::video::SDL_FlashOperation {
+//         match self {
+//             FlashOperation::Cancel => sys::video::SDL_FlashOperation::SDL_FLASH_CANCEL,
+//             FlashOperation::Briefly => sys::video::SDL_FlashOperation::SDL_FLASH_BRIEFLY,
+//             FlashOperation::UntilFocused => sys::video::SDL_FlashOperation::SDL_FLASH_UNTIL_FOCUSED,
+//         }
+//     }
+// }
 
 /// Represents the "shell" of a `Window`.
 ///
@@ -789,7 +790,7 @@ impl VideoSubsystem {
                     let mode = *mode;
                     result.push(DisplayMode::from_ll(&mode));
                 }
-                sys::video::SDL_free(modes as *mut c_void);
+                SDL_free(modes as *mut c_void);
                 Ok(result)
             }
         }
@@ -833,27 +834,33 @@ impl VideoSubsystem {
         include_high_density_modes: bool,
     ) -> Result<DisplayMode, String> {
         unsafe {
-            let mode_out = SDL_DisplayMode::default();
+            // Allocate uninitialized memory for SDL_DisplayMode
+            let mut mode_out = std::mem::MaybeUninit::<sys::video::SDL_DisplayMode>::uninit();
+
+            // Call the SDL function, passing a pointer to the uninitialized memory
             let ok = sys::video::SDL_GetClosestFullscreenDisplayMode(
                 display_index,
                 mode.w,
                 mode.h,
                 mode.refresh_rate,
                 include_high_density_modes,
-                mode_out,
+                mode_out.as_mut_ptr(),
             );
+
             if !ok {
                 Err(get_error())
             } else {
-                Ok(DisplayMode::from_ll(mode_out))
+                // Now it's safe to assume the memory is initialized
+                let mode_out = mode_out.assume_init();
+                Ok(DisplayMode::from_ll(&mode_out))
             }
         }
     }
 
     /// Return orientation of a display or Unknown if orientation could not be determined.
     #[doc(alias = "SDL_GetDisplayOrientation")]
-    pub fn display_orientation(&self, display_index: u32) -> Orientation {
-        Orientation::from_ll(unsafe { sys::video::SDL_GetCurrentDisplayOrientation(display_index) })
+    pub fn display_orientation(&self, display_index: u32) -> SDL_DisplayOrientation {
+        unsafe { sys::video::SDL_GetCurrentDisplayOrientation(display_index) }
     }
 
     #[doc(alias = "SDL_ScreenSaverEnabled")]
@@ -922,7 +929,7 @@ impl VideoSubsystem {
     ///
     /// This is useful for OpenGL wrappers such as [`gl-rs`](https://github.com/bjz/gl-rs).
     #[doc(alias = "SDL_GL_GetProcAddress")]
-    pub fn gl_get_proc_address(&self, procname: &str) -> sys::video::SDL_FunctionPointer {
+    pub fn gl_get_proc_address(&self, procname: &str) -> SDL_FunctionPointer {
         match CString::new(procname) {
             Ok(procname) => unsafe {
                 sys::video::SDL_GL_GetProcAddress(procname.as_ptr() as *const c_char)
@@ -1041,7 +1048,7 @@ impl VideoSubsystem {
     /// Vulkan function. This function can be called to retrieve the address of other Vulkan
     /// functions.
     #[doc(alias = "SDL_Vulkan_GetVkGetInstanceProcAddr")]
-    pub fn vulkan_get_proc_address_function(&self) -> sys::video::SDL_FunctionPointer {
+    pub fn vulkan_get_proc_address_function(&self) -> SDL_FunctionPointer {
         unsafe { sys::vulkan::SDL_Vulkan_GetVkGetInstanceProcAddr() }
     }
 }
@@ -1128,43 +1135,43 @@ impl WindowBuilder {
         let raw_width = self.width as c_int;
         let raw_height = self.height as c_int;
         unsafe {
-            let props = sys::video::SDL_CreateProperties();
-            sys::video::SDL_SetStringProperty(
+            let props = SDL_CreateProperties();
+            SDL_SetStringProperty(
                 props,
                 sys::video::SDL_PROP_WINDOW_CREATE_TITLE_STRING.as_ptr(),
                 title.as_ptr(),
             );
 
             if self.x != WindowPos::Undefined {
-                sys::video::SDL_SetNumberProperty(
+                SDL_SetNumberProperty(
                     props,
                     sys::video::SDL_PROP_WINDOW_CREATE_X_NUMBER.as_ptr(),
                     to_ll_windowpos(self.x).into(),
                 );
             }
             if self.y != WindowPos::Undefined {
-                sys::video::SDL_SetNumberProperty(
+                SDL_SetNumberProperty(
                     props,
                     sys::video::SDL_PROP_WINDOW_CREATE_Y_NUMBER.as_ptr(),
                     to_ll_windowpos(self.y).into(),
                 );
             }
 
-            sys::video::SDL_SetNumberProperty(
+            SDL_SetNumberProperty(
                 props,
                 sys::video::SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER.as_ptr(),
                 raw_width.into(),
             );
-            sys::video::SDL_SetNumberProperty(
+            SDL_SetNumberProperty(
                 props,
                 sys::video::SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER.as_ptr(),
                 raw_height.into(),
             );
             let flags_cstr = CString::new("flags").unwrap();
-            sys::video::SDL_SetNumberProperty(props, flags_cstr.as_ptr(), self.window_flags.into());
+            SDL_SetNumberProperty(props, flags_cstr.as_ptr(), self.window_flags.into());
 
             let raw = sys::video::SDL_CreateWindowWithProperties(props);
-            sys::video::SDL_DestroyProperties(props);
+            SDL_DestroyProperties(props);
             let mut metal_view = 0 as sys::metal::SDL_MetalView;
             #[cfg(target_os = "macos")]
             if self.create_metal_view {
@@ -1211,60 +1218,60 @@ impl WindowBuilder {
 
     /// Sets the window to fullscreen.
     pub fn fullscreen(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WindowFlags::SDL_WINDOW_FULLSCREEN as u32;
+        self.window_flags |= sys::video::SDL_WINDOW_FULLSCREEN as u32;
         self
     }
 
     /// Sets the window to be usable with an OpenGL context
     pub fn opengl(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WindowFlags::SDL_WINDOW_OPENGL as u32;
+        self.window_flags |= sys::video::SDL_WINDOW_OPENGL as u32;
         self
     }
 
     /// Sets the window to be usable with a Vulkan instance
     pub fn vulkan(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WindowFlags::SDL_WINDOW_VULKAN as u32;
+        self.window_flags |= sys::video::SDL_WINDOW_VULKAN as u32;
         self
     }
 
     /// Hides the window.
     pub fn hidden(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WindowFlags::SDL_WINDOW_HIDDEN as u32;
+        self.window_flags |= sys::video::SDL_WINDOW_HIDDEN as u32;
         self
     }
 
     /// Removes the window decoration.
     pub fn borderless(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WindowFlags::SDL_WINDOW_BORDERLESS as u32;
+        self.window_flags |= sys::video::SDL_WINDOW_BORDERLESS as u32;
         self
     }
 
     /// Sets the window to be resizable.
     pub fn resizable(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WindowFlags::SDL_WINDOW_RESIZABLE as u32;
+        self.window_flags |= sys::video::SDL_WINDOW_RESIZABLE as u32;
         self
     }
 
     /// Minimizes the window.
     pub fn minimized(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WindowFlags::SDL_WINDOW_MINIMIZED as u32;
+        self.window_flags |= sys::video::SDL_WINDOW_MINIMIZED as u32;
         self
     }
 
     /// Maximizes the window.
     pub fn maximized(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WindowFlags::SDL_WINDOW_MAXIMIZED as u32;
+        self.window_flags |= sys::video::SDL_WINDOW_MAXIMIZED as u32;
         self
     }
 
     /// Sets the window to have grabbed input focus.
     pub fn input_grabbed(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WindowFlags::SDL_WINDOW_MOUSE_GRABBED as u32;
+        self.window_flags |= sys::video::SDL_WINDOW_MOUSE_GRABBED as u32;
         self
     }
 
     /// Create a SDL_MetalView when constructing the window.
-    /// This is required when using the raw_window_handle feature on MacOS.
+    /// This is required when using the raw_window_handle feature on macOS.
     /// Has no effect no other platforms.
     pub fn metal_view(&mut self) -> &mut WindowBuilder {
         self.create_metal_view = true;
@@ -1316,15 +1323,15 @@ impl PopupWindowBuilder {
         if self.height >= (1 << 31) {
             return Err(HeightOverflows(self.width));
         }
-        if (self.window_flags & sys::video::SDL_WindowFlags::SDL_WINDOW_TOOLTIP as u32 != 0)
-            && (self.window_flags & sys::video::SDL_WindowFlags::SDL_WINDOW_POPUP_MENU as u32 != 0)
+        if (self.window_flags & sys::video::SDL_WINDOW_TOOLTIP as u32 != 0)
+            && (self.window_flags & sys::video::SDL_WINDOW_POPUP_MENU as u32 != 0)
         {
             return Err(SdlError(
                 "SDL_WINDOW_TOOLTIP and SDL_WINDOW_POPUP are mutually exclusive".to_owned(),
             ));
         }
-        if (self.window_flags & sys::video::SDL_WindowFlags::SDL_WINDOW_TOOLTIP as u32 == 0)
-            && (self.window_flags & sys::video::SDL_WindowFlags::SDL_WINDOW_POPUP_MENU as u32 == 0)
+        if (self.window_flags & sys::video::SDL_WINDOW_TOOLTIP as u32 == 0)
+            && (self.window_flags & sys::video::SDL_WINDOW_POPUP_MENU as u32 == 0)
         {
             return Err(SdlError(
                 "SDL_WINDOW_TOOLTIP or SDL_WINDOW_POPUP are required for popup windows".to_owned(),
@@ -1377,31 +1384,31 @@ impl PopupWindowBuilder {
 
     /// Sets the window to be usable with an OpenGL context
     pub fn opengl(&mut self) -> &mut PopupWindowBuilder {
-        self.window_flags |= sys::video::SDL_WindowFlags::SDL_WINDOW_OPENGL as u32;
+        self.window_flags |= sys::video::SDL_WINDOW_OPENGL as u32;
         self
     }
 
     /// Sets the window to be usable with a Vulkan instance
     pub fn vulkan(&mut self) -> &mut PopupWindowBuilder {
-        self.window_flags |= sys::video::SDL_WindowFlags::SDL_WINDOW_VULKAN as u32;
+        self.window_flags |= sys::video::SDL_WINDOW_VULKAN as u32;
         self
     }
 
     /// Hides the window.
     pub fn hidden(&mut self) -> &mut PopupWindowBuilder {
-        self.window_flags |= sys::video::SDL_WindowFlags::SDL_WINDOW_HIDDEN as u32;
+        self.window_flags |= sys::video::SDL_WINDOW_HIDDEN as u32;
         self
     }
 
     /// Sets the window to be resizable.
     pub fn resizable(&mut self) -> &mut PopupWindowBuilder {
-        self.window_flags |= sys::video::SDL_WindowFlags::SDL_WINDOW_RESIZABLE as u32;
+        self.window_flags |= sys::video::SDL_WINDOW_RESIZABLE as u32;
         self
     }
 
     /// Sets the window to have grabbed input focus.
     pub fn input_grabbed(&mut self) -> &mut PopupWindowBuilder {
-        self.window_flags |= sys::video::SDL_WindowFlags::SDL_WINDOW_MOUSE_GRABBED as u32;
+        self.window_flags |= sys::video::SDL_WINDOW_MOUSE_GRABBED as u32;
         self
     }
 
@@ -1415,25 +1422,25 @@ impl PopupWindowBuilder {
 
     /// Sets the window to be a tooltip.
     pub fn tooltip(&mut self) -> &mut PopupWindowBuilder {
-        self.window_flags |= sys::video::SDL_WindowFlags::SDL_WINDOW_TOOLTIP as u32;
+        self.window_flags |= sys::video::SDL_WINDOW_TOOLTIP as u32;
         self
     }
 
     /// Sets the window to be a popup menu.
     pub fn popup_menu(&mut self) -> &mut PopupWindowBuilder {
-        self.window_flags |= sys::video::SDL_WindowFlags::SDL_WINDOW_POPUP_MENU as u32;
+        self.window_flags |= sys::video::SDL_WINDOW_POPUP_MENU as u32;
         self
     }
 
     /// Sets the window to be transparent
     pub fn transparent(&mut self) -> &mut PopupWindowBuilder {
-        self.window_flags |= sys::video::SDL_WindowFlags::SDL_WINDOW_TRANSPARENT as u32;
+        self.window_flags |= sys::video::SDL_WINDOW_TRANSPARENT as u32;
         self
     }
 
     /// Sets the window to be shown on top of all other windows
     pub fn always_on_top(&mut self) -> &mut PopupWindowBuilder {
-        self.window_flags |= sys::video::SDL_WindowFlags::SDL_WINDOW_ALWAYS_ON_TOP as u32;
+        self.window_flags |= sys::video::SDL_WINDOW_ALWAYS_ON_TOP as u32;
         self
     }
 }
@@ -1543,16 +1550,34 @@ impl Window {
 
     /// Get the names of the Vulkan instance extensions needed to create a surface with `vulkan_create_surface`.
     #[doc(alias = "SDL_Vulkan_GetInstanceExtensions")]
-    pub fn vulkan_instance_extensions(&self) -> Result<Vec<&'static str>, String> {
+    pub fn vulkan_instance_extensions(&self) -> Result<Vec<String>, String> {
         let mut count: c_uint = 0;
-        let extension_names = unsafe { sys::vulkan::SDL_Vulkan_GetInstanceExtensions(&mut count) };
-        if unsafe { sys::vulkan::SDL_Vulkan_GetInstanceExtensions(&mut count) } == null() {
+        // returns a pointer to an array of extension names
+        let extension_names_raw =
+            unsafe { sys::vulkan::SDL_Vulkan_GetInstanceExtensions(&mut count) };
+        if extension_names_raw.is_null() {
             return Err(get_error());
         }
-        Ok(extension_names
-            .iter()
-            .map(|&val| unsafe { CStr::from_ptr(val) }.to_str().unwrap())
-            .collect())
+
+        // get an array of pointers to C strings
+        let names_slice =
+            unsafe { std::slice::from_raw_parts(extension_names_raw, count as usize) };
+
+        // Create a slice from the raw pointer to the array
+        let names_slice =
+            unsafe { std::slice::from_raw_parts(extension_names_raw, count as usize) };
+
+        // Convert the C strings to Rust Strings
+        let mut extension_names = Vec::with_capacity(count as usize);
+        for &ext in names_slice {
+            if ext.is_null() {
+                return Err("Received null pointer for extension name".to_string());
+            }
+            let c_str = unsafe { CStr::from_ptr(ext) };
+            extension_names.push(c_str.to_string_lossy().into_owned());
+        }
+
+        Ok(extension_names)
     }
 
     /// Create a Vulkan rendering surface for a window.
@@ -1646,28 +1671,27 @@ impl Window {
 
     /// Does the window have input focus?
     pub fn has_input_focus(&self) -> bool {
-        0 != self.window_flags().into() & sys::video::SDL_WindowFlags::SDL_WINDOW_INPUT_FOCUS as u32
+        0 != self.window_flags().into() & sys::video::SDL_WINDOW_INPUT_FOCUS as u32
     }
 
     /// Has the window grabbed input focus?
     pub fn has_input_grabbed(&self) -> bool {
-        0 != self.window_flags().into()
-            & sys::video::SDL_WindowFlags::SDL_WINDOW_MOUSE_GRABBED as u32
+        0 != self.window_flags().into() & sys::video::SDL_WINDOW_MOUSE_GRABBED as u32
     }
 
     /// Does the window have mouse focus?
     pub fn has_mouse_focus(&self) -> bool {
-        0 != self.window_flags().into() & sys::video::SDL_WindowFlags::SDL_WINDOW_MOUSE_FOCUS as u32
+        0 != self.window_flags().into() & sys::video::SDL_WINDOW_MOUSE_FOCUS as u32
     }
 
     /// Is the window maximized?
     pub fn is_maximized(&self) -> bool {
-        0 != self.window_flags().into() & sys::video::SDL_WindowFlags::SDL_WINDOW_MAXIMIZED as u32
+        0 != self.window_flags().into() & sys::video::SDL_WINDOW_MAXIMIZED as u32
     }
 
     /// Is the window minimized?
     pub fn is_minimized(&self) -> bool {
-        0 != self.window_flags().into() & sys::video::SDL_WindowFlags::SDL_WINDOW_MINIMIZED as u32
+        0 != self.window_flags().into() & sys::video::SDL_WINDOW_MINIMIZED as u32
     }
 
     #[doc(alias = "SDL_SetWindowTitle")]

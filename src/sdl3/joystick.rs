@@ -5,15 +5,16 @@ use crate::clear_error;
 use crate::common::{validate_int, IntegerOrSdlError};
 use crate::get_error;
 use crate::JoystickSubsystem;
+use guid::Guid;
 use libc::{c_char, c_void};
-use std::ffi::{CStr, CString, NulError};
+use std::ffi::CStr;
 use std::fmt::{Debug, Display, Error, Formatter};
 use sys::joystick::SDL_JoystickID;
 use sys::power::{SDL_PowerState, SDL_POWERSTATE_UNKNOWN};
-use guid::Guid;
+use sys::stdinc::SDL_free;
 
 pub struct JoystickInstance {
-id:  SDL_JoystickID,
+    pub id: SDL_JoystickID,
     name: String,
     path: String,
 }
@@ -31,11 +32,12 @@ impl JoystickSubsystem {
                 let mut instances = Vec::new();
                 for i in 0..num_joysticks {
                     let id = *joystick_ids.offset(i as isize);
-                    let name = (sys::joystick::SDL_GetJoystickNameForID(id)).to_string();
-                    let path = (sys::joystick::SDL_GetJoystickPathForID(id)).to_string();
+
+                    let name = c_str_to_string(sys::joystick::SDL_GetJoystickNameForID(id));
+                    let path = c_str_to_string(sys::joystick::SDL_GetJoystickPathForID(id));
                     instances.push(JoystickInstance { id, name, path });
                 }
-                sys::joystick::SDL_free(joystick_ids as *mut c_void);
+                SDL_free(joystick_ids as *mut c_void);
                 Ok(instances)
             }
         }
@@ -61,9 +63,7 @@ impl JoystickSubsystem {
     /// they're ignored.
     #[doc(alias = "SDL_SetJoystickEventsEnabled")]
     pub fn set_joystick_events_enabled(&self, state: bool) {
-        unsafe {
-            sys::joystick::SDL_SetJoystickEventsEnabled(state)
-        };
+        unsafe { sys::joystick::SDL_SetJoystickEventsEnabled(state) };
     }
 
     /// Return `true` if joystick events are processed.
@@ -88,42 +88,46 @@ pub struct PowerInfo {
 
 impl Debug for PowerInfo {
     fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
-        write!(f, "PowerInfo {{ state: {:?}, percentage: {} }}", self.state, self.percentage)
+        write!(
+            f,
+            "PowerInfo {{ state: {:?}, percentage: {} }}",
+            self.state, self.percentage
+        )
     }
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 #[repr(i32)]
 pub enum PowerLevel {
-    Unknown = SDL_PowerState::SDL_JOYSTICK_POWER_UNKNOWN as i32,
-    Empty = SDL_PowerState::SDL_JOYSTICK_POWER_EMPTY as i32,
-    Low = SDL_PowerState::SDL_JOYSTICK_POWER_LOW as i32,
-    Medium = SDL_PowerState::SDL_JOYSTICK_POWER_MEDIUM as i32,
-    Full = SDL_PowerState::SDL_JOYSTICK_POWER_FULL as i32,
-    Wired = SDL_PowerState::SDL_JOYSTICK_POWER_WIRED as i32,
+    Unknown = SDL_PowerState::UNKNOWN.0,
+    Error = SDL_PowerState::ERROR.0,
+    OnBattery = SDL_PowerState::ON_BATTERY.0,
+    NoBattery = SDL_PowerState::NO_BATTERY.0,
+    Charging = SDL_PowerState::CHARGING.0,
+    Charged = SDL_PowerState::CHARGED.0,
 }
 
 impl PowerLevel {
     pub fn from_ll(raw: SDL_PowerState) -> PowerLevel {
         match raw {
-            SDL_PowerState::SDL_JOYSTICK_POWER_UNKNOWN => PowerLevel::Unknown,
-            SDL_PowerState::SDL_JOYSTICK_POWER_EMPTY => PowerLevel::Empty,
-            SDL_PowerState::SDL_JOYSTICK_POWER_LOW => PowerLevel::Low,
-            SDL_PowerState::SDL_JOYSTICK_POWER_MEDIUM => PowerLevel::Medium,
-            SDL_PowerState::SDL_JOYSTICK_POWER_FULL => PowerLevel::Full,
-            SDL_PowerState::SDL_JOYSTICK_POWER_WIRED => PowerLevel::Wired,
+            SDL_PowerState::UNKNOWN => PowerLevel::Unknown,
+            SDL_PowerState::ERROR => PowerLevel::Error,
+            SDL_PowerState::ON_BATTERY => PowerLevel::OnBattery,
+            SDL_PowerState::NO_BATTERY => PowerLevel::NoBattery,
+            SDL_PowerState::CHARGING => PowerLevel::Charging,
+            SDL_PowerState::CHARGED => PowerLevel::Charged,
             _ => panic!("Unexpected power level"),
         }
     }
 
     pub fn to_ll(self) -> SDL_PowerState {
         match self {
-            PowerLevel::Unknown => SDL_PowerState::SDL_JOYSTICK_POWER_UNKNOWN,
-            PowerLevel::Empty => SDL_PowerState::SDL_JOYSTICK_POWER_EMPTY,
-            PowerLevel::Low => SDL_PowerState::SDL_JOYSTICK_POWER_LOW,
-            PowerLevel::Medium => SDL_PowerState::SDL_JOYSTICK_POWER_MEDIUM,
-            PowerLevel::Full => SDL_PowerState::SDL_JOYSTICK_POWER_FULL,
-            PowerLevel::Wired => SDL_PowerState::SDL_JOYSTICK_POWER_WIRED,
+            PowerLevel::Unknown => SDL_PowerState::UNKNOWN,
+            PowerLevel::Error => SDL_PowerState::ERROR,
+            PowerLevel::OnBattery => SDL_PowerState::ON_BATTERY,
+            PowerLevel::NoBattery => SDL_PowerState::NO_BATTERY,
+            PowerLevel::Charging => SDL_PowerState::CHARGING,
+            PowerLevel::Charged => SDL_PowerState::CHARGED,
         }
     }
 }
@@ -153,7 +157,7 @@ impl Joystick {
     /// connected.
     #[doc(alias = "SDL_JoystickConnected")]
     pub fn attached(&self) -> bool {
-        unsafe { sys::joystick::SDL_JoystickConnected(self.raw)  }
+        unsafe { sys::joystick::SDL_JoystickConnected(self.raw) }
     }
 
     #[doc(alias = "SDL_GetJoystickID")]
@@ -376,7 +380,12 @@ impl Joystick {
         duration_ms: u32,
     ) -> Result<(), IntegerOrSdlError> {
         let result = unsafe {
-            sys::joystick::SDL_RumbleJoystickTriggers(self.raw, left_rumble, right_rumble, duration_ms)
+            sys::joystick::SDL_RumbleJoystickTriggers(
+                self.raw,
+                left_rumble,
+                right_rumble,
+                duration_ms,
+            )
         };
 
         if !result {
@@ -390,21 +399,33 @@ impl Joystick {
     #[doc(alias = "SDL_PROP_JOYSTICK_CAP_RGB_LED_BOOLEAN")]
     pub unsafe fn has_led(&self) -> bool {
         let props = unsafe { sys::joystick::SDL_GetJoystickProperties(self.raw) };
-        sys::properties::SDL_GetBooleanProperty(props, sys::joystick::SDL_PROP_JOYSTICK_CAP_RGB_LED_BOOLEAN.into(), false)
+        sys::properties::SDL_GetBooleanProperty(
+            props,
+            sys::joystick::SDL_PROP_JOYSTICK_CAP_RGB_LED_BOOLEAN.as_ptr(),
+            false,
+        )
     }
 
     /// Query whether a joystick has rumble support.
     #[doc(alias = "SDL_PROP_JOYSTICK_CAP_RUMBLE_BOOLEAN")]
-    pub unsafe  fn has_rumble(&self) -> bool {
+    pub unsafe fn has_rumble(&self) -> bool {
         let props = unsafe { sys::joystick::SDL_GetJoystickProperties(self.raw) };
-        sys::properties::SDL_GetBooleanProperty(props, sys::joystick::SDL_PROP_JOYSTICK_CAP_RUMBLE_BOOLEAN.into(), false)
+        sys::properties::SDL_GetBooleanProperty(
+            props,
+            sys::joystick::SDL_PROP_JOYSTICK_CAP_RUMBLE_BOOLEAN.as_ptr(),
+            false,
+        )
     }
 
     /// Query whether a joystick has rumble support on triggers.
     #[doc(alias = "SDL_PROP_JOYSTICK_CAP_TRIGGER_RUMBLE_BOOLEAN")]
     pub unsafe fn has_rumble_triggers(&self) -> bool {
         let props = unsafe { sys::joystick::SDL_GetJoystickProperties(self.raw) };
-        sys::properties::SDL_GetBooleanProperty(props, sys::joystick::SDL_PROP_JOYSTICK_CAP_TRIGGER_RUMBLE_BOOLEAN.into(), false)
+        sys::properties::SDL_GetBooleanProperty(
+            props,
+            sys::joystick::SDL_PROP_JOYSTICK_CAP_TRIGGER_RUMBLE_BOOLEAN.as_ptr(),
+            false,
+        )
     }
 
     /// Update a joystick's LED color.
@@ -412,7 +433,7 @@ impl Joystick {
     pub fn set_led(&mut self, red: u8, green: u8, blue: u8) -> Result<(), IntegerOrSdlError> {
         let result = unsafe { sys::joystick::SDL_SetJoystickLED(self.raw, red, green, blue) };
 
-        if !result  {
+        if !result {
             Err(IntegerOrSdlError::SdlError(get_error()))
         } else {
             Ok(())
@@ -430,7 +451,7 @@ impl Joystick {
             )
         };
 
-        if !result  {
+        if !result {
             Err(IntegerOrSdlError::SdlError(get_error()))
         } else {
             Ok(())
@@ -446,7 +467,6 @@ impl Drop for Joystick {
         }
     }
 }
-
 
 /// This is represented in SDL2 as a bitfield but obviously not all
 /// combinations make sense: 5 for instance would mean up and down at

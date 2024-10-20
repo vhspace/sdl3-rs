@@ -231,19 +231,23 @@ pub struct PixelFormat {
 impl_raw_accessors!((PixelFormat, sys::pixels::SDL_PixelFormat));
 impl_raw_constructor!((PixelFormat, PixelFormat(raw: sys::pixels::SDL_PixelFormat )));
 
-impl PixelFormat {
-    pub unsafe fn pixel_format_details(&self) -> *const SDL_PixelFormatDetails {
-        sys::pixels::SDL_GetPixelFormatDetails(self.raw)
-    }
-}
-
 impl Debug for PixelFormat {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "PixelFormat({:?})", self.raw.0)
     }
 }
 
+impl From<SDL_PixelFormat> for PixelFormat {
+    fn from(pf: SDL_PixelFormat) -> PixelFormat {
+        PixelFormat { raw: pf }
+    }
+}
+
 impl PixelFormat {
+    pub unsafe fn pixel_format_details(&self) -> *const SDL_PixelFormatDetails {
+        sys::pixels::SDL_GetPixelFormatDetails(self.raw)
+    }
+    
     #[doc(alias = "SDL_GetPixelFormatForMasks")]
     pub fn from_masks(masks: PixelMasks) -> PixelFormat {
         unsafe {
