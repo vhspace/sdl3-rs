@@ -2,8 +2,10 @@
 //!
 //! # Example
 //! ```no_run
-//! use sdl2::audio::{AudioCallback, AudioSpecDesired};
-//! use std::time::Duration;
+//! use sdl3::audio::{AudioCallback, AudioSpec};
+//! use std::time::Duration;//!
+//!
+//! use sdl3::sys;
 //!
 //! struct SquareWave {
 //!     phase_inc: f32,
@@ -27,16 +29,16 @@
 //!     }
 //! }
 //!
-//! let sdl_context = sdl2::init().unwrap();
+//! let sdl_context = sdl3::init().unwrap();
 //! let audio_subsystem = sdl_context.audio().unwrap();
 //!
-//! let desired_spec = AudioSpecDesired {
+//! let desired_spec = AudioSpec {
 //!     freq: Some(44100),
 //!     channels: Some(1),  // mono
 //!     samples: None       // default sample size
 //! };
 //!
-//! let device = audio_subsystem.open_playback(None, &desired_spec, |spec| {
+//! let device = audio_subsystem.open_playback(&desired_spec, |spec| {
 //!     // initialize the audio callback
 //!     SquareWave {
 //!         phase_inc: 440.0 / spec.freq as f32,
@@ -55,26 +57,20 @@
 use crate::get_error;
 use crate::AudioSubsystem;
 use iostream::IOStream;
-use libc::{c_char, c_int, c_void};
+use libc::{c_int, c_void};
 use std::convert::TryFrom;
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 use std::marker::PhantomData;
-use std::mem;
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
 use std::ptr;
-use std::sync::Arc;
 
 use crate::sys;
 
 impl AudioSubsystem {
     /// Opens a new audio device given the desired parameters.
     #[inline]
-    pub fn open_playback<'a, D>(
-        &self,
-        device: D,
-        spec: &AudioSpecDesired,
-    ) -> Result<AudioDevice, String>
+    pub fn open_playback<'a, D>(&self, device: D, spec: &AudioSpec) -> Result<AudioDevice, String>
     where
         D: Into<Option<&'a AudioDeviceID>>,
     {
@@ -82,11 +78,7 @@ impl AudioSubsystem {
     }
 
     /// Opens a new audio device for capture (given the desired parameters).
-    pub fn open_capture<'a, D>(
-        &self,
-        device: D,
-        spec: &AudioSpecDesired,
-    ) -> Result<AudioDevice, String>
+    pub fn open_capture<'a, D>(&self, device: D, spec: &AudioSpec) -> Result<AudioDevice, String>
     where
         D: Into<Option<&'a AudioDeviceID>>,
     {
@@ -98,7 +90,7 @@ impl AudioSubsystem {
     // pub fn open_queue<'a, Channel, D>(
     //     &self,
     //     device: D,
-    //     spec: &AudioSpecDesired,
+    //     spec: &AudioSpec,
     // ) -> Result<AudioQueue<Channel>, String>
     // where
     //     Channel: AudioFormatNum,
@@ -359,7 +351,7 @@ pub trait AudioFormatNum {
     ///
     /// ```
     /// // The AudioFormatNum trait has to be imported for the Channel::SILENCE part to work.
-    /// use sdl2::audio::{AudioCallback, AudioFormatNum};
+    /// use sdl3::audio::{AudioCallback, AudioFormatNum};
     ///
     /// struct Silence;
     ///
@@ -433,17 +425,17 @@ extern "C" fn audio_callback_marshall<CB: AudioCallback>(
 }
 
 #[derive(Clone)]
-pub struct AudioSpecDesired {
+pub struct AudioSpec {
     /// DSP frequency (samples per second). Set to None for the device's fallback frequency.
     pub freq: Option<i32>,
     /// Number of separate audio channels. Set to None for the device's fallback number of channels.
-    pub channels: Option<u8>,
+    pub channels: Option<i32>,
     /// Audio format. Set to None for the device's fallback audio format.
     pub format: Option<AudioFormat>,
 }
 
-impl AudioSpecDesired {
-    fn convert_to_ll<R, C, F>(rate: R, channels: C, format: F) -> sys::SDL_AudioSpec
+impl AudioSpec {
+    fn convert_to_ll<R, C, F>(rate: R, channels: C, format: F) -> sys::audio::SDL_AudioSpec
     where
         R: Into<Option<i32>>,
         C: Into<Option<u8>>,
@@ -462,7 +454,7 @@ impl AudioSpecDesired {
 
         // A value of 0 means "fallback" or "default".
 
-        sys::SDL_AudioSpec {
+        sys::audio::SDL_AudioSpec {
             format: format.unwrap_or(AudioFormat::U8).to_ll(),
             channels: channels.unwrap_or(0),
             freq: freq.unwrap_or(0),
@@ -560,11 +552,11 @@ impl Drop for AudioDeviceID {
 //     pub fn open_queue<D: Into<Option<&'a str>>>(
 //         a: &AudioSubsystem,
 //         device: D,
-//         spec: &AudioSpecDesired,
+//         spec: &AudioSpec,
 //     ) -> Result<AudioQueue<Channel>, String> {
 //         use std::mem::MaybeUninit;
 //
-//         let desired = AudioSpecDesired::convert_queue_to_ll::<
+//         let desired = AudioSpec::convert_queue_to_ll::<
 //             Channel,
 //             Option<i32>,
 //             Option<u8>,
@@ -650,7 +642,7 @@ impl AudioDevice {
     fn open<'a, D>(
         a: &AudioSubsystem,
         device: D,
-        spec: &AudioSpecDesired,
+        spec: &AudioSpec,
         capture: bool,
     ) -> Result<AudioDevice, String>
     where
@@ -658,7 +650,7 @@ impl AudioDevice {
     {
         use std::mem::MaybeUninit;
 
-        let desired = AudioSpecDesired::convert_to_ll(spec.freq, spec.channels, spec.format);
+        let desired = AudioSpec::convert_to_ll(spec.freq, spec.channels, spec.format);
 
         let mut obtained = MaybeUninit::uninit();
         unsafe {
@@ -700,7 +692,7 @@ impl AudioDevice {
     pub fn open_playback<'a, D>(
         a: &AudioSubsystem,
         device: D,
-        spec: &AudioSpecDesired,
+        spec: &AudioSpec,
     ) -> Result<AudioDevice, String>
     where
         D: Into<Option<&'a AudioDeviceID>>,
@@ -712,7 +704,7 @@ impl AudioDevice {
     pub fn open_capture<'a, D>(
         a: &AudioSubsystem,
         device: D,
-        spec: &AudioSpecDesired,
+        spec: &AudioSpec,
     ) -> Result<AudioDevice, String>
     where
         D: Into<Option<&'a AudioDeviceID>>,
@@ -740,7 +732,7 @@ impl AudioDevice {
     /// Starts playback of the audio device.
     #[doc(alias = "SDL_ResumeAudioDevice")]
     pub fn resume(&self) -> i32 {
-        unsafe { sys::SDL_ResumeAudioDevice(self.device_id.id()) }
+        unsafe { sys::audio::SDL_ResumeAudioDevice(self.device_id.id()) }
     }
 
     /// Closes the audio device and saves the callback data from being dropped.
@@ -759,15 +751,15 @@ impl AudioDevice {
     /// This function works with both playback and capture devices.
     pub fn open_stream<CB: AudioCallback>(
         &self,
-        spec: &AudioSpecDesired,
+        spec: &AudioSpec,
         callback: CB,
         userdata: Option<CB>,
     ) -> Result<AudioStream<CB>, String> {
         //  Returns an audio stream on success, ready to use. NULL on error; call SDL_GetError() for more information. When done with this stream, call SDL_DestroyAudioStream to free resources and close the device.
         let stream = unsafe {
-            sys::SDL_OpenAudioDeviceStream(
+            sys::audio::SDL_OpenAudioDeviceStream(
                 self.device_id.id(),
-                AudioSpecDesired::convert_to_ll(spec.rate, spec.channels, spec.format),
+                AudioSpec::convert_to_ll(spec.rate, spec.channels, spec.format),
                 callback,
                 userdata,
             )
@@ -786,19 +778,19 @@ impl AudioDevice {
 /// Represents a stream of audio attached to a device.
 /// See [SDL_AudioStream](https://wiki.libsdl.org/SDL_AudioStream)
 pub struct AudioStream<CB: AudioCallback> {
-    stream: *mut sys::SDL_AudioStream,
+    stream: *mut sys::audio::SDL_AudioStream,
 
     callback: Option<CB>,
     userdata: Option<CB>,
 }
 
 impl<CB: AudioCallback> AudioStream<CB> {
-    pub fn get_stream(&mut self) -> *mut sys::SDL_AudioStream {
+    pub fn get_stream(&mut self) -> *mut sys::audio::SDL_AudioStream {
         self.stream
     }
 
     fn get_device_id(&mut self) -> &mut AudioDeviceID {
-        let device = unsafe { sys::SDL_GetAudioStreamDevice(self.stream) };
+        let device = unsafe { sys::audio::SDL_GetAudioStreamDevice(self.stream) };
         unsafe { &mut *(device as *mut AudioDeviceID) }
     }
 
