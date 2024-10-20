@@ -241,10 +241,10 @@ macro_rules! subsystem {
                     let result;
 
                     unsafe {
-                        result = sys::SDL_InitSubSystem($flag);
+                        result = sys::init::SDL_InitSubSystem($flag);
                     }
 
-                    if result != 0 {
+                    if !result  {
                         $counter.store(0, Ordering::Relaxed);
                         return Err(get_error());
                     }
