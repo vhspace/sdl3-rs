@@ -29,7 +29,7 @@ use crate::sys::events::SDL_EventFilter;
 use crate::video::Orientation;
 use libc::c_int;
 use libc::c_void;
-use sys::events::SDL_KeyboardEvent;
+use sys::events::{SDL_KeyboardEvent, SDL_MouseButtonEvent, SDL_MouseMotionEvent};
 use sys::everything::SDL_DisplayOrientation;
 use sys::stdinc::Uint16;
 
@@ -688,6 +688,7 @@ pub enum Event {
         clicks: u8,
         x: f32,
         y: f32,
+        down: bool,
     },
     MouseButtonUp {
         timestamp: u64,
@@ -697,6 +698,7 @@ pub enum Event {
         clicks: u8,
         x: f32,
         y: f32,
+        down: bool,
     },
 
     MouseWheel {
@@ -1156,8 +1158,8 @@ impl Event {
                 yrel,
             } => {
                 let state = mousestate.to_sdl_state();
-                let event = sys::events::SDL_Event::SDL_MouseMotionEvent {
-                    type_: sys::events::SDL_EVENT_MOUSE_MOTION.into(),
+                let event = SDL_MouseMotionEvent {
+                    r#type: sys::events::SDL_EVENT_MOUSE_MOTION.into(),
                     timestamp,
                     windowID: window_id,
                     which,
@@ -1166,6 +1168,7 @@ impl Event {
                     y,
                     xrel,
                     yrel,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -1184,18 +1187,20 @@ impl Event {
                 clicks,
                 x,
                 y,
+                down,
             } => {
-                let event = sys::events::SDL_Event::SDL_MouseButtonEvent {
-                    type_: sys::events::SDL_EVENT_MOUSE_BUTTON_DOWN.into(),
+                let event = SDL_MouseButtonEvent {
+                    r#type: sys::events::SDL_EVENT_MOUSE_BUTTON_DOWN.into(),
                     timestamp,
                     windowID: window_id,
                     which,
                     button: mouse_btn as u8,
-                    state: sys::events::SDL_Event::SDL_PRESSED as u8,
+                    down,
                     clicks,
                     x,
                     y,
                     padding: 0,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -1214,18 +1219,20 @@ impl Event {
                 clicks,
                 x,
                 y,
+                down,
             } => {
-                let event = sys::events::SDL_Event::SDL_MouseButtonEvent {
-                    type_: sys::events::SDL_EVENT_MOUSE_BUTTON_UP.into(),
+                let event = sys::events::SDL_MouseButtonEvent {
+                    r#type: sys::events::SDL_EVENT_MOUSE_BUTTON_UP.into(),
                     timestamp,
                     windowID: window_id,
                     which,
                     button: mouse_btn as u8,
-                    state: sys::events::SDL_Event::SDL_RELEASED as u8,
                     clicks,
                     padding: 0,
                     x,
                     y,
+                    down,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -1247,16 +1254,16 @@ impl Event {
                 mouse_x,
                 mouse_y,
             } => {
-                let event = sys::events::SDL_Event::SDL_MouseWheelEvent {
-                    type_: sys::events::SDL_EVENT_MOUSE_WHEEL.into(),
+                let event = sys::events::SDL_MouseWheelEvent {
+                    r#type: sys::events::SDL_EVENT_MOUSE_WHEEL.into(),
                     timestamp,
                     windowID: window_id,
                     which,
                     x,
                     y,
                     direction: direction.to_ll(),
-                    mouseX: mouse_x,
-                    mouseY: mouse_y,
+                    mouse_x: mouse_x,
+                    mouse_y: mouse_y,
                 };
                 unsafe {
                     ptr::copy(
