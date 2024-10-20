@@ -7,7 +7,7 @@ use crate::get_error;
 use crate::JoystickSubsystem;
 use libc::{c_char, c_void};
 use std::ffi::{CStr, CString, NulError};
-use std::fmt::{Display, Error, Formatter};
+use std::fmt::{Debug, Display, Error, Formatter};
 use sys::joystick::SDL_JoystickID;
 use sys::power::{SDL_PowerState, SDL_POWERSTATE_UNKNOWN};
 use guid::Guid;
@@ -84,6 +84,12 @@ impl JoystickSubsystem {
 pub struct PowerInfo {
     pub state: PowerLevel,
     pub percentage: i32,
+}
+
+impl Debug for PowerInfo {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+        write!(f, "PowerInfo {{ state: {:?}, percentage: {} }}", self.state, self.percentage)
+    }
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
