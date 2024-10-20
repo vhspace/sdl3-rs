@@ -19,7 +19,7 @@
 use crate::sys;
 
 
-use crate::common::{validate_int, IntegerOrSdlError};
+use crate::common::IntegerOrSdlError;
 use crate::get_error;
 use crate::SensorSubsystem;
 use libc::c_char;
@@ -52,9 +52,8 @@ impl SensorSubsystem {
     #[doc(alias = "SDL_OpenSensor")]
     pub fn open(&self, sensor_id: SensorId) -> Result<Sensor, IntegerOrSdlError> {
         use crate::common::IntegerOrSdlError::*;
-        let sensor_id = validate_int(sensor_id, "sensor_id")?;
 
-        let sensor = unsafe { sys::sensor::SDL_OpenSensor(sensor_id.into()) };
+        let sensor = unsafe { sys::sensor::SDL_OpenSensor(sensor_id) };
 
         if sensor.is_null() {
             Err(SdlError(get_error()))
@@ -79,13 +78,21 @@ pub enum SensorType {
     Unknown,
     Gyroscope,
     Accelerometer,
+    AccelerometerLeft,
+    AccelerometerRight,
+    GyroscopeLeft,
+    GyroscopeRight,
 }
 
 impl SensorType {
     pub fn from_ll(raw: i32) -> Self {
         match raw {
-            x if x == SDL_SensorType::SDL_SENSOR_GYRO as i32 => SensorType::Gyroscope,
-            x if x == SDL_SensorType::SDL_SENSOR_ACCEL as i32 => SensorType::Accelerometer,
+            x if x == SDL_SensorType::GYRO.0 => SensorType::Gyroscope,
+            x if x == SDL_SensorType::ACCEL.0 => SensorType::Accelerometer,
+            x if x == SDL_SensorType::ACCEL_L.0 => SensorType::AccelerometerLeft,
+            x if x == SDL_SensorType::ACCEL_R.0 => SensorType::AccelerometerRight,
+            x if x == SDL_SensorType::GYRO_L.0 => SensorType::GyroscopeLeft,
+            x if x == SDL_SensorType::GYRO_R.0 => SensorType::GyroscopeRight,
             _ => SensorType::Unknown,
         }
     }
@@ -94,9 +101,13 @@ impl SensorType {
 impl Into<SDL_SensorType> for SensorType {
     fn into(self) -> SDL_SensorType {
         match self {
-            SensorType::Unknown => SDL_SensorType::SDL_SENSOR_UNKNOWN,
-            SensorType::Gyroscope => SDL_SensorType::SDL_SENSOR_GYRO,
-            SensorType::Accelerometer => SDL_SensorType::SDL_SENSOR_ACCEL,
+            SensorType::Unknown => SDL_SensorType::UNKNOWN,
+            SensorType::Gyroscope => SDL_SensorType::GYRO,
+            SensorType::Accelerometer => SDL_SensorType::ACCEL,
+            SensorType::AccelerometerLeft => SDL_SensorType::ACCEL_L,
+            SensorType::AccelerometerRight => SDL_SensorType::ACCEL_R,
+            SensorType::GyroscopeLeft => SDL_SensorType::GYRO_L,
+            SensorType::GyroscopeRight => SDL_SensorType::GYRO_R,
         }
     }
 }
@@ -140,12 +151,17 @@ impl Sensor {
         let result = unsafe { sys::sensor::SDL_GetSensorType(self.raw) };
 
         match result {
-            SDL_SensorType::SDL_SENSOR_INVALID => {
+            SDL_SensorType::INVALID => {
                 panic!("{}", get_error())
             }
-            SDL_SensorType::SDL_SENSOR_UNKNOWN => SensorType::Unknown,
-            SDL_SensorType::SDL_SENSOR_ACCEL => SensorType::Accelerometer,
-            SDL_SensorType::SDL_SENSOR_GYRO => SensorType::Gyroscope,
+            SDL_SensorType::UNKNOWN => SensorType::Unknown,
+            SDL_SensorType::ACCEL => SensorType::Accelerometer,
+            SDL_SensorType::GYRO => SensorType::Gyroscope,
+            SDL_SensorType::ACCEL_L => SensorType::AccelerometerLeft,
+            SDL_SensorType::ACCEL_R => SensorType::AccelerometerRight,
+            SDL_SensorType::GYRO_L => SensorType::GyroscopeLeft,
+            SDL_SensorType::GYRO_R => SensorType::GyroscopeRight,
+            _ => SensorType::Unknown,
         }
     }
 
@@ -162,7 +178,12 @@ impl Sensor {
         } else {
             Ok(match self.sensor_type() {
                 SensorType::Gyroscope => SensorData::Accel([data[0], data[1], data[2]]),
+                SensorType::GyroscopeLeft => SensorData::Accel([data[0], data[1], data[2]]),
+                SensorType::GyroscopeRight => SensorData::Accel([data[0], data[1], data[2]]),
                 SensorType::Accelerometer => SensorData::Accel([data[0], data[1], data[2]]),
+                SensorType::AccelerometerLeft => SensorData::Accel([data[0], data[1], data[2]]),
+                SensorType::AccelerometerRight => SensorData::Accel([data[0], data[1], data[2]]),
+
                 SensorType::Unknown => SensorData::Unknown(data),
             })
         }
