@@ -259,7 +259,7 @@ pub enum Keycode {
     SoftLeft = SDLK_SOFTLEFT as i32,
     SoftRight = SDLK_SOFTRIGHT as i32,
     Call = SDLK_CALL as i32,
-    EndCall = SDLK_ENDCALL as i32,    
+    EndCall = SDLK_ENDCALL as i32,
 }
 
 impl Keycode {
@@ -517,9 +517,13 @@ impl Keycode {
             SDLK_SOFTLEFT => SoftLeft,
             SDLK_SOFTRIGHT => SoftRight,
             SDLK_CALL => Call,
-            SDLK_ENDCALL => EndCall,            
+            SDLK_ENDCALL => EndCall,
             _ => return None,
         })
+    }
+
+    pub fn to_ll(self) -> SDL_Keycode {
+        unsafe { transmute(self as i32) }
     }
 }
 
@@ -536,11 +540,18 @@ use crate::keyboard::Scancode;
 impl Keycode {
     /// Gets the virtual key from a scancode. Returns None if there is no corresponding virtual key.
     #[doc(alias = "SDL_GetKeyFromScancode")]
-    pub fn from_scancode(scancode: Scancode) -> Option<Keycode> {
-        const UNKNOWN: i32 = sys::SDL_KeyCode::SDLK_UNKNOWN as i32;
+    pub fn from_scancode(
+        scancode: Scancode,
+        modstate: SDL_Keymod,
+        key_event: bool,
+    ) -> Option<Keycode> {
+        const UNKNOWN: u32 = sys::keycode::SDLK_UNKNOWN as u32;
         unsafe {
-            match sys::SDL_GetKeyFromScancode(transmute::<u32, sys::SDL_Scancode>(scancode as u32))
-            {
+            match sys::keyboard::SDL_GetKeyFromScancode(
+                transmute::<u32, sys::scancode::SDL_Scancode>(scancode as u32),
+                modstate,
+                key_event,
+            ) {
                 UNKNOWN => None,
                 keycode_id => Keycode::from_i32(keycode_id as i32),
             }
@@ -549,10 +560,11 @@ impl Keycode {
 
     #[doc(alias = "SDL_GetKeyFromName")]
     pub fn from_name(name: &str) -> Option<Keycode> {
-        const UNKNOWN: i32 = sys::SDL_KeyCode::SDLK_UNKNOWN as i32;
+        const UNKNOWN: u32 = sys::keycode::SDLK_UNKNOWN as u32;
         unsafe {
             match CString::new(name) {
-                Ok(name) => match sys::SDL_GetKeyFromName(name.as_ptr() as *const c_char) {
+                Ok(name) => match sys::keyboard::SDL_GetKeyFromName(name.as_ptr() as *const c_char)
+                {
                     UNKNOWN => None,
                     keycode_id => Some(Keycode::from_i32(keycode_id as i32).unwrap()),
                 },
@@ -567,7 +579,7 @@ impl Keycode {
         // The name string pointer's contents _might_ change, depending on the last call to SDL_GetKeyName.
         // Knowing this, we must always return a new string.
         unsafe {
-            let buf = sys::SDL_GetKeyName(self as i32);
+            let buf = sys::keyboard::SDL_GetKeyName(self.to_ll());
             CStr::from_ptr(buf as *const _).to_str().unwrap().to_owned()
         }
     }

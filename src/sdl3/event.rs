@@ -29,7 +29,7 @@ use crate::sys::events::SDL_EventFilter;
 use crate::video::Orientation;
 use libc::c_int;
 use libc::c_void;
-use sys::events::SDL_EventType;
+use sys::events::{SDL_EventType, SDL_KeyboardEvent};
 use sys::everything::SDL_DisplayOrientation;
 
 struct CustomEventTypeMaps {
@@ -454,10 +454,11 @@ impl DisplayEvent {
     fn from_ll(id: u32, data1: i32) -> DisplayEvent {
         match unsafe { transmute(id) } {
             sys::events::SDL_EVENT_DISPLAY_ORIENTATION => {
-                let orientation = if data1 > SDL_DisplayOrientation::PORTRAIT_FLIPPED.into() {
-                    SDL_DisplayOrientation::UNKNOWN
+                let orientation = if data1 > SDL_DisplayOrientation::PORTRAIT_FLIPPED.0 {
+                    Orientation::Unknown
                 } else {
-                    (data1.into())
+                    let sdl_orientation = SDL_DisplayOrientation(data1);
+                    Orientation::from_ll(sdl_orientation)
                 };
                 DisplayEvent::Orientation(orientation)
             }
@@ -965,7 +966,7 @@ impl Event {
                 data2,
                 timestamp,
             } => {
-                let event = SDL_EventType::SDL_EVENT_USER {
+                let event = sys::events::SDL_EventType::SDL_EVENT_USER {
                     type_: type_.into(),
                     timestamp,
                     windowID: window_id,
@@ -1051,15 +1052,13 @@ impl Event {
                 keymod,
                 repeat,
             } => {
-                let event = sys::events::SDL_Event::SDL_KeyboardEvent {
-                    type_: sys::events::SDL_EVENT_KEY_DOWN.into(),
+                let event = SDL_KeyboardEvent {
+                    r#type: sys::events::SDL_EVENT_KEY_DOWN.into(),
                     timestamp,
                     windowID: window_id,
-                    state: sys::events::SDL_Event::SDL_PRESSED as u8,
-                    repeat: repeat as u8,
-                    padding2: 0,
-                    padding3: 0,
-                    keysym,
+                    repeat,
+                    reserved: 0,
+                    scancode: scancode.into(),
                 };
                 unsafe {
                     ptr::copy(

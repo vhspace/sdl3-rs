@@ -515,13 +515,14 @@ impl Scancode {
             SDL_SCANCODE_CALL => Call,
             SDL_SCANCODE_ENDCALL => EndCall,
             SDL_SCANCODE_RESERVED => Reserved,
-            SDL_SCANCODE_COUNT => Count,            
+            SDL_SCANCODE_COUNT => Count,
             _ => return None,
         })
     }
 }
 
 use std::fmt;
+use sys::keycode::SDL_Keymod;
 
 impl fmt::Display for Scancode {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
@@ -534,9 +535,9 @@ use crate::keyboard::Keycode;
 impl Scancode {
     /// Gets the scancode from a virtual key. Returns None if there is no corresponding scancode.
     #[doc(alias = "SDL_GetScancodeFromKey")]
-    pub fn from_keycode(keycode: Keycode) -> Option<Scancode> {
+    pub fn from_keycode(keycode: Keycode, modstate: *mut SDL_Keymod) -> Option<Scancode> {
         unsafe {
-            match sys::SDL_GetScancodeFromKey(keycode as i32) {
+            match sys::keyboard::SDL_GetScancodeFromKey(keycode, modstate) {
                 SDL_SCANCODE_UNKNOWN => None,
                 scancode_id => Scancode::from_i32(scancode_id.0),
             }
