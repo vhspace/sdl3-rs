@@ -29,9 +29,14 @@ use crate::sys::events::SDL_EventFilter;
 use crate::video::Orientation;
 use libc::c_int;
 use libc::c_void;
-use sys::events::{SDL_KeyboardEvent, SDL_MouseButtonEvent, SDL_MouseMotionEvent};
+use sys::events::{
+    SDL_GamepadAxisEvent, SDL_GamepadButtonEvent, SDL_GamepadDeviceEvent, SDL_JoyAxisEvent,
+    SDL_JoyButtonEvent, SDL_JoyDeviceEvent, SDL_JoyHatEvent, SDL_KeyboardEvent,
+    SDL_MouseButtonEvent, SDL_MouseMotionEvent, SDL_MouseWheelEvent,
+};
 use sys::everything::SDL_DisplayOrientation;
 use sys::stdinc::Uint16;
+use sys::video::SDL_DisplayID;
 
 struct CustomEventTypeMaps {
     sdl_id_to_type_id: HashMap<u32, ::std::any::TypeId>,
@@ -616,15 +621,6 @@ pub enum Event {
         timestamp: u64,
     },
 
-    DisplayAdded {
-        timestamp: u64,
-        display_index: u32,
-    },
-    DisplayRemoved {
-        timestamp: u64,
-        display_index: u32,
-    },
-
     Window {
         timestamp: u64,
         window_id: u32,
@@ -639,7 +635,6 @@ pub enum Event {
         scancode: Option<Scancode>,
         keymod: Mod,
         repeat: bool,
-        down: bool,
         which: u32,
         raw: Uint16,
     },
@@ -650,7 +645,6 @@ pub enum Event {
         scancode: Option<Scancode>,
         keymod: Mod,
         repeat: bool,
-        down: bool,
         which: u32,
         raw: Uint16,
     },
@@ -688,7 +682,6 @@ pub enum Event {
         clicks: u8,
         x: f32,
         y: f32,
-        down: bool,
     },
     MouseButtonUp {
         timestamp: u64,
@@ -698,7 +691,6 @@ pub enum Event {
         clicks: u8,
         x: f32,
         y: f32,
-        down: bool,
     },
 
     MouseWheel {
@@ -794,9 +786,9 @@ pub enum Event {
         /// The joystick instance id
         which: u32,
         /// The index of the touchpad
-        touchpad: u32,
+        touchpad: i32,
         /// The index of the finger on the touchpad
-        finger: u32,
+        finger: i32,
         /// Normalized in the range 0...1 with 0 being on the left
         x: f32,
         /// Normalized in the range 0...1 with 0 being at the top
@@ -809,9 +801,9 @@ pub enum Event {
         /// The joystick instance id
         which: u32,
         /// The index of the touchpad
-        touchpad: u32,
+        touchpad: i32,
         /// The index of the finger on the touchpad
-        finger: u32,
+        finger: i32,
         /// Normalized in the range 0...1 with 0 being on the left
         x: f32,
         /// Normalized in the range 0...1 with 0 being at the top
@@ -824,9 +816,9 @@ pub enum Event {
         /// The joystick instance id
         which: u32,
         /// The index of the touchpad
-        touchpad: u32,
+        touchpad: i32,
         /// The index of the finger on the touchpad
-        finger: u32,
+        finger: i32,
         /// Normalized in the range 0...1 with 0 being on the left
         x: f32,
         /// Normalized in the range 0...1 with 0 being at the top
@@ -849,8 +841,8 @@ pub enum Event {
 
     FingerDown {
         timestamp: u64,
-        touch_id: i64,
-        finger_id: i64,
+        touch_id: u64,
+        finger_id: u64,
         x: f32,
         y: f32,
         dx: f32,
@@ -859,8 +851,8 @@ pub enum Event {
     },
     FingerUp {
         timestamp: u64,
-        touch_id: i64,
-        finger_id: i64,
+        touch_id: u64,
+        finger_id: u64,
         x: f32,
         y: f32,
         dx: f32,
@@ -869,8 +861,8 @@ pub enum Event {
     },
     FingerMotion {
         timestamp: u64,
-        touch_id: i64,
-        finger_id: i64,
+        touch_id: u64,
+        finger_id: u64,
         x: f32,
         y: f32,
         dx: f32,
@@ -952,6 +944,12 @@ pub enum Event {
         timestamp: u64,
         type_: u32,
     },
+
+    Display {
+        timestamp: u64,
+        display_index: SDL_DisplayID,
+        display_event: DisplayEvent,
+    },
 }
 
 /// This does not auto-derive because `User`'s `data` fields can be used to
@@ -1014,50 +1012,6 @@ impl Event {
                 }
             }
 
-            Event::DisplayAdded {
-                timestamp,
-                display_index,
-            } => {
-                let event = sys::events::SDL_DisplayEvent {
-                    r#type: sys::events::SDL_EVENT_DISPLAY_ADDED,
-                    timestamp,
-                    displayID: display_index.into(),
-                    data1,
-                    data2,
-                    reserved: 0,
-                };
-                unsafe {
-                    ptr::copy(
-                        &event,
-                        ret.as_mut_ptr() as *mut sys::events::SDL_DisplayEvent,
-                        1,
-                    );
-                    Some(ret.assume_init())
-                }
-            }
-
-            Event::DisplayRemoved {
-                timestamp,
-                display_index,
-            } => {
-                let event = sys::events::SDL_DisplayEvent {
-                    r#type: sys::events::SDL_EVENT_DISPLAY_REMOVED,
-                    timestamp,
-                    displayID: display_index.into(),
-                    data1,
-                    data2,
-                    reserved: 0,
-                };
-                unsafe {
-                    ptr::copy(
-                        &event,
-                        ret.as_mut_ptr() as *mut sys::events::SDL_DisplayEvent,
-                        1,
-                    );
-                    Some(ret.assume_init())
-                }
-            }
-
             Event::Window {
                 timestamp,
                 window_id,
@@ -1088,7 +1042,6 @@ impl Event {
                 scancode,
                 keymod,
                 repeat,
-                down: bool,
                 which,
                 raw,
             } => {
@@ -1100,7 +1053,7 @@ impl Event {
                     reserved: 0,
                     scancode: scancode?.into(),
                     which,
-                    down,
+                    down: true,
                     key: keycode?.into(),
                     r#mod: keymod.bits(),
                     raw,
@@ -1121,7 +1074,6 @@ impl Event {
                 scancode,
                 keymod,
                 repeat,
-                down: bool,
                 which,
                 raw,
             } => {
@@ -1133,7 +1085,7 @@ impl Event {
                     reserved: 0,
                     scancode: scancode?.into(),
                     which,
-                    down,
+                    down: false,
                     key: keycode?.into(),
                     r#mod: keymod.bits(),
                     raw,
@@ -1187,7 +1139,6 @@ impl Event {
                 clicks,
                 x,
                 y,
-                down,
             } => {
                 let event = SDL_MouseButtonEvent {
                     r#type: sys::events::SDL_EVENT_MOUSE_BUTTON_DOWN.into(),
@@ -1195,7 +1146,7 @@ impl Event {
                     windowID: window_id,
                     which,
                     button: mouse_btn as u8,
-                    down,
+                    down: true,
                     clicks,
                     x,
                     y,
@@ -1219,7 +1170,6 @@ impl Event {
                 clicks,
                 x,
                 y,
-                down,
             } => {
                 let event = sys::events::SDL_MouseButtonEvent {
                     r#type: sys::events::SDL_EVENT_MOUSE_BUTTON_UP.into(),
@@ -1231,7 +1181,7 @@ impl Event {
                     padding: 0,
                     x,
                     y,
-                    down,
+                    down: false,
                     reserved: 0,
                 };
                 unsafe {
@@ -1254,16 +1204,17 @@ impl Event {
                 mouse_x,
                 mouse_y,
             } => {
-                let event = sys::events::SDL_MouseWheelEvent {
+                let event = SDL_MouseWheelEvent {
                     r#type: sys::events::SDL_EVENT_MOUSE_WHEEL.into(),
                     timestamp,
                     windowID: window_id,
                     which,
                     x,
                     y,
-                    direction: direction.to_ll(),
+                    direction: direction.into(),
                     mouse_x: mouse_x,
                     mouse_y: mouse_y,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -1280,8 +1231,8 @@ impl Event {
                 axis_idx,
                 value,
             } => {
-                let event = sys::events::SDL_Event::SDL_JoyAxisEvent {
-                    type_: sys::events::SDL_EVENT_JOYSTICK_AXIS_MOTION.into(),
+                let event = SDL_JoyAxisEvent {
+                    r#type: sys::events::SDL_EVENT_JOYSTICK_AXIS_MOTION.into(),
                     timestamp,
                     which,
                     axis: axis_idx,
@@ -1290,6 +1241,7 @@ impl Event {
                     padding2: 0,
                     padding3: 0,
                     padding4: 0,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -1307,14 +1259,15 @@ impl Event {
                 state,
             } => {
                 let hatvalue = state.to_raw();
-                let event = sys::events::SDL_Event::SDL_JoyHatEvent {
-                    type_: sys::events::SDL_EVENT_JOYSTICK_HAT_MOTION.into(),
+                let event = SDL_JoyHatEvent {
+                    r#type: sys::events::SDL_EVENT_JOYSTICK_HAT_MOTION.into(),
                     timestamp,
                     which,
                     hat: hat_idx,
                     value: hatvalue,
                     padding1: 0,
                     padding2: 0,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -1330,14 +1283,15 @@ impl Event {
                 which,
                 button_idx,
             } => {
-                let event = sys::events::SDL_Event::SDL_JoyButtonEvent {
-                    type_: sys::events::SDL_EVENT_JOYSTICK_BUTTON_DOWN.into(),
+                let event = SDL_JoyButtonEvent {
+                    r#type: sys::events::SDL_EVENT_JOYSTICK_BUTTON_DOWN.into(),
                     timestamp,
                     which,
                     button: button_idx,
-                    state: sys::events::SDL_Event::SDL_PRESSED as u8,
+                    down: true,
                     padding1: 0,
                     padding2: 0,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -1354,14 +1308,15 @@ impl Event {
                 which,
                 button_idx,
             } => {
-                let event = sys::events::SDL_Event::SDL_JoyButtonEvent {
-                    type_: sys::events::SDL_EVENT_JOYSTICK_BUTTON_UP.into(),
+                let event = SDL_JoyButtonEvent {
+                    r#type: sys::events::SDL_EVENT_JOYSTICK_BUTTON_UP.into(),
                     timestamp,
                     which,
                     button: button_idx,
-                    state: sys::events::SDL_Event::SDL_RELEASED as u8,
+                    down: false,
                     padding1: 0,
                     padding2: 0,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -1374,10 +1329,11 @@ impl Event {
             }
 
             Event::JoyDeviceAdded { timestamp, which } => {
-                let event = sys::events::SDL_Event::SDL_JoyDeviceEvent {
-                    type_: sys::events::SDL_EVENT_JOYSTICK_ADDED.into(),
+                let event = SDL_JoyDeviceEvent {
+                    r#type: sys::events::SDL_EVENT_JOYSTICK_ADDED.into(),
                     timestamp,
                     which,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -1390,10 +1346,11 @@ impl Event {
             }
 
             Event::JoyDeviceRemoved { timestamp, which } => {
-                let event = sys::events::SDL_Event::SDL_JoyDeviceEvent {
-                    type_: sys::events::SDL_EVENT_JOYSTICK_REMOVED.into(),
+                let event = SDL_JoyDeviceEvent {
+                    r#type: sys::events::SDL_EVENT_JOYSTICK_REMOVED.into(),
                     timestamp,
                     which,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -1410,17 +1367,17 @@ impl Event {
                 axis,
                 value,
             } => {
-                let axisval = axis.to_ll();
-                let event = sys::events::SDL_Event::SDL_GamepadAxisEvent {
-                    type_: sys::events::SDL_EVENT_GAMEPAD_AXIS_MOTION.into(),
+                let event = SDL_GamepadAxisEvent {
+                    r#type: sys::events::SDL_EVENT_GAMEPAD_AXIS_MOTION.into(),
                     timestamp,
                     which,
-                    axis: axisval.into(),
+                    axis: axis.into(),
                     value,
                     padding1: 0,
                     padding2: 0,
                     padding3: 0,
                     padding4: 0,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -1436,17 +1393,17 @@ impl Event {
                 which,
                 button,
             } => {
-                let buttonval = button.to_ll();
-                let event = sys::events::SDL_Event::SDL_GamepadButtonEvent {
-                    type_: sys::events::SDL_EVENT_GAMEPAD_BUTTON_DOWN.into(),
+                let event = SDL_GamepadButtonEvent {
+                    r#type: sys::events::SDL_EVENT_GAMEPAD_BUTTON_DOWN.into(),
                     timestamp,
                     which,
                     // This conversion turns an i32 into a u8; signed-to-unsigned conversions
                     // are a bit of a code smell, but that appears to be how SDL defines it.
-                    button: buttonval.into(),
-                    state: sys::events::SDL_Event::SDL_PRESSED as u8,
+                    button: button.into(),
+                    down: true,
                     padding1: 0,
                     padding2: 0,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -1463,13 +1420,13 @@ impl Event {
                 which,
                 button,
             } => {
-                let buttonval = button.to_ll();
-                let event = sys::events::SDL_Event::SDL_GamepadButtonEvent {
-                    type_: sys::events::SDL_EVENT_GAMEPAD_BUTTON_UP.into(),
+                let event = SDL_GamepadButtonEvent {
+                    r#type: sys::events::SDL_EVENT_GAMEPAD_BUTTON_UP.into(),
+                    reserved: 0,
                     timestamp,
                     which,
-                    button: buttonval.into(),
-                    state: sys::events::SDL_Event::SDL_RELEASED as u8,
+                    button: button.into(),
+                    down: false,
                     padding1: 0,
                     padding2: 0,
                 };
@@ -1484,10 +1441,11 @@ impl Event {
             }
 
             Event::ControllerDeviceAdded { timestamp, which } => {
-                let event = sys::events::SDL_Event::SDL_GamepadDeviceEvent {
-                    type_: sys::events::SDL_EVENT_GAMEPAD_ADDED.into(),
+                let event = SDL_GamepadDeviceEvent {
+                    r#type: sys::events::SDL_EVENT_GAMEPAD_ADDED.into(),
                     timestamp,
                     which,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -1500,10 +1458,11 @@ impl Event {
             }
 
             Event::ControllerDeviceRemoved { timestamp, which } => {
-                let event = sys::events::SDL_Event::SDL_GamepadDeviceEvent {
-                    type_: sys::events::SDL_EVENT_GAMEPAD_REMOVED.into(),
+                let event = SDL_GamepadDeviceEvent {
+                    r#type: sys::events::SDL_EVENT_GAMEPAD_REMOVED.into(),
                     timestamp,
                     which,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -1516,10 +1475,11 @@ impl Event {
             }
 
             Event::ControllerDeviceRemapped { timestamp, which } => {
-                let event = sys::events::SDL_Event::SDL_GamepadDeviceEvent {
-                    type_: sys::events::SDL_EVENT_GAMEPAD_REMAPPED.into(),
+                let event = SDL_GamepadDeviceEvent {
+                    r#type: sys::events::SDL_EVENT_GAMEPAD_REMAPPED.into(),
                     timestamp,
                     which,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -1552,7 +1512,7 @@ impl Event {
         let raw_type = unsafe { raw.r#type };
 
         // if event type has not been defined, treat it as a UserEvent
-        let event_type: EventType = EventType::try_from(raw_type.into()).unwrap_or(EventType::User);
+        let event_type: EventType = EventType::try_from(raw_type).unwrap_or(EventType::User);
         unsafe {
             match event_type {
                 EventType::WindowShown
@@ -1628,8 +1588,8 @@ impl Event {
                 }
 
                 EventType::DisplayOrientation
-                | EventType::DisplayConnected
-                | EventType::DisplayDisconnected => {
+                | EventType::DisplayAdded
+                | EventType::DisplayRemoved => {
                     let event = raw.display;
 
                     Event::Display {
@@ -1650,6 +1610,8 @@ impl Event {
                         scancode: Scancode::from_i32(event.scancode.into()),
                         keymod: keyboard::Mod::from_bits_truncate(event.r#mod),
                         repeat: event.repeat,
+                        which: event.which,
+                        raw: event.raw,
                     }
                 }
                 EventType::KeyUp => {
@@ -1662,20 +1624,20 @@ impl Event {
                         scancode: Scancode::from_i32(event.scancode.into()),
                         keymod: keyboard::Mod::from_bits_truncate(event.r#mod),
                         repeat: event.repeat,
+                        which: event.which,
+                        raw: event.raw,
                     }
                 }
                 EventType::TextEditing => {
                     let event = raw.edit;
 
-                    let text = String::from_utf8(
-                        event
-                            .text
-                            .iter()
-                            .take_while(|&b| (*b) != 0)
-                            .map(|&b| b as u8)
-                            .collect::<Vec<u8>>(),
-                    )
-                    .expect("Invalid TextEditing string");
+                    // event.text is a *const c_char (pointer to a C string)
+                    let c_str: &CStr = unsafe { CStr::from_ptr(event.text) };
+
+                    // Convert the CStr to a Rust &str
+                    let text_str = c_str.to_str().expect("Invalid UTF-8 string");
+                    let text = text_str.to_owned();
+
                     Event::TextEditing {
                         timestamp: event.timestamp,
                         window_id: event.windowID,
@@ -1687,15 +1649,13 @@ impl Event {
                 EventType::TextInput => {
                     let event = raw.text;
 
-                    let text = String::from_utf8(
-                        event
-                            .text
-                            .iter()
-                            .take_while(|&b| (*b) != 0)
-                            .map(|&b| b as u8)
-                            .collect::<Vec<u8>>(),
-                    )
-                    .expect("Invalid TextInput string");
+                    // event.text is a *const c_char (pointer to a C string)
+                    let c_str: &CStr = unsafe { CStr::from_ptr(event.text) };
+
+                    // Convert the CStr to a Rust &str
+                    let text_str = c_str.to_str().expect("Invalid UTF-8 string");
+                    let text = text_str.to_owned();
+
                     Event::TextInput {
                         timestamp: event.timestamp,
                         window_id: event.windowID,
@@ -1752,7 +1712,7 @@ impl Event {
                         which: event.which.into(),
                         x: event.x,
                         y: event.y,
-                        direction: mouse::MouseWheelDirection::from_ll(event.direction),
+                        direction: event.direction.into(),
                         mouse_x: event.mouse_x,
                         mouse_y: event.mouse_y,
                     }
@@ -1997,8 +1957,8 @@ impl Event {
                     Event::AudioDeviceAdded {
                         timestamp: event.timestamp,
                         which: event.which,
-                        // zero if an audio output device, non-zero if an audio capture device
-                        iscapture: event.recording != 0,
+                        // false if an audio output device, true if an audio capture device
+                        iscapture: event.recording,
                     }
                 }
                 EventType::AudioDeviceRemoved => {
@@ -2006,8 +1966,8 @@ impl Event {
                     Event::AudioDeviceRemoved {
                         timestamp: event.timestamp,
                         which: event.which,
-                        // zero if an audio output device, non-zero if an audio capture device
-                        iscapture: event.recording != 0,
+                        // false if an audio output device, true if an audio capture device
+                        iscapture: event.recording,
                     }
                 }
 
@@ -2320,6 +2280,8 @@ impl Event {
     ///     scancode: None,
     ///     keymod: Mod::empty(),
     ///     repeat: false,
+    ///     which: 0,
+    ///     raw: 0,
     /// };
     /// assert!(ev.is_keyboard());
     ///
@@ -2825,6 +2787,8 @@ mod test {
                 scancode: Some(Scancode::Q),
                 keymod: Mod::all(),
                 repeat: false,
+                which: 0,
+                raw: 0,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
@@ -2837,6 +2801,8 @@ mod test {
                 scancode: Some(Scancode::R),
                 keymod: Mod::empty(),
                 repeat: true,
+                which: 0,
+                raw: 0,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
@@ -3012,6 +2978,8 @@ mod test {
             scancode: Some(Scancode::Q),
             keymod: Mod::empty(),
             repeat: false,
+            which: 0,
+            raw: 0,
         }
         .to_ll()
         .unwrap();
@@ -3037,6 +3005,8 @@ mod test {
             scancode: Some(Scancode::Q),
             keymod: Mod::empty(),
             repeat: false,
+            which: 0,
+            raw: 0,
         }
         .to_ll()
         .unwrap();
@@ -3193,7 +3163,7 @@ impl<'a, CB: EventWatchCallback + 'a> EventWatch<'a, CB> {
     }
 
     fn filter(&self) -> SDL_EventFilter {
-        Some(event_callback_marshall::<CB>.into())
+        Some(event_callback_marshall::<CB>)
     }
 
     fn callback(&mut self) -> *mut c_void {
@@ -3210,11 +3180,11 @@ impl<'a, CB: EventWatchCallback + 'a> Drop for EventWatch<'a, CB> {
 extern "C" fn event_callback_marshall<CB: EventWatchCallback>(
     user_data: *mut c_void,
     event: *mut sdl3_sys::events::SDL_Event,
-) -> i32 {
+) -> bool {
     let f: &mut CB = unsafe { &mut *(user_data as *mut _) };
     let event = Event::from_ll(unsafe { *event });
     f.callback(event);
-    0
+    false
 }
 
 impl<F: FnMut(Event) -> ()> EventWatchCallback for F {

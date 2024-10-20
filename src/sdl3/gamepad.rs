@@ -264,6 +264,12 @@ impl Axis {
     }
 }
 
+impl From<Axis> for u8 {
+    fn from(axis: Axis) -> u8 {
+        axis as u8
+    }
+}
+
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 #[repr(i32)]
 pub enum Button {
@@ -372,6 +378,12 @@ impl Button {
             Button::RightPaddle2 => sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2,
             Button::Touchpad => sys::gamepad::SDL_GAMEPAD_BUTTON_TOUCHPAD,
         }
+    }
+}
+
+impl From<Button> for u8 {
+    fn from(button: Button) -> u8 {
+        button as u8
     }
 }
 

@@ -4,7 +4,9 @@ use crate::sys;
 use crate::video;
 use crate::EventPump;
 use std::mem::transmute;
-use sys::mouse::{SDL_GetWindowRelativeMouseMode, SDL_SetWindowRelativeMouseMode};
+use sys::mouse::{
+    SDL_GetWindowRelativeMouseMode, SDL_MouseWheelDirection, SDL_SetWindowRelativeMouseMode,
+};
 use sys::video::SDL_GetWindowID;
 
 mod relative;
@@ -113,6 +115,16 @@ pub enum MouseWheelDirection {
     Unknown(u32),
 }
 
+impl From<MouseWheelDirection> for SDL_MouseWheelDirection {
+    fn from(direction: MouseWheelDirection) -> SDL_MouseWheelDirection {
+        match direction {
+            MouseWheelDirection::Normal => sys::mouse::SDL_MOUSEWHEEL_NORMAL,
+            MouseWheelDirection::Flipped => sys::mouse::SDL_MOUSEWHEEL_FLIPPED,
+            MouseWheelDirection::Unknown(_) => sys::mouse::SDL_MOUSEWHEEL_NORMAL,
+        }
+    }
+}
+
 // 0 and 1 are not fixed values in the SDL source code.  This value is defined as an enum which is then cast to a Uint32.
 // The enum in C is defined as such:
 
@@ -145,6 +157,16 @@ impl MouseWheelDirection {
             MouseWheelDirection::Normal => 0,
             MouseWheelDirection::Flipped => 1,
             MouseWheelDirection::Unknown(direction) => direction,
+        }
+    }
+}
+
+impl From<SDL_MouseWheelDirection> for MouseWheelDirection {
+    fn from(direction: SDL_MouseWheelDirection) -> MouseWheelDirection {
+        match direction {
+            sys::mouse::SDL_MOUSEWHEEL_NORMAL => MouseWheelDirection::Normal,
+            sys::mouse::SDL_MOUSEWHEEL_FLIPPED => MouseWheelDirection::Flipped,
+            _ => MouseWheelDirection::Unknown(direction as u32),
         }
     }
 }
