@@ -13,9 +13,7 @@
 //!     volume: f32
 //! }
 //!
-//! impl AudioCallback for SquareWave {
-//!     type Channel = f32;
-//!
+//! impl AudioCallback<f32> for SquareWave {
 //!     fn callback(&mut self, out: &mut [f32]) {
 //!         // Generate a square wave
 //!         for x in out.iter_mut() {
@@ -38,7 +36,7 @@
 //!     format: Some(AudioFormat::S16BE) // signed 16 bit samples
 //! };
 //!
-//! let device = audio_subsystem.open_playback(&desired_spec, |spec| {
+//! let device = audio_subsystem.open_playback_stream(&desired_spec, |spec| {
 //!     // initialize the audio callback
 //!     SquareWave {
 //!         phase_inc: 440.0 / spec.freq as f32,
@@ -58,31 +56,69 @@ use crate::get_error;
 use crate::sys;
 use crate::AudioSubsystem;
 use iostream::IOStream;
-use libc::{c_int, c_void};
+use libc::c_void;
 use std::convert::{TryFrom, TryInto};
-use std::ffi::CStr;
+use std::ffi::{c_int, CStr};
 use std::marker::PhantomData;
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
-use std::ptr;
+use std::ptr::null_mut;
+use sys::audio::{SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, SDL_AUDIO_DEVICE_DEFAULT_RECORDING};
 use sys::stdinc::SDL_free;
 
 impl AudioSubsystem {
-    /// Opens a new audio device given the desired parameters.
-    #[inline]
-    pub fn open_playback<'a, D>(&self, device: D, spec: &AudioSpec) -> Result<AudioDevice, String>
-    where
-        D: Into<Option<&'a AudioDeviceID>>,
-    {
-        AudioDevice::open_playback(self, device, spec)
+    /// Open a default playback device with the specified audio spec.
+    pub fn open_playback_device(&self, spec: &AudioSpec) -> Result<AudioDevice, String> {
+        self.open_device(sys::audio::SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, spec)
     }
 
-    /// Opens a new audio device for capture (given the desired parameters).
-    pub fn open_capture<'a, D>(&self, device: D, spec: &AudioSpec) -> Result<AudioDevice, String>
+    /// Open a default recording device with the specified audio spec.
+    pub fn open_recording_device(&self, spec: &AudioSpec) -> Result<AudioDevice, String> {
+        self.open_device(sys::audio::SDL_AUDIO_DEVICE_DEFAULT_RECORDING, spec)
+    }
+
+    /// General method to open a device by ID.
+    fn open_device(
+        &self,
+        device_id: sys::audio::SDL_AudioDeviceID,
+        spec: &AudioSpec,
+    ) -> Result<AudioDevice, String> {
+        let sdl_spec: sys::audio::SDL_AudioSpec = spec.clone().into();
+        let device = unsafe { sys::audio::SDL_OpenAudioDevice(device_id, &sdl_spec) };
+        if device == 0 {
+            Err(get_error())
+        } else {
+            Ok(AudioDevice {
+                device_id: device,
+                subsystem: self,
+            })
+        }
+    }
+
+    pub fn open_playback_stream<CB, Channel>(
+        &self,
+        spec: &AudioSpec,
+        callback: CB,
+    ) -> Result<AudioStream<CB>, String>
     where
-        D: Into<Option<&'a AudioDeviceID>>,
+        CB: AudioCallback<Channel>,
+        Channel: AudioFormatNum + 'static,
     {
-        AudioDevice::open_capture(self, device, spec)
+        let device = AudioDevice::open_playback(self, None, spec)?;
+        device.open_stream_with_callback(spec, callback)
+    }
+
+    pub fn open_recording_stream<CB, Channel>(
+        &self,
+        spec: &AudioSpec,
+        callback: CB,
+    ) -> Result<AudioStream<CB>, String>
+    where
+        CB: AudioCallback<Channel>,
+        Channel: AudioFormatNum + 'static,
+    {
+        let device = AudioDevice::open_recording(self, None, spec)?;
+        device.open_stream_with_callback(spec, callback)
     }
 
     // /// Opens a new audio device which uses queueing rather than older callback method.
@@ -123,7 +159,7 @@ impl AudioSubsystem {
     }
 
     #[doc(alias = "SDL_GetAudioDeviceName")]
-    pub fn audio_capture_device_name(&self, index: u32) -> Result<String, String> {
+    pub fn audio_recording_device_name(&self, index: u32) -> Result<String, String> {
         unsafe {
             let dev_name = sys::audio::SDL_GetAudioDeviceName(index);
             if dev_name.is_null() {
@@ -345,18 +381,16 @@ impl Drop for AudioSpecWAV {
     }
 }
 
-pub trait AudioCallback: Send
+pub trait AudioCallback<Channel>: Send + 'static
 where
-    Self::Channel: AudioFormatNum + 'static,
+    Channel: AudioFormatNum + 'static,
 {
-    type Channel;
-
-    fn callback(&mut self, _: &mut [Self::Channel]);
+    fn callback(&mut self, out: &mut [Channel]);
 }
 
 /// A phantom type for retrieving the `SDL_AudioFormat` of a given generic type.
 /// All format types are returned as native-endian.
-pub trait AudioFormatNum {
+pub trait AudioFormatNum: Copy + 'static {
     fn audio_format() -> AudioFormat;
 
     /// The appropriately typed silence value for the audio format used.
@@ -369,9 +403,7 @@ pub trait AudioFormatNum {
     ///
     /// struct Silence;
     ///
-    /// impl AudioCallback for Silence {
-    ///     type Channel = u16;
-    ///
+    /// impl AudioCallback<u16> for Silence {
     ///     fn callback(&mut self, out: &mut [u16]) {
     ///         for dst in out.iter_mut() {
     ///             *dst = Self::Channel::SILENCE;
@@ -418,25 +450,25 @@ impl AudioFormatNum for f32 {
     const SILENCE: f32 = 0.0;
 }
 
-extern "C" fn audio_callback_marshall<CB: AudioCallback>(
-    userdata: *mut c_void,
-    stream: *mut u8,
-    len: c_int,
-) {
-    use std::mem::size_of;
-    use std::slice::from_raw_parts_mut;
-    unsafe {
-        let cb_userdata: &mut Option<CB> = &mut *(userdata as *mut _);
-        let buf: &mut [CB::Channel] = from_raw_parts_mut(
-            stream as *mut CB::Channel,
-            len as usize / size_of::<CB::Channel>(),
-        );
-
-        if let Some(cb) = cb_userdata {
-            cb.callback(buf);
-        }
-    }
-}
+// extern "C" fn audio_callback_marshall<CB: AudioCallback>(
+//     userdata: *mut c_void,
+//     stream: *mut u8,
+//     len: c_int,
+// ) {
+//     use std::mem::size_of;
+//     use std::slice::from_raw_parts_mut;
+//     unsafe {
+//         let cb_userdata: &mut Option<CB> = &mut *(userdata as *mut _);
+//         let buf: &mut [CB::Channel] = from_raw_parts_mut(
+//             stream as *mut CB::Channel,
+//             len as usize / size_of::<CB::Channel>(),
+//         );
+//
+//         if let Some(cb) = cb_userdata {
+//             cb.callback(buf);
+//         }
+//     }
+// }
 
 #[derive(Clone)]
 pub struct AudioSpec {
@@ -529,13 +561,13 @@ impl AudioSpec {
 }
 
 enum AudioDeviceID {
-    PlaybackDevice(sys::audio::SDL_AudioDeviceID),
+    Device(sys::audio::SDL_AudioDeviceID),
 }
 
 impl AudioDeviceID {
     fn id(&self) -> sys::audio::SDL_AudioDeviceID {
         match *self {
-            AudioDeviceID::PlaybackDevice(id) => id,
+            AudioDeviceID::Device(id) => id,
         }
     }
 }
@@ -550,112 +582,49 @@ impl Drop for AudioDeviceID {
     }
 }
 
-// /// Wraps `SDL_AudioDeviceID` and owns the callback data used by the audio device.
-// pub struct AudioQueue<Channel: AudioFormatNum> {
-//     subsystem: AudioSubsystem,
-//     device_id: AudioDeviceID,
-//     phantom: PhantomData<Channel>,
-//     spec: AudioSpec,
-// }
-//
-// impl<'a, Channel: AudioFormatNum> AudioQueue<Channel> {
-//     /// Opens a new audio device given the desired parameters and callback.
-//     #[doc(alias = "SDL_OpenAudioDevice")]
-//     pub fn open_queue<D: Into<Option<&'a str>>>(
-//         a: &AudioSubsystem,
-//         device: D,
-//         spec: &AudioSpec,
-//     ) -> Result<AudioQueue<Channel>, String> {
-//         use std::mem::MaybeUninit;
-//
-//         let desired = AudioSpec::convert_queue_to_ll::<
-//             Channel,
-//             Option<i32>,
-//             Option<u8>,
-//             Option<u16>,
-//         >(spec.freq, spec.channels, spec.samples);
-//
-//         let mut obtained = MaybeUninit::uninit();
-//         unsafe {
-//             let device = match device.into() {
-//                 Some(device) => Some(CString::new(device).unwrap()),
-//                 None => None,
-//             };
-//             // Warning: map_or consumes its argument; `device.map_or()` would therefore consume the
-//             // CString and drop it, making device_ptr a dangling pointer! To avoid that we downgrade
-//             // device to an Option<&_> first.
-//             let device_ptr = device.as_ref().map_or(ptr::null(), |s| s.as_ptr());
-//
-//             let iscapture_flag = 0;
-//             let device_id = sys::SDL_OpenAudioDevice(
-//                 device_ptr as *const c_char,
-//                 iscapture_flag,
-//                 &desired,
-//                 obtained.as_mut_ptr(),
-//                 0,
-//             );
-//             match device_id {
-//                 0 => Err(get_error()),
-//                 id => {
-//                     let obtained = obtained.assume_init();
-//                     let device_id = AudioDeviceID::PlaybackDevice(id);
-//                     let spec = AudioSpec::convert_from_ll(obtained);
-//
-//                     Ok(AudioQueue {
-//                         subsystem: a.clone(),
-//                         device_id,
-//                         phantom: PhantomData::default(),
-//                         spec,
-//                     })
-//                 }
-//             }
-//         }
-//     }
-//
-//     #[inline]
-//     #[doc(alias = "SDL_GetAudioDeviceStatus")]
-//     pub fn subsystem(&self) -> &AudioSubsystem {
-//         &self.subsystem
-//     }
-//
-//     #[inline]
-//     pub fn spec(&self) -> &AudioSpec {
-//         &self.spec
-//     }
-//
-//     /// Pauses playback of the audio device.
-//     #[doc(alias = "SDL_PauseAudioDevice")]
-//     pub fn pause(&self) -> i32 {
-//         unsafe { sys::SDL_PauseAudioDevice(self.device_id.id()) }
-//     }
-//
-//     /// (Re-)starts playback of the audio device.
-//     #[doc(alias = "SDL_ResumeAudioDevice")]
-//     pub fn resume(&self) -> i32 {
-//         unsafe { sys::SDL_ResumeAudioDevice(self.device_id.id()) }
-//     }
-// }
-
-/// Wraps `SDL_AudioDeviceID` and owns the streams attached to the audio device.
+/// Represents an open audio device (playback or recording).
 pub struct AudioDevice {
-    // DEFAULT_CAPTURE: sys::SDL
-    subsystem: AudioSubsystem,
-    device_id: AudioDeviceID,
-    spec: AudioSpec,
+    device_id: sys::audio::SDL_AudioDeviceID,
+    // subsystem: &'a AudioSubsystem,
+}
 
-    /// Name of the device
-    pub name: String,
-    // pub streams: Vec<AudioStream<FnOnce(&mut [u8])>>,
+impl Drop for AudioDevice {
+    fn drop(&mut self) {
+        unsafe {
+            sys::audio::SDL_CloseAudioDevice(self.device_id);
+        }
+    }
 }
 
 impl AudioDevice {
-    /// Opens a new audio device for playback or capture (given the desired parameters).
+    /// Create an `AudioStream` for this device with the specified spec.
+    pub fn open_stream(&self, spec: &AudioSpec) -> Result<AudioStream, String> {
+        let sdl_spec = spec.to_sdl_spec();
+        let stream = unsafe {
+            sys::audio::SDL_OpenAudioDeviceStream(
+                self.device_id,
+                &sdl_spec,
+                None,
+                std::ptr::null_mut(),
+            )
+        };
+        if stream.is_null() {
+            Err(get_error())
+        } else {
+            Ok(AudioStream {
+                stream,
+                device_id: self.device_id,
+            })
+        }
+    }
+
+    /// Opens a new audio device for playback or recording (given the desired parameters).
     #[doc(alias = "SDL_OpenAudioDevice")]
     fn open<'a, D>(
         a: &AudioSubsystem,
         device: D,
         spec: &AudioSpec,
-        capture: bool,
+        recording: bool,
     ) -> Result<AudioDevice, String>
     where
         D: Into<Option<&'a AudioDeviceID>>,
@@ -666,34 +635,33 @@ impl AudioDevice {
 
         let mut obtained = MaybeUninit::uninit();
         unsafe {
-            // let device = match device.into() {
-            //     Some(device) => Some(CString::new(device).unwrap()),
-            //     None => None,
-            // };
-            // Warning: map_or consumes its argument; `device.map_or()` would therefore consume the
-            // CString and drop it, making device_ptr a dangling pointer! To avoid that we downgrade
-            // device to an Option<&_> first.
-            // let device_ptr = device.as_ref().map_or(ptr::null(), |s| s.as_ptr());
-            let device_ptr = device.as_ref().map_or(ptr::null(), |s| s.as_ptr());
-
-            let device_id = sys::SDL_OpenAudioDevice(device_ptr, &desired);
+            let sdl_device = match device.into() {
+                Some(device) => device.id(),
+                // use default device if no device is specified
+                None => {
+                    if recording {
+                        SDL_AUDIO_DEVICE_DEFAULT_RECORDING
+                    } else {
+                        SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK
+                    }
+                }
+            };
+            let device_id = sys::audio::SDL_OpenAudioDevice(sdl_device, &desired);
             match device_id {
                 0 => Err(get_error()),
                 id => {
                     let obtained = obtained.assume_init();
-                    let device_id = AudioDeviceID::PlaybackDevice(id);
+                    let device_id = AudioDeviceID::Device(id);
                     let spec = AudioSpec::convert_from_ll(obtained);
-                    let name = if capture {
-                        a.audio_capture_device_name(id as u32)?
+                    let name = if recording {
+                        a.audio_recording_device_name(id as u32)?
                     } else {
                         a.audio_playback_device_name(id as u32)?
                     };
 
                     Ok(AudioDevice {
-                        subsystem: a.clone(),
-                        device_id,
-                        spec,
-                        name,
+                        subsystem: a,
+                        device_id: device_id.into(),
                     })
                 }
             }
@@ -712,8 +680,8 @@ impl AudioDevice {
         AudioDevice::open(a, device, spec, false)
     }
 
-    /// Opens a new audio device for capture (given the desired parameters).
-    pub fn open_capture<'a, D>(
+    /// Opens a new audio device for recording (given the desired parameters).
+    pub fn open_recording<'a, D>(
         a: &AudioSubsystem,
         device: D,
         spec: &AudioSpec,
@@ -760,43 +728,90 @@ impl AudioDevice {
     /// Convenience function for straightforward audio init for the common case.
     /// This function will open an audio device, create a stream and bind it. Unlike other methods of setup, the audio device will be closed when this stream is destroyed, so the app can treat the returned SDL_AudioStream as the only object needed to manage audio playback.
     /// Also unlike other functions, the audio device begins paused. This is to map more closely to SDL2-style behavior, and since there is no extra step here to bind a stream to begin audio flowing. The audio device should be resumed with
-    /// This function works with both playback and capture devices.
-    pub fn open_stream<CB: AudioCallback>(
+    /// This function works with both playback and recording devices.
+    // The open_stream function
+    pub fn open_stream_with_callback<CB, Channel>(
         &self,
         spec: &AudioSpec,
         callback: CB,
-        userdata: Option<CB>,
-    ) -> Result<AudioStream<CB>, String> {
-        //  Returns an audio stream on success, ready to use. NULL on error; call SDL_GetError() for more information. When done with this stream, call SDL_DestroyAudioStream to free resources and close the device.
-        let stream = unsafe {
-            sys::audio::SDL_OpenAudioDeviceStream(
+    ) -> Result<AudioStream<CB>, String>
+    where
+        CB: AudioCallback<Channel>,
+        Channel: AudioFormatNum + 'static,
+    {
+        let mut sdl_audiospec: sys::audio::SDL_AudioSpec = spec.clone().into();
+
+        if sdl_audiospec.format != Channel::audio_format().to_ll() {
+            return Err("AudioSpec format does not match AudioCallback Channel type".to_string());
+        }
+
+        let callback_box = Box::new(callback);
+        let c_userdata = Box::into_raw(callback_box) as *mut c_void;
+
+        unsafe extern "C" fn audio_stream_callback<CB, Channel>(
+            userdata: *mut c_void,
+            sdl_stream: *mut sys::audio::SDL_AudioStream,
+            len: c_int,
+            _bytes: c_int,
+        ) where
+            CB: AudioCallback<Channel>,
+            Channel: AudioFormatNum + 'static,
+        {
+            let callback = &mut *(userdata as *mut CB);
+
+            let sample_count = len as usize / std::mem::size_of::<Channel>();
+
+            let mut buffer = vec![Channel::SILENCE; sample_count];
+
+            callback.callback(&mut buffer);
+
+            let buffer_ptr = buffer.as_ptr() as *const c_void;
+
+            let ret = sys::audio::SDL_PutAudioStreamData(sdl_stream, buffer_ptr, len);
+
+            if !ret {
+                eprintln!("Error pushing audio data into stream: {}", get_error());
+            }
+        }
+
+        unsafe {
+            let stream = sys::audio::SDL_OpenAudioDeviceStream(
                 self.device_id.id(),
-                spec.into(),
-                callback,
-                userdata,
-            )
-        };
-        if stream.is_null() {
-            Err(get_error())
-        } else {
-            Ok(AudioStream {
-                stream,
-                callback: userdata,
-            })
+                &sdl_audiospec,
+                Some(audio_stream_callback::<CB, Channel>),
+                c_userdata,
+            );
+
+            if stream.is_null() {
+                Box::from_raw(c_userdata as *mut CB);
+                Err(get_error())
+            } else {
+                Ok(AudioStream {
+                    stream,
+                    _callback: PhantomData,
+                    c_userdata,
+                })
+            }
         }
     }
 }
 
-/// Represents a stream of audio attached to a device.
-/// See [SDL_AudioStream](https://wiki.libsdl.org/SDL_AudioStream)
-pub struct AudioStream<CB: AudioCallback> {
+pub struct AudioStream<CB> {
     stream: *mut sys::audio::SDL_AudioStream,
-
-    callback: Option<CB>,
-    userdata: Option<CB>,
+    _callback: PhantomData<CB>,
+    c_userdata: *mut c_void,
 }
 
-impl<CB: AudioCallback> AudioStream<CB> {
+impl<CB> Drop for AudioStream<CB> {
+    fn drop(&mut self) {
+        unsafe {
+            sys::audio::SDL_DestroyAudioStream(self.stream);
+            Box::from_raw(self.c_userdata as *mut CB);
+        }
+    }
+}
+
+impl<CB> AudioStream<CB> {
     pub fn get_stream(&mut self) -> *mut sys::audio::SDL_AudioStream {
         self.stream
     }
@@ -806,13 +821,20 @@ impl<CB: AudioCallback> AudioStream<CB> {
         unsafe { &mut *(device as *mut AudioDeviceID) }
     }
 
+    pub fn pause(&mut self) -> bool {
+        unsafe { sys::audio::SDL_PauseAudioStreamDevice(self.stream) }
+    }
+    pub fn resume(&mut self) -> bool {
+        unsafe { sys::audio::SDL_ResumeAudioStreamDevice(self.stream) }
+    }
+
     /// Locks the audio stream using `SDL_LockAudioStream`.
     ///
     /// If the app assigns a callback to a specific stream, it can use the stream's lock through
     /// SDL_LockAudioStream() if necessary.
     #[doc(alias = "SDL_LockAudioStream")]
     pub fn lock(&mut self) -> AudioStreamLockGuard<CB> {
-        unsafe { sys::SDL_LockAudioStream(self.get_stream()) };
+        unsafe { sys::audio::SDL_LockAudioStream(self.get_stream()) };
         AudioStreamLockGuard {
             stream: self,
             _nosend: PhantomData,
@@ -821,10 +843,11 @@ impl<CB: AudioCallback> AudioStream<CB> {
 }
 
 /// Similar to `std::sync::MutexGuard`, but for use with `AudioStream::lock()`.
-pub struct AudioStreamLockGuard<'a, CB>
+pub struct AudioStreamLockGuard<'a, CB, F>
 where
-    CB: AudioCallback,
+    CB: AudioCallback<F>,
     CB: 'a,
+    F: AudioFormatNum + 'static,
 {
     stream: &'a mut AudioStream<CB>,
     _nosend: PhantomData<*mut ()>,
