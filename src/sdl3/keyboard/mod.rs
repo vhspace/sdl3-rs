@@ -37,7 +37,7 @@ impl fmt::Display for Mod {
 }
 
 pub struct KeyboardState<'a> {
-    keyboard_state: &'a [u8],
+    keyboard_state: &'a [bool],
 }
 
 impl<'a> KeyboardState<'a> {
@@ -45,7 +45,7 @@ impl<'a> KeyboardState<'a> {
     pub fn new(_e: &'a EventPump) -> KeyboardState<'a> {
         let keyboard_state = unsafe {
             let mut count = 0;
-            let state_ptr = sys::SDL_GetKeyboardState(&mut count);
+            let state_ptr = sys::keyboard::SDL_GetKeyboardState(&mut count);
 
             ::std::slice::from_raw_parts(state_ptr, count as usize)
         };
@@ -57,9 +57,9 @@ impl<'a> KeyboardState<'a> {
     ///
     /// # Example
     /// ```no_run
-    /// use sdl2::keyboard::Scancode;
+    /// use sdl3::keyboard::Scancode;
     ///
-    /// fn is_a_pressed(e: &sdl2::EventPump) -> bool {
+    /// fn is_a_pressed(e: &sdl3::EventPump) -> bool {
     ///     e.keyboard_state().is_scancode_pressed(Scancode::A)
     /// }
     /// ```
@@ -79,15 +79,15 @@ impl<'a> KeyboardState<'a> {
     ///
     /// # Example
     /// ```no_run
-    /// use sdl2::keyboard::Keycode;
-    /// use sdl2::keyboard::Scancode;
+    /// use sdl3::keyboard::Keycode;
+    /// use sdl3::keyboard::Scancode;
     /// use std::collections::HashSet;
     ///
-    /// fn pressed_scancode_set(e: &sdl2::EventPump) -> HashSet<Scancode> {
+    /// fn pressed_scancode_set(e: &sdl3::EventPump) -> HashSet<Scancode> {
     ///     e.keyboard_state().pressed_scancodes().collect()
     /// }
     ///
-    /// fn pressed_keycode_set(e: &sdl2::EventPump) -> HashSet<Keycode> {
+    /// fn pressed_keycode_set(e: &sdl3::EventPump) -> HashSet<Keycode> {
     ///     e.keyboard_state().pressed_scancodes()
     ///         .filter_map(Keycode::from_scancode)
     ///         .collect()
@@ -170,7 +170,7 @@ impl crate::VideoSubsystem {
 /// Keyboard utility functions. Access with `Sdl::keyboard()`.
 ///
 /// ```no_run
-/// let sdl_context = sdl2::init().unwrap();
+/// let sdl_context = sdl3::init().unwrap();
 ///
 /// let focused = sdl_context.keyboard().focused_window_id().is_some();
 /// ```
@@ -182,24 +182,24 @@ impl KeyboardUtil {
     /// Gets the id of the window which currently has keyboard focus.
     #[doc(alias = "SDL_GetKeyboardFocus")]
     pub fn focused_window_id(&self) -> Option<u32> {
-        let raw = unsafe { sys::SDL_GetKeyboardFocus() };
+        let raw = unsafe { sys::keyboard::SDL_GetKeyboardFocus() };
         if raw.is_null() {
             None
         } else {
-            let id = unsafe { sys::SDL_GetWindowID(raw) };
+            let id = unsafe { sys::keyboard::SDL_GetWindowID(raw) };
             Some(id)
         }
     }
 
     #[doc(alias = "SDL_GetModState")]
     pub fn mod_state(&self) -> Mod {
-        unsafe { Mod::from_bits(sys::SDL_GetModState() as u16).unwrap() }
+        unsafe { Mod::from_bits(sys::keyboard::SDL_GetModState() as u16).unwrap() }
     }
 
     #[doc(alias = "SDL_SetModState")]
     pub fn set_mod_state(&self, flags: Mod) {
         unsafe {
-            sys::SDL_SetModState(transmute::<u32, sys::SDL_Keymod>(flags.bits() as u32));
+            sys::keyboard::SDL_SetModState(transmute::<u32, sys::SDL_Keymod>(flags.bits() as u32));
         }
     }
 }
@@ -209,7 +209,7 @@ impl KeyboardUtil {
 /// These functions require the video subsystem to be initialized and are not thread-safe.
 ///
 /// ```no_run
-/// let sdl_context = sdl2::init().unwrap();
+/// let sdl_context = sdl3::init().unwrap();
 /// let video_subsystem = sdl_context.video().unwrap();
 ///
 /// // Start accepting text input events...
