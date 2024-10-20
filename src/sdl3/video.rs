@@ -1,6 +1,6 @@
 use crate::common::{validate_int, IntegerOrSdlError};
 use crate::get_error;
-use crate::pixels::PixelFormatEnum;
+use crate::pixels::PixelFormat;
 use crate::rect::Rect;
 use crate::render::create_renderer;
 use crate::surface::SurfaceRef;
@@ -401,7 +401,7 @@ pub mod gl_attr {
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct DisplayMode {
     pub display_id: sys::video::SDL_DisplayID,
-    pub format: PixelFormatEnum,
+    pub format: PixelFormat,
     pub w: i32,
     pub h: i32,
     pub pixel_density: f32,
@@ -414,7 +414,7 @@ pub struct DisplayMode {
 impl DisplayMode {
     pub fn new(
         display_id: sys::video::SDL_DisplayID,
-        format: PixelFormatEnum,
+        format: PixelFormat,
         w: i32,
         h: i32,
         pixel_density: f32,
@@ -439,7 +439,7 @@ impl DisplayMode {
     pub fn from_ll(raw: &SDL_DisplayMode) -> DisplayMode {
         DisplayMode::new(
             raw.displayID,
-            PixelFormatEnum::try_from(raw.format).unwrap_or(PixelFormatEnum::Unknown),
+            PixelFormat::try_from(raw.format).unwrap_or(PixelFormat::Unknown),
             raw.w,
             raw.h,
             raw.pixel_density,
@@ -1633,10 +1633,9 @@ impl Window {
     }
 
     #[doc(alias = "SDL_GetWindowPixelFormat")]
-    pub fn window_pixel_format(&self) -> PixelFormatEnum {
+    pub fn window_pixel_format(&self) -> PixelFormat {
         unsafe {
-            PixelFormatEnum::try_from(sys::video::SDL_GetWindowPixelFormat(self.context.raw))
-                .unwrap()
+            PixelFormat::try_from(sys::video::SDL_GetWindowPixelFormat(self.context.raw)).unwrap()
         }
     }
 

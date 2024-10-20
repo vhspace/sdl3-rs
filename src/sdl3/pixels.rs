@@ -220,8 +220,12 @@ pub struct PixelMasks {
     pub amask: u32,
 }
 
+/// A pixel format, i.e. a set of masks that define how to pack and unpack pixel data.
+/// This is used to convert between pixel data and surface data.
+/// It wraps an SDL_PixelFormat.
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct PixelFormat {
-    raw: sys::pixels::SDL_PixelFormat,
+    raw: SDL_PixelFormat,
 }
 
 impl_raw_accessors!((PixelFormat, sys::pixels::SDL_PixelFormat));
