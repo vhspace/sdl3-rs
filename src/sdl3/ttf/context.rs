@@ -1,5 +1,5 @@
 use get_error;
-use rwops::RWops;
+use iostream::IOStream;
 use std::error;
 use std::fmt;
 use std::io;
@@ -46,36 +46,36 @@ impl Sdl2TtfContext {
         internal_load_font_at_index(path, index, point_size)
     }
 
-    /// Loads a font from the given SDL2 rwops object with the given size in
+    /// Loads a font from the given SDL2 iostream object with the given size in
     /// points.
-    pub fn load_font_from_rwops<'ttf, 'r>(
+    pub fn load_font_from_iostream<'ttf, 'r>(
         &'ttf self,
-        rwops: RWops<'r>,
+        iostream: IOStream<'r>,
         point_size: u16,
     ) -> Result<Font<'ttf, 'r>, String> {
-        let raw = unsafe { ttf::TTF_OpenFontRW(rwops.raw(), 0, point_size as c_int) };
+        let raw = unsafe { ttf::TTF_OpenFontRW(iostream.raw(), 0, point_size as c_int) };
         if (raw as *mut ()).is_null() {
             Err(get_error())
         } else {
-            Ok(internal_load_font_from_ll(raw, Some(rwops)))
+            Ok(internal_load_font_from_ll(raw, Some(iostream)))
         }
     }
 
-    /// Loads the font at the given index of the SDL2 rwops object with
+    /// Loads the font at the given index of the SDL2 iostream object with
     /// the given size in points.
-    pub fn load_font_at_index_from_rwops<'ttf, 'r>(
+    pub fn load_font_at_index_from_iostream<'ttf, 'r>(
         &'ttf self,
-        rwops: RWops<'r>,
+        iostream: Iostream<'r>,
         index: u32,
         point_size: u16,
     ) -> Result<Font<'ttf, 'r>, String> {
         let raw = unsafe {
-            ttf::TTF_OpenFontIndexRW(rwops.raw(), 0, point_size as c_int, index as c_long)
+            ttf::TTF_OpenFontIndexRW(iostream.raw(), 0, point_size as c_int, index as c_long)
         };
         if (raw as *mut ()).is_null() {
             Err(get_error())
         } else {
-            Ok(internal_load_font_from_ll(raw, Some(rwops)))
+            Ok(internal_load_font_from_ll(raw, Some(iostream)))
         }
     }
 }

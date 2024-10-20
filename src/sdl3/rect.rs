@@ -1,6 +1,7 @@
 //! Rectangles and points.
 
 use crate::sys;
+use render::FRect;
 use std::convert::{AsMut, AsRef};
 use std::hash::{Hash, Hasher};
 use std::mem;
@@ -69,7 +70,7 @@ fn clamped_mul(a: i32, b: i32) -> i32 {
 /// [`intersection`](#method.intersection) method).
 #[derive(Clone, Copy)]
 pub struct Rect {
-    raw: sys::SDL_Rect,
+    raw: sys::rect::SDL_Rect,
 }
 
 impl ::std::fmt::Debug for Rect {
@@ -114,7 +115,7 @@ impl Rect {
     /// `Rect`s must always be non-empty, so a `width` and/or `height` argument
     /// of 0 will be replaced with 1.
     pub fn new(x: i32, y: i32, width: u32, height: u32) -> Rect {
-        let raw = sys::SDL_Rect {
+        let raw = sys::rect::SDL_Rect {
             x: clamp_position(x),
             y: clamp_position(y),
             w: clamp_size(width) as i32,
@@ -137,7 +138,7 @@ impl Rect {
     where
         P: Into<Point>,
     {
-        let raw = sys::SDL_Rect {
+        let raw = sys::rect::SDL_Rect {
             x: 0,
             y: 0,
             w: clamp_size(width) as i32,
@@ -231,7 +232,7 @@ impl Rect {
     /// # Example
     ///
     /// ```
-    /// use sdl2::rect::{Rect,Point};
+    /// use sdl3::rect::{Rect,Point};
     /// let rect = Rect::new(1,0,2,3);
     /// assert_eq!(Point::new(2,1),rect.center());
     /// ```
@@ -246,7 +247,7 @@ impl Rect {
     /// # Example
     ///
     /// ```
-    /// use sdl2::rect::{Rect, Point};
+    /// use sdl3::rect::{Rect, Point};
     /// let rect = Rect::new(1, 0, 2, 3);
     /// assert_eq!(Point::new(1, 0), rect.top_left());
     /// ```
@@ -259,7 +260,7 @@ impl Rect {
     /// # Example
     ///
     /// ```
-    /// use sdl2::rect::{Rect, Point};
+    /// use sdl3::rect::{Rect, Point};
     /// let rect = Rect::new(1, 0, 2, 3);
     /// assert_eq!(Point::new(3, 0), rect.top_right());
     /// ```
@@ -272,7 +273,7 @@ impl Rect {
     /// # Example
     ///
     /// ```
-    /// use sdl2::rect::{Rect, Point};
+    /// use sdl3::rect::{Rect, Point};
     /// let rect = Rect::new(1, 0, 2, 3);
     /// assert_eq!(Point::new(1, 3), rect.bottom_left());
     /// ```
@@ -285,7 +286,7 @@ impl Rect {
     /// # Example
     ///
     /// ```
-    /// use sdl2::rect::{Rect, Point};
+    /// use sdl3::rect::{Rect, Point};
     /// let rect = Rect::new(1, 0, 2, 3);
     /// assert_eq!(Point::new(3, 3), rect.bottom_right());
     /// ```
@@ -368,7 +369,7 @@ impl Rect {
     /// # Examples
     ///
     /// ```
-    /// use sdl2::rect::{Rect, Point};
+    /// use sdl3::rect::{Rect, Point};
     /// let rect = Rect::new(1, 2, 3, 4);
     /// assert!(rect.contains_point(Point::new(1, 2)));
     /// assert!(!rect.contains_point(Point::new(0, 1)));
@@ -393,7 +394,7 @@ impl Rect {
     /// # Examples
     ///
     /// ```
-    /// use sdl2::rect::Rect;
+    /// use sdl3::rect::Rect;
     /// let rect = Rect::new(1, 2, 3, 4);
     /// assert!(rect.contains_rect(rect));
     /// assert!(rect.contains_rect(Rect::new(3, 3, 1, 1)));
@@ -411,20 +412,20 @@ impl Rect {
     // this can prevent introducing UB until
     // https://github.com/rust-lang/rust-clippy/issues/5953 is fixed
     #[allow(clippy::trivially_copy_pass_by_ref)]
-    pub fn raw(&self) -> *const sys::SDL_Rect {
+    pub fn raw(&self) -> *const sys::rect::SDL_Rect {
         &self.raw
     }
 
-    pub fn raw_mut(&mut self) -> *mut sys::SDL_Rect {
+    pub fn raw_mut(&mut self) -> *mut sys::rect::SDL_Rect {
         self.raw() as *mut _
     }
 
     #[doc(alias = "SDL_Rect")]
-    pub fn raw_slice(slice: &[Rect]) -> *const sys::SDL_Rect {
-        slice.as_ptr() as *const sys::SDL_Rect
+    pub fn raw_slice(slice: &[Rect]) -> *const sys::rect::SDL_Rect {
+        slice.as_ptr() as *const sys::rect::SDL_Rect
     }
 
-    pub fn from_ll(raw: sys::SDL_Rect) -> Rect {
+    pub fn from_ll(raw: sys::rect::SDL_Rect) -> Rect {
         Rect::new(raw.x, raw.y, raw.w as u32, raw.h as u32)
     }
 
@@ -453,12 +454,12 @@ impl Rect {
         };
 
         let result = unsafe {
-            sys::SDL_GetRectEnclosingPoints(
+            sys::rect::SDL_GetRectEnclosingPoints(
                 Point::raw_slice(points),
                 points.len() as i32,
                 clip_ptr,
                 out.as_mut_ptr(),
-            ) != sys::SDL_bool::SDL_FALSE
+            )
         };
 
         if result {
@@ -479,7 +480,7 @@ impl Rect {
     /// # Examples
     ///
     /// ```
-    /// use sdl2::rect::Rect;
+    /// use sdl3::rect::Rect;
     /// let rect = Rect::new(0, 0, 5, 5);
     /// assert!(rect.has_intersection(rect));
     /// assert!(rect.has_intersection(Rect::new(2, 2, 5, 5)));
@@ -487,7 +488,7 @@ impl Rect {
     /// ```
     #[doc(alias = "SDL_HasRectIntersection")]
     pub fn has_intersection(&self, other: Rect) -> bool {
-        unsafe { sys::SDL_HasRectIntersection(self.raw(), other.raw()) != sys::SDL_bool::SDL_FALSE }
+        unsafe { sys::rect::SDL_HasRectIntersection(self.raw(), other.raw()) }
     }
 
     /// Calculates the intersection of two rectangles.
@@ -501,7 +502,7 @@ impl Rect {
     /// # Examples
     ///
     /// ```
-    /// use sdl2::rect::Rect;
+    /// use sdl3::rect::Rect;
     /// let rect = Rect::new(0, 0, 5, 5);
     /// assert_eq!(rect.intersection(rect), Some(rect));
     /// assert_eq!(rect.intersection(Rect::new(2, 2, 5, 5)),
@@ -513,8 +514,7 @@ impl Rect {
         let mut out = mem::MaybeUninit::uninit();
 
         let success = unsafe {
-            sys::SDL_GetRectIntersection(self.raw(), other.raw(), out.as_mut_ptr())
-                != sys::SDL_bool::SDL_FALSE
+            sys::rect::SDL_GetRectIntersection(self.raw(), other.raw(), out.as_mut_ptr())
         };
 
         if success {
@@ -533,7 +533,7 @@ impl Rect {
     /// # Examples
     ///
     /// ```
-    /// use sdl2::rect::Rect;
+    /// use sdl3::rect::Rect;
     /// let rect = Rect::new(0, 0, 5, 5);
     /// assert_eq!(rect.union(rect), rect);
     /// assert_eq!(rect.union(Rect::new(2, 2, 5, 5)), Rect::new(0, 0, 7, 7));
@@ -546,7 +546,7 @@ impl Rect {
         unsafe {
             // If `self` and `other` are both empty, `out` remains uninitialized.
             // Because empty rectangles aren't allowed in Rect, we don't need to worry about this.
-            sys::SDL_GetRectUnion(self.raw(), other.raw(), out.as_mut_ptr())
+            sys::rect::SDL_GetRectUnion(self.raw(), other.raw(), out.as_mut_ptr())
         };
 
         let out = unsafe { out.assume_init() };
@@ -562,13 +562,13 @@ impl Rect {
         let (mut end_x, mut end_y) = (end.x(), end.y());
 
         let intersected = unsafe {
-            sys::SDL_GetRectAndLineIntersection(
+            sys::rect::SDL_GetRectAndLineIntersection(
                 self.raw(),
                 &mut start_x,
                 &mut start_y,
                 &mut end_x,
                 &mut end_y,
-            ) != sys::SDL_bool::SDL_FALSE
+            )
         };
 
         if intersected {
@@ -580,16 +580,16 @@ impl Rect {
 }
 
 impl Deref for Rect {
-    type Target = sys::SDL_Rect;
+    type Target = sys::rect::SDL_Rect;
 
     /// # Example
     ///
     /// ```rust
-    /// use sdl2::rect::Rect;
+    /// use sdl3::rect::Rect;
     /// let rect = Rect::new(2, 3, 4, 5);
     /// assert_eq!(2, rect.x);
     /// ```
-    fn deref(&self) -> &sys::SDL_Rect {
+    fn deref(&self) -> &sys::rect::SDL_Rect {
         &self.raw
     }
 }
@@ -598,18 +598,18 @@ impl DerefMut for Rect {
     /// # Example
     ///
     /// ```rust
-    /// use sdl2::rect::Rect;
+    /// use sdl3::rect::Rect;
     /// let mut rect = Rect::new(2, 3, 4, 5);
     /// rect.x = 60;
     /// assert_eq!(60, rect.x);
     /// ```
-    fn deref_mut(&mut self) -> &mut sys::SDL_Rect {
+    fn deref_mut(&mut self) -> &mut sys::rect::SDL_Rect {
         &mut self.raw
     }
 }
 
-impl Into<sys::SDL_Rect> for Rect {
-    fn into(self) -> sys::SDL_Rect {
+impl Into<sys::rect::SDL_Rect> for Rect {
+    fn into(self) -> sys::rect::SDL_Rect {
         self.raw
     }
 }
@@ -620,9 +620,20 @@ impl Into<(i32, i32, u32, u32)> for Rect {
     }
 }
 
-impl From<sys::SDL_Rect> for Rect {
-    fn from(raw: sys::SDL_Rect) -> Rect {
+impl From<sys::rect::SDL_Rect> for Rect {
+    fn from(raw: sys::rect::SDL_Rect) -> Rect {
         Rect { raw }
+    }
+}
+
+impl Into<Option<FRect>> for Rect {
+    fn into(self) -> Option<FRect> {
+        Some(FRect::new(
+            self.raw.x as f32,
+            self.raw.y as f32,
+            self.raw.w as f32,
+            self.raw.h as f32,
+        ))
     }
 }
 
@@ -632,14 +643,14 @@ impl From<(i32, i32, u32, u32)> for Rect {
     }
 }
 
-impl AsRef<sys::SDL_Rect> for Rect {
-    fn as_ref(&self) -> &sys::SDL_Rect {
+impl AsRef<sys::rect::SDL_Rect> for Rect {
+    fn as_ref(&self) -> &sys::rect::SDL_Rect {
         &self.raw
     }
 }
 
-impl AsMut<sys::SDL_Rect> for Rect {
-    fn as_mut(&mut self) -> &mut sys::SDL_Rect {
+impl AsMut<sys::rect::SDL_Rect> for Rect {
+    fn as_mut(&mut self) -> &mut sys::rect::SDL_Rect {
         &mut self.raw
     }
 }
@@ -664,7 +675,7 @@ impl BitOr<Rect> for Rect {
 /// Immutable point type, consisting of x and y.
 #[derive(Copy, Clone)]
 pub struct Point {
-    raw: sys::SDL_Point,
+    raw: sys::rect::SDL_Point,
 }
 
 impl ::std::fmt::Debug for Point {
@@ -689,16 +700,16 @@ impl Hash for Point {
 }
 
 impl Deref for Point {
-    type Target = sys::SDL_Point;
+    type Target = sys::rect::SDL_Point;
 
     /// # Example
     ///
     /// ```rust
-    /// use sdl2::rect::Point;
+    /// use sdl3::rect::Point;
     /// let point = Point::new(2, 3);
     /// assert_eq!(2, point.x);
     /// ```
-    fn deref(&self) -> &sys::SDL_Point {
+    fn deref(&self) -> &sys::rect::SDL_Point {
         &self.raw
     }
 }
@@ -707,30 +718,30 @@ impl DerefMut for Point {
     /// # Example
     ///
     /// ```rust
-    /// use sdl2::rect::Point;
+    /// use sdl3::rect::Point;
     /// let mut point = Point::new(2, 3);
     /// point.x = 4;
     /// assert_eq!(4, point.x);
     /// ```
-    fn deref_mut(&mut self) -> &mut sys::SDL_Point {
+    fn deref_mut(&mut self) -> &mut sys::rect::SDL_Point {
         &mut self.raw
     }
 }
 
-impl AsRef<sys::SDL_Point> for Point {
-    fn as_ref(&self) -> &sys::SDL_Point {
+impl AsRef<sys::rect::SDL_Point> for Point {
+    fn as_ref(&self) -> &sys::rect::SDL_Point {
         &self.raw
     }
 }
 
-impl AsMut<sys::SDL_Point> for Point {
-    fn as_mut(&mut self) -> &mut sys::SDL_Point {
+impl AsMut<sys::rect::SDL_Point> for Point {
+    fn as_mut(&mut self) -> &mut sys::rect::SDL_Point {
         &mut self.raw
     }
 }
 
-impl From<sys::SDL_Point> for Point {
-    fn from(prim: sys::SDL_Point) -> Point {
+impl From<sys::rect::SDL_Point> for Point {
+    fn from(prim: sys::rect::SDL_Point) -> Point {
         Point { raw: prim }
     }
 }
@@ -741,8 +752,8 @@ impl From<(i32, i32)> for Point {
     }
 }
 
-impl Into<sys::SDL_Point> for Point {
-    fn into(self) -> sys::SDL_Point {
+impl Into<sys::rect::SDL_Point> for Point {
+    fn into(self) -> sys::rect::SDL_Point {
         self.raw
     }
 }
@@ -757,25 +768,25 @@ impl Point {
     /// Creates a new point from the given coordinates.
     pub fn new(x: i32, y: i32) -> Point {
         Point {
-            raw: sys::SDL_Point {
+            raw: sys::rect::SDL_Point {
                 x: clamp_position(x),
                 y: clamp_position(y),
             },
         }
     }
 
-    pub fn from_ll(raw: sys::SDL_Point) -> Point {
+    pub fn from_ll(raw: sys::rect::SDL_Point) -> Point {
         Point::new(raw.x, raw.y)
     }
 
     #[doc(alias = "SDL_Point")]
-    pub fn raw_slice(slice: &[Point]) -> *const sys::SDL_Point {
-        slice.as_ptr() as *const sys::SDL_Point
+    pub fn raw_slice(slice: &[Point]) -> *const sys::rect::SDL_Point {
+        slice.as_ptr() as *const sys::rect::SDL_Point
     }
     // this can prevent introducing UB until
     // https://github.com/rust-lang/rust-clippy/issues/5953 is fixed
     #[allow(clippy::trivially_copy_pass_by_ref)]
-    pub fn raw(&self) -> *const sys::SDL_Point {
+    pub fn raw(&self) -> *const sys::rect::SDL_Point {
         &self.raw
     }
 

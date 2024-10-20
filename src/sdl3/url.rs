@@ -1,10 +1,10 @@
 //! Opening URLs in default system handlers
 
+use crate::get_error;
 use std::error;
 use std::ffi::{CString, NulError};
 use std::fmt;
-
-use crate::get_error;
+use sys::misc::SDL_OpenURL;
 
 use crate::sys;
 
@@ -49,9 +49,9 @@ impl error::Error for OpenUrlError {
 /// # Examples
 ///
 /// ```no_run
-/// use sdl2::url::open_url;
+/// use sdl3::url::open_url;
 ///
-/// open_url("https://github.com/Rust-SDL2/rust-sdl2")
+/// open_url("https://github.com/revmischa/sdl3-rs")
 ///   .expect("Opening URLs not supported on this platform");
 /// ```
 #[doc(alias = "SDL_OpenURL")]
@@ -62,8 +62,8 @@ pub fn open_url(url: &str) -> Result<(), OpenUrlError> {
             Ok(s) => s,
             Err(err) => return Err(InvalidUrl(err)),
         };
-        sys::SDL_OpenURL(url.as_ptr())
-    } == 0;
+        SDL_OpenURL(url.as_ptr())
+    };
 
     if result {
         Ok(())

@@ -1,5 +1,6 @@
-use crate::rwops::RWops;
+use crate::iostream::IOStream;
 use libc::{c_char, c_void};
+use std::convert::Into;
 use std::error;
 use std::ffi::{CStr, CString, NulError};
 use std::fmt;
@@ -13,11 +14,11 @@ use std::convert::TryInto;
 
 use crate::common::IntegerOrSdlError;
 use crate::get_error;
-use crate::joystick;
-use crate::GamepadSubsystem;
-use std::mem::transmute;
-
 use crate::sys;
+use crate::GamepadSubsystem;
+use guid::Guid;
+use std::mem::transmute;
+use sys::joystick::SDL_GetJoystickID;
 
 #[derive(Debug, Clone)]
 pub enum AddMappingError {
@@ -60,11 +61,11 @@ impl GamepadSubsystem {
         let mut num_gamepads: i32 = 0;
         unsafe {
             // see: https://github.com/libsdl-org/SDL/blob/main/docs/README-migration.md#sdl_joystickh
-            let gamepad_ids = sys::SDL_GetGamepads(&mut num_gamepads);
-            if (gamepad_ids as *mut sys::SDL_Gamepad) == std::ptr::null_mut() {
+            let gamepad_ids = sys::gamepad::SDL_GetGamepads(&mut num_gamepads);
+            if (gamepad_ids as *mut sys::gamepad::SDL_Gamepad) == std::ptr::null_mut() {
                 return Err(get_error());
             } else {
-                sys::SDL_free(gamepad_ids as *mut c_void);
+                sys::stdinc::SDL_free(gamepad_ids as *mut c_void);
                 return Ok(num_gamepads as u32);
             };
         };
@@ -74,7 +75,7 @@ impl GamepadSubsystem {
     #[inline]
     #[doc(alias = "SDL_IsGamepad")]
     pub fn is_game_controller(&self, joystick_index: u32) -> bool {
-        return unsafe { sys::SDL_IsGamepad(joystick_index) != sys::SDL_bool::SDL_FALSE };
+        return unsafe { sys::gamepad::SDL_IsGamepad(joystick_index) != false };
     }
 
     /// Attempt to open the controller at index `joystick_index` and return it.
@@ -83,7 +84,7 @@ impl GamepadSubsystem {
     #[doc(alias = "SDL_OpenGamepad")]
     pub fn open(&self, joystick_index: u32) -> Result<Gamepad, IntegerOrSdlError> {
         use crate::common::IntegerOrSdlError::*;
-        let controller = unsafe { sys::SDL_OpenGamepad(joystick_index) };
+        let controller = unsafe { sys::gamepad::SDL_OpenGamepad(joystick_index) };
 
         if controller.is_null() {
             Err(SdlError(get_error()))
@@ -96,10 +97,10 @@ impl GamepadSubsystem {
     }
 
     /// Return the name of the controller at index `joystick_index`.
-    #[doc(alias = "SDL_GetGamepadInstanceName")]
+    #[doc(alias = "SDL_GetGamepadNameForID")]
     pub fn name_for_index(&self, joystick_index: u32) -> Result<String, IntegerOrSdlError> {
         use crate::common::IntegerOrSdlError::*;
-        let c_str = unsafe { sys::SDL_GetGamepadInstanceName(joystick_index) };
+        let c_str = unsafe { sys::gamepad::SDL_GetGamepadNameForID(joystick_index) };
 
         if c_str.is_null() {
             Err(SdlError(get_error()))
@@ -120,14 +121,14 @@ impl GamepadSubsystem {
     // /// they're ignored.
     // #[doc(alias = "SDL_GameControllerEventState")]
     // pub fn set_event_state(&self, state: bool) {
-    //     unsafe { sys::SDL_GameControllerEventState(state as i32) };
+    //     unsafe { sys::gamepad::SDL_GameControllerEventState(state as i32) };
     // }
     //
     // /// Return `true` if controller events are processed.
     // #[doc(alias = "SDL_GameControllerEventState")]
     // pub fn event_state(&self) -> bool {
     //     unsafe {
-    //         sys::SDL_GameControllerEventState(sys::SDL_QUERY as i32) == sys::SDL_ENABLE as i32
+    //         sys::gamepad::SDL_GameControllerEventState(sys::gamepad::SDL_QUERY as i32) == sys::gamepad::SDL_ENABLE as i32
     //     }
     // }
 
@@ -140,7 +141,8 @@ impl GamepadSubsystem {
             Err(err) => return Err(InvalidMapping(err)),
         };
 
-        let result = unsafe { sys::SDL_AddGamepadMapping(mapping.as_ptr() as *const c_char) };
+        let result =
+            unsafe { sys::gamepad::SDL_AddGamepadMapping(mapping.as_ptr() as *const c_char) };
 
         match result {
             1 => Ok(MappingStatus::Added),
@@ -153,7 +155,7 @@ impl GamepadSubsystem {
     pub fn load_mappings<P: AsRef<Path>>(&self, path: P) -> Result<i32, AddMappingError> {
         use self::AddMappingError::*;
 
-        let rw = RWops::from_file(path, "r").map_err(InvalidFilePath)?;
+        let rw = IOStream::from_file(path, "r").map_err(InvalidFilePath)?;
         self.load_mappings_from_rw(rw)
     }
 
@@ -165,16 +167,16 @@ impl GamepadSubsystem {
         use self::AddMappingError::*;
 
         let mut buffer = Vec::with_capacity(1024);
-        let rw = RWops::from_read(read, &mut buffer).map_err(ReadError)?;
+        let rw = IOStream::from_read(read, &mut buffer).map_err(ReadError)?;
         self.load_mappings_from_rw(rw)
     }
 
-    /// Load controller input mappings from an SDL [`RWops`] object.
-    #[doc(alias = "SDL_AddGamepadMappingsFromRW")]
-    pub fn load_mappings_from_rw<'a>(&self, rw: RWops<'a>) -> Result<i32, AddMappingError> {
+    /// Load controller input mappings from an SDL [`IOStream`] object.
+    #[doc(alias = "SDL_AddGamepadMappingsFromIO")]
+    pub fn load_mappings_from_rw<'a>(&self, rw: IOStream<'a>) -> Result<i32, AddMappingError> {
         use self::AddMappingError::*;
 
-        let result = unsafe { sys::SDL_AddGamepadMappingsFromRW(rw.raw(), 0) };
+        let result = unsafe { sys::gamepad::SDL_AddGamepadMappingsFromIO(rw.raw(), false) };
         match result {
             -1 => Err(SdlError(get_error())),
             _ => Ok(result),
@@ -182,8 +184,8 @@ impl GamepadSubsystem {
     }
 
     #[doc(alias = "SDL_GetGamepadMappingForGUID")]
-    pub fn mapping_for_guid(&self, guid: joystick::Guid) -> Result<String, String> {
-        let c_str = unsafe { sys::SDL_GetGamepadMappingForGUID(guid.raw()) };
+    pub fn mapping_for_guid(&self, guid: Guid) -> Result<String, String> {
+        let c_str = unsafe { sys::gamepad::SDL_GetGamepadMappingForGUID(guid.raw()) };
 
         c_str_to_string_or_err(c_str)
     }
@@ -192,19 +194,19 @@ impl GamepadSubsystem {
     /// Force controller update when not using the event loop
     #[doc(alias = "SDL_UpdateGamepads")]
     pub fn update(&self) {
-        unsafe { sys::SDL_UpdateGamepads() };
+        unsafe { sys::gamepad::SDL_UpdateGamepads() };
     }
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 #[repr(i32)]
 pub enum Axis {
-    LeftX = sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFTX as i32,
-    LeftY = sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFTY as i32,
-    RightX = sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHTX as i32,
-    RightY = sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHTY as i32,
-    TriggerLeft = sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFT_TRIGGER as i32,
-    TriggerRight = sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHT_TRIGGER as i32,
+    LeftX = sys::gamepad::SDL_GAMEPAD_AXIS_LEFTX.0,
+    LeftY = sys::gamepad::SDL_GAMEPAD_AXIS_LEFTY.0,
+    RightX = sys::gamepad::SDL_GAMEPAD_AXIS_RIGHTX.0,
+    RightY = sys::gamepad::SDL_GAMEPAD_AXIS_RIGHTY.0,
+    TriggerLeft = sys::gamepad::SDL_GAMEPAD_AXIS_LEFT_TRIGGER.0,
+    TriggerRight = sys::gamepad::SDL_GAMEPAD_AXIS_RIGHT_TRIGGER.0,
 }
 
 impl Axis {
@@ -214,10 +216,10 @@ impl Axis {
     pub fn from_string(axis: &str) -> Option<Axis> {
         let id = match CString::new(axis) {
             Ok(axis) => unsafe {
-                sys::SDL_GetGamepadAxisFromString(axis.as_ptr() as *const c_char)
+                sys::gamepad::SDL_GetGamepadAxisFromString(axis.as_ptr() as *const c_char)
             },
             // string contains a nul byte - it won't match anything.
-            Err(_) => sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_INVALID,
+            Err(_) => sys::gamepad::SDL_GAMEPAD_AXIS_INVALID,
         };
 
         Axis::from_ll(id)
@@ -227,65 +229,71 @@ impl Axis {
     /// the game controller mapping strings
     #[doc(alias = "SDL_GetGamepadStringForAxis")]
     pub fn string(self) -> String {
-        let axis: sys::SDL_GamepadAxis;
+        let axis: sys::gamepad::SDL_GamepadAxis;
         unsafe {
             axis = transmute(self);
         }
 
-        let string = unsafe { sys::SDL_GetGamepadStringForAxis(axis) };
+        let string = unsafe { sys::gamepad::SDL_GetGamepadStringForAxis(axis) };
 
         c_str_to_string(string)
     }
 
-    pub fn from_ll(bitflags: sys::SDL_GamepadAxis) -> Option<Axis> {
+    pub fn from_ll(bitflags: sys::gamepad::SDL_GamepadAxis) -> Option<Axis> {
         Some(match bitflags {
-            sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_INVALID => return None,
-            sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFTX => Axis::LeftX,
-            sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFTY => Axis::LeftY,
-            sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHTX => Axis::RightX,
-            sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHTY => Axis::RightY,
-            sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFT_TRIGGER => Axis::TriggerLeft,
-            sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHT_TRIGGER => Axis::TriggerRight,
+            sys::gamepad::SDL_GAMEPAD_AXIS_INVALID => return None,
+            sys::gamepad::SDL_GAMEPAD_AXIS_LEFTX => Axis::LeftX,
+            sys::gamepad::SDL_GAMEPAD_AXIS_LEFTY => Axis::LeftY,
+            sys::gamepad::SDL_GAMEPAD_AXIS_RIGHTX => Axis::RightX,
+            sys::gamepad::SDL_GAMEPAD_AXIS_RIGHTY => Axis::RightY,
+            sys::gamepad::SDL_GAMEPAD_AXIS_LEFT_TRIGGER => Axis::TriggerLeft,
+            sys::gamepad::SDL_GAMEPAD_AXIS_RIGHT_TRIGGER => Axis::TriggerRight,
             _ => return None,
         })
     }
 
-    pub fn to_ll(self) -> sys::SDL_GamepadAxis {
+    pub fn to_ll(self) -> sys::gamepad::SDL_GamepadAxis {
         match self {
-            Axis::LeftX => sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFTX,
-            Axis::LeftY => sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFTY,
-            Axis::RightX => sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHTX,
-            Axis::RightY => sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHTY,
-            Axis::TriggerLeft => sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFT_TRIGGER,
-            Axis::TriggerRight => sys::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHT_TRIGGER,
+            Axis::LeftX => sys::gamepad::SDL_GAMEPAD_AXIS_LEFTX,
+            Axis::LeftY => sys::gamepad::SDL_GAMEPAD_AXIS_LEFTY,
+            Axis::RightX => sys::gamepad::SDL_GAMEPAD_AXIS_RIGHTX,
+            Axis::RightY => sys::gamepad::SDL_GAMEPAD_AXIS_RIGHTY,
+            Axis::TriggerLeft => sys::gamepad::SDL_GAMEPAD_AXIS_LEFT_TRIGGER,
+            Axis::TriggerRight => sys::gamepad::SDL_GAMEPAD_AXIS_RIGHT_TRIGGER,
         }
+    }
+}
+
+impl From<Axis> for u8 {
+    fn from(axis: Axis) -> u8 {
+        axis as u8
     }
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 #[repr(i32)]
 pub enum Button {
-    A = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_A as i32,
-    B = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_B as i32,
-    X = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_X as i32,
-    Y = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_Y as i32,
-    Back = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_BACK as i32,
-    Guide = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_GUIDE as i32,
-    Start = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_START as i32,
-    LeftStick = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_STICK as i32,
-    RightStick = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_STICK as i32,
-    LeftShoulder = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_SHOULDER as i32,
-    RightShoulder = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER as i32,
-    DPadUp = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_UP as i32,
-    DPadDown = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_DOWN as i32,
-    DPadLeft = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_LEFT as i32,
-    DPadRight = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_RIGHT as i32,
-    Misc1 = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_MISC1 as i32,
-    Paddle1 = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1 as i32,
-    Paddle2 = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_PADDLE1 as i32,
-    Paddle3 = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2 as i32,
-    Paddle4 = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_PADDLE2 as i32,
-    Touchpad = sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_TOUCHPAD as i32,
+    North = sys::gamepad::SDL_GAMEPAD_BUTTON_NORTH.0,
+    East = sys::gamepad::SDL_GAMEPAD_BUTTON_EAST.0,
+    South = sys::gamepad::SDL_GAMEPAD_BUTTON_SOUTH.0,
+    West = sys::gamepad::SDL_GAMEPAD_BUTTON_WEST.0,
+    Back = sys::gamepad::SDL_GAMEPAD_BUTTON_BACK.0,
+    Guide = sys::gamepad::SDL_GAMEPAD_BUTTON_GUIDE.0,
+    Start = sys::gamepad::SDL_GAMEPAD_BUTTON_START.0,
+    LeftStick = sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_STICK.0,
+    RightStick = sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_STICK.0,
+    LeftShoulder = sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_SHOULDER.0,
+    RightShoulder = sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER.0,
+    DPadUp = sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_UP.0,
+    DPadDown = sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_DOWN.0,
+    DPadLeft = sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_LEFT.0,
+    DPadRight = sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_RIGHT.0,
+    Misc1 = sys::gamepad::SDL_GAMEPAD_BUTTON_MISC1.0,
+    RightPaddle1 = sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1.0,
+    LeftPaddle1 = sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_PADDLE1.0,
+    RightPaddle2 = sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2.0,
+    LeftPaddle2 = sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_PADDLE2.0,
+    Touchpad = sys::gamepad::SDL_GAMEPAD_BUTTON_TOUCHPAD.0,
 }
 
 impl Button {
@@ -295,10 +303,10 @@ impl Button {
     pub fn from_string(button: &str) -> Option<Button> {
         let id = match CString::new(button) {
             Ok(button) => unsafe {
-                sys::SDL_GetGamepadButtonFromString(button.as_ptr() as *const c_char)
+                sys::gamepad::SDL_GetGamepadButtonFromString(button.as_ptr() as *const c_char)
             },
             // string contains a nul byte - it won't match anything.
-            Err(_) => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_INVALID,
+            Err(_) => sys::gamepad::SDL_GAMEPAD_BUTTON_INVALID,
         };
 
         Button::from_ll(id)
@@ -308,68 +316,74 @@ impl Button {
     /// the game controller mapping strings
     #[doc(alias = "SDL_GetGamepadStringForButton")]
     pub fn string(self) -> String {
-        let button: sys::SDL_GamepadButton;
+        let button: sys::gamepad::SDL_GamepadButton;
         unsafe {
             button = transmute(self);
         }
 
-        let string = unsafe { sys::SDL_GetGamepadStringForButton(button) };
+        let string = unsafe { sys::gamepad::SDL_GetGamepadStringForButton(button) };
 
         c_str_to_string(string)
     }
 
-    pub fn from_ll(bitflags: sys::SDL_GamepadButton) -> Option<Button> {
+    pub fn from_ll(bitflags: sys::gamepad::SDL_GamepadButton) -> Option<Button> {
         Some(match bitflags {
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_INVALID => return None,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_A => Button::A,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_B => Button::B,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_X => Button::X,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_Y => Button::Y,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_BACK => Button::Back,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_GUIDE => Button::Guide,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_START => Button::Start,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_STICK => Button::LeftStick,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_STICK => Button::RightStick,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_SHOULDER => Button::LeftShoulder,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER => Button::RightShoulder,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_UP => Button::DPadUp,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_DOWN => Button::DPadDown,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_LEFT => Button::DPadLeft,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_RIGHT => Button::DPadRight,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_MISC1 => Button::Misc1,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE1 => Button::Paddle1,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE2 => Button::Paddle2,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE3 => Button::Paddle3,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE4 => Button::Paddle4,
-            sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_TOUCHPAD => Button::Touchpad,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_INVALID => return None,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_NORTH => Button::North,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_EAST => Button::East,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_SOUTH => Button::South,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_WEST => Button::West,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_BACK => Button::Back,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_GUIDE => Button::Guide,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_START => Button::Start,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_STICK => Button::LeftStick,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_STICK => Button::RightStick,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_SHOULDER => Button::LeftShoulder,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER => Button::RightShoulder,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_UP => Button::DPadUp,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_DOWN => Button::DPadDown,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_LEFT => Button::DPadLeft,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_RIGHT => Button::DPadRight,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_MISC1 => Button::Misc1,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_PADDLE1 => Button::LeftPaddle1,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1 => Button::RightPaddle1,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_PADDLE2 => Button::LeftPaddle2,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2 => Button::RightPaddle2,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_TOUCHPAD => Button::Touchpad,
             _ => return None,
         })
     }
 
-    pub fn to_ll(self) -> sys::SDL_GamepadButton {
+    pub fn to_ll(self) -> sys::gamepad::SDL_GamepadButton {
         match self {
-            Button::A => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_A,
-            Button::B => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_B,
-            Button::X => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_X,
-            Button::Y => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_Y,
-            Button::Back => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_BACK,
-            Button::Guide => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_GUIDE,
-            Button::Start => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_START,
-            Button::LeftStick => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_STICK,
-            Button::RightStick => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_STICK,
-            Button::LeftShoulder => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_SHOULDER,
-            Button::RightShoulder => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER,
-            Button::DPadUp => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_UP,
-            Button::DPadDown => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_DOWN,
-            Button::DPadLeft => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_LEFT,
-            Button::DPadRight => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_RIGHT,
-            Button::Misc1 => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_MISC1,
-            Button::Paddle1 => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE1,
-            Button::Paddle2 => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE2,
-            Button::Paddle3 => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE3,
-            Button::Paddle4 => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE4,
-            Button::Touchpad => sys::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_TOUCHPAD,
+            Button::North => sys::gamepad::SDL_GAMEPAD_BUTTON_NORTH,
+            Button::East => sys::gamepad::SDL_GAMEPAD_BUTTON_EAST,
+            Button::South => sys::gamepad::SDL_GAMEPAD_BUTTON_SOUTH,
+            Button::West => sys::gamepad::SDL_GAMEPAD_BUTTON_WEST,
+            Button::Back => sys::gamepad::SDL_GAMEPAD_BUTTON_BACK,
+            Button::Guide => sys::gamepad::SDL_GAMEPAD_BUTTON_GUIDE,
+            Button::Start => sys::gamepad::SDL_GAMEPAD_BUTTON_START,
+            Button::LeftStick => sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_STICK,
+            Button::RightStick => sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_STICK,
+            Button::LeftShoulder => sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_SHOULDER,
+            Button::RightShoulder => sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER,
+            Button::DPadUp => sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_UP,
+            Button::DPadDown => sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_DOWN,
+            Button::DPadLeft => sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_LEFT,
+            Button::DPadRight => sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_RIGHT,
+            Button::Misc1 => sys::gamepad::SDL_GAMEPAD_BUTTON_MISC1,
+            Button::LeftPaddle1 => sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_PADDLE1,
+            Button::RightPaddle1 => sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1,
+            Button::LeftPaddle2 => sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_PADDLE2,
+            Button::RightPaddle2 => sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2,
+            Button::Touchpad => sys::gamepad::SDL_GAMEPAD_BUTTON_TOUCHPAD,
         }
+    }
+}
+
+impl From<Button> for u8 {
+    fn from(button: Button) -> u8 {
+        button as u8
     }
 }
 
@@ -383,7 +397,7 @@ pub enum MappingStatus {
 /// Wrapper around the `SDL_Gamepad` object
 pub struct Gamepad {
     subsystem: GamepadSubsystem,
-    raw: *mut sys::SDL_Gamepad,
+    raw: *mut sys::gamepad::SDL_Gamepad,
 }
 
 impl Gamepad {
@@ -396,7 +410,7 @@ impl Gamepad {
     /// name is found.
     #[doc(alias = "SDL_GetGamepadName")]
     pub fn name(&self) -> String {
-        let name = unsafe { sys::SDL_GetGamepadName(self.raw) };
+        let name = unsafe { sys::gamepad::SDL_GetGamepadName(self.raw) };
 
         c_str_to_string(name)
     }
@@ -405,7 +419,7 @@ impl Gamepad {
     /// mappings
     #[doc(alias = "SDL_GetGamepadMapping")]
     pub fn mapping(&self) -> String {
-        let mapping = unsafe { sys::SDL_GetGamepadMapping(self.raw) };
+        let mapping = unsafe { sys::gamepad::SDL_GetGamepadMapping(self.raw) };
 
         c_str_to_string(mapping)
     }
@@ -414,15 +428,15 @@ impl Gamepad {
     /// connected.
     #[doc(alias = "SDL_GamepadConnected")]
     pub fn attached(&self) -> bool {
-        unsafe { sys::SDL_GamepadConnected(self.raw) != sys::SDL_bool::SDL_FALSE }
+        unsafe { sys::gamepad::SDL_GamepadConnected(self.raw) != false }
     }
 
     /// Return the joystick instance id of this controller
     #[doc(alias = "SDL_GetGamepadJoystick")]
     pub fn instance_id(&self) -> u32 {
         let result = unsafe {
-            let joystick = sys::SDL_GetGamepadJoystick(self.raw);
-            sys::SDL_GetJoystickInstanceID(joystick)
+            let joystick = sys::gamepad::SDL_GetGamepadJoystick(self.raw);
+            SDL_GetJoystickID(joystick)
         };
         result as u32
     }
@@ -435,12 +449,12 @@ impl Gamepad {
         // Fortunately, an error can only occur if the controller pointer is NULL.
         // There should be no apparent reason for this to change in the future.
 
-        let raw_axis: sys::SDL_GamepadAxis;
+        let raw_axis: sys::gamepad::SDL_GamepadAxis;
         unsafe {
             raw_axis = transmute(axis);
         }
 
-        unsafe { sys::SDL_GetGamepadAxis(self.raw, raw_axis) }
+        unsafe { sys::gamepad::SDL_GetGamepadAxis(self.raw, raw_axis) }
     }
 
     /// Returns `true` if `button` is pressed.
@@ -451,12 +465,12 @@ impl Gamepad {
         // Fortunately, an error can only occur if the controller pointer is NULL.
         // There should be no apparent reason for this to change in the future.
 
-        let raw_button: sys::SDL_GamepadButton;
+        let raw_button: sys::gamepad::SDL_GamepadButton;
         unsafe {
             raw_button = transmute(button);
         }
 
-        unsafe { sys::SDL_GetGamepadButton(self.raw, raw_button) != 0 }
+        unsafe { sys::gamepad::SDL_GetGamepadButton(self.raw, raw_button) }
     }
 
     /// Set the rumble motors to their specified intensities, if supported.
@@ -478,7 +492,7 @@ impl Gamepad {
         duration_ms: u32,
     ) -> Result<(), IntegerOrSdlError> {
         let result = unsafe {
-            sys::SDL_RumbleGamepad(
+            sys::gamepad::SDL_RumbleGamepad(
                 self.raw,
                 low_frequency_rumble,
                 high_frequency_rumble,
@@ -486,7 +500,7 @@ impl Gamepad {
             )
         };
 
-        if result != 0 {
+        if !result {
             Err(IntegerOrSdlError::SdlError(get_error()))
         } else {
             Ok(())
@@ -502,55 +516,60 @@ impl Gamepad {
         duration_ms: u32,
     ) -> Result<(), IntegerOrSdlError> {
         let result = unsafe {
-            sys::SDL_RumbleGamepadTriggers(self.raw, left_rumble, right_rumble, duration_ms)
+            sys::gamepad::SDL_RumbleGamepadTriggers(
+                self.raw,
+                left_rumble,
+                right_rumble,
+                duration_ms,
+            )
         };
 
-        if result != 0 {
+        if !result {
             Err(IntegerOrSdlError::SdlError(get_error()))
         } else {
             Ok(())
         }
     }
 
-    /// Query whether a game controller has an LED.
-    #[doc(alias = "SDL_GamepadHasLED")]
-    pub fn has_led(&self) -> bool {
-        let result = unsafe { sys::SDL_GamepadHasLED(self.raw) };
-
-        match result {
-            sys::SDL_bool::SDL_FALSE => false,
-            sys::SDL_bool::SDL_TRUE => true,
-        }
+    /// Query whether a game controller has a RGB LED.
+    #[doc(alias = "SDL_PROP_JOYSTICK_CAP_RGB_LED_BOOLEAN")]
+    pub unsafe fn has_led(&self) -> bool {
+        let props = sys::gamepad::SDL_GetGamepadProperties(self.raw);
+        sys::properties::SDL_GetBooleanProperty(
+            props,
+            sys::gamepad::SDL_PROP_GAMEPAD_CAP_RGB_LED_BOOLEAN.as_ptr(),
+            false,
+        )
     }
 
     /// Query whether a game controller has rumble support.
-    #[doc(alias = "SDL_GamepadHasRumble")]
-    pub fn has_rumble(&self) -> bool {
-        let result = unsafe { sys::SDL_GamepadHasRumble(self.raw) };
-
-        match result {
-            sys::SDL_bool::SDL_FALSE => false,
-            sys::SDL_bool::SDL_TRUE => true,
-        }
+    #[doc(alias = "SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN")]
+    pub unsafe fn has_rumble(&self) -> bool {
+        let props = sys::gamepad::SDL_GetGamepadProperties(self.raw);
+        sys::properties::SDL_GetBooleanProperty(
+            props,
+            sys::gamepad::SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN.as_ptr(),
+            false,
+        )
     }
 
     /// Query whether a game controller has rumble support on triggers.
-    #[doc(alias = "SDL_GamepadHasRumbleTriggers")]
-    pub fn has_rumble_triggers(&self) -> bool {
-        let result = unsafe { sys::SDL_GamepadHasRumbleTriggers(self.raw) };
-
-        match result {
-            sys::SDL_bool::SDL_FALSE => false,
-            sys::SDL_bool::SDL_TRUE => true,
-        }
+    #[doc(alias = "SDL_PROP_GAMEPAD_CAP_TRIGGER_RUMBLE_BOOLEAN")]
+    pub unsafe fn has_rumble_triggers(&self) -> bool {
+        let props = sys::gamepad::SDL_GetGamepadProperties(self.raw);
+        sys::properties::SDL_GetBooleanProperty(
+            props,
+            sys::gamepad::SDL_PROP_GAMEPAD_CAP_TRIGGER_RUMBLE_BOOLEAN.as_ptr(),
+            false,
+        )
     }
 
     /// Update a game controller's LED color.
     #[doc(alias = "SDL_SetGamepadLED")]
     pub fn set_led(&mut self, red: u8, green: u8, blue: u8) -> Result<(), IntegerOrSdlError> {
-        let result = unsafe { sys::SDL_SetGamepadLED(self.raw, red, green, blue) };
+        let result = unsafe { sys::gamepad::SDL_SetGamepadLED(self.raw, red, green, blue) };
 
-        if result != 0 {
+        if result == false {
             Err(IntegerOrSdlError::SdlError(get_error()))
         } else {
             Ok(())
@@ -561,14 +580,14 @@ impl Gamepad {
     #[doc(alias = "SDL_SendGamepadEffect")]
     pub fn send_effect(&mut self, data: &[u8]) -> Result<(), String> {
         let result = unsafe {
-            sys::SDL_SendGamepadEffect(
+            sys::gamepad::SDL_SendGamepadEffect(
                 self.raw,
                 data.as_ptr() as *const libc::c_void,
                 data.len() as i32,
             )
         };
 
-        if result != 0 {
+        if result == false {
             Err(get_error())
         } else {
             Ok(())
@@ -577,25 +596,15 @@ impl Gamepad {
 }
 
 #[cfg(feature = "hidapi")]
-impl GameController {
+impl Gamepad {
     #[doc(alias = "SDL_GamepadHasSensor")]
-    pub fn has_sensor(&self, sensor_type: crate::sensor::SensorType) -> bool {
-        let result = unsafe { sys::SDL_GamepadHasSensor(self.raw, sensor_type.into()) };
-
-        match result {
-            sys::SDL_bool::SDL_FALSE => false,
-            sys::SDL_bool::SDL_TRUE => true,
-        }
+    pub unsafe fn has_sensor(&self, sensor_type: crate::sensor::SensorType) -> bool {
+        unsafe { sys::gamepad::SDL_GamepadHasSensor(self.raw, sensor_type.into()) }
     }
 
     #[doc(alias = "SDL_GamepadSensorEnabled")]
     pub fn sensor_enabled(&self, sensor_type: crate::sensor::SensorType) -> bool {
-        let result = unsafe { sys::SDL_GamepadSensorEnabled(self.raw, sensor_type.into()) };
-
-        match result {
-            sys::SDL_bool::SDL_FALSE => false,
-            sys::SDL_bool::SDL_TRUE => true,
-        }
+        unsafe { sys::gamepad::SDL_GamepadSensorEnabled(self.raw, sensor_type.into()) }
     }
 
     #[doc(alias = "SDL_SetGamepadSensorEnabled")]
@@ -605,18 +614,14 @@ impl GameController {
         enabled: bool,
     ) -> Result<(), IntegerOrSdlError> {
         let result = unsafe {
-            sys::SDL_SetGamepadSensorEnabled(
+            sys::gamepad::SDL_SetGamepadSensorEnabled(
                 self.raw,
                 sensor_type.into(),
-                if enabled {
-                    sys::SDL_bool::SDL_TRUE
-                } else {
-                    sys::SDL_bool::SDL_FALSE
-                },
+                if enabled { true } else { false },
             )
         };
 
-        if result != 0 {
+        if !result {
             Err(IntegerOrSdlError::SdlError(get_error()))
         } else {
             Ok(())
@@ -626,7 +631,7 @@ impl GameController {
     /// Get the data rate (number of events per second) of a game controller sensor.
     #[doc(alias = "SDL_GetGamepadSensorDataRate")]
     pub fn sensor_get_data_rate(&self, sensor_type: SensorType) -> f32 {
-        unsafe { sys::SDL_GetGamepadSensorDataRate(self.raw, sensor_type.into()) }
+        unsafe { sys::gamepad::SDL_GetGamepadSensorDataRate(self.raw, sensor_type.into()) }
     }
 
     /// Get data from a sensor.
@@ -640,7 +645,7 @@ impl GameController {
         data: &mut [f32],
     ) -> Result<(), IntegerOrSdlError> {
         let result = unsafe {
-            sys::SDL_GetGamepadSensorData(
+            sys::gamepad::SDL_GetGamepadSensorData(
                 self.raw,
                 sensor_type.into(),
                 data.as_mut_ptr(),
@@ -648,7 +653,7 @@ impl GameController {
             )
         };
 
-        if result != 0 {
+        if !result {
             Err(IntegerOrSdlError::SdlError(get_error()))
         } else {
             Ok(())
@@ -659,7 +664,7 @@ impl GameController {
 impl Drop for Gamepad {
     #[doc(alias = "SDL_CloseGamepad")]
     fn drop(&mut self) {
-        unsafe { sys::SDL_CloseGamepad(self.raw) }
+        unsafe { sys::gamepad::SDL_CloseGamepad(self.raw) }
     }
 }
 

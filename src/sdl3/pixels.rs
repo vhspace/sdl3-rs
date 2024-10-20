@@ -1,11 +1,14 @@
-use crate::sys;
-use std::convert::TryFrom;
-use std::mem::transmute;
-
 use crate::get_error;
+use crate::sys;
+use std::convert::TryInto;
+use std::convert::{Into, TryFrom};
+use std::ffi::c_int;
+use std::fmt::Debug;
+use std::ptr::null;
+use sys::everything::{SDL_PixelFormat, SDL_PixelFormatDetails};
 
 pub struct Palette {
-    raw: *mut sys::SDL_Palette,
+    raw: *mut sys::pixels::SDL_Palette,
 }
 
 impl Palette {
@@ -30,7 +33,7 @@ impl Palette {
             }
         };
 
-        let raw = unsafe { sys::SDL_CreatePalette(ncolors) };
+        let raw = unsafe { sys::pixels::SDL_CreatePalette(ncolors) };
 
         if raw.is_null() {
             Err(get_error())
@@ -48,15 +51,15 @@ impl Palette {
         let ncolors = colors.len() as ::libc::c_int;
 
         let result = unsafe {
-            let mut raw_colors: Vec<sys::SDL_Color> =
+            let mut raw_colors: Vec<sys::pixels::SDL_Color> =
                 colors.iter().map(|color| color.raw()).collect();
 
-            let pal_ptr = (&mut raw_colors[0]) as *mut sys::SDL_Color;
+            let pal_ptr = (&mut raw_colors[0]) as *mut sys::pixels::SDL_Color;
 
-            sys::SDL_SetPaletteColors(pal.raw, pal_ptr, 0, ncolors)
+            sys::pixels::SDL_SetPaletteColors(pal.raw, pal_ptr, 0, ncolors)
         };
 
-        if result < 0 {
+        if !result {
             Err(get_error())
         } else {
             Ok(pal)
@@ -76,12 +79,12 @@ impl Drop for Palette {
     #[doc(alias = "SDL_DestroyPalette")]
     fn drop(&mut self) {
         unsafe {
-            sys::SDL_DestroyPalette(self.raw);
+            sys::pixels::SDL_DestroyPalette(self.raw);
         }
     }
 }
 
-impl_raw_accessors!((Palette, *mut sys::SDL_Palette));
+impl_raw_accessors!((Palette, *mut sys::pixels::SDL_Palette));
 
 #[test]
 fn create_palette() {
@@ -115,14 +118,33 @@ impl Color {
 
     #[doc(alias = "SDL_MapRGBA")]
     pub fn to_u32(self, format: &PixelFormat) -> u32 {
-        unsafe { sys::SDL_MapRGBA(format.raw, self.r, self.g, self.b, self.a) }
+        unsafe {
+            sys::pixels::SDL_MapRGBA(
+                format.pixel_format_details(),
+                null(),
+                self.r,
+                self.g,
+                self.b,
+                self.a,
+            )
+        }
     }
 
     #[doc(alias = "SDL_GetRGBA")]
     pub fn from_u32(format: &PixelFormat, pixel: u32) -> Color {
         let (mut r, mut g, mut b, mut a) = (0, 0, 0, 0);
 
-        unsafe { sys::SDL_GetRGBA(pixel, format.raw, &mut r, &mut g, &mut b, &mut a) };
+        unsafe {
+            sys::pixels::SDL_GetRGBA(
+                pixel,
+                format.pixel_format_details(),
+                null(),
+                &mut r,
+                &mut g,
+                &mut b,
+                &mut a,
+            )
+        };
         Color::RGBA(r, g, b, a)
     }
 
@@ -142,8 +164,8 @@ impl Color {
 
     // Implemented manually and kept private, because reasons
     #[inline]
-    const fn raw(self) -> sys::SDL_Color {
-        sys::SDL_Color {
+    const fn raw(self) -> sys::pixels::SDL_Color {
+        sys::pixels::SDL_Color {
             r: self.r,
             g: self.g,
             b: self.b,
@@ -163,14 +185,14 @@ impl Color {
     pub const CYAN: Color = Color::RGBA(0, 255, 255, 255);
 }
 
-impl Into<sys::SDL_Color> for Color {
-    fn into(self) -> sys::SDL_Color {
+impl Into<sys::pixels::SDL_Color> for Color {
+    fn into(self) -> sys::pixels::SDL_Color {
         self.raw()
     }
 }
 
-impl From<sys::SDL_Color> for Color {
-    fn from(raw: sys::SDL_Color) -> Color {
+impl From<sys::pixels::SDL_Color> for Color {
+    fn from(raw: sys::pixels::SDL_Color) -> Color {
         Color::RGBA(raw.r, raw.g, raw.b, raw.a)
     }
 }
@@ -200,101 +222,58 @@ pub struct PixelMasks {
     pub amask: u32,
 }
 
+/// A pixel format, i.e. a set of masks that define how to pack and unpack pixel data.
+/// This is used to convert between pixel data and surface data.
+/// It wraps an SDL_PixelFormat.
+#[derive(Copy, Clone, Eq, PartialEq, Hash)]
 pub struct PixelFormat {
-    raw: *mut sys::SDL_PixelFormat,
+    raw: SDL_PixelFormat,
 }
 
-impl_raw_accessors!((PixelFormat, *mut sys::SDL_PixelFormat));
-impl_raw_constructor!((PixelFormat, PixelFormat(raw: *mut sys::SDL_PixelFormat)));
+impl_raw_accessors!((PixelFormat, sys::pixels::SDL_PixelFormat));
+impl_raw_constructor!((PixelFormat, PixelFormat(raw: sys::pixels::SDL_PixelFormat )));
 
-#[repr(i32)]
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-pub enum PixelFormatEnum {
-    Unknown = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_UNKNOWN as i32,
-    Index1LSB = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_INDEX1LSB as i32,
-    Index1MSB = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_INDEX1MSB as i32,
-    Index4LSB = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_INDEX4LSB as i32,
-    Index4MSB = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_INDEX4MSB as i32,
-    Index8 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_INDEX8 as i32,
-    RGB332 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGB332 as i32,
-    RGB444 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGB444 as i32,
-    RGB555 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGB555 as i32,
-    BGR555 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGR555 as i32,
-    ARGB4444 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_ARGB4444 as i32,
-    RGBA4444 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGBA4444 as i32,
-    ABGR4444 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_ABGR4444 as i32,
-    BGRA4444 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGRA4444 as i32,
-    ARGB1555 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_ARGB1555 as i32,
-    RGBA5551 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGBA5551 as i32,
-    ABGR1555 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_ABGR1555 as i32,
-    BGRA5551 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGRA5551 as i32,
-    RGB565 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGB565 as i32,
-    BGR565 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGR565 as i32,
-    RGB24 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGB24 as i32,
-    BGR24 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGR24 as i32,
-    XRGB8888 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_XRGB8888 as i32,
-    RGBX8888 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGBX8888 as i32,
-    XBGR8888 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_XBGR8888 as i32,
-    BGRX8888 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGRX8888 as i32,
-    ARGB8888 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_ARGB8888 as i32,
-    RGBA8888 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGBA8888 as i32,
-    ABGR8888 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_ABGR8888 as i32,
-    BGRA8888 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGRA8888 as i32,
-    ARGB2101010 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_ARGB2101010 as i32,
-    YV12 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_YV12 as i32,
-    IYUV = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_IYUV as i32,
-    YUY2 = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_YUY2 as i32,
-    UYVY = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_UYVY as i32,
-    YVYU = sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_YVYU as i32,
+impl Debug for PixelFormat {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "PixelFormat({:?})", self.raw.0)
+    }
 }
 
-// Endianness-agnostic aliases for 32-bit formats
-#[cfg(target_endian = "big")]
-impl PixelFormatEnum {
-    pub const RGBA32: PixelFormatEnum = PixelFormatEnum::RGBA8888;
-    pub const ARGB32: PixelFormatEnum = PixelFormatEnum::ARGB8888;
-    pub const BGRA32: PixelFormatEnum = PixelFormatEnum::BGRA8888;
-    pub const ABGR32: PixelFormatEnum = PixelFormatEnum::ABGR8888;
-}
+impl PixelFormat {
+     pub  unsafe  fn unknown() -> PixelFormat {
+        PixelFormat::from_ll(SDL_PixelFormat::UNKNOWN)
+    }
+    
+    pub unsafe fn pixel_format_details(&self) -> *const SDL_PixelFormatDetails {
+        sys::pixels::SDL_GetPixelFormatDetails(self.raw)
+    }
 
-#[cfg(target_endian = "little")]
-impl PixelFormatEnum {
-    pub const RGBA32: PixelFormatEnum = PixelFormatEnum::ABGR8888;
-    pub const ARGB32: PixelFormatEnum = PixelFormatEnum::BGRA8888;
-    pub const BGRA32: PixelFormatEnum = PixelFormatEnum::ARGB8888;
-    pub const ABGR32: PixelFormatEnum = PixelFormatEnum::RGBA8888;
-}
-
-impl PixelFormatEnum {
-    #[doc(alias = "SDL_GetPixelFormatEnumForMasks")]
-    pub fn from_masks(masks: PixelMasks) -> PixelFormatEnum {
+    #[doc(alias = "SDL_GetPixelFormatForMasks")]
+    pub fn from_masks(masks: PixelMasks) -> PixelFormat {
         unsafe {
-            let format = sys::SDL_GetPixelFormatEnumForMasks(
+            PixelFormat::from_ll(sys::pixels::SDL_GetPixelFormatForMasks(
                 masks.bpp as i32,
                 masks.rmask,
                 masks.gmask,
                 masks.bmask,
                 masks.amask,
-            );
-            PixelFormatEnum::try_from(format as u32).unwrap()
+            ))
         }
     }
 
-    #[doc(alias = "SDL_GetMasksForPixelFormatEnum")]
+    #[doc(alias = "SDL_GetMasksForPixelFormat")]
     pub fn into_masks(self) -> Result<PixelMasks, String> {
-        let format: u32 = self as u32;
         let mut bpp = 0;
         let mut rmask = 0;
         let mut gmask = 0;
         let mut bmask = 0;
         let mut amask = 0;
         let result = unsafe {
-            sys::SDL_GetMasksForPixelFormatEnum(
-                format, &mut bpp, &mut rmask, &mut gmask, &mut bmask, &mut amask,
+            sys::pixels::SDL_GetMasksForPixelFormat(
+                self.raw, &mut bpp, &mut rmask, &mut gmask, &mut bmask, &mut amask,
             )
         };
-        if result == sys::SDL_bool::SDL_FALSE {
-            // SDL_FALSE
+        if !result {
             Err(get_error())
         } else {
             Ok(PixelMasks {
@@ -310,8 +289,8 @@ impl PixelFormatEnum {
     /// Calculates the total byte size of an image buffer, given its pitch
     /// and height.
     pub fn byte_size_from_pitch_and_height(self, pitch: usize, height: usize) -> usize {
-        match self {
-            PixelFormatEnum::YV12 | PixelFormatEnum::IYUV => {
+        match self.raw {
+            SDL_PixelFormat::YV12 | SDL_PixelFormat::IYUV => {
                 // YUV is 4:2:0.
                 // `pitch` is the width of the Y component, and
                 // `height` is the height of the Y component.
@@ -324,224 +303,126 @@ impl PixelFormatEnum {
 
     #[allow(clippy::match_same_arms)]
     pub fn byte_size_of_pixels(self, num_of_pixels: usize) -> usize {
-        match self {
-            PixelFormatEnum::RGB332 => num_of_pixels,
-            PixelFormatEnum::RGB444
-            | PixelFormatEnum::RGB555
-            | PixelFormatEnum::BGR555
-            | PixelFormatEnum::ARGB4444
-            | PixelFormatEnum::RGBA4444
-            | PixelFormatEnum::ABGR4444
-            | PixelFormatEnum::BGRA4444
-            | PixelFormatEnum::ARGB1555
-            | PixelFormatEnum::RGBA5551
-            | PixelFormatEnum::ABGR1555
-            | PixelFormatEnum::BGRA5551
-            | PixelFormatEnum::RGB565
-            | PixelFormatEnum::BGR565 => num_of_pixels * 2,
-            PixelFormatEnum::RGB24 | PixelFormatEnum::BGR24 => num_of_pixels * 3,
-            PixelFormatEnum::XRGB8888
-            | PixelFormatEnum::RGBX8888
-            | PixelFormatEnum::XBGR8888
-            | PixelFormatEnum::BGRX8888
-            | PixelFormatEnum::ARGB8888
-            | PixelFormatEnum::RGBA8888
-            | PixelFormatEnum::ABGR8888
-            | PixelFormatEnum::BGRA8888
-            | PixelFormatEnum::ARGB2101010 => num_of_pixels * 4,
+        match self.raw {
+            SDL_PixelFormat::RGB332 => num_of_pixels,
+            SDL_PixelFormat::XRGB4444
+            | SDL_PixelFormat::XRGB1555
+            | SDL_PixelFormat::XBGR1555
+            | SDL_PixelFormat::ARGB4444
+            | SDL_PixelFormat::RGBA4444
+            | SDL_PixelFormat::ABGR4444
+            | SDL_PixelFormat::BGRA4444
+            | SDL_PixelFormat::ARGB1555
+            | SDL_PixelFormat::RGBA5551
+            | SDL_PixelFormat::ABGR1555
+            | SDL_PixelFormat::BGRA5551
+            | SDL_PixelFormat::RGB565
+            | SDL_PixelFormat::BGR565 => num_of_pixels * 2,
+            SDL_PixelFormat::RGB24 | SDL_PixelFormat::BGR24 => num_of_pixels * 3,
+            SDL_PixelFormat::XRGB8888
+            | SDL_PixelFormat::RGBX8888
+            | SDL_PixelFormat::XBGR8888
+            | SDL_PixelFormat::BGRX8888
+            | SDL_PixelFormat::ARGB8888
+            | SDL_PixelFormat::RGBA8888
+            | SDL_PixelFormat::ABGR8888
+            | SDL_PixelFormat::BGRA8888
+            | SDL_PixelFormat::ARGB2101010 => num_of_pixels * 4,
             // YUV formats
             // FIXME: rounding error here?
-            PixelFormatEnum::YV12 | PixelFormatEnum::IYUV => num_of_pixels / 2 * 3,
-            PixelFormatEnum::YUY2 | PixelFormatEnum::UYVY | PixelFormatEnum::YVYU => {
+            SDL_PixelFormat::YV12 | SDL_PixelFormat::IYUV => num_of_pixels / 2 * 3,
+            SDL_PixelFormat::YUY2 | SDL_PixelFormat::UYVY | SDL_PixelFormat::YVYU => {
                 num_of_pixels * 2
             }
             // Unsupported formats
-            PixelFormatEnum::Index8 => num_of_pixels,
-            PixelFormatEnum::Unknown
-            | PixelFormatEnum::Index1LSB
-            | PixelFormatEnum::Index1MSB
-            | PixelFormatEnum::Index4LSB
-            | PixelFormatEnum::Index4MSB => panic!("not supported format: {:?}", self),
+            SDL_PixelFormat::INDEX8 => num_of_pixels,
+            SDL_PixelFormat::UNKNOWN
+            | SDL_PixelFormat::INDEX1LSB
+            | SDL_PixelFormat::INDEX1MSB
+            | SDL_PixelFormat::INDEX4LSB
+            | SDL_PixelFormat::INDEX4MSB
+            | _ => panic!("not supported format: {:?}", self),
         }
     }
 
     #[allow(clippy::match_same_arms)]
     pub fn byte_size_per_pixel(self) -> usize {
-        match self {
-            PixelFormatEnum::RGB332 => 1,
-            PixelFormatEnum::RGB444
-            | PixelFormatEnum::RGB555
-            | PixelFormatEnum::BGR555
-            | PixelFormatEnum::ARGB4444
-            | PixelFormatEnum::RGBA4444
-            | PixelFormatEnum::ABGR4444
-            | PixelFormatEnum::BGRA4444
-            | PixelFormatEnum::ARGB1555
-            | PixelFormatEnum::RGBA5551
-            | PixelFormatEnum::ABGR1555
-            | PixelFormatEnum::BGRA5551
-            | PixelFormatEnum::RGB565
-            | PixelFormatEnum::BGR565 => 2,
-            PixelFormatEnum::RGB24 | PixelFormatEnum::BGR24 => 3,
-            PixelFormatEnum::XRGB8888
-            | PixelFormatEnum::RGBX8888
-            | PixelFormatEnum::XBGR8888
-            | PixelFormatEnum::BGRX8888
-            | PixelFormatEnum::ARGB8888
-            | PixelFormatEnum::RGBA8888
-            | PixelFormatEnum::ABGR8888
-            | PixelFormatEnum::BGRA8888
-            | PixelFormatEnum::ARGB2101010 => 4,
+        match self.raw {
+            SDL_PixelFormat::RGB332 => 1,
+            SDL_PixelFormat::XRGB4444
+            | SDL_PixelFormat::XRGB1555
+            | SDL_PixelFormat::XBGR1555
+            | SDL_PixelFormat::ARGB4444
+            | SDL_PixelFormat::RGBA4444
+            | SDL_PixelFormat::ABGR4444
+            | SDL_PixelFormat::BGRA4444
+            | SDL_PixelFormat::ARGB1555
+            | SDL_PixelFormat::RGBA5551
+            | SDL_PixelFormat::ABGR1555
+            | SDL_PixelFormat::BGRA5551
+            | SDL_PixelFormat::RGB565
+            | SDL_PixelFormat::BGR565 => 2,
+            SDL_PixelFormat::RGB24 | SDL_PixelFormat::BGR24 => 3,
+            SDL_PixelFormat::XRGB8888
+            | SDL_PixelFormat::RGBX8888
+            | SDL_PixelFormat::XBGR8888
+            | SDL_PixelFormat::BGRX8888
+            | SDL_PixelFormat::ARGB8888
+            | SDL_PixelFormat::RGBA8888
+            | SDL_PixelFormat::ABGR8888
+            | SDL_PixelFormat::BGRA8888
+            | SDL_PixelFormat::ARGB2101010 => 4,
             // YUV formats
-            PixelFormatEnum::YV12 | PixelFormatEnum::IYUV => 1,
-            PixelFormatEnum::YUY2 | PixelFormatEnum::UYVY | PixelFormatEnum::YVYU => 2,
+            SDL_PixelFormat::YV12 | SDL_PixelFormat::IYUV => 1,
+            SDL_PixelFormat::YUY2 | SDL_PixelFormat::UYVY | SDL_PixelFormat::YVYU => 2,
             // Unsupported formats
-            PixelFormatEnum::Index8 => 1,
-            PixelFormatEnum::Unknown
-            | PixelFormatEnum::Index1LSB
-            | PixelFormatEnum::Index1MSB
-            | PixelFormatEnum::Index4LSB
-            | PixelFormatEnum::Index4MSB => panic!("not supported format: {:?}", self),
+            SDL_PixelFormat::INDEX8 => 1,
+            SDL_PixelFormat::UNKNOWN
+            | SDL_PixelFormat::INDEX1LSB
+            | SDL_PixelFormat::INDEX1MSB
+            | SDL_PixelFormat::INDEX4LSB
+            | SDL_PixelFormat::INDEX4MSB
+            | _ => panic!("not supported format: {:?}", self),
         }
     }
 
     pub fn supports_alpha(self) -> bool {
-        use crate::pixels::PixelFormatEnum::*;
-        match self {
-            ARGB4444 | ARGB1555 | ARGB8888 | ARGB2101010 | ABGR4444 | ABGR1555 | ABGR8888
-            | BGRA4444 | BGRA5551 | BGRA8888 | RGBA4444 | RGBA5551 | RGBA8888 => true,
+        match self.raw {
+            SDL_PixelFormat::ARGB4444 | SDL_PixelFormat::ARGB1555 | SDL_PixelFormat::ARGB8888 | SDL_PixelFormat::ARGB2101010 | SDL_PixelFormat::ABGR4444 | SDL_PixelFormat::ABGR1555 | SDL_PixelFormat::ABGR8888
+            | SDL_PixelFormat::BGRA4444 | SDL_PixelFormat::BGRA5551 | SDL_PixelFormat::BGRA8888 | SDL_PixelFormat::RGBA4444 | SDL_PixelFormat::RGBA5551 | SDL_PixelFormat::RGBA8888 => true,
             _ => false,
         }
     }
 }
 
-impl From<PixelFormat> for PixelFormatEnum {
-    fn from(pf: PixelFormat) -> PixelFormatEnum {
-        unsafe {
-            let sdl_pf = *pf.raw;
-            match PixelFormatEnum::try_from(sdl_pf.format as u32) {
-                Ok(pfe) => pfe,
-                Err(()) => panic!("Unknown pixel format: {:?}", sdl_pf.format),
-            }
-        }
+impl From<PixelFormat> for SDL_PixelFormat {
+    fn from(pf: PixelFormat) -> SDL_PixelFormat {
+        pf.raw
     }
 }
 
-impl TryFrom<u32> for PixelFormatEnum {
-    type Error = ();
-
-    fn try_from(n: u32) -> Result<Self, Self::Error> {
-        use self::PixelFormatEnum::*;
-
-        Ok(match unsafe { transmute(n) } {
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_UNKNOWN => Unknown,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_INDEX1LSB => Index1LSB,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_INDEX1MSB => Index1MSB,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_INDEX4LSB => Index4LSB,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_INDEX4MSB => Index4MSB,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_INDEX8 => Index8,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGB332 => RGB332,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGB444 => RGB444,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGB555 => RGB555,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGR555 => BGR555,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_ARGB4444 => ARGB4444,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGBA4444 => RGBA4444,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_ABGR4444 => ABGR4444,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGRA4444 => BGRA4444,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_ARGB1555 => ARGB1555,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGBA5551 => RGBA5551,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_ABGR1555 => ABGR1555,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGRA5551 => BGRA5551,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGB565 => RGB565,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGR565 => BGR565,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGB24 => RGB24,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGR24 => BGR24,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_XRGB8888 => XRGB8888,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGBX8888 => RGBX8888,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_XBGR8888 => XBGR8888,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGRX8888 => BGRX8888,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_ARGB8888 => ARGB8888,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_RGBA8888 => RGBA8888,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_ABGR8888 => ABGR8888,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_BGRA8888 => BGRA8888,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_ARGB2101010 => ARGB2101010,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_YV12 => YV12,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_IYUV => IYUV,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_YUY2 => YUY2,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_UYVY => UYVY,
-            sys::SDL_PixelFormatEnum::SDL_PIXELFORMAT_YVYU => YVYU,
-            _ => return Err(()),
-        })
+impl From<i64> for PixelFormat {
+    fn from(format: i64) -> PixelFormat {
+        let format_c_int: c_int = format
+            .try_into()
+            .expect("Pixel format value out of range for c_int");
+        let pixel_format = SDL_PixelFormat(format_c_int);
+        PixelFormat { raw: pixel_format }
     }
 }
 
-impl TryFrom<PixelFormatEnum> for PixelFormat {
+impl TryFrom<SDL_PixelFormat> for PixelFormat {
     type Error = String;
 
-    #[doc(alias = "SDL_CreatePixelFormat")]
-    fn try_from(pfe: PixelFormatEnum) -> Result<Self, Self::Error> {
+    #[doc(alias = "SDL_GetPixelFormatDetails")]
+    fn try_from(format: SDL_PixelFormat) -> Result<Self, Self::Error> {
         unsafe {
-            let pf_ptr = sys::SDL_CreatePixelFormat(pfe as u32);
+            let pf_ptr = sys::pixels::SDL_GetPixelFormatDetails(format.into());
             if pf_ptr.is_null() {
                 Err(get_error())
             } else {
-                Ok(PixelFormat::from_ll(pf_ptr))
+                Ok(PixelFormat::from_ll((*pf_ptr).format))
             }
-        }
-    }
-}
-
-// Just test a round-trip conversion from PixelFormat to
-// PixelFormatEnum and back.
-#[test]
-fn test_pixel_format_enum() {
-    let pixel_formats = vec![
-        PixelFormatEnum::RGB332,
-        PixelFormatEnum::RGB444,
-        PixelFormatEnum::RGB555,
-        PixelFormatEnum::BGR555,
-        PixelFormatEnum::ARGB4444,
-        PixelFormatEnum::RGBA4444,
-        PixelFormatEnum::ABGR4444,
-        PixelFormatEnum::BGRA4444,
-        PixelFormatEnum::ARGB1555,
-        PixelFormatEnum::RGBA5551,
-        PixelFormatEnum::ABGR1555,
-        PixelFormatEnum::BGRA5551,
-        PixelFormatEnum::RGB565,
-        PixelFormatEnum::BGR565,
-        PixelFormatEnum::RGB24,
-        PixelFormatEnum::BGR24,
-        PixelFormatEnum::XRGB8888,
-        PixelFormatEnum::RGBX8888,
-        PixelFormatEnum::XBGR8888,
-        PixelFormatEnum::BGRX8888,
-        PixelFormatEnum::ARGB8888,
-        PixelFormatEnum::RGBA8888,
-        PixelFormatEnum::ABGR8888,
-        PixelFormatEnum::BGRA8888,
-        PixelFormatEnum::ARGB2101010,
-        PixelFormatEnum::Index8,
-        PixelFormatEnum::Unknown,
-        //  These formats don't seem to survive the round-trip on all platforms;
-        //PixelFormatEnum::YV12,
-        //PixelFormatEnum::IYUV,
-        //PixelFormatEnum::YUY2,
-        //PixelFormatEnum::UYVY,
-        //PixelFormatEnum::YVYU,
-	//PixelFormatEnum::Index1LSB,
-        //PixelFormatEnum::Index1MSB,
-	//PixelFormatEnum::Index4LSB,
-        //PixelFormatEnum::Index4MSB
-    ];
-
-    let _sdl_context = crate::sdl::init().unwrap();
-    for format in pixel_formats {
-        // If we don't support making a surface of a specific format,
-        // that's fine, just keep going the best we can.
-        if let Ok(surf) = super::surface::Surface::new(1, 1, format) {
-            let surf_format = surf.pixel_format();
-            assert_eq!(PixelFormatEnum::from(surf_format), format);
         }
     }
 }

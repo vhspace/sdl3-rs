@@ -3,14 +3,13 @@ name = "sdl3"
 description = "Cross-platform multimedia"
 repository = "https://github.com/revmischa/sdl3-rs"
 documentation = "https://crates.io/crates/sdl3"
-version = "0.6.0"
+version = "0.9.0"
 license = "MIT"
 authors = [ "Tony Aldridge <tony@angry-lawyer.com>", "Cobrand <cobrandw@gmail.com>", "Mischa Spiegelmock <me@mish.dev>" ,"Lokathor <@Lokathor@mastodon.social>"]
 keywords = ["SDL", "windowing", "graphics", "api", "engine"]
 categories = ["rendering","api-bindings","game-engines","multimedia"]
 readme = "README.md"
 resolver = "2"
-edition = "2021"
 
 [lib]
 name = "sdl3"
@@ -23,11 +22,7 @@ lazy_static = "1.4.0"
 
 [dependencies.sdl3-sys]
 # path = "sdl3-sys"
-version = "0.0.7+sdl3-dev-2023-10-08"
-# version = "0.0.6+sdl3-dev-2023-07-31"
-# git = "https://github.com/Lokathor/sdl3-sys-rs"
-# git = "https://github.com/revmischa/sdl3-sys-rs"
-# branch = "sdl-update-I"
+version = "0.0.10+SDL-preview-3.1.3"
 
 [dependencies.c_vec]
 # allow both 1.* and 2.0 versions
@@ -47,21 +42,21 @@ optional = true
 [features]
 unsafe_textures = []
 default = []
-gfx = ["c_vec", "sdl3-sys/gfx"]
-mixer = ["sdl3-sys/mixer"]
-image = ["sdl3-sys/image"]
-ttf = ["sdl3-sys/ttf"]
+gfx = ["c_vec"] #, "sdl3-sys/gfx"]
+#mixer = ["sdl3-sys/mixer"]
+#image = ["sdl3-sys/image"]
+#ttf = ["sdl3-sys/ttf"]
 # Use hidapi support in SDL. Only 2.0.12 and after
 hidapi = []
 # test_mode allows SDL to be initialised from a thread that is not the main thread
 test-mode = []
 
-use-bindgen = ["sdl3-sys/use-bindgen"]
-use-pkgconfig = ["sdl3-sys/use-pkgconfig"]
 use-vcpkg = ["sdl3-sys/use-vcpkg"]
-use_mac_framework = ["sdl3-sys/use_mac_framework"]
-bundled = ["sdl3-sys/bundled"]
-static-link = ["sdl3-sys/static-link"]
+static-link = ["sdl3-sys/link-static"]
+#use_mac_framework = ["sdl3-sys/use_mac_framework"]
+#bundled = ["sdl3-sys/bundled"]
+#use-bindgen = ["sdl3-sys/use-bindgen"]
+#use-pkgconfig = ["sdl3-sys/use-pkgconfig"]
 
 [package.metadata.docs.rs]
 features = ["default", "gfx", "mixer", "image", "ttf"]

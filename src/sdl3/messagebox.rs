@@ -12,20 +12,20 @@ use crate::sys;
 bitflags! {
     pub struct MessageBoxFlag: u32 {
         const ERROR =
-            sys::SDL_MessageBoxFlags::SDL_MESSAGEBOX_ERROR as u32;
+            sys::messagebox::SDL_MESSAGEBOX_ERROR ;
         const WARNING =
-            sys::SDL_MessageBoxFlags::SDL_MESSAGEBOX_WARNING as u32;
+            sys::messagebox::SDL_MESSAGEBOX_WARNING ;
         const INFORMATION =
-            sys::SDL_MessageBoxFlags::SDL_MESSAGEBOX_INFORMATION as u32;
+            sys::messagebox::SDL_MESSAGEBOX_INFORMATION ;
     }
 }
 
 bitflags! {
     pub struct MessageBoxButtonFlag: u32 {
         const ESCAPEKEY_DEFAULT =
-            sys::SDL_MessageBoxButtonFlags::SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT as u32;
+            sys::messagebox::SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
         const RETURNKEY_DEFAULT =
-            sys::SDL_MessageBoxButtonFlags::SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT as u32;
+            sys::messagebox::SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
         const NOTHING = 0;
     }
 }
@@ -39,16 +39,16 @@ pub struct MessageBoxColorScheme {
     pub button_selected: (u8, u8, u8),
 }
 
-impl Into<sys::SDL_MessageBoxColorScheme> for MessageBoxColorScheme {
-    fn into(self) -> sys::SDL_MessageBoxColorScheme {
-        sys::SDL_MessageBoxColorScheme {
+impl Into<sys::messagebox::SDL_MessageBoxColorScheme> for MessageBoxColorScheme {
+    fn into(self) -> sys::messagebox::SDL_MessageBoxColorScheme {
+        sys::messagebox::SDL_MessageBoxColorScheme {
             colors: self.into(),
         }
     }
 }
 
-impl From<sys::SDL_MessageBoxColorScheme> for MessageBoxColorScheme {
-    fn from(prim: sys::SDL_MessageBoxColorScheme) -> MessageBoxColorScheme {
+impl From<sys::messagebox::SDL_MessageBoxColorScheme> for MessageBoxColorScheme {
+    fn from(prim: sys::messagebox::SDL_MessageBoxColorScheme) -> MessageBoxColorScheme {
         prim.colors.into()
     }
 }
@@ -69,10 +69,10 @@ pub enum ClickedButton<'a> {
     CustomButton(&'a ButtonData<'a>),
 }
 
-impl From<MessageBoxColorScheme> for [sys::SDL_MessageBoxColor; 5] {
-    fn from(scheme: MessageBoxColorScheme) -> [sys::SDL_MessageBoxColor; 5] {
-        fn to_message_box_color(t: (u8, u8, u8)) -> sys::SDL_MessageBoxColor {
-            sys::SDL_MessageBoxColor {
+impl From<MessageBoxColorScheme> for [sys::messagebox::SDL_MessageBoxColor; 5] {
+    fn from(scheme: MessageBoxColorScheme) -> [sys::messagebox::SDL_MessageBoxColor; 5] {
+        fn to_message_box_color(t: (u8, u8, u8)) -> sys::messagebox::SDL_MessageBoxColor {
+            sys::messagebox::SDL_MessageBoxColor {
                 r: t.0,
                 g: t.1,
                 b: t.2,
@@ -88,9 +88,11 @@ impl From<MessageBoxColorScheme> for [sys::SDL_MessageBoxColor; 5] {
     }
 }
 
-impl Into<MessageBoxColorScheme> for [sys::SDL_MessageBoxColor; 5] {
+impl Into<MessageBoxColorScheme> for [sys::messagebox::SDL_MessageBoxColor; 5] {
     fn into(self) -> MessageBoxColorScheme {
-        fn from_message_box_color(prim_color: sys::SDL_MessageBoxColor) -> (u8, u8, u8) {
+        fn from_message_box_color(
+            prim_color: sys::messagebox::SDL_MessageBoxColor,
+        ) -> (u8, u8, u8) {
             (prim_color.r, prim_color.g, prim_color.b)
         }
         MessageBoxColorScheme {
@@ -164,13 +166,13 @@ where
             Ok(s) => s,
             Err(err) => return Err(InvalidMessage(err)),
         };
-        sys::SDL_ShowSimpleMessageBox(
+        sys::messagebox::SDL_ShowSimpleMessageBox(
             flags.bits(),
             title.as_ptr() as *const c_char,
             message.as_ptr() as *const c_char,
             window.into().map_or(ptr::null_mut(), |win| win.raw()),
         )
-    } == 0;
+    };
 
     if result {
         Ok(())
@@ -222,17 +224,17 @@ where
         Ok(b) => b,
         Err(e) => return Err(InvalidButton(e.0, e.1)),
     };
-    let raw_buttons: Vec<sys::SDL_MessageBoxButtonData> = buttons
+    let raw_buttons: Vec<sys::messagebox::SDL_MessageBoxButtonData> = buttons
         .iter()
         .zip(button_texts.iter())
-        .map(|(b, b_text)| sys::SDL_MessageBoxButtonData {
+        .map(|(b, b_text)| sys::messagebox::SDL_MessageBoxButtonData {
             flags: b.flags.bits(),
-            buttonid: b.button_id as c_int,
+            buttonID: b.button_id as c_int,
             text: b_text.as_ptr(),
         })
         .collect();
     let result = unsafe {
-        let msg_box_data = sys::SDL_MessageBoxData {
+        let msg_box_data = sys::messagebox::SDL_MessageBoxData {
             flags: flags.bits(),
             window: window.map_or(ptr::null_mut(), |win| win.raw()),
             title: title.as_ptr() as *const c_char,
@@ -240,15 +242,15 @@ where
             numbuttons: raw_buttons.len() as c_int,
             buttons: raw_buttons.as_ptr(),
             colorScheme: if let Some(scheme) = scheme {
-                &sys::SDL_MessageBoxColorScheme {
+                &sys::messagebox::SDL_MessageBoxColorScheme {
                     colors: From::from(scheme),
                 } as *const _
             } else {
                 ptr::null()
             },
         };
-        sys::SDL_ShowMessageBox(&msg_box_data as *const _, &mut button_id as &mut _)
-    } == 0;
+        sys::messagebox::SDL_ShowMessageBox(&msg_box_data as *const _, &mut button_id as &mut _)
+    };
     if result {
         match button_id {
             -1 => Ok(ClickedButton::CloseButton),

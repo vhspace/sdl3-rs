@@ -1,15 +1,14 @@
+extern crate sdl3;
 use std::time::{Duration, Instant};
 
 use sdl3::{event::Event, sensor::SensorType};
 
-extern crate sdl3;
-
 fn main() -> Result<(), String> {
     let sdl_context = sdl3::init()?;
-    let game_controller_subsystem = sdl_context.game_controller()?;
+    let game_controller_subsystem = sdl_context.gamepad()?;
 
     let available = game_controller_subsystem
-        .num_joysticks()
+        .num_gamepads()
         .map_err(|e| format!("can't enumerate joysticks: {}", e))?;
 
     println!("{} joysticks available", available);
@@ -39,17 +38,21 @@ fn main() -> Result<(), String> {
         })
         .expect("Couldn't open any controller");
 
-    if !controller.has_sensor(SensorType::Accelerometer) {
-        return Err(format!(
-            "{} doesn't support the accelerometer",
-            controller.name()
-        ));
+    unsafe {
+        if !controller.has_sensor(SensorType::Accelerometer) {
+            return Err(format!(
+                "{} doesn't support the accelerometer",
+                controller.name()
+            ));
+        }
     }
-    if !controller.has_sensor(SensorType::Gyroscope) {
-        return Err(format!(
-            "{} doesn't support the gyroscope",
-            controller.name()
-        ));
+    unsafe {
+        if !controller.has_sensor(SensorType::Gyroscope) {
+            return Err(format!(
+                "{} doesn't support the gyroscope",
+                controller.name()
+            ));
+        }
     }
 
     controller

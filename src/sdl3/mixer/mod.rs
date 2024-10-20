@@ -22,9 +22,9 @@
 
 use audio::AudioFormatNum;
 use get_error;
+use iostream::IOStream;
 use libc::c_void;
 use libc::{c_double, c_int, c_uint};
-use rwops::RWops;
 use std::borrow::ToOwned;
 use std::convert::TryInto;
 use std::default;
@@ -254,7 +254,7 @@ impl Drop for Chunk {
 impl Chunk {
     /// Load file for use as a sample.
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Chunk, String> {
-        let raw = unsafe { mixer::Mix_LoadWAV_RW(RWops::from_file(path, "rb")?.raw(), 0) };
+        let raw = unsafe { mixer::Mix_LoadWAV_RW(IOStream::from_file(path, "rb")?.raw(), 0) };
         Self::from_owned_raw(raw)
     }
 
@@ -292,15 +292,15 @@ impl Chunk {
     }
 }
 
-/// Loader trait for `RWops`
-pub trait LoaderRWops<'a> {
+/// Loader trait for `IOStream`
+pub trait LoaderIOStream<'a> {
     /// Load src for use as a sample.
     fn load_wav(&self) -> Result<Chunk, String>;
 
     fn load_music(&'a self) -> Result<Music<'a>, String>;
 }
 
-impl<'a> LoaderRWops<'a> for RWops<'a> {
+impl<'a> LoaderIOStream<'a> for IOStream<'a> {
     /// Load src for use as a sample.
     fn load_wav(&self) -> Result<Chunk, String> {
         let raw = unsafe { mixer::Mix_LoadWAV_RW(self.raw(), 0) };
@@ -801,8 +801,12 @@ impl<'a> Music<'a> {
     /// Load music from a static byte buffer.
     #[doc(alias = "SDL_RWFromConstMem")]
     pub fn from_static_bytes(buf: &'static [u8]) -> Result<Music<'static>, String> {
-        let rw =
-            unsafe { sys::SDL_RWFromConstMem(buf.as_ptr() as *const c_void, (buf.len() as c_int).try_into().unwrap() ) };
+        let rw = unsafe {
+            sys::SDL_RWFromConstMem(
+                buf.as_ptr() as *const c_void,
+                (buf.len() as c_int).try_into().unwrap(),
+            )
+        };
 
         if rw.is_null() {
             return Err(get_error());

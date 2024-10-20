@@ -1,5 +1,7 @@
 //! Haptic Functions
+
 use crate::sys;
+use sys::joystick::SDL_OpenJoystick;
 
 use crate::common::IntegerOrSdlError;
 use crate::get_error;
@@ -12,14 +14,14 @@ impl HapticSubsystem {
         use crate::common::IntegerOrSdlError::*;
 
         let haptic = unsafe {
-            let joystick = sys::SDL_OpenJoystick(joystick_index);
-            sys::SDL_HapticOpenFromJoystick(joystick)
+            let joystick = SDL_OpenJoystick(joystick_index);
+            sys::haptic::SDL_OpenHapticFromJoystick(joystick)
         };
 
         if haptic.is_null() {
             Err(SdlError(get_error()))
         } else {
-            unsafe { sys::SDL_HapticRumbleInit(haptic) };
+            unsafe { sys::haptic::SDL_InitHapticRumble(haptic) };
             Ok(Haptic {
                 subsystem: self.clone(),
                 raw: haptic,
@@ -31,7 +33,7 @@ impl HapticSubsystem {
 /// Wrapper around the `SDL_Haptic` object
 pub struct Haptic {
     subsystem: HapticSubsystem,
-    raw: *mut sys::SDL_Haptic,
+    raw: *mut sys::haptic::SDL_Haptic,
 }
 
 impl Haptic {
@@ -43,19 +45,19 @@ impl Haptic {
 
     /// Run a simple rumble effect on the haptic device.
     pub fn rumble_play(&mut self, strength: f32, duration: u32) {
-        unsafe { sys::SDL_HapticRumblePlay(self.raw, strength, duration) };
+        unsafe { sys::haptic::SDL_PlayHapticRumble(self.raw, strength, duration) };
     }
 
     /// Stop the simple rumble on the haptic device.
     #[doc(alias = "SDL_HapticRumbleStop")]
     pub fn rumble_stop(&mut self) {
-        unsafe { sys::SDL_HapticRumbleStop(self.raw) };
+        unsafe { sys::haptic::SDL_StopHapticRumble(self.raw) };
     }
 }
 
 impl Drop for Haptic {
     #[doc(alias = "SDL_HapticClose")]
     fn drop(&mut self) {
-        unsafe { sys::SDL_HapticClose(self.raw) }
+        unsafe { sys::haptic::SDL_CloseHaptic(self.raw) }
     }
 }

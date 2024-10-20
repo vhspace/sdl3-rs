@@ -10,9 +10,9 @@ use crate::sys;
 #[doc(alias = "SDL_GetBasePath")]
 pub fn base_path() -> Result<String, String> {
     let result = unsafe {
-        let buf = sys::SDL_GetBasePath();
+        let buf = sys::filesystem::SDL_GetBasePath();
         let s = CStr::from_ptr(buf as *const _).to_str().unwrap().to_owned();
-        sys::SDL_free(buf as *mut c_void);
+        sys::stdinc::SDL_free(buf as *mut c_void);
         s
     };
 
@@ -70,7 +70,7 @@ pub fn pref_path(org_name: &str, app_name: &str) -> Result<String, PrefPathError
             Err(err) => return Err(InvalidApplicationName(err)),
         };
         let buf =
-            sys::SDL_GetPrefPath(org.as_ptr() as *const c_char, app.as_ptr() as *const c_char);
+            sys::filesystem::SDL_GetPrefPath(org.as_ptr() as *const c_char, app.as_ptr() as *const c_char);
         CStr::from_ptr(buf as *const _).to_str().unwrap().to_owned()
     };
 
