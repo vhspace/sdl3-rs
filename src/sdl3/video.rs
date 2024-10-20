@@ -15,11 +15,10 @@ use std::ops::{Deref, DerefMut};
 use std::ptr::{null, null_mut};
 use std::rc::Rc;
 use std::{fmt, mem, ptr};
-use sys::pixels::SDL_PixelFormat;
 use sys::properties::{
     SDL_CreateProperties, SDL_DestroyProperties, SDL_SetNumberProperty, SDL_SetStringProperty,
 };
-use sys::stdinc::{SDL_FunctionPointer, SDL_free};
+use sys::stdinc::{SDL_FunctionPointer, SDL_free, Uint64};
 use sys::video::{SDL_DisplayMode, SDL_DisplayModeData, SDL_DisplayOrientation, SDL_WindowFlags};
 
 use crate::sys;
@@ -441,10 +440,10 @@ impl DisplayMode {
         }
     }
 
-    pub fn from_ll(raw: &SDL_DisplayMode) -> DisplayMode {
+    pub unsafe fn from_ll(raw: &SDL_DisplayMode) -> DisplayMode {
         DisplayMode::new(
             raw.displayID,
-            PixelFormat::try_from(raw.format).unwrap_or(SDL_PixelFormat::UNKNOWN.into()),
+            PixelFormat::try_from(raw.format).unwrap_or(PixelFormat::unknown()),
             raw.w,
             raw.h,
             raw.pixel_density,
@@ -592,77 +591,75 @@ impl From<i32> for SwapInterval {
     }
 }
 
-// /// Represents orientation of a display.
-// #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-// #[repr(i32)]
-// pub enum Orientation {
-//     /// The display orientation can’t be determined
-//     Unknown = sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_UNKNOWN as i32,
-//     /// The display is in landscape mode, with the right side up, relative to portrait mode
-//     Landscape = sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_LANDSCAPE as i32,
-//     /// The display is in landscape mode, with the left side up, relative to portrait mode
-//     LandscapeFlipped = sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_LANDSCAPE_FLIPPED as i32,
-//     /// The display is in portrait mode
-//     Portrait = sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_PORTRAIT as i32,
-//     /// The display is in portrait mode, upside down
-//     PortraitFlipped = sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_PORTRAIT_FLIPPED as i32,
-// }
-//
-// impl Orientation {
-//     pub fn from_ll(orientation: sys::video::SDL_DisplayOrientation) -> Orientation {
-//         match orientation {
-//             sys::video::SDL_DisplayOrientation::UNKNOWN => Orientation::Unknown,
-//             sys::video::SDL_DisplayOrientation::LANDSCAPE => Orientation::Landscape,
-//             sys::video::SDL_DisplayOrientation::LANDSCAPE_FLIPPED => Orientation::LandscapeFlipped,
-//             sys::video::SDL_DisplayOrientation::PORTRAIT => Orientation::Portrait,
-//             sys::video::SDL_DisplayOrientation::PORTRAIT_FLIPPED => Orientation::PortraitFlipped,
-//         }
-//     }
-//
-//     pub fn to_ll(self) -> sys::video::SDL_DisplayOrientation {
-//         match self {
-//             Orientation::Unknown => sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_UNKNOWN,
-//             Orientation::Landscape => sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_LANDSCAPE,
-//             Orientation::LandscapeFlipped => {
-//                 sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_LANDSCAPE_FLIPPED
-//             }
-//             Orientation::Portrait => sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_PORTRAIT,
-//             Orientation::PortraitFlipped => {
-//                 sys::video::SDL_DisplayOrientation::SDL_ORIENTATION_PORTRAIT_FLIPPED
-//             }
-//         }
-//     }
-// }
-//
-// /// Represents a setting for a window flash operation.
-// #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
-// #[repr(i32)]
-// pub enum FlashOperation {
-//     /// Cancel any window flash state
-//     Cancel = sys::video::SDL_FlashOperation::SDL_FLASH_CANCEL as i32,
-//     /// Flash the window briefly to get attention
-//     Briefly = sys::video::SDL_FlashOperation::SDL_FLASH_BRIEFLY as i32,
-//     /// Flash the window until it gets focus
-//     UntilFocused = sys::video::SDL_FlashOperation::SDL_FLASH_UNTIL_FOCUSED as i32,
-// }
-//
-// impl FlashOperation {
-//     pub fn from_ll(flash_operation: sys::video::SDL_FlashOperation) -> FlashOperation {
-//         match flash_operation {
-//             sys::video::SDL_FlashOperation::SDL_FLASH_CANCEL => FlashOperation::Cancel,
-//             sys::video::SDL_FlashOperation::SDL_FLASH_BRIEFLY => FlashOperation::Briefly,
-//             sys::video::SDL_FlashOperation::SDL_FLASH_UNTIL_FOCUSED => FlashOperation::UntilFocused,
-//         }
-//     }
-//
-//     pub fn to_ll(self) -> sys::video::SDL_FlashOperation {
-//         match self {
-//             FlashOperation::Cancel => sys::video::SDL_FlashOperation::SDL_FLASH_CANCEL,
-//             FlashOperation::Briefly => sys::video::SDL_FlashOperation::SDL_FLASH_BRIEFLY,
-//             FlashOperation::UntilFocused => sys::video::SDL_FlashOperation::SDL_FLASH_UNTIL_FOCUSED,
-//         }
-//     }
-// }
+/// Represents orientation of a display.
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+#[repr(i32)]
+pub enum Orientation {
+    /// The display orientation can’t be determined
+    Unknown = sys::video::SDL_DisplayOrientation::UNKNOWN.0,
+    /// The display is in landscape mode, with the right side up, relative to portrait mode
+    Landscape = sys::video::SDL_DisplayOrientation::LANDSCAPE.0,
+    /// The display is in landscape mode, with the left side up, relative to portrait mode
+    LandscapeFlipped = sys::video::SDL_DisplayOrientation::LANDSCAPE_FLIPPED.0,
+    /// The display is in portrait mode
+    Portrait = sys::video::SDL_DisplayOrientation::PORTRAIT.0,
+    /// The display is in portrait mode, upside down
+    PortraitFlipped = sys::video::SDL_DisplayOrientation::PORTRAIT_FLIPPED.0,
+}
+
+impl Orientation {
+    pub fn from_ll(orientation: sys::video::SDL_DisplayOrientation) -> Orientation {
+        match orientation {
+            sys::video::SDL_DisplayOrientation::UNKNOWN => Orientation::Unknown,
+            sys::video::SDL_DisplayOrientation::LANDSCAPE => Orientation::Landscape,
+            sys::video::SDL_DisplayOrientation::LANDSCAPE_FLIPPED => Orientation::LandscapeFlipped,
+            sys::video::SDL_DisplayOrientation::PORTRAIT => Orientation::Portrait,
+            sys::video::SDL_DisplayOrientation::PORTRAIT_FLIPPED => Orientation::PortraitFlipped,
+            _ => Orientation::Unknown,
+        }
+    }
+
+    pub fn to_ll(self) -> sys::video::SDL_DisplayOrientation {
+        match self {
+            Orientation::Unknown => sys::video::SDL_ORIENTATION_UNKNOWN,
+            Orientation::Landscape => sys::video::SDL_ORIENTATION_LANDSCAPE,
+            Orientation::LandscapeFlipped => sys::video::SDL_ORIENTATION_LANDSCAPE_FLIPPED,
+            Orientation::Portrait => sys::video::SDL_ORIENTATION_PORTRAIT,
+            Orientation::PortraitFlipped => sys::video::SDL_ORIENTATION_PORTRAIT_FLIPPED,
+        }
+    }
+}
+
+/// Represents a setting for a window flash operation.
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+#[repr(i32)]
+pub enum FlashOperation {
+    /// Cancel any window flash state
+    Cancel = sys::video::SDL_FlashOperation::CANCEL.0,
+    /// Flash the window briefly to get attention
+    Briefly = sys::video::SDL_FlashOperation::BRIEFLY.0,
+    /// Flash the window until it gets focus
+    UntilFocused = sys::video::SDL_FlashOperation::UNTIL_FOCUSED.0,
+}
+
+impl FlashOperation {
+    pub fn from_ll(flash_operation: sys::video::SDL_FlashOperation) -> FlashOperation {
+        match flash_operation {
+            sys::video::SDL_FlashOperation::CANCEL => FlashOperation::Cancel,
+            sys::video::SDL_FlashOperation::BRIEFLY => FlashOperation::Briefly,
+            sys::video::SDL_FlashOperation::UNTIL_FOCUSED => FlashOperation::UntilFocused,
+            _ => FlashOperation::Cancel,
+        }
+    }
+
+    pub fn to_ll(self) -> sys::video::SDL_FlashOperation {
+        match self {
+            FlashOperation::Cancel => sys::video::SDL_FLASH_CANCEL,
+            FlashOperation::Briefly => sys::video::SDL_FLASH_BRIEFLY,
+            FlashOperation::UntilFocused => sys::video::SDL_FLASH_UNTIL_FOCUSED,
+        }
+    }
+}
 
 /// Represents the "shell" of a `Window`.
 ///
@@ -1446,8 +1443,8 @@ impl PopupWindowBuilder {
 }
 
 impl From<Window> for WindowCanvas {
-    fn from(window: Window) -> Result<WindowCanvas, IntegerOrSdlError> {
-        create_renderer(window, None)
+    fn from(window: Window) -> WindowCanvas {
+        create_renderer(window, None).unwrap()
     }
 }
 
@@ -1652,7 +1649,7 @@ impl Window {
             }
             let mut result = vec![0; size as usize];
             result.copy_from_slice(std::slice::from_raw_parts(data as *const u8, size as usize));
-            sys::video::SDL_free(data);
+            SDL_free(data);
             Ok(result)
         }
     }
@@ -1671,27 +1668,27 @@ impl Window {
 
     /// Does the window have input focus?
     pub fn has_input_focus(&self) -> bool {
-        0 != self.window_flags().into() & sys::video::SDL_WINDOW_INPUT_FOCUS as u32
+        0 != self.window_flags() & sys::video::SDL_WINDOW_INPUT_FOCUS as Uint64
     }
 
     /// Has the window grabbed input focus?
     pub fn has_input_grabbed(&self) -> bool {
-        0 != self.window_flags().into() & sys::video::SDL_WINDOW_MOUSE_GRABBED as u32
+        0 != self.window_flags() & sys::video::SDL_WINDOW_MOUSE_GRABBED as Uint64
     }
 
     /// Does the window have mouse focus?
     pub fn has_mouse_focus(&self) -> bool {
-        0 != self.window_flags().into() & sys::video::SDL_WINDOW_MOUSE_FOCUS as u32
+        0 != self.window_flags() & sys::video::SDL_WINDOW_MOUSE_FOCUS as Uint64
     }
 
     /// Is the window maximized?
     pub fn is_maximized(&self) -> bool {
-        0 != self.window_flags().into() & sys::video::SDL_WINDOW_MAXIMIZED as u32
+        0 != self.window_flags() & sys::video::SDL_WINDOW_MAXIMIZED as Uint64
     }
 
     /// Is the window minimized?
     pub fn is_minimized(&self) -> bool {
-        0 != self.window_flags().into() & sys::video::SDL_WINDOW_MINIMIZED as u32
+        0 != self.window_flags() & sys::video::SDL_WINDOW_MINIMIZED as Uint64
     }
 
     #[doc(alias = "SDL_SetWindowTitle")]
@@ -1887,7 +1884,7 @@ impl Window {
     }
 
     pub fn fullscreen_state(&self) -> FullscreenType {
-        FullscreenType::from_window_flags(self.window_flags().into())
+        FullscreenType::from_window_flags(self.window_flags() as u32)
     }
 
     #[doc(alias = "SDL_SetWindowFullscreen")]

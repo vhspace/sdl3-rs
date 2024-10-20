@@ -240,6 +240,10 @@ impl Debug for PixelFormat {
 }
 
 impl PixelFormat {
+     pub  unsafe  fn unknown() -> PixelFormat {
+        PixelFormat::from_ll(SDL_PixelFormat::UNKNOWN)
+    }
+    
     pub unsafe fn pixel_format_details(&self) -> *const SDL_PixelFormatDetails {
         sys::pixels::SDL_GetPixelFormatDetails(self.raw)
     }
