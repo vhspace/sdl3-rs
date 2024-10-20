@@ -1,5 +1,6 @@
 use crate::iostream::IOStream;
 use libc::{c_char, c_void};
+use std::convert::Into;
 use std::error;
 use std::ffi::{CStr, CString, NulError};
 use std::fmt;
@@ -13,10 +14,11 @@ use std::convert::TryInto;
 
 use crate::common::IntegerOrSdlError;
 use crate::get_error;
-use crate::joystick;
 use crate::sys;
 use crate::GamepadSubsystem;
+use guid::Guid;
 use std::mem::transmute;
+use sys::joystick::SDL_GetJoystickID;
 
 #[derive(Debug, Clone)]
 pub enum AddMappingError {
@@ -182,7 +184,7 @@ impl GamepadSubsystem {
     }
 
     #[doc(alias = "SDL_GetGamepadMappingForGUID")]
-    pub fn mapping_for_guid(&self, guid: joystick::Guid) -> Result<String, String> {
+    pub fn mapping_for_guid(&self, guid: Guid) -> Result<String, String> {
         let c_str = unsafe { sys::gamepad::SDL_GetGamepadMappingForGUID(guid.raw()) };
 
         c_str_to_string_or_err(c_str)
@@ -199,12 +201,12 @@ impl GamepadSubsystem {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 #[repr(i32)]
 pub enum Axis {
-    LeftX = sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFTX as i32,
-    LeftY = sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFTY as i32,
-    RightX = sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHTX as i32,
-    RightY = sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHTY as i32,
-    TriggerLeft = sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFT_TRIGGER as i32,
-    TriggerRight = sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHT_TRIGGER as i32,
+    LeftX = sys::gamepad::SDL_GAMEPAD_AXIS_LEFTX.0,
+    LeftY = sys::gamepad::SDL_GAMEPAD_AXIS_LEFTY.0,
+    RightX = sys::gamepad::SDL_GAMEPAD_AXIS_RIGHTX.0,
+    RightY = sys::gamepad::SDL_GAMEPAD_AXIS_RIGHTY.0,
+    TriggerLeft = sys::gamepad::SDL_GAMEPAD_AXIS_LEFT_TRIGGER.0,
+    TriggerRight = sys::gamepad::SDL_GAMEPAD_AXIS_RIGHT_TRIGGER.0,
 }
 
 impl Axis {
@@ -217,7 +219,7 @@ impl Axis {
                 sys::gamepad::SDL_GetGamepadAxisFromString(axis.as_ptr() as *const c_char)
             },
             // string contains a nul byte - it won't match anything.
-            Err(_) => sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_INVALID,
+            Err(_) => sys::gamepad::SDL_GAMEPAD_AXIS_INVALID,
         };
 
         Axis::from_ll(id)
@@ -239,25 +241,25 @@ impl Axis {
 
     pub fn from_ll(bitflags: sys::gamepad::SDL_GamepadAxis) -> Option<Axis> {
         Some(match bitflags {
-            sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_INVALID => return None,
-            sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFTX => Axis::LeftX,
-            sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFTY => Axis::LeftY,
-            sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHTX => Axis::RightX,
-            sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHTY => Axis::RightY,
-            sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFT_TRIGGER => Axis::TriggerLeft,
-            sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHT_TRIGGER => Axis::TriggerRight,
+            sys::gamepad::SDL_GAMEPAD_AXIS_INVALID => return None,
+            sys::gamepad::SDL_GAMEPAD_AXIS_LEFTX => Axis::LeftX,
+            sys::gamepad::SDL_GAMEPAD_AXIS_LEFTY => Axis::LeftY,
+            sys::gamepad::SDL_GAMEPAD_AXIS_RIGHTX => Axis::RightX,
+            sys::gamepad::SDL_GAMEPAD_AXIS_RIGHTY => Axis::RightY,
+            sys::gamepad::SDL_GAMEPAD_AXIS_LEFT_TRIGGER => Axis::TriggerLeft,
+            sys::gamepad::SDL_GAMEPAD_AXIS_RIGHT_TRIGGER => Axis::TriggerRight,
             _ => return None,
         })
     }
 
     pub fn to_ll(self) -> sys::gamepad::SDL_GamepadAxis {
         match self {
-            Axis::LeftX => sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFTX,
-            Axis::LeftY => sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFTY,
-            Axis::RightX => sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHTX,
-            Axis::RightY => sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHTY,
-            Axis::TriggerLeft => sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_LEFT_TRIGGER,
-            Axis::TriggerRight => sys::gamepad::SDL_GamepadAxis::SDL_GAMEPAD_AXIS_RIGHT_TRIGGER,
+            Axis::LeftX => sys::gamepad::SDL_GAMEPAD_AXIS_LEFTX,
+            Axis::LeftY => sys::gamepad::SDL_GAMEPAD_AXIS_LEFTY,
+            Axis::RightX => sys::gamepad::SDL_GAMEPAD_AXIS_RIGHTX,
+            Axis::RightY => sys::gamepad::SDL_GAMEPAD_AXIS_RIGHTY,
+            Axis::TriggerLeft => sys::gamepad::SDL_GAMEPAD_AXIS_LEFT_TRIGGER,
+            Axis::TriggerRight => sys::gamepad::SDL_GAMEPAD_AXIS_RIGHT_TRIGGER,
         }
     }
 }
@@ -265,27 +267,27 @@ impl Axis {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 #[repr(i32)]
 pub enum Button {
-    A = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_A as i32,
-    B = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_B as i32,
-    X = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_X as i32,
-    Y = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_Y as i32,
-    Back = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_BACK as i32,
-    Guide = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_GUIDE as i32,
-    Start = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_START as i32,
-    LeftStick = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_STICK as i32,
-    RightStick = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_STICK as i32,
-    LeftShoulder = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_SHOULDER as i32,
-    RightShoulder = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER as i32,
-    DPadUp = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_UP as i32,
-    DPadDown = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_DOWN as i32,
-    DPadLeft = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_LEFT as i32,
-    DPadRight = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_RIGHT as i32,
-    Misc1 = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_MISC1 as i32,
-    Paddle1 = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE1 as i32,
-    Paddle2 = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE2 as i32,
-    Paddle3 = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE3 as i32,
-    Paddle4 = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE4 as i32,
-    Touchpad = sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_TOUCHPAD as i32,
+    North = sys::gamepad::SDL_GAMEPAD_BUTTON_NORTH.0,
+    East = sys::gamepad::SDL_GAMEPAD_BUTTON_EAST.0,
+    South = sys::gamepad::SDL_GAMEPAD_BUTTON_SOUTH.0,
+    West = sys::gamepad::SDL_GAMEPAD_BUTTON_WEST.0,
+    Back = sys::gamepad::SDL_GAMEPAD_BUTTON_BACK.0,
+    Guide = sys::gamepad::SDL_GAMEPAD_BUTTON_GUIDE.0,
+    Start = sys::gamepad::SDL_GAMEPAD_BUTTON_START.0,
+    LeftStick = sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_STICK.0,
+    RightStick = sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_STICK.0,
+    LeftShoulder = sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_SHOULDER.0,
+    RightShoulder = sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER.0,
+    DPadUp = sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_UP.0,
+    DPadDown = sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_DOWN.0,
+    DPadLeft = sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_LEFT.0,
+    DPadRight = sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_RIGHT.0,
+    Misc1 = sys::gamepad::SDL_GAMEPAD_BUTTON_MISC1.0,
+    RightPaddle1 = sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1.0,
+    LeftPaddle1 = sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_PADDLE1.0,
+    RightPaddle2 = sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2.0,
+    LeftPaddle2 = sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_PADDLE2.0,
+    Touchpad = sys::gamepad::SDL_GAMEPAD_BUTTON_TOUCHPAD.0,
 }
 
 impl Button {
@@ -298,7 +300,7 @@ impl Button {
                 sys::gamepad::SDL_GetGamepadButtonFromString(button.as_ptr() as *const c_char)
             },
             // string contains a nul byte - it won't match anything.
-            Err(_) => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_INVALID,
+            Err(_) => sys::gamepad::SDL_GAMEPAD_BUTTON_INVALID,
         };
 
         Button::from_ll(id)
@@ -320,63 +322,55 @@ impl Button {
 
     pub fn from_ll(bitflags: sys::gamepad::SDL_GamepadButton) -> Option<Button> {
         Some(match bitflags {
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_INVALID => return None,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_A => Button::A,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_B => Button::B,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_X => Button::X,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_Y => Button::Y,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_BACK => Button::Back,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_GUIDE => Button::Guide,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_START => Button::Start,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_STICK => Button::LeftStick,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_STICK => Button::RightStick,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_SHOULDER => {
-                Button::LeftShoulder
-            }
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER => {
-                Button::RightShoulder
-            }
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_UP => Button::DPadUp,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_DOWN => Button::DPadDown,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_LEFT => Button::DPadLeft,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_RIGHT => Button::DPadRight,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_MISC1 => Button::Misc1,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE1 => Button::Paddle1,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE2 => Button::Paddle2,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE3 => Button::Paddle3,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE4 => Button::Paddle4,
-            sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_TOUCHPAD => Button::Touchpad,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_INVALID => return None,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_NORTH => Button::North,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_EAST => Button::East,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_SOUTH => Button::South,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_WEST => Button::West,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_BACK => Button::Back,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_GUIDE => Button::Guide,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_START => Button::Start,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_STICK => Button::LeftStick,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_STICK => Button::RightStick,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_SHOULDER => Button::LeftShoulder,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER => Button::RightShoulder,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_UP => Button::DPadUp,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_DOWN => Button::DPadDown,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_LEFT => Button::DPadLeft,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_RIGHT => Button::DPadRight,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_MISC1 => Button::Misc1,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_PADDLE1 => Button::LeftPaddle1,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1 => Button::RightPaddle1,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_PADDLE2 => Button::LeftPaddle2,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2 => Button::RightPaddle2,
+            sys::gamepad::SDL_GAMEPAD_BUTTON_TOUCHPAD => Button::Touchpad,
             _ => return None,
         })
     }
 
     pub fn to_ll(self) -> sys::gamepad::SDL_GamepadButton {
         match self {
-            Button::A => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_A,
-            Button::B => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_B,
-            Button::X => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_X,
-            Button::Y => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_Y,
-            Button::Back => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_BACK,
-            Button::Guide => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_GUIDE,
-            Button::Start => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_START,
-            Button::LeftStick => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_STICK,
-            Button::RightStick => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_STICK,
-            Button::LeftShoulder => {
-                sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_LEFT_SHOULDER
-            }
-            Button::RightShoulder => {
-                sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER
-            }
-            Button::DPadUp => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_UP,
-            Button::DPadDown => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_DOWN,
-            Button::DPadLeft => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_LEFT,
-            Button::DPadRight => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_DPAD_RIGHT,
-            Button::Misc1 => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_MISC1,
-            Button::Paddle1 => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE1,
-            Button::Paddle2 => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE2,
-            Button::Paddle3 => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE3,
-            Button::Paddle4 => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_PADDLE4,
-            Button::Touchpad => sys::gamepad::SDL_GamepadButton::SDL_GAMEPAD_BUTTON_TOUCHPAD,
+            Button::North => sys::gamepad::SDL_GAMEPAD_BUTTON_NORTH,
+            Button::East => sys::gamepad::SDL_GAMEPAD_BUTTON_EAST,
+            Button::South => sys::gamepad::SDL_GAMEPAD_BUTTON_SOUTH,
+            Button::West => sys::gamepad::SDL_GAMEPAD_BUTTON_WEST,
+            Button::Back => sys::gamepad::SDL_GAMEPAD_BUTTON_BACK,
+            Button::Guide => sys::gamepad::SDL_GAMEPAD_BUTTON_GUIDE,
+            Button::Start => sys::gamepad::SDL_GAMEPAD_BUTTON_START,
+            Button::LeftStick => sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_STICK,
+            Button::RightStick => sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_STICK,
+            Button::LeftShoulder => sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_SHOULDER,
+            Button::RightShoulder => sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER,
+            Button::DPadUp => sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_UP,
+            Button::DPadDown => sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_DOWN,
+            Button::DPadLeft => sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_LEFT,
+            Button::DPadRight => sys::gamepad::SDL_GAMEPAD_BUTTON_DPAD_RIGHT,
+            Button::Misc1 => sys::gamepad::SDL_GAMEPAD_BUTTON_MISC1,
+            Button::LeftPaddle1 => sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_PADDLE1,
+            Button::RightPaddle1 => sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_PADDLE1,
+            Button::LeftPaddle2 => sys::gamepad::SDL_GAMEPAD_BUTTON_LEFT_PADDLE2,
+            Button::RightPaddle2 => sys::gamepad::SDL_GAMEPAD_BUTTON_RIGHT_PADDLE2,
+            Button::Touchpad => sys::gamepad::SDL_GAMEPAD_BUTTON_TOUCHPAD,
         }
     }
 }
@@ -430,7 +424,7 @@ impl Gamepad {
     pub fn instance_id(&self) -> u32 {
         let result = unsafe {
             let joystick = sys::gamepad::SDL_GetGamepadJoystick(self.raw);
-            sys::gamepad::SDL_GetJoystickID(joystick)
+            SDL_GetJoystickID(joystick)
         };
         result as u32
     }
@@ -531,7 +525,7 @@ impl Gamepad {
         let props = sys::gamepad::SDL_GetGamepadProperties(self.raw);
         sys::properties::SDL_GetBooleanProperty(
             props,
-            sys::gamepad::SDL_PROP_GAMEPAD_CAP_RGB_LED_BOOLEAN.into(),
+            sys::gamepad::SDL_PROP_GAMEPAD_CAP_RGB_LED_BOOLEAN.as_ptr(),
             false,
         )
     }
@@ -542,7 +536,7 @@ impl Gamepad {
         let props = sys::gamepad::SDL_GetGamepadProperties(self.raw);
         sys::properties::SDL_GetBooleanProperty(
             props,
-            sys::gamepad::SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN.into(),
+            sys::gamepad::SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN.as_ptr(),
             false,
         )
     }
@@ -553,7 +547,7 @@ impl Gamepad {
         let props = sys::gamepad::SDL_GetGamepadProperties(self.raw);
         sys::properties::SDL_GetBooleanProperty(
             props,
-            sys::gamepad::SDL_PROP_GAMEPAD_CAP_TRIGGER_RUMBLE_BOOLEAN.into(),
+            sys::gamepad::SDL_PROP_GAMEPAD_CAP_TRIGGER_RUMBLE_BOOLEAN.as_ptr(),
             false,
         )
     }
