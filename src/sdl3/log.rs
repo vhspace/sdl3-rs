@@ -23,7 +23,7 @@ pub enum Category {
 impl Category {
     #[allow(dead_code)]
     fn from_ll(value: u32) -> Category {
-        match unsafe { transmute::<u32, SDL_LogCategory>(src) } {
+        match unsafe { transmute::<u32, SDL_LogCategory>(value) } {
             SDL_LOG_CATEGORY_APPLICATION => Self::Application,
             SDL_LOG_CATEGORY_ERROR => Self::Error,
             SDL_LOG_CATEGORY_ASSERT => Self::Assert,

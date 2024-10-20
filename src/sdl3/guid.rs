@@ -1,6 +1,7 @@
+use libc::c_char;
 use std::ffi::{CStr, CString, NulError};
 use std::fmt::{Display, Error, Formatter};
-use libc::c_char;
+use sys::guid::SDL_GUID;
 
 /// Wrapper around a `SDL_GUID`, a globally unique identifier
 /// for a joystick.
@@ -70,7 +71,7 @@ impl Guid {
     }
 
     /// Return a copy of the internal GUID
-    pub fn raw(self) -> sys::joystick::SDL_GUID {
+    pub fn raw(self) -> SDL_GUID {
         self.raw
     }
 }

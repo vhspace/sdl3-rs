@@ -39,7 +39,7 @@ use crate::sys;
 use crate::video::{Window, WindowContext};
 use libc::{c_double, c_int};
 use pixels::PixelFormat;
-use std::convert::{Into, TryFrom};
+use std::convert::{Into, TryFrom, TryInto};
 use std::error::Error;
 use std::ffi::CStr;
 use std::fmt;
@@ -109,6 +109,27 @@ pub enum TextureAccess {
 impl From<TextureAccess> for sys::render::SDL_TextureAccess {
     fn from(access: TextureAccess) -> sys::render::SDL_TextureAccess {
         sys::render::SDL_TextureAccess(access as i32)
+    }
+}
+
+impl From<SDL_TextureAccess> for TextureAccess {
+    fn from(access: SDL_TextureAccess) -> TextureAccess {
+        match access {
+            sys::render::SDL_TEXTUREACCESS_STATIC => TextureAccess::Static,
+            sys::render::SDL_TEXTUREACCESS_STREAMING => TextureAccess::Streaming,
+            sys::render::SDL_TEXTUREACCESS_TARGET => TextureAccess::Target,
+            _ => panic!("Unknown texture access value: {}", access.0),
+        }
+    }
+}
+
+impl From<i64> for TextureAccess {
+    fn from(n: i64) -> TextureAccess {
+        let texture_access_c_int: std::ffi::c_int = n
+            .try_into()
+            .expect("Pixel format value out of range for c_int");
+        let texture_access = SDL_TextureAccess(texture_access_c_int);
+        texture_access.into()
     }
 }
 
@@ -779,14 +800,16 @@ fn ll_create_texture(
 
     // If the pixel format is YUV 4:2:0 and planar, the width and height must
     // be multiples-of-two. See issue #334 for details.
-    match pixel_format {
-        YV12 | IYUV => {
-            if w % 2 != 0 || h % 2 != 0 {
-                return Err(WidthMustBeMultipleOfTwoForFormat(width, pixel_format));
+    unsafe {
+        match pixel_format.raw() {
+            sys::pixels::SDL_PIXELFORMAT_YV12 | sys::pixels::SDL_PIXELFORMAT_IYUV => {
+                if w % 2 != 0 || h % 2 != 0 {
+                    return Err(WidthMustBeMultipleOfTwoForFormat(width, pixel_format));
+                }
             }
-        }
-        _ => (),
-    };
+            _ => (),
+        };
+    }
 
     Ok(
         unsafe {
@@ -1812,17 +1835,18 @@ struct InternalTexture {
 impl InternalTexture {
     #[doc(alias = "SDL_GetTextureProperties")]
     pub fn get_properties(&self) -> SDL_PropertiesID {
-        unsafe { sys::render::SDL_GetTextureProperties(self.raw.into()) }
+        unsafe { SDL_GetTextureProperties(self.raw.into()) }
     }
 
     pub fn get_format(&self) -> PixelFormat {
         let format = unsafe {
             sys::properties::SDL_GetNumberProperty(
                 self.get_properties(),
-                sys::render::SDL_PROP_TEXTURE_FORMAT_NUMBER.into(),
+                sys::render::SDL_PROP_TEXTURE_FORMAT_NUMBER.as_ptr(),
                 0,
             )
         };
+
         PixelFormat::from(format)
     }
 
@@ -1830,18 +1854,18 @@ impl InternalTexture {
         let access = unsafe {
             sys::properties::SDL_GetNumberProperty(
                 self.get_properties(),
-                sys::render::SDL_PROP_TEXTURE_ACCESS_NUMBER.into(),
+                sys::render::SDL_PROP_TEXTURE_ACCESS_NUMBER.as_ptr(),
                 0,
             )
         };
-        TextureAccess::from(access.into())
+        TextureAccess::from(access)
     }
 
     pub fn get_width(&self) -> u32 {
         unsafe {
             sys::properties::SDL_GetNumberProperty(
                 self.get_properties(),
-                sys::render::SDL_PROP_TEXTURE_WIDTH_NUMBER.into(),
+                sys::render::SDL_PROP_TEXTURE_WIDTH_NUMBER.as_ptr(),
                 0,
             ) as u32
         }
@@ -1851,7 +1875,7 @@ impl InternalTexture {
         unsafe {
             sys::properties::SDL_GetNumberProperty(
                 self.get_properties(),
-                sys::render::SDL_PROP_TEXTURE_HEIGHT_NUMBER.into(),
+                sys::render::SDL_PROP_TEXTURE_HEIGHT_NUMBER.as_ptr(),
                 0,
             ) as u32
         }
@@ -1945,25 +1969,27 @@ impl InternalTexture {
         // Check if the rectangle's position or size is odd, and if the pitch is odd.
         // This needs to be done in case the texture's pixel format is planar YUV.
         // See issue #334 for details.
-        let TextureQuery { format, .. } = self.query();
-        match format {
-            PixelFormat::YV12 | PixelFormat::IYUV => {
-                if let Some(r) = rect {
-                    if r.x() % 2 != 0 {
-                        return Err(XMustBeMultipleOfTwoForFormat(r.x(), format));
-                    } else if r.y() % 2 != 0 {
-                        return Err(YMustBeMultipleOfTwoForFormat(r.y(), format));
-                    } else if r.width() % 2 != 0 {
-                        return Err(WidthMustBeMultipleOfTwoForFormat(r.width(), format));
-                    } else if r.height() % 2 != 0 {
-                        return Err(HeightMustBeMultipleOfTwoForFormat(r.height(), format));
+        let format = self.get_format();
+        unsafe {
+            match format.raw() {
+                sys::pixels::SDL_PIXELFORMAT_YV12 | sys::pixels::SDL_PIXELFORMAT_IYUV => {
+                    if let Some(r) = rect {
+                        if r.x() % 2 != 0 {
+                            return Err(XMustBeMultipleOfTwoForFormat(r.x(), format));
+                        } else if r.y() % 2 != 0 {
+                            return Err(YMustBeMultipleOfTwoForFormat(r.y(), format));
+                        } else if r.width() % 2 != 0 {
+                            return Err(WidthMustBeMultipleOfTwoForFormat(r.width(), format));
+                        } else if r.height() % 2 != 0 {
+                            return Err(HeightMustBeMultipleOfTwoForFormat(r.height(), format));
+                        }
+                    };
+                    if pitch % 2 != 0 {
+                        return Err(PitchMustBeMultipleOfTwoForFormat(pitch, format));
                     }
-                };
-                if pitch % 2 != 0 {
-                    return Err(PitchMustBeMultipleOfTwoForFormat(pitch, format));
                 }
+                _ => {}
             }
-            _ => {}
         }
 
         let pitch = match validate_int(pitch as u32, "pitch") {
@@ -1980,7 +2006,7 @@ impl InternalTexture {
             )
         };
 
-        if result != 0 {
+        if !result {
             Err(SdlError(get_error()))
         } else {
             Ok(())
@@ -2024,9 +2050,10 @@ impl InternalTexture {
 
         // If the destination rectangle lies outside the texture boundaries,
         // SDL_UpdateYUVTexture will write outside allocated texture memory.
-        let tex_info = self.query();
+        let width_ = self.get_width();
+        let height_ = self.get_height();
         if let Some(ref r) = rect {
-            let tex_rect = Rect::new(0, 0, tex_info.width, tex_info.height);
+            let tex_rect = Rect::new(0, 0, width_, height_);
             let inside = match r.intersection(tex_rect) {
                 Some(intersection) => intersection == *r,
                 None => false,
@@ -2041,7 +2068,7 @@ impl InternalTexture {
         // Checking the lengths can prevent buffer overruns in SDL_UpdateYUVTexture.
         let height = match rect {
             Some(ref r) => r.height(),
-            None => tex_info.height,
+            None => height_,
         } as usize;
 
         //let wrong_length =
@@ -2110,7 +2137,7 @@ impl InternalTexture {
                 v_pitch,
             )
         };
-        if result != 0 {
+        if !result {
             Err(SdlError(get_error()))
         } else {
             Ok(())
@@ -2125,20 +2152,19 @@ impl InternalTexture {
     {
         // Call to SDL to populate pixel data
         let loaded = unsafe {
-            let q = self.query();
             let mut pixels = ptr::null_mut();
             let mut pitch = 0;
+            let height = self.get_height();
+            let format = self.get_format();
 
             let (rect_raw_ptr, height) = match rect.into() {
                 Some(ref rect) => (rect.raw(), rect.height() as usize),
-                None => (ptr::null(), q.height as usize),
+                None => (ptr::null(), height as usize),
             };
 
             let ret = sys::render::SDL_LockTexture(self.raw, rect_raw_ptr, &mut pixels, &mut pitch);
-            if ret == 0 {
-                let size = q
-                    .format
-                    .byte_size_from_pitch_and_height(pitch as usize, height);
+            if ret {
+                let size = format.byte_size_from_pitch_and_height(pitch as usize, height);
                 Ok((
                     ::std::slice::from_raw_parts_mut(pixels as *mut u8, size),
                     pitch,
@@ -2167,7 +2193,7 @@ impl InternalTexture {
         unsafe {
             sys::properties::SDL_GetNumberProperty(
                 props_id,
-                sys::render::SDL_PROP_TEXTURE_OPENGL_TEXTURE_NUMBER.into(),
+                sys::render::SDL_PROP_TEXTURE_OPENGL_TEXTURE_NUMBER.as_ptr(),
                 0,
             )
         }

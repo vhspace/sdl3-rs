@@ -1,5 +1,7 @@
 //! Haptic Functions
+
 use crate::sys;
+use sys::joystick::SDL_OpenJoystick;
 
 use crate::common::IntegerOrSdlError;
 use crate::get_error;
@@ -12,7 +14,7 @@ impl HapticSubsystem {
         use crate::common::IntegerOrSdlError::*;
 
         let haptic = unsafe {
-            let joystick = sys::haptic::SDL_OpenJoystick(joystick_index);
+            let joystick = SDL_OpenJoystick(joystick_index);
             sys::haptic::SDL_OpenHapticFromJoystick(joystick)
         };
 

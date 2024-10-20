@@ -12,20 +12,20 @@ use crate::sys;
 bitflags! {
     pub struct MessageBoxFlag: u32 {
         const ERROR =
-            sys::messagebox::SDL_MessageBoxFlags::SDL_MESSAGEBOX_ERROR as u32;
+            sys::messagebox::SDL_MESSAGEBOX_ERROR ;
         const WARNING =
-            sys::messagebox::SDL_MessageBoxFlags::SDL_MESSAGEBOX_WARNING as u32;
+            sys::messagebox::SDL_MESSAGEBOX_WARNING ;
         const INFORMATION =
-            sys::messagebox::SDL_MessageBoxFlags::SDL_MESSAGEBOX_INFORMATION as u32;
+            sys::messagebox::SDL_MESSAGEBOX_INFORMATION ;
     }
 }
 
 bitflags! {
     pub struct MessageBoxButtonFlag: u32 {
         const ESCAPEKEY_DEFAULT =
-            sys::messagebox::SDL_MessageBoxButtonFlags::SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT as u32;
+            sys::messagebox::SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
         const RETURNKEY_DEFAULT =
-            sys::messagebox::SDL_MessageBoxButtonFlags::SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT as u32;
+            sys::messagebox::SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
         const NOTHING = 0;
     }
 }
@@ -90,7 +90,9 @@ impl From<MessageBoxColorScheme> for [sys::messagebox::SDL_MessageBoxColor; 5] {
 
 impl Into<MessageBoxColorScheme> for [sys::messagebox::SDL_MessageBoxColor; 5] {
     fn into(self) -> MessageBoxColorScheme {
-        fn from_message_box_color(prim_color: sys::messagebox::SDL_MessageBoxColor) -> (u8, u8, u8) {
+        fn from_message_box_color(
+            prim_color: sys::messagebox::SDL_MessageBoxColor,
+        ) -> (u8, u8, u8) {
             (prim_color.r, prim_color.g, prim_color.b)
         }
         MessageBoxColorScheme {
@@ -248,7 +250,7 @@ where
             },
         };
         sys::messagebox::SDL_ShowMessageBox(&msg_box_data as *const _, &mut button_id as &mut _)
-    } ;
+    };
     if result {
         match button_id {
             -1 => Ok(ClickedButton::CloseButton),

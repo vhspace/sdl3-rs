@@ -3,6 +3,7 @@ extern crate raw_window_handle;
 use self::raw_window_handle::{
     HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle,
 };
+use sys::properties::SDL_GetPointerProperty;
 
 use crate::video::Window;
 
@@ -39,11 +40,11 @@ unsafe impl HasRawWindowHandle for Window {
 
             let window_properties = sys::video::SDL_GetWindowProperties(self.raw());
 
-            handle.ns_window = sys::video::SDL_GetPointerProperty(
+            handle.ns_window = SDL_GetPointerProperty(
                 window_properties,
                 sys::video::SDL_PROP_WINDOW_COCOA_WINDOW_POINTER.as_ptr(),
                 std::ptr::null_mut(),
-            ) as *mut libc::c_void;
+            );
 
             return RawWindowHandle::AppKit(handle);
         }
@@ -139,11 +140,6 @@ unsafe impl HasRawWindowHandle for Window {
                     );
                 }
             }
-        }
-
-        // Unsupported platform
-        {
-            panic!("This platform is not supported, please file an issue with raw-window-handle.");
         }
     }
 }
@@ -241,11 +237,6 @@ unsafe impl HasRawDisplayHandle for Window {
                     );
                 }
             }
-        }
-
-        // Unsupported platform
-        {
-            panic!("This platform is not supported, please file an issue with raw-window-handle.");
         }
     }
 }

@@ -116,9 +116,9 @@ pub fn set_with_priority(name: &str, value: &str, priority: &Hint) -> bool {
     let value = CString::new(value).unwrap();
 
     let priority_val = match *priority {
-        Hint::Normal => sys::hints::SDL_HintPriority::SDL_HINT_NORMAL,
-        Hint::Override => sys::hints::SDL_HintPriority::SDL_HINT_OVERRIDE,
-        Hint::Default => sys::hints::SDL_HintPriority::SDL_HINT_DEFAULT,
+        Hint::Normal => sys::hints::SDL_HINT_NORMAL,
+        Hint::Override => sys::hints::SDL_HINT_OVERRIDE,
+        Hint::Default => sys::hints::SDL_HINT_DEFAULT,
     };
 
     unsafe {

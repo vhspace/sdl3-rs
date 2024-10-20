@@ -1,6 +1,8 @@
 use crate::get_error;
 use crate::sys;
+use std::convert::TryInto;
 use std::convert::{Into, TryFrom};
+use std::ffi::c_int;
 use std::fmt::Debug;
 use std::ptr::null;
 use sys::everything::{SDL_PixelFormat, SDL_PixelFormatDetails};
@@ -237,17 +239,11 @@ impl Debug for PixelFormat {
     }
 }
 
-impl From<SDL_PixelFormat> for PixelFormat {
-    fn from(pf: SDL_PixelFormat) -> PixelFormat {
-        PixelFormat { raw: pf }
-    }
-}
-
 impl PixelFormat {
     pub unsafe fn pixel_format_details(&self) -> *const SDL_PixelFormatDetails {
         sys::pixels::SDL_GetPixelFormatDetails(self.raw)
     }
-    
+
     #[doc(alias = "SDL_GetPixelFormatForMasks")]
     pub fn from_masks(masks: PixelMasks) -> PixelFormat {
         unsafe {
@@ -398,6 +394,16 @@ impl PixelFormat {
 impl From<PixelFormat> for SDL_PixelFormat {
     fn from(pf: PixelFormat) -> SDL_PixelFormat {
         pf.raw
+    }
+}
+
+impl From<i64> for PixelFormat {
+    fn from(format: i64) -> PixelFormat {
+        let format_c_int: c_int = format
+            .try_into()
+            .expect("Pixel format value out of range for c_int");
+        let pixel_format = SDL_PixelFormat(format_c_int);
+        PixelFormat { raw: pixel_format }
     }
 }
 
