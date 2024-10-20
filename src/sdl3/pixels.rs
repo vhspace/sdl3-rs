@@ -384,8 +384,8 @@ impl PixelFormat {
 
     pub fn supports_alpha(self) -> bool {
         match self.raw {
-            ARGB4444 | ARGB1555 | ARGB8888 | ARGB2101010 | ABGR4444 | ABGR1555 | ABGR8888
-            | BGRA4444 | BGRA5551 | BGRA8888 | RGBA4444 | RGBA5551 | RGBA8888 => true,
+            SDL_PixelFormat::ARGB4444 | SDL_PixelFormat::ARGB1555 | SDL_PixelFormat::ARGB8888 | SDL_PixelFormat::ARGB2101010 | SDL_PixelFormat::ABGR4444 | SDL_PixelFormat::ABGR1555 | SDL_PixelFormat::ABGR8888
+            | SDL_PixelFormat::BGRA4444 | SDL_PixelFormat::BGRA5551 | SDL_PixelFormat::BGRA8888 | SDL_PixelFormat::RGBA4444 | SDL_PixelFormat::RGBA5551 | SDL_PixelFormat::RGBA8888 => true,
             _ => false,
         }
     }
