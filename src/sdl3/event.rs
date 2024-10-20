@@ -30,8 +30,8 @@ use crate::video::Orientation;
 use libc::c_int;
 use libc::c_void;
 use sys::events::{
-    SDL_GamepadAxisEvent, SDL_GamepadButtonEvent, SDL_GamepadDeviceEvent, SDL_JoyAxisEvent,
-    SDL_JoyButtonEvent, SDL_JoyDeviceEvent, SDL_JoyHatEvent, SDL_KeyboardEvent,
+    SDL_EventType, SDL_GamepadAxisEvent, SDL_GamepadButtonEvent, SDL_GamepadDeviceEvent,
+    SDL_JoyAxisEvent, SDL_JoyButtonEvent, SDL_JoyDeviceEvent, SDL_JoyHatEvent, SDL_KeyboardEvent,
     SDL_MouseButtonEvent, SDL_MouseMotionEvent, SDL_MouseWheelEvent,
 };
 use sys::everything::SDL_DisplayOrientation;
@@ -354,6 +354,11 @@ pub enum EventType {
 impl From<EventType> for u32 {
     fn from(t: EventType) -> u32 {
         t as u32
+    }
+}
+impl From<EventType> for SDL_EventType {
+    fn from(t: EventType) -> SDL_EventType {
+        SDL_EventType(t as u32)
     }
 }
 
@@ -1018,12 +1023,13 @@ impl Event {
                 win_event,
             } => {
                 let (win_event_id, data1, data2) = win_event.to_ll();
-                let event = WindowEvent {
-                    type_: win_event_id.into(),
+                let event = sys::events::SDL_WindowEvent {
+                    r#type: win_event_id.into(),
                     timestamp,
                     windowID: window_id,
                     data1,
                     data2,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(

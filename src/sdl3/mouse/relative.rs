@@ -18,7 +18,7 @@ impl RelativeMouseState {
         let mut y = 0.;
         let mouse_state = unsafe {
             // This call is the only difference between MouseState
-            sys::SDL_GetRelativeMouseState(&mut x, &mut y)
+            sys::mouse::SDL_GetRelativeMouseState(&mut x, &mut y)
         };
 
         RelativeMouseState {
@@ -39,7 +39,7 @@ impl RelativeMouseState {
         self.mouse_state
     }
 
-    fn button_mask(&self, button: u32) -> u32 {
+    fn button_mask(&self, button: i32) -> u32 {
         1 << (button - 1)
     }
 
@@ -47,34 +47,34 @@ impl RelativeMouseState {
     ///
     /// # Example
     /// ```no_run
-    /// use sdl2::mouse::MouseButton;
+    /// use sdl3::mouse::MouseButton;
     ///
-    /// fn is_a_pressed(e: &sdl2::EventPump) -> bool {
+    /// fn is_a_pressed(e: &sdl3::EventPump) -> bool {
     ///     e.mouse_state().left()
     /// }
     /// ```
     pub fn left(&self) -> bool {
-        (self.mouse_state & self.button_mask(sys::SDL_BUTTON_LEFT)) != 0
+        (self.mouse_state & self.button_mask(sys::mouse::SDL_BUTTON_LEFT)) != 0
     }
 
     /// Tests if the middle mouse button was pressed.
     pub fn middle(&self) -> bool {
-        (self.mouse_state & self.button_mask(sys::SDL_BUTTON_MIDDLE)) != 0
+        (self.mouse_state & self.button_mask(sys::mouse::SDL_BUTTON_MIDDLE)) != 0
     }
 
     /// Tests if the right mouse button was pressed.
     pub fn right(&self) -> bool {
-        (self.mouse_state & self.button_mask(sys::SDL_BUTTON_RIGHT)) != 0
+        (self.mouse_state & self.button_mask(sys::mouse::SDL_BUTTON_RIGHT)) != 0
     }
 
     /// Tests if the X1 mouse button was pressed.
     pub fn x1(&self) -> bool {
-        (self.mouse_state & self.button_mask(sys::SDL_BUTTON_X1)) != 0
+        (self.mouse_state & self.button_mask(sys::mouse::SDL_BUTTON_X1)) != 0
     }
 
     /// Tests if the X2 mouse button was pressed.
     pub fn x2(&self) -> bool {
-        (self.mouse_state & self.button_mask(sys::SDL_BUTTON_X2)) != 0
+        (self.mouse_state & self.button_mask(sys::mouse::SDL_BUTTON_X2)) != 0
     }
 
     /// Returns the x coordinate of the state
@@ -91,9 +91,9 @@ impl RelativeMouseState {
     ///
     /// # Example
     /// ```no_run
-    /// use sdl2::mouse::MouseButton;
+    /// use sdl3::mouse::MouseButton;
     ///
-    /// fn is_left_pressed(e: &sdl2::EventPump) -> bool {
+    /// fn is_left_pressed(e: &sdl3::EventPump) -> bool {
     ///     e.mouse_state().is_mouse_button_pressed(MouseButton::Left)
     /// }
     /// ```
@@ -106,14 +106,14 @@ impl RelativeMouseState {
     ///
     /// # Example
     /// ```no_run
-    /// use sdl2::mouse::MouseButton;
+    /// use sdl3::mouse::MouseButton;
     /// use std::collections::HashMap;
     ///
-    /// fn mouse_button_set(e: &sdl2::EventPump) -> HashMap<MouseButton, bool> {
+    /// fn mouse_button_set(e: &sdl3::EventPump) -> HashMap<MouseButton, bool> {
     ///     e.mouse_state().mouse_buttons().collect()
     /// }
     ///
-    /// fn find_first_pressed(e: &sdl2::EventPump) -> bool {
+    /// fn find_first_pressed(e: &sdl3::EventPump) -> bool {
     ///     for (key,value) in mouse_button_set(e) {
     ///         return value != false
     ///     }
@@ -132,10 +132,10 @@ impl RelativeMouseState {
     ///
     /// # Example
     /// ```no_run
-    /// use sdl2::mouse::MouseButton;
+    /// use sdl3::mouse::MouseButton;
     /// use std::collections::HashSet;
     ///
-    /// fn pressed_mouse_button_set(e: &sdl2::EventPump) -> HashSet<MouseButton> {
+    /// fn pressed_mouse_button_set(e: &sdl3::EventPump) -> HashSet<MouseButton> {
     ///     e.mouse_state().pressed_mouse_buttons().collect()
     /// }
     ///

@@ -2,10 +2,10 @@ use crate::rect::Rect;
 use crate::video::Window;
 use crate::EventPump;
 
+use crate::sys;
 use std::fmt;
 use std::mem::transmute;
-
-use crate::sys;
+use sys::video::SDL_GetWindowID;
 
 mod keycode;
 mod scancode;
@@ -64,7 +64,7 @@ impl<'a> KeyboardState<'a> {
     /// }
     /// ```
     pub fn is_scancode_pressed(&self, scancode: Scancode) -> bool {
-        self.keyboard_state[scancode as i32 as usize] != 0
+        self.keyboard_state[scancode as i32 as usize]
     }
 
     /// Returns an iterator all scancodes with a boolean indicating if the scancode is pressed.
@@ -107,7 +107,7 @@ impl<'a> KeyboardState<'a> {
 
 pub struct ScancodeIterator<'a> {
     index: i32,
-    keyboard_state: &'a [u8],
+    keyboard_state: &'a [bool],
 }
 
 impl<'a> Iterator for ScancodeIterator<'a> {
@@ -119,7 +119,7 @@ impl<'a> Iterator for ScancodeIterator<'a> {
             self.index += 1;
 
             if let Some(scancode) = Scancode::from_i32(index) {
-                let pressed = self.keyboard_state[index as usize] != 0;
+                let pressed = self.keyboard_state[index as usize];
 
                 Some((scancode, pressed))
             } else {
@@ -186,7 +186,7 @@ impl KeyboardUtil {
         if raw.is_null() {
             None
         } else {
-            let id = unsafe { sys::keyboard::SDL_GetWindowID(raw) };
+            let id = unsafe { SDL_GetWindowID(raw) };
             Some(id)
         }
     }
@@ -199,7 +199,9 @@ impl KeyboardUtil {
     #[doc(alias = "SDL_SetModState")]
     pub fn set_mod_state(&self, flags: Mod) {
         unsafe {
-            sys::keyboard::SDL_SetModState(transmute::<u32, sys::SDL_Keymod>(flags.bits() as u32));
+            sys::keyboard::SDL_SetModState(transmute::<u16, sys::keycode::SDL_Keymod>(
+                flags.bits(),
+            ));
         }
     }
 }
@@ -211,9 +213,10 @@ impl KeyboardUtil {
 /// ```no_run
 /// let sdl_context = sdl3::init().unwrap();
 /// let video_subsystem = sdl_context.video().unwrap();
+/// let window = video_subsystem.window("Example", 800, 600).build().unwrap();
 ///
 /// // Start accepting text input events...
-/// video_subsystem.text_input().start();
+/// video_subsystem.text_input().start(&window);
 /// ```
 pub struct TextInputUtil {
     _subsystem: crate::VideoSubsystem,
@@ -221,38 +224,42 @@ pub struct TextInputUtil {
 
 impl TextInputUtil {
     #[doc(alias = "SDL_StartTextInput")]
-    pub fn start(&self) {
+    pub fn start(&self, window: &Window) {
         unsafe {
-            sys::SDL_StartTextInput();
+            sys::keyboard::SDL_StartTextInput(window.raw());
         }
     }
 
     #[doc(alias = "SDL_TextInputActive")]
-    pub fn is_active(&self) -> bool {
-        unsafe { sys::SDL_TextInputActive() == sys::SDL_bool::SDL_TRUE }
+    pub fn is_active(&self, window: &Window) -> bool {
+        unsafe { sys::keyboard::SDL_TextInputActive(window.raw()) }
     }
 
     #[doc(alias = "SDL_StopTextInput")]
-    pub fn stop(&self) {
+    pub fn stop(&self, window: &Window) {
         unsafe {
-            sys::SDL_StopTextInput();
+            sys::keyboard::SDL_StopTextInput(window.raw());
         }
     }
 
-    #[doc(alias = "SDL_SetTextInputRect")]
-    pub fn set_rect(&self, rect: Rect) {
+    #[doc(alias = "SDL_SetTextInputArea")]
+    pub fn set_rect(&self, window: Window, rect: Rect, cursor: i32) {
         unsafe {
-            sys::SDL_SetTextInputRect(rect.raw() as *mut sys::SDL_Rect);
+            sys::keyboard::SDL_SetTextInputArea(
+                window.raw(),
+                rect.raw() as *mut sys::rect::SDL_Rect,
+                cursor,
+            );
         }
     }
 
     #[doc(alias = "SDL_HasScreenKeyboardSupport")]
     pub fn has_screen_keyboard_support(&self) -> bool {
-        unsafe { sys::SDL_HasScreenKeyboardSupport() == sys::SDL_bool::SDL_TRUE }
+        unsafe { sys::keyboard::SDL_HasScreenKeyboardSupport() }
     }
 
     #[doc(alias = "SDL_ScreenKeyboardShown")]
     pub fn is_screen_keyboard_shown(&self, window: &Window) -> bool {
-        unsafe { sys::SDL_ScreenKeyboardShown(window.raw()) == sys::SDL_bool::SDL_TRUE }
+        unsafe { sys::keyboard::SDL_ScreenKeyboardShown(window.raw()) }
     }
 }
