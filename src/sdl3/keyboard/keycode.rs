@@ -535,6 +535,12 @@ impl fmt::Display for Keycode {
     }
 }
 
+impl From<Keycode> for SDL_Keycode {
+    fn from(k: Keycode) -> SDL_Keycode {
+        k.to_ll()
+    }
+}
+
 use crate::keyboard::Scancode;
 
 impl Keycode {

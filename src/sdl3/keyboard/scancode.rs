@@ -519,6 +519,16 @@ impl Scancode {
             _ => return None,
         })
     }
+    
+    pub fn to_i32(self) -> i32 {
+        self as i32
+    }
+}
+
+impl From<Scancode> for SDL_Scancode {
+    fn from(scancode: Scancode) -> SDL_Scancode {
+        unsafe { transmute(scancode as u32) }
+    }
 }
 
 use std::fmt;

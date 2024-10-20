@@ -29,8 +29,9 @@ use crate::sys::events::SDL_EventFilter;
 use crate::video::Orientation;
 use libc::c_int;
 use libc::c_void;
-use sys::events::{SDL_EventType, SDL_KeyboardEvent};
+use sys::events::SDL_KeyboardEvent;
 use sys::everything::SDL_DisplayOrientation;
+use sys::stdinc::Uint16;
 
 struct CustomEventTypeMaps {
     sdl_id_to_type_id: HashMap<u32, ::std::any::TypeId>,
@@ -615,11 +616,15 @@ pub enum Event {
         timestamp: u64,
     },
 
-    Display {
+    DisplayAdded {
         timestamp: u64,
         display_index: u32,
-        display_event: DisplayEvent,
     },
+    DisplayRemoved {
+        timestamp: u64,
+        display_index: u32,
+    },
+
     Window {
         timestamp: u64,
         window_id: u32,
@@ -634,6 +639,9 @@ pub enum Event {
         scancode: Option<Scancode>,
         keymod: Mod,
         repeat: bool,
+        down: bool,
+        which: u32,
+        raw: Uint16,
     },
     KeyUp {
         timestamp: u64,
@@ -642,6 +650,9 @@ pub enum Event {
         scancode: Option<Scancode>,
         keymod: Mod,
         repeat: bool,
+        down: bool,
+        which: u32,
+        raw: Uint16,
     },
 
     TextEditing {
@@ -966,13 +977,14 @@ impl Event {
                 data2,
                 timestamp,
             } => {
-                let event = sys::events::SDL_EventType::SDL_EVENT_USER {
-                    type_: type_.into(),
+                let event = sys::events::SDL_UserEvent {
+                    r#type: sys::events::SDL_EVENT_USER.into(),
                     timestamp,
                     windowID: window_id,
                     code: code as i32,
                     data1,
                     data2,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -985,9 +997,10 @@ impl Event {
             }
 
             Event::Quit { timestamp } => {
-                let event = SDL_EventType::SDL_QuitEvent {
-                    type_: sys::events::SDL_EVENT_QUIT.into(),
+                let event = sys::events::SDL_QuitEvent {
+                    r#type: sys::events::SDL_EVENT_QUIT.into(),
                     timestamp,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -999,17 +1012,39 @@ impl Event {
                 }
             }
 
-            Event::Display {
+            Event::DisplayAdded {
                 timestamp,
                 display_index,
-                display_event,
             } => {
-                let (display_event_id, data1) = display_event.to_ll();
-                let event = sys::events::SDL_Event::SDL_DisplayEvent {
-                    type_: display_event_id.into(),
+                let event = sys::events::SDL_DisplayEvent {
+                    r#type: sys::events::SDL_EVENT_DISPLAY_ADDED,
                     timestamp,
                     displayID: display_index.into(),
                     data1,
+                    data2,
+                    reserved: 0,
+                };
+                unsafe {
+                    ptr::copy(
+                        &event,
+                        ret.as_mut_ptr() as *mut sys::events::SDL_DisplayEvent,
+                        1,
+                    );
+                    Some(ret.assume_init())
+                }
+            }
+
+            Event::DisplayRemoved {
+                timestamp,
+                display_index,
+            } => {
+                let event = sys::events::SDL_DisplayEvent {
+                    r#type: sys::events::SDL_EVENT_DISPLAY_REMOVED,
+                    timestamp,
+                    displayID: display_index.into(),
+                    data1,
+                    data2,
+                    reserved: 0,
                 };
                 unsafe {
                     ptr::copy(
@@ -1027,7 +1062,7 @@ impl Event {
                 win_event,
             } => {
                 let (win_event_id, data1, data2) = win_event.to_ll();
-                let event = sys::events::SDL_Event::SDL_WindowEvent {
+                let event = WindowEvent {
                     type_: win_event_id.into(),
                     timestamp,
                     windowID: window_id,
@@ -1051,6 +1086,9 @@ impl Event {
                 scancode,
                 keymod,
                 repeat,
+                down: bool,
+                which,
+                raw,
             } => {
                 let event = SDL_KeyboardEvent {
                     r#type: sys::events::SDL_EVENT_KEY_DOWN.into(),
@@ -1058,7 +1096,12 @@ impl Event {
                     windowID: window_id,
                     repeat,
                     reserved: 0,
-                    scancode: scancode.into(),
+                    scancode: scancode?.into(),
+                    which,
+                    down,
+                    key: keycode?.into(),
+                    r#mod: keymod.bits(),
+                    raw,
                 };
                 unsafe {
                     ptr::copy(
@@ -1076,16 +1119,22 @@ impl Event {
                 scancode,
                 keymod,
                 repeat,
+                down: bool,
+                which,
+                raw,
             } => {
-                let event = sys::events::SDL_Event::SDL_KeyboardEvent {
-                    type_: sys::events::SDL_EVENT_KEY_UP.into(),
+                let event = SDL_KeyboardEvent {
+                    r#type: sys::events::SDL_EVENT_KEY_UP.into(),
                     timestamp,
                     windowID: window_id,
-                    state: sys::events::SDL_Event::SDL_RELEASED as u8,
-                    repeat: repeat as u8,
-                    padding2: 0,
-                    padding3: 0,
-                    keysym,
+                    repeat,
+                    reserved: 0,
+                    scancode: scancode?.into(),
+                    which,
+                    down,
+                    key: keycode?.into(),
+                    r#mod: keymod.bits(),
+                    raw,
                 };
                 unsafe {
                     ptr::copy(
