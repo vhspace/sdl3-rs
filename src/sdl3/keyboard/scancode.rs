@@ -1,6 +1,5 @@
 #![allow(unreachable_patterns)]
 
-use libc::c_char;
 use std::ffi::{CStr, CString};
 use std::mem::transmute;
 
@@ -519,7 +518,7 @@ impl Scancode {
             _ => return None,
         })
     }
-    
+
     pub fn to_i32(self) -> i32 {
         self as i32
     }
@@ -547,7 +546,7 @@ impl Scancode {
     #[doc(alias = "SDL_GetScancodeFromKey")]
     pub fn from_keycode(keycode: Keycode, modstate: *mut SDL_Keymod) -> Option<Scancode> {
         unsafe {
-            match sys::keyboard::SDL_GetScancodeFromKey(keycode, modstate) {
+            match sys::keyboard::SDL_GetScancodeFromKey(keycode.into(), modstate) {
                 SDL_SCANCODE_UNKNOWN => None,
                 scancode_id => Scancode::from_i32(scancode_id.0),
             }
@@ -558,7 +557,7 @@ impl Scancode {
     pub fn from_name(name: &str) -> Option<Scancode> {
         unsafe {
             match CString::new(name) {
-                Ok(name) => match sys::SDL_GetScancodeFromName(name.as_ptr() as *const c_char) {
+                Ok(name) => match sys::keyboard::SDL_GetScancodeFromName(name.as_ptr()) {
                     SDL_SCANCODE_UNKNOWN => None,
                     scancode_id => Some(Scancode::from_i32(scancode_id.0).unwrap()),
                 },
@@ -573,7 +572,8 @@ impl Scancode {
         // The name string pointer lives in static, read-only memory.
         // Knowing this, we can always return a string slice.
         unsafe {
-            let buf = sys::SDL_GetScancodeName(transmute::<u32, SDL_Scancode>(self as u32));
+            let buf =
+                sys::keyboard::SDL_GetScancodeName(transmute::<u32, SDL_Scancode>(self as u32));
             ::std::str::from_utf8(CStr::from_ptr(buf as *const _).to_bytes()).unwrap()
         }
     }
