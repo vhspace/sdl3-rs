@@ -415,6 +415,7 @@ pub struct Canvas<T: RenderTarget> {
     target: T,
     context: Rc<RendererContext<T::Context>>,
     default_pixel_format: PixelFormat,
+    pub renderer_name: String,
 }
 
 /// Alias for a `Canvas` that was created out of a `Surface`
@@ -437,6 +438,11 @@ impl<'s> Canvas<Surface<'s>> {
                 target: surface,
                 context,
                 default_pixel_format,
+                renderer_name: unsafe {
+                    CStr::from_ptr(sys::render::SDL_GetRendererName(raw_renderer))
+                        .to_string_lossy()
+                        .into_owned()
+                },
             })
         } else {
             Err(get_error())
@@ -736,6 +742,11 @@ pub fn create_renderer(
             context,
             target: window,
             default_pixel_format,
+            renderer_name: unsafe {
+                CStr::from_ptr(sys::render::SDL_GetRendererName(raw))
+                    .to_string_lossy()
+                    .into_owned()
+            },
         })
     }
 }

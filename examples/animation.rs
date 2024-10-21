@@ -3,9 +3,6 @@ use std::path::Path;
 
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
-use sdl3::rect::Point;
-use sdl3::rect::Rect;
-use sdl3::render::FPoint;
 use sdl3::render::FRect;
 use std::time::Duration;
 
@@ -19,16 +16,10 @@ fn main() -> Result<(), String> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let mut canvas = window
-        .into_canvas()
-        .accelerated()
-        .build()
-        .map_err(|e| e.to_string())?;
+    let mut canvas = window.into_canvas();
     let texture_creator = canvas.texture_creator();
 
     canvas.set_draw_color(sdl3::pixels::Color::RGBA(0, 0, 0, 255));
-
-    let timer = sdl_context.timer()?;
 
     let mut event_pump = sdl_context.event_pump()?;
 
@@ -72,7 +63,7 @@ fn main() -> Result<(), String> {
             }
         }
 
-        let ticks = timer.ticks() as i32;
+        let ticks = sdl3::timer::ticks() as i32;
 
         // set the current frame for time
         source_rect_0.set_x((32 * ((ticks / 100) % frames_per_anim)) as f32);

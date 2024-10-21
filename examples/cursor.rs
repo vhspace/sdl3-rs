@@ -20,11 +20,7 @@ pub fn run(png: &Path) -> Result<(), String> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let mut canvas = window
-        .into_canvas()
-        .software()
-        .build()
-        .map_err(|e| e.to_string())?;
+    let mut canvas = window.into_canvas();
 
     let surface =
         Surface::from_file(png).map_err(|err| format!("failed to load cursor image: {}", err))?;
