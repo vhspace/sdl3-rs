@@ -9,7 +9,7 @@ Right now the project isn't building because the migration is in progress.
 
 ## Migration Progress
 
-- [ ] Update all modules to SDL3, use new [sdl3-sys](https://github.com/maia-s/sdl3-sys-rs) bindings,
+- [x] Update all modules to SDL3, use new [sdl3-sys](https://github.com/maia-s/sdl3-sys-rs) bindings,
   follow [migration guide](https://github.com/libsdl-org/SDL/blob/main/docs/README-migration.md).
 - [ ] Fix tests.
 - [ ] Update examples to SDL3.
