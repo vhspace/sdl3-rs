@@ -25,6 +25,26 @@ This is an interface to use SDL3 from Rust.
 Low-level C components are wrapped in Rust code to make them more idiomatic and
 abstract away inappropriate manual memory management.
 
+## Quick Start
+
+Add the following to your `Cargo.toml`:
+
+```toml
+[dependencies]
+sdl3 = { version = "0.1", features = ["use-pkg-config"] }
+```
+
+SDL3 requires the libsdl3 library to link and run. You may select how to link the library via features:
+
+- `use-pkg-config`: Use `pkg-config` to find the library.
+- `use-vcpkg`: Use `vcpkg` to find the library.
+- `static-link`: Link the library statically.
+- `link-framework`: Link the library as a framework on macOS.
+- `build-from-source`: Fetch and build the library from source.
+- `build-from-source-static`: Fetch and build the library from source and link it statically.
+
+You can read more about these options [here](https://github.com/maia-s/sdl3-sys-rs/tree/main/sdl3-sys#usage).
+
 # Documentation
 
 - [SDL3 higher-level documentation](https://docs.rs/sdl3/).

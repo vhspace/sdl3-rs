@@ -221,14 +221,9 @@ pub fn main() -> Result<(), String> {
 
     // the canvas allows us to both manipulate the property of the window and to change its content
     // via hardware or software rendering.
-    let mut canvas = window
-        .into_canvas()
-        //.target_texture() //FIXME: Unclear how to migrate this to SDL3, cf: https://github.com/libsdl-org/SDL/issues/8059
-        .present_vsync()
-        .build()
-        .map_err(|e| e.to_string())?;
+    let mut canvas = window.into_canvas();
 
-    println!("Using SDL_Renderer \"{}\"", canvas.info().name);
+    println!("Using SDL_Renderer \"{}\"", canvas.renderer_name);
     canvas.set_draw_color(Color::RGB(0, 0, 0));
     // clears the canvas with the color we set in `set_draw_color`.
     canvas.clear();

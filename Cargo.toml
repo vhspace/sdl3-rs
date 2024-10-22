@@ -5,9 +5,9 @@ repository = "https://github.com/revmischa/sdl3-rs"
 documentation = "https://crates.io/crates/sdl3"
 version = "0.9.0"
 license = "MIT"
-authors = [ "Tony Aldridge <tony@angry-lawyer.com>", "Cobrand <cobrandw@gmail.com>", "Mischa Spiegelmock <me@mish.dev>" ,"Lokathor <@Lokathor@mastodon.social>"]
+authors = ["Tony Aldridge <tony@angry-lawyer.com>", "Cobrand <cobrandw@gmail.com>", "Mischa Spiegelmock <me@mish.dev>", "Lokathor <@Lokathor@mastodon.social>"]
 keywords = ["SDL", "windowing", "graphics", "api", "engine"]
-categories = ["rendering","api-bindings","game-engines","multimedia"]
+categories = ["rendering", "api-bindings", "game-engines", "multimedia"]
 readme = "README.md"
 resolver = "2"
 
@@ -40,6 +40,15 @@ version = "0.5.0"
 optional = true
 
 [features]
+# various ways to link to libsdl3
+# provided by sdl3-sys: https://github.com/maia-s/sdl3-sys-rs/tree/main/sdl3-sys#usage
+use-pkg-config = ["sdl3-sys/use-pkg-config"]
+use-vcpkg = ["sdl3-sys/use-vcpkg"]
+static-link = ["sdl3-sys/link-static"]
+link-framework = ["sdl3-sys/link-framework"]
+build-from-source = ["sdl3-sys/build-from-source"]
+build-from-source-static = ["sdl3-sys/build-from-source-static"]
+
 unsafe_textures = []
 default = []
 gfx = ["c_vec"] #, "sdl3-sys/gfx"]
@@ -51,12 +60,6 @@ hidapi = []
 # test_mode allows SDL to be initialised from a thread that is not the main thread
 test-mode = []
 
-use-vcpkg = ["sdl3-sys/use-vcpkg"]
-static-link = ["sdl3-sys/link-static"]
-#use_mac_framework = ["sdl3-sys/use_mac_framework"]
-#bundled = ["sdl3-sys/bundled"]
-#use-bindgen = ["sdl3-sys/use-bindgen"]
-#use-pkgconfig = ["sdl3-sys/use-pkgconfig"]
 
 [package.metadata.docs.rs]
 features = ["default", "gfx", "mixer", "image", "ttf"]
