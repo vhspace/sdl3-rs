@@ -34,7 +34,7 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-sdl3 = { version = "0", features = ["use-pkg-config"] }
+sdl3 = { version = "0", features = ["build-from-source"] }
 ```
 
 SDL3 requires the libsdl3 library to link and run. You may select how to link the library via features:
