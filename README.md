@@ -48,3 +48,9 @@ according to the [SDL2->SDL3 migration guide](https://github.com/libsdl-org/SDL/
 
 If you want a library compatible with earlier versions of SDL, please
 see [Rust-sdl2](https://github.com/Rust-sdl2/rust-sdl2).
+
+# Screenshots
+
+<img width="873" alt="Screenshot 2024-10-22 at 1 13 20 PM" src="https://github.com/user-attachments/assets/3f2b7399-b8fd-4dc7-9d09-7fa04eff0e8a">
+
+
