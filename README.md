@@ -1,11 +1,12 @@
 # SDL3 ![Crates.io Version](https://img.shields.io/crates/v/sdl3)
 
-Bindings for SDL3 in Rust. Work in progress.
+Bindings for SDL3 in Rust.
 
 Now that the SDL3 API is mostly stabilized, we are working on a new version of the Rust bindings for SDL3.
 The migration is in progress, and we are looking for contributors to help us complete it.
 
-Right now the project isn't building because the migration is in progress.
+Expect some bugs and [missing features](https://wiki.libsdl.org/SDL3/NewFeatures).
+Feel free to create issues or work on them yourself.
 
 ## Migration Progress
 
@@ -13,6 +14,8 @@ Right now the project isn't building because the migration is in progress.
   follow [migration guide](https://github.com/libsdl-org/SDL/blob/main/docs/README-migration.md).
 - [ ] Fix tests.
 - [ ] Update examples to SDL3.
+- [ ] Add [new features](https://wiki.libsdl.org/SDL3/NewFeatures) from SDL3.
+- [ ] Update documentation.
 
 Please refer to the [sdl3-rs](https://github.com/revmischa/sdl3-rs) repository for the latest updates.
 
