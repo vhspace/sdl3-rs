@@ -34,17 +34,25 @@ Add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-sdl3 = { version = "0", features = ["build-from-source"] }
+sdl3 = { version = "0", features = [] }
 ```
 
-SDL3 requires the libsdl3 library to link and run. You may select how to link the library via features:
+## Linking to SDL3
 
+This crate requires the SDL3 system library to link and run.
+
+By default without any of these features enabled, it will try to link a system SDL3 library as a dynamic/shared library
+using the default library search paths.
+
+You may select how to link the library via features:
+
+- `build-from-source`: Fetch and build the library from source. Recommended if you just want it to work and don't have
+  SDL3 installed system-wide.
+- `build-from-source-static`: Fetch and build the library from source and link it statically.
 - `use-pkg-config`: Use `pkg-config` to find the library.
 - `use-vcpkg`: Use `vcpkg` to find the library.
 - `static-link`: Link the library statically.
 - `link-framework`: Link the library as a framework on macOS.
-- `build-from-source`: Fetch and build the library from source.
-- `build-from-source-static`: Fetch and build the library from source and link it statically.
 
 You can read more about these options [here](https://github.com/maia-s/sdl3-sys-rs/tree/main/sdl3-sys#usage).
 
