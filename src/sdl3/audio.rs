@@ -67,6 +67,50 @@ use sys::audio::{SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, SDL_AUDIO_DEVICE_DEFAULT_REC
 use sys::stdinc::SDL_free;
 
 impl AudioSubsystem {
+    /// Enumerate audio playback devices.
+    #[doc(alias = "SDL_GetAudioPlaybackDevices")]
+    pub fn get_audio_playback_devices(&self) -> Result<Vec<String>, String> {
+        unsafe {
+            self.get_audio_devices(|num_devices| {
+                sys::audio::SDL_GetAudioPlaybackDevices(num_devices)
+            })
+        }
+    }
+
+    /// Enumerate audio recording devices.
+    #[doc(alias = "SDL_GetAudioRecordingDevices")]
+    pub fn get_audio_recording_devices(&self) -> Result<Vec<String>, String> {
+        self.get_audio_devices(|num_devices| unsafe {
+            sys::audio::SDL_GetAudioRecordingDevices(num_devices)
+        })
+    }
+
+    fn get_audio_devices<F>(&self, get_devices: F) -> Result<Vec<String>, String>
+    where
+        F: FnOnce(&mut i32) -> *mut sys::audio::SDL_AudioDeviceID,
+    {
+        let mut num_devices: i32 = 0;
+        let devices = unsafe { get_devices(&mut num_devices) };
+        if devices.is_null() {
+            return Err(get_error());
+        }
+
+        let mut device_names = Vec::new();
+        for i in 0..num_devices {
+            let instance_id = unsafe { *devices.offset(i as isize) };
+            let device_name = unsafe {
+                let name_ptr = sys::audio::SDL_GetAudioDeviceName(instance_id);
+                if name_ptr.is_null() {
+                    return Err(get_error());
+                }
+                CStr::from_ptr(name_ptr).to_str().unwrap().to_owned()
+            };
+            device_names.push(device_name);
+        }
+
+        unsafe { SDL_free(devices as *mut c_void) };
+        Ok(device_names)
+    }
     /// Open a default playback device with the specified audio spec.
     pub fn open_playback_device(&self, spec: &AudioSpec) -> Result<AudioDevice, String> {
         self.open_device(sys::audio::SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, spec)
