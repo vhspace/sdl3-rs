@@ -69,9 +69,9 @@ use sys::stdinc::SDL_free;
 impl AudioSubsystem {
     /// Enumerate audio playback devices.
     #[doc(alias = "SDL_GetAudioPlaybackDevices")]
-    pub fn get_audio_playback_devices(&self) -> Result<Vec<String>, String> {
+    pub fn get_audio_playback_devices(&self) -> Result<Vec<AudioDevice>, String> {
         unsafe {
-            self.get_audio_devices(|num_devices| {
+            self.get_audio_device_ids(|num_devices| {
                 sys::audio::SDL_GetAudioPlaybackDevices(num_devices)
             })
         }
@@ -79,13 +79,13 @@ impl AudioSubsystem {
 
     /// Enumerate audio recording devices.
     #[doc(alias = "SDL_GetAudioRecordingDevices")]
-    pub fn get_audio_recording_devices(&self) -> Result<Vec<String>, String> {
-        self.get_audio_devices(|num_devices| unsafe {
+    pub fn get_audio_recording_devices(&self) -> Result<Vec<AudioDevice>, String> {
+        self.get_audio_device_ids(|num_devices| unsafe {
             sys::audio::SDL_GetAudioRecordingDevices(num_devices)
         })
     }
 
-    fn get_audio_devices<F>(&self, get_devices: F) -> Result<Vec<String>, String>
+    fn get_audio_device_ids<F>(&self, get_devices: F) -> Result<Vec<AudioDevice>, String>
     where
         F: FnOnce(&mut i32) -> *mut sys::audio::SDL_AudioDeviceID,
     {
@@ -95,30 +95,23 @@ impl AudioSubsystem {
             return Err(get_error());
         }
 
-        let mut device_names = Vec::new();
+        let mut ret = Vec::new();
         for i in 0..num_devices {
             let instance_id = unsafe { *devices.offset(i as isize) };
-            let device_name = unsafe {
-                let name_ptr = sys::audio::SDL_GetAudioDeviceName(instance_id);
-                if name_ptr.is_null() {
-                    return Err(get_error());
-                }
-                CStr::from_ptr(name_ptr).to_str().unwrap().to_owned()
-            };
-            device_names.push(device_name);
+            ret.push(AudioDevice::new(instance_id))
         }
 
         unsafe { SDL_free(devices as *mut c_void) };
-        Ok(device_names)
+        Ok(ret)
     }
     /// Open a default playback device with the specified audio spec.
     pub fn open_playback_device(&self, spec: &AudioSpec) -> Result<AudioDevice, String> {
-        self.open_device(sys::audio::SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, spec)
+        self.open_device(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, spec)
     }
 
     /// Open a default recording device with the specified audio spec.
     pub fn open_recording_device(&self, spec: &AudioSpec) -> Result<AudioDevice, String> {
-        self.open_device(sys::audio::SDL_AUDIO_DEVICE_DEFAULT_RECORDING, spec)
+        self.open_device(SDL_AUDIO_DEVICE_DEFAULT_RECORDING, spec)
     }
 
     /// General method to open a device by ID.
@@ -132,7 +125,7 @@ impl AudioSubsystem {
         if device == 0 {
             Err(get_error())
         } else {
-            Ok(AudioDevice { device_id: device })
+            Ok(AudioDevice::new(device))
         }
     }
 
@@ -639,6 +632,9 @@ impl Drop for AudioDeviceID {
 /// Represents an open audio device (playback or recording).
 pub struct AudioDevice {
     device_id: sys::audio::SDL_AudioDeviceID,
+
+    // Cache the name of the device.
+    _name: Option<String>,
 }
 
 impl Drop for AudioDevice {
@@ -650,6 +646,29 @@ impl Drop for AudioDevice {
 }
 
 impl AudioDevice {
+    pub fn new(device_id: sys::audio::SDL_AudioDeviceID) -> Self {
+        AudioDevice {
+            device_id,
+            _name: None,
+        }
+    }
+
+    pub fn get_name(&mut self) -> String {
+        if let Some(name) = &self._name {
+            return name.clone();
+        }
+
+        let name = unsafe {
+            let name_ptr = sys::audio::SDL_GetAudioDeviceName(self.device_id);
+            if name_ptr.is_null() {
+                return get_error();
+            }
+            CStr::from_ptr(name_ptr).to_str().unwrap().to_owned()
+        };
+        self._name = Some(name.clone());
+        name
+    }
+
     /// Create an `AudioStream` for this device with the specified spec.
     pub fn open_stream(&self, spec: &AudioSpec) -> Result<AudioStream, String> {
         let sdl_spec: sys::audio::SDL_AudioSpec = spec.clone().into();
@@ -697,9 +716,7 @@ impl AudioDevice {
                 id => {
                     let device_id = AudioDeviceID::Device(id);
 
-                    Ok(AudioDevice {
-                        device_id: device_id.id(),
-                    })
+                    Ok(AudioDevice::new(device_id.id()))
                 }
             }
         }
