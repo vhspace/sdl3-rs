@@ -57,7 +57,7 @@ extern crate c_vec;
 extern crate lazy_static;
 pub extern crate libc;
 pub extern crate sdl3_sys as sys;
-
+extern crate wgpu;
 // use sdl3_sys as sys;
 
 pub use crate::sdl::*;

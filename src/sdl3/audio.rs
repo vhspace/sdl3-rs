@@ -92,6 +92,19 @@ impl AudioSubsystem {
         }
     }
 
+    pub fn open_stream_with_callback<CB, Channel>(
+        &self,
+        device: &AudioDevice,
+        spec: &AudioSpec,
+        callback: CB,
+    ) -> Result<AudioStreamWithCallback<CB>, String>
+    where
+        CB: AudioCallback<Channel>,
+        Channel: AudioFormatNum + 'static,
+    {
+        device.open_stream_with_callback(spec, callback)
+    }
+
     pub fn open_playback_stream<CB, Channel>(
         &self,
         spec: &AudioSpec,
