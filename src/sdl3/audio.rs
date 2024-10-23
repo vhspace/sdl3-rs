@@ -852,11 +852,24 @@ impl<CB> Drop for AudioStreamWithCallback<CB> {
 }
 
 impl<CB> AudioStreamWithCallback<CB> {
-    pub fn pause(&self) -> bool {
-        unsafe { sys::audio::SDL_PauseAudioStreamDevice(self.base_stream.stream) }
+    /// Pauses playback of the audio stream.
+    #[doc(alias = "SDL_PauseAudioStream")]
+    pub fn pause(&self) -> Result<(), String> {
+        if unsafe { sys::audio::SDL_PauseAudioStreamDevice(self.base_stream.stream) } {
+            Ok(())
+        } else {
+            Err(get_error())
+        }
     }
-    pub fn resume(&self) -> bool {
-        unsafe { sys::audio::SDL_ResumeAudioStreamDevice(self.base_stream.stream) }
+
+    /// Resumes playback of the audio stream.
+    #[doc(alias = "SDL_ResumeAudioStream")]
+    pub fn resume(&self) -> Result<(), String> {
+        if unsafe { sys::audio::SDL_ResumeAudioStreamDevice(self.base_stream.stream) } {
+            Ok(())
+        } else {
+            Err(get_error())
+        }
     }
 }
 
