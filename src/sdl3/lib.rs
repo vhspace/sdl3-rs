@@ -17,7 +17,7 @@
 //!         .build()
 //!         .unwrap();
 //!
-//!     let mut canvas = window.into_canvas().build().unwrap();
+//!     let mut canvas = window.into_canvas();
 //!
 //!     canvas.set_draw_color(Color::RGB(0, 255, 255));
 //!     canvas.clear();
@@ -57,7 +57,6 @@ extern crate c_vec;
 extern crate lazy_static;
 pub extern crate libc;
 pub extern crate sdl3_sys as sys;
-extern crate wgpu;
 // use sdl3_sys as sys;
 
 pub use crate::sdl::*;
