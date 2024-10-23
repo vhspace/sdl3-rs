@@ -632,9 +632,6 @@ impl Drop for AudioDeviceID {
 /// Represents an open audio device (playback or recording).
 pub struct AudioDevice {
     device_id: sys::audio::SDL_AudioDeviceID,
-
-    // Cache the name of the device.
-    _name: Option<String>,
 }
 
 impl Drop for AudioDevice {
@@ -647,29 +644,23 @@ impl Drop for AudioDevice {
 
 impl AudioDevice {
     pub fn new(device_id: sys::audio::SDL_AudioDeviceID) -> Self {
-        AudioDevice {
-            device_id,
-            _name: None,
-        }
+        AudioDevice { device_id }
     }
 
-    pub fn get_name(&mut self) -> String {
-        if let Some(name) = &self._name {
-            return name.clone();
-        }
-
-        let name = unsafe {
+    /// Get the name of the audio device.
+    #[doc(alias = "SDL_GetAudioDeviceName")]
+    pub fn name(&self) -> String {
+        unsafe {
             let name_ptr = sys::audio::SDL_GetAudioDeviceName(self.device_id);
             if name_ptr.is_null() {
                 return get_error();
             }
             CStr::from_ptr(name_ptr).to_str().unwrap().to_owned()
-        };
-        self._name = Some(name.clone());
-        name
+        }
     }
 
     /// Create an `AudioStream` for this device with the specified spec.
+    #[doc(alias = "SDL_OpenAudioDeviceStream")]
     pub fn open_stream(&self, spec: &AudioSpec) -> Result<AudioStream, String> {
         let sdl_spec: sys::audio::SDL_AudioSpec = spec.clone().into();
         let stream = unsafe {
