@@ -5,7 +5,12 @@ repository = "https://github.com/revmischa/sdl3-rs"
 documentation = "https://crates.io/crates/sdl3"
 version = "0.10.5"
 license = "MIT"
-authors = ["Tony Aldridge <tony@angry-lawyer.com>", "Cobrand <cobrandw@gmail.com>", "Mischa Spiegelmock <me@mish.dev>", "Lokathor <@Lokathor@mastodon.social>"]
+authors = [
+  "Tony Aldridge <tony@angry-lawyer.com>",
+  "Cobrand <cobrandw@gmail.com>",
+  "Mischa Spiegelmock <me@mish.dev>",
+  "Lokathor <@Lokathor@mastodon.social>",
+]
 keywords = ["graphics", "engine", "cross-platform", "input", "audio"]
 categories = ["rendering", "api-bindings", "game-engines", "multimedia"]
 readme = "README.md"
@@ -51,7 +56,7 @@ build-from-source-static = ["sdl3-sys/build-from-source-static"]
 
 unsafe_textures = []
 default = []
-gfx = ["c_vec"] #, "sdl3-sys/gfx"]
+gfx = ["c_vec"]      #, "sdl3-sys/gfx"]
 #mixer = ["sdl3-sys/mixer"]
 #image = ["sdl3-sys/image"]
 #ttf = ["sdl3-sys/ttf"]
@@ -167,7 +172,13 @@ name = "raw-window-handle-with-wgpu"
 dependencies = ["sdl3"]
 
 # dependencies required when building examples and tests for this crate
-dev-dependencies = ["sdl3", "sdl3-image[libjpeg-turbo,tiff,libwebp]", "sdl3-ttf", "sdl3-gfx", "sdl3-mixer"]
+dev-dependencies = [
+  "sdl3",
+  "sdl3-image[libjpeg-turbo,tiff,libwebp]",
+  "sdl3-ttf",
+  "sdl3-gfx",
+  "sdl3-mixer",
+]
 git = "https://github.com/microsoft/vcpkg"
 rev = "acc3bcf" # release 2022.08.15
 
