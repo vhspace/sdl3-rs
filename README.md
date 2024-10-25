@@ -1,11 +1,12 @@
 # SDL3 ![Crates.io Version](https://img.shields.io/crates/v/sdl3)
 
-Bindings for SDL3 in Rust. Work in progress.
+Bindings for SDL3 in Rust.
 
 Now that the SDL3 API is mostly stabilized, we are working on a new version of the Rust bindings for SDL3.
 The migration is in progress, and we are looking for contributors to help us complete it.
 
-Right now the project isn't building because the migration is in progress.
+Expect some bugs and [missing features](https://wiki.libsdl.org/SDL3/NewFeatures).
+Feel free to create issues or work on them yourself.
 
 ## Migration Progress
 
@@ -13,6 +14,8 @@ Right now the project isn't building because the migration is in progress.
   follow [migration guide](https://github.com/libsdl-org/SDL/blob/main/docs/README-migration.md).
 - [ ] Fix tests.
 - [ ] Update examples to SDL3.
+- [ ] Add [new features](https://wiki.libsdl.org/SDL3/NewFeatures) from SDL3.
+- [ ] Update documentation.
 
 Please refer to the [sdl3-rs](https://github.com/revmischa/sdl3-rs) repository for the latest updates.
 
@@ -24,6 +27,34 @@ This is an interface to use SDL3 from Rust.
 
 Low-level C components are wrapped in Rust code to make them more idiomatic and
 abstract away inappropriate manual memory management.
+
+## Quick Start
+
+Add the following to your `Cargo.toml`:
+
+```toml
+[dependencies]
+sdl3 = { version = "0", features = [] }
+```
+
+## Linking to SDL3
+
+This crate requires the SDL3 system library to link and run.
+
+By default without any of these features enabled, it will try to link a system SDL3 library as a dynamic/shared library
+using the default library search paths.
+
+You may select how to link the library via features:
+
+- `build-from-source`: Fetch and build the library from source. Recommended if you just want it to work and don't have
+  SDL3 installed system-wide.
+- `build-from-source-static`: Fetch and build the library from source and link it statically.
+- `use-pkg-config`: Use `pkg-config` to find the library.
+- `use-vcpkg`: Use `vcpkg` to find the library.
+- `static-link`: Link the library statically.
+- `link-framework`: Link the library as a framework on macOS.
+
+You can read more about these options [here](https://github.com/maia-s/sdl3-sys-rs/tree/main/sdl3-sys#usage).
 
 # Documentation
 
