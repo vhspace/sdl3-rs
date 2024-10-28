@@ -691,6 +691,36 @@ impl VideoSubsystem {
         WindowBuilder::new(self, title, width, height)
     }
 
+    /// Create a window with a renderer.
+    #[doc(alias = "SDL_CreateWindowAndRenderer")]
+    pub fn window_and_renderer(
+        &self,
+        title: &str,
+        width: u32,
+        height: u32,
+    ) -> Result<WindowCanvas, String> {
+        let mut sdl_window = null_mut();
+        let mut renderer = null_mut();
+        let result = unsafe {
+            sys::render::SDL_CreateWindowAndRenderer(
+                title.as_ptr() as *const c_char,
+                width as c_int,
+                height as c_int,
+                0,
+                &mut sdl_window,
+                &mut renderer,
+            )
+        };
+        if !result {
+            return Err(get_error());
+        }
+        // do we need to add an option to create a metal view here?
+        let window =
+            unsafe { Window::from_ll(self.clone(), sdl_window, 0 as sys::metal::SDL_MetalView) };
+
+        Ok(WindowCanvas::from_window_and_renderer(window, renderer))
+    }
+
     /// Initializes a new `PopupWindowBuilder`; a convenience method that calls `PopupWindowBuilder::new()`.
     pub unsafe fn popup_window(
         &self,

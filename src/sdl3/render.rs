@@ -33,7 +33,6 @@ use crate::get_error;
 use crate::pixels;
 use crate::rect::Point;
 use crate::rect::Rect;
-use crate::surface;
 use crate::surface::{Surface, SurfaceContext, SurfaceRef};
 use crate::sys;
 use crate::video::{Window, WindowContext};
@@ -428,7 +427,7 @@ impl<'s> Canvas<Surface<'s>> {
     /// This method should only fail if SDL2 is not built with rendering
     /// support, or there's an out-of-memory error.
     #[doc(alias = "SDL_CreateSoftwareRenderer")]
-    pub fn from_surface(surface: surface::Surface<'s>) -> Result<Self, String> {
+    pub fn from_surface(surface: Surface<'s>) -> Result<Self, String> {
         let raw_renderer = unsafe { sys::render::SDL_CreateSoftwareRenderer(surface.raw()) };
         if !raw_renderer.is_null() {
             let context =
@@ -510,6 +509,24 @@ impl Canvas<Window> {
     #[inline]
     pub fn default_pixel_format(&self) -> PixelFormat {
         self.window().window_pixel_format()
+    }
+
+    pub fn from_window_and_renderer(
+        window: Window,
+        renderer: *mut sys::render::SDL_Renderer,
+    ) -> Self {
+        let context = Rc::new(unsafe { RendererContext::from_ll(renderer, window.context()) });
+        let default_pixel_format = window.window_pixel_format();
+        Canvas::<Window> {
+            context,
+            target: window,
+            default_pixel_format,
+            renderer_name: unsafe {
+                CStr::from_ptr(sys::render::SDL_GetRendererName(renderer))
+                    .to_string_lossy()
+                    .into_owned()
+            },
+        }
     }
 
     /// Returns a `TextureCreator` that can create Textures to be drawn on this `Canvas`
@@ -736,18 +753,7 @@ pub fn create_renderer(
     if raw.is_null() {
         Err(SdlError(get_error()))
     } else {
-        let context = Rc::new(unsafe { RendererContext::from_ll(raw, window.context()) });
-        let default_pixel_format = window.window_pixel_format();
-        Ok(Canvas {
-            context,
-            target: window,
-            default_pixel_format,
-            renderer_name: unsafe {
-                CStr::from_ptr(sys::render::SDL_GetRendererName(raw))
-                    .to_string_lossy()
-                    .into_owned()
-            },
-        })
+        Ok(Canvas::from_window_and_renderer(window, raw))
     }
 }
 
