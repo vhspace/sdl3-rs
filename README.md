@@ -2,16 +2,23 @@
 
 Bindings for SDL3 in Rust.
 
+SDL is the [Simple Directmedia Library](https://www.libsdl.org/), a cross-platform library to
+abstract the platform-specific details for building applications. It takes care of everything
+from handling events, creating windows, playing audio, accessing device cameras and sensors,
+locking, GPU access, and much more. See more here: [https://wiki.libsdl.org/SDL3/APIByCategory](https://wiki.libsdl.org/SDL3/APIByCategory).
+
+SDL officially supports Windows, macOS, Linux, iOS, and Android, and several other platforms.
+
+## Migration Progress
+
 Now that the SDL3 API is mostly stabilized, we are working on a new version of the Rust bindings for SDL3.
 The migration is in progress, and we are looking for contributors to help us complete it.
 
 Expect some bugs and [missing features](https://wiki.libsdl.org/SDL3/NewFeatures).
 Feel free to create issues or work on them yourself.
 
-## Migration Progress
-
 - [x] Update all modules to SDL3, use new [sdl3-sys](https://github.com/maia-s/sdl3-sys-rs) bindings,
-  follow [migration guide](https://github.com/libsdl-org/SDL/blob/main/docs/README-migration.md).
+      follow [migration guide](https://github.com/libsdl-org/SDL/blob/main/docs/README-migration.md).
 - [ ] Fix tests.
 - [ ] Update examples to SDL3.
 - [ ] Add [new features](https://wiki.libsdl.org/SDL3/NewFeatures) from SDL3.
@@ -83,5 +90,3 @@ see [Rust-sdl2](https://github.com/Rust-sdl2/rust-sdl2).
 # Screenshots
 
 <img width="873" alt="Screenshot 2024-10-22 at 1 13 20 PM" src="https://github.com/user-attachments/assets/3f2b7399-b8fd-4dc7-9d09-7fa04eff0e8a">
-
-
