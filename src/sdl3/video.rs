@@ -1921,7 +1921,7 @@ impl Window {
     pub fn set_fullscreen(&mut self, fullscreen: bool) -> Result<(), String> {
         unsafe {
             let result = sys::video::SDL_SetWindowFullscreen(self.context.raw, fullscreen);
-            if !result {
+            if result {
                 Ok(())
             } else {
                 Err(get_error())
