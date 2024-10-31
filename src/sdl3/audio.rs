@@ -57,12 +57,12 @@ use crate::sys;
 use crate::AudioSubsystem;
 use iostream::IOStream;
 use libc::c_void;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
+use std::convert::TryInto;
 use std::ffi::{c_int, CStr};
+use std::io::{self, Read};
 use std::marker::PhantomData;
-use std::ops::{Deref, DerefMut};
 use std::path::Path;
-use std::ptr::null_mut;
 use sys::audio::{SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, SDL_AUDIO_DEVICE_DEFAULT_RECORDING};
 use sys::stdinc::SDL_free;
 
@@ -979,6 +979,17 @@ impl AudioStream {
         unsafe { sys::audio::SDL_ResumeAudioStreamDevice(self.stream) }
     }
 
+    ///Get the number of converted/resampled bytes available.
+    #[doc(alias = "SDL_GetAudioStreamAvailable")]
+    pub fn get_available(&self) -> Result<c_int, String> {
+        let available = unsafe { sys::audio::SDL_GetAudioStreamAvailable(self.stream) };
+        if available == -1 {
+            Err(get_error())
+        } else {
+            Ok(available)
+        }
+    }
+
     // #[doc(alias = "SDL_LockAudioStream")]
     // pub fn lock(&mut self) -> AudioStreamLockGuard<CB> {
     //     unsafe { sys::audio::SDL_LockAudioStream(self.get_stream()) };
@@ -987,6 +998,25 @@ impl AudioStream {
     //         _nosend: PhantomData,
     //     }
     // }
+}
+
+impl Read for AudioStream {
+    /// Read audio data from the stream.
+    #[doc(alias = "SDL_GetAudioStreamData")]
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let ret = unsafe {
+            sys::audio::SDL_GetAudioStreamData(
+                self.stream,
+                buf.as_mut_ptr().cast(),
+                buf.len() as c_int,
+            )
+        };
+        if ret == -1 {
+            Err(io::Error::new(io::ErrorKind::Other, get_error()))
+        } else {
+            Ok(ret as usize)
+        }
+    }
 }
 
 // TODO:
