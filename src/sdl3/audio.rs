@@ -213,7 +213,7 @@ impl AudioSubsystem {
     }
 }
 
-#[repr(i32)]
+#[repr(u32)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum AudioFormat {
     /// Unsigned 8-bit samples

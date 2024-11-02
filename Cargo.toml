@@ -26,8 +26,7 @@ libc = "0.2.92"
 lazy_static = "1.4.0"
 
 [dependencies.sdl3-sys]
-# path = "sdl3-sys"
-version = "0.0.10+SDL-preview-3.1.3"
+version = "0.1.1"
 
 [dependencies.c_vec]
 # allow both 1.* and 2.0 versions

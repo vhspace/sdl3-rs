@@ -401,7 +401,7 @@ impl Joystick {
         let props = unsafe { sys::joystick::SDL_GetJoystickProperties(self.raw) };
         sys::properties::SDL_GetBooleanProperty(
             props,
-            sys::joystick::SDL_PROP_JOYSTICK_CAP_RGB_LED_BOOLEAN.as_ptr(),
+            sys::joystick::SDL_PROP_JOYSTICK_CAP_RGB_LED_BOOLEAN,
             false,
         )
     }
@@ -412,7 +412,7 @@ impl Joystick {
         let props = unsafe { sys::joystick::SDL_GetJoystickProperties(self.raw) };
         sys::properties::SDL_GetBooleanProperty(
             props,
-            sys::joystick::SDL_PROP_JOYSTICK_CAP_RUMBLE_BOOLEAN.as_ptr(),
+            sys::joystick::SDL_PROP_JOYSTICK_CAP_RUMBLE_BOOLEAN,
             false,
         )
     }
@@ -423,7 +423,7 @@ impl Joystick {
         let props = unsafe { sys::joystick::SDL_GetJoystickProperties(self.raw) };
         sys::properties::SDL_GetBooleanProperty(
             props,
-            sys::joystick::SDL_PROP_JOYSTICK_CAP_TRIGGER_RUMBLE_BOOLEAN.as_ptr(),
+            sys::joystick::SDL_PROP_JOYSTICK_CAP_TRIGGER_RUMBLE_BOOLEAN,
             false,
         )
     }
