@@ -1195,7 +1195,7 @@ impl WindowBuilder {
 
             let raw = sys::video::SDL_CreateWindowWithProperties(props);
             SDL_DestroyProperties(props);
-            let metal_view = 0 as sys::metal::SDL_MetalView;
+            let mut metal_view = 0 as sys::metal::SDL_MetalView;
             #[cfg(target_os = "macos")]
             if self.create_metal_view {
                 {
@@ -1372,7 +1372,7 @@ impl PopupWindowBuilder {
                 raw_height,
                 self.window_flags.into(),
             );
-            let metal_view = 0 as sys::metal::SDL_MetalView;
+            let mut metal_view = 0 as sys::metal::SDL_MetalView;
             #[cfg(target_os = "macos")]
             if self.create_metal_view {
                 metal_view = sys::metal::SDL_Metal_CreateView(raw);
