@@ -914,71 +914,6 @@ impl Drop for AudioStream {
     }
 }
 
-pub struct AudioStreamWithCallback<CB> {
-    base_stream: AudioStream,
-    c_userdata: *mut c_void,
-    _marker: PhantomData<CB>,
-}
-
-impl<CB> Drop for AudioStreamWithCallback<CB> {
-    fn drop(&mut self) {
-        // `base_stream` will be dropped automatically.
-        if !self.c_userdata.is_null() {
-            unsafe {
-                Box::from_raw(self.c_userdata as *mut CB);
-            }
-            self.c_userdata = std::ptr::null_mut();
-        }
-    }
-}
-
-impl<CB> AudioStreamWithCallback<CB> {
-    /// Pauses the audio stream.
-    pub fn pause(&self) -> Result<(), String> {
-        self.base_stream.pause()
-    }
-
-    /// Resumes the audio stream.
-    pub fn resume(&self) -> Result<(), String> {
-        self.base_stream.resume()
-    }
-}
-
-pub trait AudioRecordingCallback<Channel>: Send + 'static
-where
-    Channel: AudioFormatNum + 'static,
-{
-    fn callback(&mut self, input: &[Channel]);
-}
-
-unsafe extern "C" fn audio_recording_stream_callback<CB, Channel>(
-    userdata: *mut c_void,
-    sdl_stream: *mut sys::audio::SDL_AudioStream,
-    len: c_int,
-    _bytes: c_int,
-) where
-    CB: AudioRecordingCallback<Channel>,
-    Channel: AudioFormatNum + 'static,
-{
-    let callback = &mut *(userdata as *mut CB);
-
-    // Allocate a buffer to receive the recorded data
-    let sample_count = len as usize / std::mem::size_of::<Channel>();
-    let mut buffer = vec![Channel::SILENCE; sample_count];
-
-    // Pull data from the stream
-    let buffer_ptr = buffer.as_mut_ptr() as *mut c_void;
-    let ret = sys::audio::SDL_GetAudioStreamData(sdl_stream, buffer_ptr, len);
-
-    if ret != len {
-        eprintln!("Error getting audio data from stream: {}", get_error());
-        return;
-    }
-
-    // Call the user's callback with the captured audio data
-    callback.callback(&buffer);
-}
-
 impl AudioStream {
     /// Get the SDL_AudioStream pointer.
     #[doc(alias = "SDL_AudioStream")]
@@ -1060,7 +995,7 @@ impl AudioStream {
     ///
     /// Returns a tuple `(src_spec, dst_spec)` where each is an `Option<AudioSpec>`.
     pub fn get_format(&self) -> Result<(Option<AudioSpec>, Option<AudioSpec>), String> {
-        
+
         let mut sdl_src_spec = AudioSpec::default().into();
         let mut sdl_dst_spec = AudioSpec::default().into();
         let result = unsafe {
@@ -1162,6 +1097,75 @@ impl io::Read for AudioStream {
         }
     }
 }
+
+
+// Streams with callbacks
+pub struct AudioStreamWithCallback<CB> {
+    base_stream: AudioStream,
+    c_userdata: *mut c_void,
+    _marker: PhantomData<CB>,
+}
+
+impl<CB> Drop for AudioStreamWithCallback<CB> {
+    fn drop(&mut self) {
+        // `base_stream` will be dropped automatically.
+        if !self.c_userdata.is_null() {
+            unsafe {
+                Box::from_raw(self.c_userdata as *mut CB);
+            }
+            self.c_userdata = std::ptr::null_mut();
+        }
+    }
+}
+
+impl<CB> AudioStreamWithCallback<CB> {
+    /// Pauses the audio stream.
+    pub fn pause(&self) -> Result<(), String> {
+        self.base_stream.pause()
+    }
+
+    /// Resumes the audio stream.
+    pub fn resume(&self) -> Result<(), String> {
+        self.base_stream.resume()
+    }
+}
+
+pub trait AudioRecordingCallback<Channel>: Send + 'static
+where
+    Channel: AudioFormatNum + 'static,
+{
+    fn callback(&mut self, input: &[Channel]);
+}
+
+unsafe extern "C" fn audio_recording_stream_callback<CB, Channel>(
+    userdata: *mut c_void,
+    sdl_stream: *mut sys::audio::SDL_AudioStream,
+    len: c_int,
+    _bytes: c_int,
+) where
+    CB: AudioRecordingCallback<Channel>,
+    Channel: AudioFormatNum + 'static,
+{
+    let callback = &mut *(userdata as *mut CB);
+
+    // Allocate a buffer to receive the recorded data
+    let sample_count = len as usize / std::mem::size_of::<Channel>();
+    let mut buffer = vec![Channel::SILENCE; sample_count];
+
+    // Pull data from the stream
+    let buffer_ptr = buffer.as_mut_ptr() as *mut c_void;
+    let ret = sys::audio::SDL_GetAudioStreamData(sdl_stream, buffer_ptr, len);
+
+    if ret != len {
+        eprintln!("Error getting audio data from stream: {}", get_error());
+        return;
+    }
+
+    // Call the user's callback with the captured audio data
+    callback.callback(&buffer);
+}
+
+
 
 // TODO:
 //
