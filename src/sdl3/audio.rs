@@ -46,7 +46,7 @@
 //! }).unwrap();
 //!
 //! // Start playback
-//! device.resume();
+//! device.resume().expect("Failed to start playback");
 //!
 //! // Play for 2 seconds
 //! std::thread::sleep(Duration::from_millis(2000));
@@ -798,7 +798,7 @@ impl AudioDevice {
             Channel: AudioFormatNum + 'static,
         {
             let callback = &mut *(userdata as *mut CB);
-            let sample_count = len as usize / std::mem::size_of::<Channel>();
+            let sample_count = len as usize / size_of::<Channel>();
             let mut buffer = vec![Channel::SILENCE; sample_count];
             callback.callback(&mut buffer);
             let buffer_ptr = buffer.as_ptr() as *const c_void;
@@ -817,7 +817,8 @@ impl AudioDevice {
             );
 
             if stream.is_null() {
-                Box::from_raw(c_userdata as *mut CB);
+                // Drop the callback box
+                let _ = Box::from_raw(c_userdata as *mut CB);
                 Err(get_error())
             } else {
                 Ok(AudioStreamWithCallback {
@@ -860,7 +861,8 @@ impl AudioDevice {
             );
 
             if stream.is_null() {
-                Box::from_raw(c_userdata as *mut CB);
+                // Drop the callback box
+                let _ = Box::from_raw(c_userdata as *mut CB);
                 Err(get_error())
             } else {
                 Ok(AudioStreamWithCallback {
@@ -890,10 +892,18 @@ impl Drop for AudioStream {
     }
 }
 
-impl fmt::Debug for AudioStream {
+impl Debug for AudioStream {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // Get the device name
-        let device_name = self.device_id().map(|id| id.name());
+        // Get the device "name [ID]"
+        let device_name = self
+            .device_id()
+            .map(|id| id.name())
+            .unwrap_or("Unknown".to_string());
+        let device_name = format!(
+            "{} [{}]",
+            device_name,
+            self.device_id().map(|id| id.id()).unwrap_or(0)
+        );
 
         // Get the audio specs
         let (src_spec, dst_spec) = match self.get_format() {
@@ -931,7 +941,7 @@ impl fmt::Debug for AudioStream {
     }
 }
 impl Display for AudioStream {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(id) = self.device_id() {
             write!(f, "AudioStream({})", id.name())
         } else {
@@ -1118,7 +1128,7 @@ impl AudioStream {
 
     /// Gets the number of converted/resampled bytes available.
     #[doc(alias = "SDL_GetAudioStreamAvailable")]
-    pub fn get_available(&self) -> Result<i32, String> {
+    pub fn available_bytes(&self) -> Result<i32, String> {
         let available = unsafe { sys::audio::SDL_GetAudioStreamAvailable(self.stream) };
         if available == -1 {
             Err(get_error())
@@ -1127,21 +1137,98 @@ impl AudioStream {
         }
     }
 
-    /// Reads audio data from the stream.
-    #[doc(alias = "SDL_GetAudioStreamData")]
-    pub fn read(&self, buf: &mut [u8]) -> Result<usize, String> {
-        let ret = unsafe {
-            sys::audio::SDL_GetAudioStreamData(
-                self.stream,
-                buf.as_mut_ptr().cast(),
-                buf.len() as i32,
-            )
-        };
-        if ret == -1 {
-            Err(get_error())
-        } else {
-            Ok(ret as usize)
+    /// Converts a slice of bytes to a f32 sample based on AudioFormat.
+    /// Returns a Result containing the converted f32 or an error message.
+    fn read_bytes_to_f32(&self, chunk: &[u8]) -> Result<f32, String> {
+        // TODO: store specs so we don't have to call get_format every time
+        let (_, output_spec) = self.get_format()?;
+        match output_spec.unwrap().format {
+            Some(AudioFormat::F32LE) => Ok(f32::from_le_bytes(
+                chunk
+                    .try_into()
+                    .map_err(|_| "Invalid byte slice length for f32 LE")?,
+            )),
+            Some(AudioFormat::F32BE) => Ok(f32::from_be_bytes(
+                chunk
+                    .try_into()
+                    .map_err(|_| "Invalid byte slice length for f32 BE")?,
+            )),
+            _ => Err("Unsupported AudioFormat for f32 conversion".to_string()),
         }
+    }
+
+    /// Converts a slice of bytes to an i16 sample based on AudioFormat.
+    /// Returns a Result containing the converted i16 or an error message.
+    fn read_bytes_to_i16(&self, chunk: &[u8]) -> Result<i16, String> {
+        // TODO: store specs so we don't have to call get_format every time
+        let (_, output_spec) = self.get_format()?;
+        match output_spec.unwrap().format {
+            Some(AudioFormat::S16LE) => Ok(i16::from_le_bytes(
+                chunk
+                    .try_into()
+                    .map_err(|_| "Invalid byte slice length for i16 LE")?,
+            )),
+            Some(AudioFormat::S16BE) => Ok(i16::from_be_bytes(
+                chunk
+                    .try_into()
+                    .map_err(|_| "Invalid byte slice length for i16 BE")?,
+            )),
+            _ => Err("Unsupported AudioFormat for i16 conversion".to_string()),
+        }
+    }
+
+    /// Reads samples as f32 into the provided buffer.
+    /// Returns the number of samples read.
+    pub fn read_f32_samples(&mut self, buf: &mut [f32]) -> io::Result<usize> {
+        let byte_len = buf.len() * size_of::<f32>();
+        let mut byte_buf = vec![0u8; byte_len];
+
+        // Read bytes from the stream and capture the number of bytes read
+        let bytes_read = self.read(&mut byte_buf)?;
+
+        // Calculate the number of complete samples read
+        let samples_read = bytes_read / size_of::<f32>();
+
+        // Iterate over each complete sample
+        for i in 0..samples_read {
+            let start = i * size_of::<f32>();
+            let end = start + size_of::<f32>();
+            let chunk = &byte_buf[start..end];
+
+            // Convert bytes to f32 and handle potential errors
+            buf[i] = self
+                .read_bytes_to_f32(chunk)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        }
+
+        Ok(samples_read)
+    }
+
+    /// Reads samples as i16 into the provided buffer.
+    /// Returns the number of samples read.
+    pub fn read_i16_samples(&mut self, buf: &mut [i16]) -> io::Result<usize> {
+        let byte_len = buf.len() * size_of::<i16>();
+        let mut byte_buf = vec![0u8; byte_len];
+
+        // Read bytes from the stream and capture the number of bytes read
+        let bytes_read = self.read(&mut byte_buf)?;
+
+        // Calculate the number of complete samples read
+        let samples_read = bytes_read / size_of::<i16>();
+
+        // Iterate over each complete sample
+        for i in 0..samples_read {
+            let start = i * size_of::<i16>();
+            let end = start + size_of::<i16>();
+            let chunk = &byte_buf[start..end];
+
+            // Convert bytes to i16 and handle potential errors
+            buf[i] = self
+                .read_bytes_to_i16(chunk)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        }
+
+        Ok(samples_read)
     }
 
     /// Adds data to the stream.
@@ -1157,7 +1244,11 @@ impl AudioStream {
     }
 }
 
-impl io::Read for AudioStream {
+impl Read for AudioStream {
+    /// Reads audio data from the stream.
+    /// Note that this reads bytes from the stream, not samples.
+    /// You must convert the bytes to samples based on the format of the stream.
+    /// `read_f32_samples` and `read_i16_samples` are provided for convenience.
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let ret = unsafe {
             sys::audio::SDL_GetAudioStreamData(
@@ -1186,7 +1277,8 @@ impl<CB> Drop for AudioStreamWithCallback<CB> {
         // `base_stream` will be dropped automatically.
         if !self.c_userdata.is_null() {
             unsafe {
-                Box::from_raw(self.c_userdata as *mut CB);
+                // Drop the callback box
+                let _ = Box::from_raw(self.c_userdata as *mut CB);
             }
             self.c_userdata = std::ptr::null_mut();
         }
@@ -1224,7 +1316,7 @@ unsafe extern "C" fn audio_recording_stream_callback<CB, Channel>(
     let callback = &mut *(userdata as *mut CB);
 
     // Allocate a buffer to receive the recorded data
-    let sample_count = len as usize / std::mem::size_of::<Channel>();
+    let sample_count = len as usize / size_of::<Channel>();
     let mut buffer = vec![Channel::SILENCE; sample_count];
 
     // Pull data from the stream
