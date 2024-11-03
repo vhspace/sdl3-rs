@@ -1625,7 +1625,7 @@ impl Window {
     #[doc(alias = "SDL_GetDisplayForWindow")]
     pub fn display_index(&self) -> Result<i32, String> {
         let result = unsafe { sys::video::SDL_GetDisplayForWindow(self.context.raw) };
-        if result < 0 {
+        if result == 0 {
             Err(get_error())
         } else {
             Ok(result as i32)
