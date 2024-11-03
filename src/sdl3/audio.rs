@@ -212,7 +212,7 @@ impl AudioSubsystem {
     }
 }
 
-#[repr(c_int)]
+#[repr(u32)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum AudioFormat {
     UNKNOWN = sys::audio::SDL_AUDIO_UNKNOWN.0,
@@ -238,8 +238,8 @@ pub enum AudioFormat {
 impl AudioFormat {
     fn from_ll(raw: sys::audio::SDL_AudioFormat) -> Option<AudioFormat> {
         match raw {
-            sys::audio::SDL_AUDIO_UNKNOWN => Some(UNKNOWN),
-            sys::audio::SDL_AUDIO_U8 => Some(U8),
+            sys::audio::SDL_AUDIO_UNKNOWN => Some(AudioFormat::UNKNOWN),
+            sys::audio::SDL_AUDIO_U8 => Some(AudioFormat::U8),
             sys::audio::SDL_AUDIO_S8 => Some(AudioFormat::S8),
             sys::audio::SDL_AUDIO_S16LE => Some(AudioFormat::S16LE),
             sys::audio::SDL_AUDIO_S16BE => Some(AudioFormat::S16BE),
