@@ -15,6 +15,7 @@ keywords = ["graphics", "engine", "cross-platform", "input", "audio"]
 categories = ["rendering", "api-bindings", "game-engines", "multimedia"]
 readme = "README.md"
 resolver = "2"
+edition = "2021"
 
 [lib]
 name = "sdl3"

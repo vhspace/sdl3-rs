@@ -10,13 +10,13 @@ use crate::rect::Rect;
 use crate::render::{BlendMode, Canvas};
 use crate::render::{Texture, TextureCreator, TextureValueError};
 use crate::sys;
-use iostream::IOStream;
 use libc::c_int;
 use std::convert::TryFrom;
 use std::mem::transmute;
 use std::ptr;
 use sys::blendmode::SDL_BLENDMODE_NONE;
 use sys::surface::{SDL_ScaleMode, SDL_MUSTLOCK, SDL_SCALEMODE_LINEAR};
+use crate::iostream::IOStream;
 
 /// Holds a `SDL_Surface`
 ///
@@ -57,7 +57,6 @@ pub struct SurfaceRef {
     // and b) prevent user initialization of this type.
     _raw: (),
 }
-
 
 
 impl AsRef<SurfaceRef> for SurfaceRef {
@@ -549,7 +548,7 @@ impl SurfaceRef {
         unsafe {
             let rect = rect.into();
             let rect_ptr = mem::transmute(rect.as_ref()); // TODO find a better way to transform
-                                                          // Option<&...> into a *const _
+            // Option<&...> into a *const _
             let format = self.pixel_format();
             let result =
                 sys::surface::SDL_FillSurfaceRect(self.raw(), rect_ptr, color.to_u32(&format));

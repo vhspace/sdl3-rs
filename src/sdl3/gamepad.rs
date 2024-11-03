@@ -16,9 +16,9 @@ use crate::common::IntegerOrSdlError;
 use crate::get_error;
 use crate::sys;
 use crate::GamepadSubsystem;
-use guid::Guid;
 use std::mem::transmute;
 use sys::joystick::SDL_GetJoystickID;
+use crate::guid::Guid;
 
 #[derive(Debug, Clone)]
 pub enum AddMappingError {

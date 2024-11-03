@@ -1,9 +1,6 @@
 use libc::c_char;
 use std::cell::Cell;
-use std::error;
 use std::ffi::{CStr, CString, NulError};
-use std::fmt;
-use std::mem::transmute;
 use std::os::raw::c_void;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use sys::init::{
@@ -12,7 +9,6 @@ use sys::init::{
 };
 
 use crate::sys;
-use crate::sys::init::SDL_InitFlags;
 
 // seems like these are gone?
 // #[repr(i32)]

@@ -2,12 +2,11 @@ use crate::common::{validate_int, IntegerOrSdlError};
 use crate::get_error;
 use crate::pixels::PixelFormat;
 use crate::rect::Rect;
-use crate::render::create_renderer;
+use crate::render::{create_renderer, WindowCanvas};
 use crate::surface::SurfaceRef;
 use crate::EventPump;
 use crate::VideoSubsystem;
 use libc::{c_char, c_int, c_uint, c_void};
-use render::WindowCanvas;
 use std::convert::TryFrom;
 use std::error::Error;
 use std::ffi::{CStr, CString, NulError};
@@ -1196,7 +1195,7 @@ impl WindowBuilder {
 
             let raw = sys::video::SDL_CreateWindowWithProperties(props);
             SDL_DestroyProperties(props);
-            let mut metal_view = 0 as sys::metal::SDL_MetalView;
+            let metal_view = 0 as sys::metal::SDL_MetalView;
             #[cfg(target_os = "macos")]
             if self.create_metal_view {
                 {
@@ -1373,7 +1372,7 @@ impl PopupWindowBuilder {
                 raw_height,
                 self.window_flags.into(),
             );
-            let mut metal_view = 0 as sys::metal::SDL_MetalView;
+            let metal_view = 0 as sys::metal::SDL_MetalView;
             #[cfg(target_os = "macos")]
             if self.create_metal_view {
                 metal_view = sys::metal::SDL_Metal_CreateView(raw);
