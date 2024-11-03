@@ -55,9 +55,7 @@
 use crate::get_error;
 use crate::sys;
 use crate::AudioSubsystem;
-use iostream::IOStream;
 use libc::c_void;
-use std::convert::TryFrom;
 use std::convert::TryInto;
 use std::ffi::{c_int, CStr};
 use std::io::{self, Read};
@@ -65,6 +63,7 @@ use std::marker::PhantomData;
 use std::path::Path;
 use sys::audio::{SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, SDL_AUDIO_DEVICE_DEFAULT_RECORDING};
 use sys::stdinc::SDL_free;
+use crate::iostream::IOStream;
 
 impl AudioSubsystem {
     /// Enumerate audio playback devices.
@@ -213,7 +212,7 @@ impl AudioSubsystem {
     }
 }
 
-#[repr(i32)]
+#[repr(u32)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum AudioFormat {
     UNKNOWN = sys::audio::SDL_AUDIO_UNKNOWN.0,
@@ -238,7 +237,7 @@ pub enum AudioFormat {
 
 impl AudioFormat {
     fn from_ll(raw: sys::audio::SDL_AudioFormat) -> Option<AudioFormat> {
-        use self::AudioFormat::*;
+        
         match raw {
             sys::audio::SDL_AUDIO_UNKNOWN => Some(UNKNOWN),
             sys::audio::SDL_AUDIO_U8 => Some(U8),
@@ -807,7 +806,7 @@ impl AudioDevice {
         CB: AudioCallback<Channel>,
         Channel: AudioFormatNum + 'static,
     {
-        let mut sdl_audiospec: sys::audio::SDL_AudioSpec = spec.clone().into();
+        let sdl_audiospec: sys::audio::SDL_AudioSpec = spec.clone().into();
 
         if sdl_audiospec.format != Channel::audio_format().to_ll() {
             return Err("AudioSpec format does not match AudioCallback Channel type".to_string());
@@ -867,7 +866,7 @@ impl AudioDevice {
         Channel: AudioFormatNum + 'static,
     {
         // Convert Rust AudioSpec to SDL_AudioSpec
-        let mut sdl_audiospec: sys::audio::SDL_AudioSpec = spec.clone().into();
+        let sdl_audiospec: sys::audio::SDL_AudioSpec = spec.clone().into();
 
         if sdl_audiospec.format != Channel::audio_format().to_ll() {
             return Err("AudioSpec format does not match AudioCallback Channel type".to_string());

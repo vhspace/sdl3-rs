@@ -16,9 +16,9 @@ use crate::common::IntegerOrSdlError;
 use crate::get_error;
 use crate::sys;
 use crate::GamepadSubsystem;
-use guid::Guid;
 use std::mem::transmute;
 use sys::joystick::SDL_GetJoystickID;
+use crate::guid::Guid;
 
 #[derive(Debug, Clone)]
 pub enum AddMappingError {
@@ -537,7 +537,7 @@ impl Gamepad {
         let props = sys::gamepad::SDL_GetGamepadProperties(self.raw);
         sys::properties::SDL_GetBooleanProperty(
             props,
-            sys::gamepad::SDL_PROP_GAMEPAD_CAP_RGB_LED_BOOLEAN.as_ptr(),
+            sys::gamepad::SDL_PROP_GAMEPAD_CAP_RGB_LED_BOOLEAN,
             false,
         )
     }
@@ -548,7 +548,7 @@ impl Gamepad {
         let props = sys::gamepad::SDL_GetGamepadProperties(self.raw);
         sys::properties::SDL_GetBooleanProperty(
             props,
-            sys::gamepad::SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN.as_ptr(),
+            sys::gamepad::SDL_PROP_GAMEPAD_CAP_RUMBLE_BOOLEAN,
             false,
         )
     }
@@ -559,7 +559,7 @@ impl Gamepad {
         let props = sys::gamepad::SDL_GetGamepadProperties(self.raw);
         sys::properties::SDL_GetBooleanProperty(
             props,
-            sys::gamepad::SDL_PROP_GAMEPAD_CAP_TRIGGER_RUMBLE_BOOLEAN.as_ptr(),
+            sys::gamepad::SDL_PROP_GAMEPAD_CAP_TRIGGER_RUMBLE_BOOLEAN,
             false,
         )
     }

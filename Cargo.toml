@@ -3,7 +3,7 @@ name = "sdl3"
 description = "Cross-platform multimedia"
 repository = "https://github.com/revmischa/sdl3-rs"
 documentation = "https://crates.io/crates/sdl3"
-version = "0.10.7"
+version = "0.10.8"
 license = "MIT"
 authors = [
     "Tony Aldridge <tony@angry-lawyer.com>",
@@ -15,6 +15,7 @@ keywords = ["graphics", "engine", "cross-platform", "input", "audio"]
 categories = ["rendering", "api-bindings", "game-engines", "multimedia"]
 readme = "README.md"
 resolver = "2"
+edition = "2021"
 
 [lib]
 name = "sdl3"
@@ -26,8 +27,7 @@ libc = "0.2.92"
 lazy_static = "1.4.0"
 
 [dependencies.sdl3-sys]
-# path = "sdl3-sys"
-version = "0.0.10+SDL-preview-3.1.3"
+version = "0.1.1"
 
 [dependencies.c_vec]
 # allow both 1.* and 2.0 versions

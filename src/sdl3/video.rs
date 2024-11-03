@@ -2,12 +2,11 @@ use crate::common::{validate_int, IntegerOrSdlError};
 use crate::get_error;
 use crate::pixels::PixelFormat;
 use crate::rect::Rect;
-use crate::render::create_renderer;
+use crate::render::{create_renderer, WindowCanvas};
 use crate::surface::SurfaceRef;
 use crate::EventPump;
 use crate::VideoSubsystem;
 use libc::{c_char, c_int, c_uint, c_void};
-use render::WindowCanvas;
 use std::convert::TryFrom;
 use std::error::Error;
 use std::ffi::{CStr, CString, NulError};
@@ -223,7 +222,7 @@ pub mod gl_attr {
     macro_rules! gl_set_attribute {
         ($attr:ident, $value:expr) => {{
             let result =
-                unsafe { sys::video::SDL_GL_SetAttribute(sys::video::SDL_GLattr::$attr, $value) };
+                unsafe { sys::video::SDL_GL_SetAttribute(sys::video::SDL_GLAttr::$attr, $value) };
 
             if result == false {
                 // Panic and print the attribute that failed.
@@ -240,7 +239,7 @@ pub mod gl_attr {
         ($attr:ident) => {{
             let mut value = 0;
             let result = unsafe {
-                sys::video::SDL_GL_GetAttribute(sys::video::SDL_GLattr::$attr, &mut value)
+                sys::video::SDL_GL_GetAttribute(sys::video::SDL_GLAttr::$attr, &mut value)
             };
             if result == false {
                 // Panic and print the attribute that failed.
@@ -814,8 +813,7 @@ impl VideoSubsystem {
                 let mut result = Vec::with_capacity(num_modes as usize);
                 for i in 0..num_modes {
                     let mode = *modes.offset(i as isize);
-                    let mode = *mode;
-                    result.push(DisplayMode::from_ll(&mode));
+                    result.push(DisplayMode::from_ll(&*mode));
                 }
                 SDL_free(modes as *mut c_void);
                 Ok(result)
@@ -830,8 +828,7 @@ impl VideoSubsystem {
             if raw_mode.is_null() {
                 return Err(get_error());
             }
-            let mode = *raw_mode;
-            Ok(DisplayMode::from_ll(&mode))
+            Ok(DisplayMode::from_ll(&*raw_mode))
         }
     }
 
@@ -848,8 +845,7 @@ impl VideoSubsystem {
             if raw_mode.is_null() {
                 return Err(get_error());
             }
-            let mode = *raw_mode;
-            Ok(DisplayMode::from_ll(&mode))
+            Ok(DisplayMode::from_ll(&*raw_mode))
         }
     }
 
@@ -1165,33 +1161,33 @@ impl WindowBuilder {
             let props = SDL_CreateProperties();
             SDL_SetStringProperty(
                 props,
-                sys::video::SDL_PROP_WINDOW_CREATE_TITLE_STRING.as_ptr(),
+                sys::video::SDL_PROP_WINDOW_CREATE_TITLE_STRING,
                 title.as_ptr(),
             );
 
             if self.x != WindowPos::Undefined {
                 SDL_SetNumberProperty(
                     props,
-                    sys::video::SDL_PROP_WINDOW_CREATE_X_NUMBER.as_ptr(),
+                    sys::video::SDL_PROP_WINDOW_CREATE_X_NUMBER,
                     to_ll_windowpos(self.x).into(),
                 );
             }
             if self.y != WindowPos::Undefined {
                 SDL_SetNumberProperty(
                     props,
-                    sys::video::SDL_PROP_WINDOW_CREATE_Y_NUMBER.as_ptr(),
+                    sys::video::SDL_PROP_WINDOW_CREATE_Y_NUMBER,
                     to_ll_windowpos(self.y).into(),
                 );
             }
 
             SDL_SetNumberProperty(
                 props,
-                sys::video::SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER.as_ptr(),
+                sys::video::SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER,
                 raw_width.into(),
             );
             SDL_SetNumberProperty(
                 props,
-                sys::video::SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER.as_ptr(),
+                sys::video::SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER,
                 raw_height.into(),
             );
             let flags_cstr = CString::new("flags").unwrap();
@@ -1199,7 +1195,7 @@ impl WindowBuilder {
 
             let raw = sys::video::SDL_CreateWindowWithProperties(props);
             SDL_DestroyProperties(props);
-            let mut metal_view = 0 as sys::metal::SDL_MetalView;
+            let metal_view = 0 as sys::metal::SDL_MetalView;
             #[cfg(target_os = "macos")]
             if self.create_metal_view {
                 {
@@ -1376,7 +1372,7 @@ impl PopupWindowBuilder {
                 raw_height,
                 self.window_flags.into(),
             );
-            let mut metal_view = 0 as sys::metal::SDL_MetalView;
+            let metal_view = 0 as sys::metal::SDL_MetalView;
             #[cfg(target_os = "macos")]
             if self.create_metal_view {
                 metal_view = sys::metal::SDL_Metal_CreateView(raw);
@@ -1628,7 +1624,7 @@ impl Window {
     #[doc(alias = "SDL_GetDisplayForWindow")]
     pub fn display_index(&self) -> Result<i32, String> {
         let result = unsafe { sys::video::SDL_GetDisplayForWindow(self.context.raw) };
-        if result < 0 {
+        if result == 0 {
             Err(get_error())
         } else {
             Ok(result as i32)
@@ -1664,8 +1660,7 @@ impl Window {
             if mode_raw.is_null() {
                 return None;
             }
-            let mode_raw = *mode_raw;
-            Some(DisplayMode::from_ll(&mode_raw))
+            Some(DisplayMode::from_ll(&*mode_raw))
         }
     }
 

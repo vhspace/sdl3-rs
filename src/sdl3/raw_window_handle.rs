@@ -42,7 +42,7 @@ unsafe impl HasRawWindowHandle for Window {
 
             handle.ns_window = SDL_GetPointerProperty(
                 window_properties,
-                sys::video::SDL_PROP_WINDOW_COCOA_WINDOW_POINTER.as_ptr(),
+                sys::video::SDL_PROP_WINDOW_COCOA_WINDOW_POINTER,
                 std::ptr::null_mut(),
             );
 

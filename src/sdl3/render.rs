@@ -1859,7 +1859,7 @@ impl InternalTexture {
         let format = unsafe {
             sys::properties::SDL_GetNumberProperty(
                 self.get_properties(),
-                sys::render::SDL_PROP_TEXTURE_FORMAT_NUMBER.as_ptr(),
+                sys::render::SDL_PROP_TEXTURE_FORMAT_NUMBER,
                 0,
             )
         };
@@ -1871,7 +1871,7 @@ impl InternalTexture {
         let access = unsafe {
             sys::properties::SDL_GetNumberProperty(
                 self.get_properties(),
-                sys::render::SDL_PROP_TEXTURE_ACCESS_NUMBER.as_ptr(),
+                sys::render::SDL_PROP_TEXTURE_ACCESS_NUMBER,
                 0,
             )
         };
@@ -1882,7 +1882,7 @@ impl InternalTexture {
         unsafe {
             sys::properties::SDL_GetNumberProperty(
                 self.get_properties(),
-                sys::render::SDL_PROP_TEXTURE_WIDTH_NUMBER.as_ptr(),
+                sys::render::SDL_PROP_TEXTURE_WIDTH_NUMBER,
                 0,
             ) as u32
         }
@@ -1892,7 +1892,7 @@ impl InternalTexture {
         unsafe {
             sys::properties::SDL_GetNumberProperty(
                 self.get_properties(),
-                sys::render::SDL_PROP_TEXTURE_HEIGHT_NUMBER.as_ptr(),
+                sys::render::SDL_PROP_TEXTURE_HEIGHT_NUMBER,
                 0,
             ) as u32
         }
@@ -2210,7 +2210,7 @@ impl InternalTexture {
         unsafe {
             sys::properties::SDL_GetNumberProperty(
                 props_id,
-                sys::render::SDL_PROP_TEXTURE_OPENGL_TEXTURE_NUMBER.as_ptr(),
+                sys::render::SDL_PROP_TEXTURE_OPENGL_TEXTURE_NUMBER,
                 0,
             )
         }

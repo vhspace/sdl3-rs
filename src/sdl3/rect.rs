@@ -1,7 +1,7 @@
 //! Rectangles and points.
 
+use crate::render::FRect;
 use crate::sys;
-use render::FRect;
 use std::convert::{AsMut, AsRef};
 use std::hash::{Hash, Hasher};
 use std::mem;
@@ -75,11 +75,11 @@ pub struct Rect {
 
 impl ::std::fmt::Debug for Rect {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::Error> {
-        return write!(
+        write!(
             fmt,
             "Rect {{ x: {}, y: {}, w: {}, h: {} }}",
             self.raw.x, self.raw.y, self.raw.w, self.raw.h
-        );
+        )
     }
 }
 
@@ -680,7 +680,7 @@ pub struct Point {
 
 impl ::std::fmt::Debug for Point {
     fn fmt(&self, fmt: &mut ::std::fmt::Formatter) -> Result<(), ::std::fmt::Error> {
-        return write!(fmt, "Point {{ x: {}, y: {} }}", self.raw.x, self.raw.y);
+        write!(fmt, "Point {{ x: {}, y: {} }}", self.raw.x, self.raw.y)
     }
 }
 
@@ -902,7 +902,7 @@ impl DivAssign<i32> for Point {
 }
 
 impl std::iter::Sum for Point {
-    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+    fn sum<I: Iterator<Item=Self>>(iter: I) -> Self {
         iter.fold(Point::new(0, 0), Point::add)
     }
 }
@@ -953,7 +953,7 @@ mod test {
                 ],
                 None
             )
-            .map(|r| r.into())
+                .map(|r| r.into())
         );
     }
 

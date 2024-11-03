@@ -4,11 +4,11 @@ use crate::sys;
 use crate::clear_error;
 use crate::common::{validate_int, IntegerOrSdlError};
 use crate::get_error;
+use crate::guid::Guid;
 use crate::JoystickSubsystem;
-use guid::Guid;
 use libc::{c_char, c_void};
 use std::ffi::CStr;
-use std::fmt::{Debug, Display, Error, Formatter};
+use std::fmt::{Debug, Error, Formatter};
 use sys::joystick::SDL_JoystickID;
 use sys::power::{SDL_PowerState, SDL_POWERSTATE_UNKNOWN};
 use sys::stdinc::SDL_free;
@@ -27,7 +27,7 @@ impl JoystickSubsystem {
         unsafe {
             let joystick_ids = sys::joystick::SDL_GetJoysticks(&mut num_joysticks);
             if joystick_ids.is_null() {
-                return Err(get_error());
+                Err(get_error())
             } else {
                 let mut instances = Vec::new();
                 for i in 0..num_joysticks {
@@ -164,7 +164,7 @@ impl Joystick {
     pub fn instance_id(&self) -> u32 {
         let result = unsafe { sys::joystick::SDL_GetJoystickID(self.raw) };
 
-        if result < 0 {
+        if result == 0 {
             // Should only fail if the joystick is NULL.
             panic!("{}", get_error())
         } else {
@@ -296,8 +296,6 @@ impl Joystick {
                     Err(SdlError(err))
                 }
             }
-            // Should be unreachable
-            _ => unreachable!(),
         }
     }
 
@@ -401,7 +399,7 @@ impl Joystick {
         let props = unsafe { sys::joystick::SDL_GetJoystickProperties(self.raw) };
         sys::properties::SDL_GetBooleanProperty(
             props,
-            sys::joystick::SDL_PROP_JOYSTICK_CAP_RGB_LED_BOOLEAN.as_ptr(),
+            sys::joystick::SDL_PROP_JOYSTICK_CAP_RGB_LED_BOOLEAN,
             false,
         )
     }
@@ -412,7 +410,7 @@ impl Joystick {
         let props = unsafe { sys::joystick::SDL_GetJoystickProperties(self.raw) };
         sys::properties::SDL_GetBooleanProperty(
             props,
-            sys::joystick::SDL_PROP_JOYSTICK_CAP_RUMBLE_BOOLEAN.as_ptr(),
+            sys::joystick::SDL_PROP_JOYSTICK_CAP_RUMBLE_BOOLEAN,
             false,
         )
     }
@@ -423,7 +421,7 @@ impl Joystick {
         let props = unsafe { sys::joystick::SDL_GetJoystickProperties(self.raw) };
         sys::properties::SDL_GetBooleanProperty(
             props,
-            sys::joystick::SDL_PROP_JOYSTICK_CAP_TRIGGER_RUMBLE_BOOLEAN.as_ptr(),
+            sys::joystick::SDL_PROP_JOYSTICK_CAP_TRIGGER_RUMBLE_BOOLEAN,
             false,
         )
     }
