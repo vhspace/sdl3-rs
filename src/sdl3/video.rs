@@ -1190,7 +1190,7 @@ impl WindowBuilder {
                 sys::video::SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER,
                 raw_height.into(),
             );
-            let flags_cstr = CString::new("flags").unwrap();
+            let flags_cstr = CString::new("SDL.window.create.flags").unwrap();
             SDL_SetNumberProperty(props, flags_cstr.as_ptr(), self.window_flags.into());
 
             let raw = sys::video::SDL_CreateWindowWithProperties(props);
