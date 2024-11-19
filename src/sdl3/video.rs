@@ -1610,7 +1610,7 @@ impl Window {
     /// function in the Vulkan library.
     #[doc(alias = "SDL_Vulkan_CreateSurface")]
     pub fn vulkan_create_surface(&self, instance: VkInstance) -> Result<VkSurfaceKHR, String> {
-        let mut surface: VkSurfaceKHR = null_mut();
+        let mut surface: VkSurfaceKHR = 0 as _;
         if unsafe {
             sys::vulkan::SDL_Vulkan_CreateSurface(self.context.raw, instance, null(), &mut surface)
         } == false
