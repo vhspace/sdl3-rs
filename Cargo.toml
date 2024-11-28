@@ -3,7 +3,7 @@ name = "sdl3"
 description = "Cross-platform multimedia"
 repository = "https://github.com/revmischa/sdl3-rs"
 documentation = "https://crates.io/crates/sdl3"
-version = "0.10.9"
+version = "0.10.10"
 license = "MIT"
 authors = [
     "Tony Aldridge <tony@angry-lawyer.com>",
