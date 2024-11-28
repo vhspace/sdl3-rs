@@ -752,6 +752,23 @@ impl VideoSubsystem {
         }
     }
 
+    #[doc(alias = "SDL_GetDisplays")]
+    pub fn displays(&self) -> Result<Vec<sys::video::SDL_DisplayID>, String> {
+        unsafe {
+            let mut count: c_int = 0;
+            let displays_ptr = sys::video::SDL_GetDisplays(&mut count);
+            if displays_ptr.is_null() {
+                return Err(get_error());
+            }
+
+            let displays_slice = std::slice::from_raw_parts(displays_ptr, count as usize);
+            let displays_vec = displays_slice.to_vec();
+            SDL_free(displays_ptr as *mut c_void);
+
+            Ok(displays_vec)
+        }
+    }
+
     /// Get the name of the display at the index `display_name`.
     ///
     /// Will return an error if the index is out of bounds or if SDL experienced a failure; inspect
