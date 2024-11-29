@@ -46,24 +46,26 @@
 //! }).unwrap();
 //!
 //! // Start playback
-//! device.resume();
+//! device.resume().expect("Failed to start playback");
 //!
 //! // Play for 2 seconds
 //! std::thread::sleep(Duration::from_millis(2000));
 //! ```
 
 use crate::get_error;
+use crate::iostream::IOStream;
 use crate::sys;
 use crate::AudioSubsystem;
 use libc::c_void;
 use std::convert::TryInto;
 use std::ffi::{c_int, CStr};
+use std::fmt;
+use std::fmt::{Debug, Display};
 use std::io::{self, Read};
 use std::marker::PhantomData;
 use std::path::Path;
 use sys::audio::{SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, SDL_AUDIO_DEVICE_DEFAULT_RECORDING};
 use sys::stdinc::SDL_free;
-use crate::iostream::IOStream;
 
 impl AudioSubsystem {
     /// Enumerate audio playback devices.
@@ -215,6 +217,8 @@ impl AudioSubsystem {
 #[repr(u32)]
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum AudioFormat {
+    UNKNOWN = sys::audio::SDL_AUDIO_UNKNOWN.0,
+
     /// Unsigned 8-bit samples
     U8 = sys::audio::SDL_AUDIO_U8.0,
     /// Signed 8-bit samples
@@ -235,8 +239,9 @@ pub enum AudioFormat {
 
 impl AudioFormat {
     fn from_ll(raw: sys::audio::SDL_AudioFormat) -> Option<AudioFormat> {
-        
         match raw {
+            sys::audio::SDL_AUDIO_UNKNOWN => Some(AudioFormat::UNKNOWN),
+            sys::audio::SDL_AUDIO_U8 => Some(AudioFormat::U8),
             sys::audio::SDL_AUDIO_S8 => Some(AudioFormat::S8),
             sys::audio::SDL_AUDIO_S16LE => Some(AudioFormat::S16LE),
             sys::audio::SDL_AUDIO_S16BE => Some(AudioFormat::S16BE),
@@ -257,6 +262,7 @@ impl AudioFormat {
 impl From<AudioFormat> for sys::audio::SDL_AudioFormat {
     fn from(format: AudioFormat) -> sys::audio::SDL_AudioFormat {
         match format {
+            AudioFormat::UNKNOWN => sys::audio::SDL_AUDIO_UNKNOWN,
             AudioFormat::U8 => sys::audio::SDL_AUDIO_U8,
             AudioFormat::S8 => sys::audio::SDL_AUDIO_S8,
             AudioFormat::S16LE => sys::audio::SDL_AUDIO_S16LE,
@@ -443,11 +449,14 @@ pub trait AudioFormatNum: Copy + 'static {
     ///
     /// struct Silence;
     ///
-    /// impl AudioCallback<u16> for Silence {
-    ///     fn callback(&mut self, out: &mut [u16]) {
+    /// impl<Channel> AudioCallback<Channel> for Silence
+    /// where
+    ///     Channel: AudioFormatNum,
+    /// {
+    ///     fn callback(&mut self, out: &mut [Channel]) {
     ///         for dst in out.iter_mut() {
-    ///             *dst = Self::Channel::SILENCE;
-    ///         }
+    ///             *dst = Channel::SILENCE;
+    ///        }
     ///     }
     /// }
     /// ```
@@ -490,27 +499,7 @@ impl AudioFormatNum for f32 {
     const SILENCE: f32 = 0.0;
 }
 
-// extern "C" fn audio_callback_marshall<CB: AudioCallback>(
-//     userdata: *mut c_void,
-//     stream: *mut u8,
-//     len: c_int,
-// ) {
-//     use std::mem::size_of;
-//     use std::slice::from_raw_parts_mut;
-//     unsafe {
-//         let cb_userdata: &mut Option<CB> = &mut *(userdata as *mut _);
-//         let buf: &mut [CB::Channel] = from_raw_parts_mut(
-//             stream as *mut CB::Channel,
-//             len as usize / size_of::<CB::Channel>(),
-//         );
-//
-//         if let Some(cb) = cb_userdata {
-//             cb.callback(buf);
-//         }
-//     }
-// }
-
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct AudioSpec {
     /// DSP frequency (samples per second). Set to None for the device's fallback frequency.
     pub freq: Option<i32>,
@@ -526,6 +515,16 @@ impl Into<sys::audio::SDL_AudioSpec> for AudioSpec {
     }
 }
 
+impl From<&AudioSpec> for sys::audio::SDL_AudioSpec {
+    fn from(spec: &AudioSpec) -> Self {
+        sys::audio::SDL_AudioSpec {
+            freq: spec.freq.unwrap_or(0), // SDL uses 0 to indicate default frequency
+            format: spec.format.unwrap_or(AudioFormat::UNKNOWN).to_ll(), // Use AudioFormat::Unknown for default
+            channels: spec.channels.unwrap_or(0), // SDL uses 0 to indicate default channels
+        }
+    }
+}
+
 impl AudioSpec {
     fn convert_to_ll<R, C, F>(rate: R, channels: C, format: F) -> sys::audio::SDL_AudioSpec
     where
@@ -537,70 +536,65 @@ impl AudioSpec {
         let freq = rate.into();
         let format = format.into();
 
-        if let Some(channels) = channels {
-            assert!(channels > 0);
-        }
-        if let Some(freq) = freq {
-            assert!(freq > 0);
-        }
-
-        // A value of 0 means "fallback" or "default".
-
         sys::audio::SDL_AudioSpec {
-            format: format.unwrap_or(AudioFormat::U8).to_ll(),
-            channels: channels.unwrap_or(0),
             freq: freq.unwrap_or(0),
+            format: format.unwrap_or(AudioFormat::UNKNOWN).to_ll(),
+            channels: channels.unwrap_or(0),
+        }
+    }
+}
+
+impl From<&sys::audio::SDL_AudioSpec> for AudioSpec {
+    fn from(sdl_spec: &sys::audio::SDL_AudioSpec) -> Self {
+        Self {
+            freq: if sdl_spec.freq != 0 {
+                Some(sdl_spec.freq)
+            } else {
+                None // SDL used default frequency
+            },
+            format: if sdl_spec.format != sys::audio::SDL_AUDIO_UNKNOWN {
+                Some(AudioFormat::from_ll(sdl_spec.format).expect("Unknown audio format"))
+            } else {
+                None // SDL used default format
+            },
+            channels: if sdl_spec.channels != 0 {
+                Some(sdl_spec.channels)
+            } else {
+                None // SDL used default channels
+            },
+        }
+    }
+}
+impl AudioSpec {
+    /// Creates a new `AudioSpec` with specified values.
+    /// Use `None` for any parameter to indicate the device's default value.
+    pub fn new(freq: Option<i32>, channels: Option<i32>, format: Option<AudioFormat>) -> Self {
+        Self {
+            freq,
+            channels,
+            format,
         }
     }
 
-    // fn convert_queue_to_ll<Channel, F, C, S>(freq: F, channels: C, samples: S) -> sys::SDL_AudioSpec
-    // where
-    //     Channel: AudioFormatNum,
-    //     F: Into<Option<i32>>,
-    //     C: Into<Option<u8>>,
-    //     S: Into<Option<u16>>,
-    // {
-    //     let freq = freq.into();
-    //     let channels = channels.into();
-    //     let samples = samples.into();
-    //
-    //     if let Some(freq) = freq {
-    //         assert!(freq > 0);
-    //     }
-    //     if let Some(channels) = channels {
-    //         assert!(channels > 0);
-    //     }
-    //     if let Some(samples) = samples {
-    //         assert!(samples > 0);
-    //     }
-    //
-    //     // A value of 0 means "fallback" or "default".
-    //
-    //     sys::SDL_AudioSpec {
-    //         freq: freq.unwrap_or(0),
-    //         format: <Channel as AudioFormatNum>::audio_format().to_ll(),
-    //         channels: channels.unwrap_or(0),
-    //         silence: 0,
-    //         samples: samples.unwrap_or(0),
-    //         padding: 0,
-    //         size: 0,
-    //         callback: None,
-    //         userdata: ptr::null_mut(),
+    /// Creates an `AudioSpec` with all fields set to `None` (use device defaults).
+    pub fn default() -> Self {
+        Self {
+            freq: None,
+            channels: None,
+            format: None,
+        }
+    }
+
+    // fn convert_from_ll(spec: sys::audio::SDL_AudioSpec) -> AudioSpec {
+    //     AudioSpec {
+    //         freq: Some(spec.freq.into()),
+    //         format: AudioFormat::from_ll(spec.format),
+    //         channels: Some(spec.channels),
     //     }
     // }
 }
 
-impl AudioSpec {
-    fn convert_from_ll(spec: sys::audio::SDL_AudioSpec) -> AudioSpec {
-        AudioSpec {
-            freq: Some(spec.freq.into()),
-            format: AudioFormat::from_ll(spec.format),
-            channels: Some(spec.channels),
-        }
-    }
-}
-
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum AudioDeviceID {
     Device(sys::audio::SDL_AudioDeviceID),
 }
@@ -675,25 +669,33 @@ impl AudioDevice {
         }
     }
 
-    /// Create an `AudioStream` for this device with the specified spec.
-    #[doc(alias = "SDL_OpenAudioDeviceStream")]
-    pub fn open_stream(&self, spec: &AudioSpec) -> Result<AudioStream, String> {
-        let sdl_spec: sys::audio::SDL_AudioSpec = spec.clone().into();
-        let stream = unsafe {
-            sys::audio::SDL_OpenAudioDeviceStream(
+    /// Binds an audio stream to this device.
+    #[doc(alias = "SDL_BindAudioStream")]
+    pub fn bind_stream(&self, stream: &AudioStream) -> Result<(), String> {
+        let result = unsafe { sys::audio::SDL_BindAudioStream(self.device_id.id(), stream.stream) };
+        if result {
+            Ok(())
+        } else {
+            Err(get_error())
+        }
+    }
+
+    /// Binds multiple audio streams to this device.
+    #[doc(alias = "SDL_BindAudioStreams")]
+    pub fn bind_streams(&self, streams: &[&AudioStream]) -> Result<(), String> {
+        let streams_ptrs: Vec<*mut sys::audio::SDL_AudioStream> =
+            streams.iter().map(|s| s.stream).collect();
+        let result = unsafe {
+            sys::audio::SDL_BindAudioStreams(
                 self.device_id.id(),
-                &sdl_spec,
-                None,
-                std::ptr::null_mut(),
+                streams_ptrs.as_ptr() as *mut _,
+                streams.len() as i32,
             )
         };
-        if stream.is_null() {
-            Err(get_error())
+        if result {
+            Ok(())
         } else {
-            Ok(AudioStream {
-                stream,
-                device_id: self.device_id,
-            })
+            Err(get_error())
         }
     }
 
@@ -765,17 +767,8 @@ impl AudioDevice {
         unsafe { sys::audio::SDL_ResumeAudioDevice(self.device_id.id()) }
     }
 
-    /// Closes the audio device and saves the callback data from being dropped.
-    ///
-    /// Note that simply dropping `AudioDevice` will close the audio device,
-    /// but the callback data will be dropped.
-    // pub fn close_and_get_callback(self) -> CB {
-    //     drop(self.device_id);
-    //     self.userdata.expect("Missing callback")
-    // }
-
     /// Opens a new audio stream for this device with the specified spec.
-    /// The device begins paused, so you must call `resume` to start playback.
+    /// The device begins paused, so you must call `stream.resume()` to start playback.
     #[doc(alias = "SDL_OpenAudioDeviceStream")]
     pub fn open_playback_stream_with_callback<CB, Channel>(
         &self,
@@ -805,7 +798,7 @@ impl AudioDevice {
             Channel: AudioFormatNum + 'static,
         {
             let callback = &mut *(userdata as *mut CB);
-            let sample_count = len as usize / std::mem::size_of::<Channel>();
+            let sample_count = len as usize / size_of::<Channel>();
             let mut buffer = vec![Channel::SILENCE; sample_count];
             callback.callback(&mut buffer);
             let buffer_ptr = buffer.as_ptr() as *const c_void;
@@ -824,21 +817,22 @@ impl AudioDevice {
             );
 
             if stream.is_null() {
-                Box::from_raw(c_userdata as *mut CB);
+                // Drop the callback box
+                let _ = Box::from_raw(c_userdata as *mut CB);
                 Err(get_error())
             } else {
                 Ok(AudioStreamWithCallback {
-                    base_stream: AudioStream {
-                        stream,
-                        device_id: self.device_id,
-                    },
-                    _callback: PhantomData,
+                    base_stream: AudioStream { stream },
+                    _marker: PhantomData,
                     c_userdata,
                 })
             }
         }
     }
 
+    /// Opens a new audio stream for recording with the specified spec.
+    /// The device begins paused, so you must call `stream.resume()` to start recording.
+    #[doc(alias = "SDL_OpenAudioDeviceStream")]
     pub fn open_recording_stream_with_callback<CB, Channel>(
         &self,
         spec: &AudioSpec,
@@ -867,15 +861,13 @@ impl AudioDevice {
             );
 
             if stream.is_null() {
-                Box::from_raw(c_userdata as *mut CB);
+                // Drop the callback box
+                let _ = Box::from_raw(c_userdata as *mut CB);
                 Err(get_error())
             } else {
                 Ok(AudioStreamWithCallback {
-                    base_stream: AudioStream {
-                        stream,
-                        device_id: self.device_id,
-                    },
-                    _callback: PhantomData,
+                    base_stream: AudioStream { stream },
+                    _marker: PhantomData,
                     c_userdata,
                 })
             }
@@ -883,32 +875,240 @@ impl AudioDevice {
     }
 }
 
-#[derive(Clone)]
 pub struct AudioStream {
     stream: *mut sys::audio::SDL_AudioStream,
-    device_id: AudioDeviceID,
 }
 
-#[derive(Clone)]
-pub struct AudioStreamWithCallback<CB> {
-    base_stream: AudioStream,
-    _callback: PhantomData<CB>,
-    c_userdata: *mut c_void,
-}
-impl<CB> Drop for AudioStreamWithCallback<CB> {
+impl Drop for AudioStream {
+    /// Destroys the audio stream, unbinding it automatically from the device.
+    /// If this stream was created with SDL_OpenAudioDeviceStream, the audio device that was opened alongside this stream’s creation will be closed, too.
     fn drop(&mut self) {
-        unsafe {
-            sys::audio::SDL_DestroyAudioStream(self.base_stream.stream);
-            Box::from_raw(self.c_userdata as *mut CB);
+        if !self.stream.is_null() {
+            unsafe {
+                sys::audio::SDL_DestroyAudioStream(self.stream);
+            }
+            self.stream = std::ptr::null_mut();
         }
     }
 }
 
-impl<CB> AudioStreamWithCallback<CB> {
+impl Debug for AudioStream {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Get the device "name [ID]"
+        let device_name = self
+            .device_id()
+            .map(|id| id.name())
+            .unwrap_or("Unknown".to_string());
+        let device_name = format!(
+            "{} [{}]",
+            device_name,
+            self.device_id().map(|id| id.id()).unwrap_or(0)
+        );
+
+        // Get the audio specs
+        let (src_spec, dst_spec) = match self.get_format() {
+            Ok((src, dst)) => (Some(src), Some(dst)),
+            Err(_) => (None, None),
+        };
+
+        // Get the gain
+        let gain = self.get_gain().ok();
+
+        // Begin building the debug struct
+        let mut ds = f.debug_struct("AudioStream");
+
+        ds.field("device", &device_name);
+
+        if let Some(src_spec) = src_spec {
+            ds.field("src_spec", &src_spec);
+        } else {
+            ds.field("src_spec", &"Unknown");
+        }
+
+        if let Some(dst_spec) = dst_spec {
+            ds.field("dst_spec", &dst_spec);
+        } else {
+            ds.field("dst_spec", &"Unknown");
+        }
+
+        if let Some(gain) = gain {
+            ds.field("gain", &gain);
+        } else {
+            ds.field("gain", &"Unknown");
+        }
+
+        ds.finish()
+    }
+}
+impl Display for AudioStream {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if let Some(id) = self.device_id() {
+            write!(f, "AudioStream({})", id.name())
+        } else {
+            write!(f, "AudioStream")
+        }
+    }
+}
+
+impl AudioStream {
+    /// Get the SDL_AudioStream pointer.
+    #[doc(alias = "SDL_AudioStream")]
+    pub fn stream(&mut self) -> *mut sys::audio::SDL_AudioStream {
+        self.stream
+    }
+
+    /// Get the device ID bound to the stream.
+    /// If the stream is not bound to a device, this will return `None`.
+    #[doc(alias = "SDL_GetAudioStreamDevice")]
+    pub fn device_id(&self) -> Option<AudioDeviceID> {
+        let device_id = unsafe { sys::audio::SDL_GetAudioStreamDevice(self.stream) };
+        // If not bound, or invalid, this returns zero, which is not a valid device ID.
+        if device_id != 0 {
+            Some(AudioDeviceID::Device(device_id))
+        } else {
+            None
+        }
+    }
+
+    pub fn device_name(&self) -> Option<String> {
+        self.device_id().map(|id| id.name())
+    }
+
+    /// Creates a new audio stream that converts audio data from the source format (`src_spec`)
+    /// to the destination format (`dst_spec`).
+    ///
+    /// # Arguments
+    ///
+    /// * `src_spec` - The format details of the input audio.
+    /// * `dst_spec` - The format details of the output audio.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(AudioStream)` on success or an error message on failure.
+    ///
+    /// # Safety
+    ///
+    /// This function is safe to call from any thread.
+    pub fn new(src_spec: Option<&AudioSpec>, dst_spec: Option<&AudioSpec>) -> Result<Self, String> {
+        let sdl_src_spec = src_spec.map(|spec| sys::audio::SDL_AudioSpec::from(spec));
+        let sdl_dst_spec = dst_spec.map(|spec| sys::audio::SDL_AudioSpec::from(spec));
+
+        let sdl_src_spec_ptr = sdl_src_spec
+            .as_ref()
+            .map_or(std::ptr::null(), |spec| spec as *const _);
+        let sdl_dst_spec_ptr = sdl_dst_spec
+            .as_ref()
+            .map_or(std::ptr::null(), |spec| spec as *const _);
+
+        let stream =
+            unsafe { sys::audio::SDL_CreateAudioStream(sdl_src_spec_ptr, sdl_dst_spec_ptr) };
+        if stream.is_null() {
+            Err(get_error())
+        } else {
+            Ok(Self { stream })
+        }
+    }
+
+    /// Creates a new audio stream for playback.
+    ///
+    /// # Arguments
+    ///
+    /// * `app_spec` - The format of audio data the application will provide.
+    /// * `device_spec` - The format of audio data the audio device expects.
+    ///                   If `None`, SDL will choose an appropriate format.
+    pub fn new_playback_stream(
+        app_spec: &AudioSpec,
+        device_spec: Option<&AudioSpec>,
+    ) -> Result<Self, String> {
+        Self::new(Some(app_spec), device_spec)
+    }
+
+    /// Creates a new audio stream for recording.
+    ///
+    /// # Arguments
+    ///
+    /// * `device_spec` - The format of audio data the audio device provides.
+    ///                   If `None`, SDL will choose an appropriate format.
+    /// * `app_spec` - The format of audio data the application wants to receive.
+    pub fn new_recording_stream(
+        device_spec: Option<&AudioSpec>,
+        app_spec: &AudioSpec,
+    ) -> Result<Self, String> {
+        Self::new(device_spec, Some(app_spec))
+    }
+
+    /// Create an `AudioStream` for this device with the specified spec.
+    /// This device will be closed when the stream is dropped.
+    /// The device begins paused, so you must call `stream.resume()` to start playback.
+    #[doc(alias = "SDL_OpenAudioDeviceStream")]
+    pub fn open_device_stream(
+        device_id: AudioDeviceID,
+        spec: Option<&AudioSpec>,
+    ) -> Result<AudioStream, String> {
+        let sdl_spec = spec.clone().map(|spec| spec.into());
+        let sdl_spec_ptr = crate::util::option_to_ptr(sdl_spec.as_ref());
+
+        let stream = unsafe {
+            sys::audio::SDL_OpenAudioDeviceStream(
+                device_id.id(),
+                sdl_spec_ptr,
+                // not using callbacks here
+                None,
+                std::ptr::null_mut(),
+            )
+        };
+        if stream.is_null() {
+            Err(get_error())
+        } else {
+            Ok(Self { stream })
+        }
+    }
+
+    /// Retrieves the source and destination formats of the audio stream.
+    ///
+    /// Returns a tuple `(src_spec, dst_spec)` where each is an `Option<AudioSpec>`.
+    #[doc(alias = "SDL_GetAudioStreamFormat")]
+    pub fn get_format(&self) -> Result<(Option<AudioSpec>, Option<AudioSpec>), String> {
+        let mut sdl_src_spec = AudioSpec::default().into();
+        let mut sdl_dst_spec = AudioSpec::default().into();
+        let result = unsafe {
+            sys::audio::SDL_GetAudioStreamFormat(self.stream, &mut sdl_src_spec, &mut sdl_dst_spec)
+        };
+        if result {
+            let src_spec = if sdl_src_spec.format != sys::audio::SDL_AUDIO_UNKNOWN {
+                Some(AudioSpec::from(&sdl_src_spec))
+            } else {
+                None
+            };
+            let dst_spec = if sdl_dst_spec.format != sys::audio::SDL_AUDIO_UNKNOWN {
+                Some(AudioSpec::from(&sdl_dst_spec))
+            } else {
+                None
+            };
+            Ok((src_spec, dst_spec))
+        } else {
+            Err(get_error())
+        }
+    }
+
+    /// Retrieves the gain of the audio stream.
+    ///
+    /// Returns the gain as a `f32` on success, or an error message on failure.
+    #[doc(alias = "SDL_GetAudioStreamGain")]
+    pub fn get_gain(&self) -> Result<f32, String> {
+        let gain = unsafe { sys::audio::SDL_GetAudioStreamGain(self.stream) };
+        if gain >= 0.0 {
+            Ok(gain)
+        } else {
+            Err(get_error())
+        }
+    }
+
     /// Pauses playback of the audio stream.
     #[doc(alias = "SDL_PauseAudioStream")]
     pub fn pause(&self) -> Result<(), String> {
-        if unsafe { sys::audio::SDL_PauseAudioStreamDevice(self.base_stream.stream) } {
+        let result = unsafe { sys::audio::SDL_PauseAudioStreamDevice(self.stream) };
+        if result {
             Ok(())
         } else {
             Err(get_error())
@@ -918,11 +1118,182 @@ impl<CB> AudioStreamWithCallback<CB> {
     /// Resumes playback of the audio stream.
     #[doc(alias = "SDL_ResumeAudioStream")]
     pub fn resume(&self) -> Result<(), String> {
-        if unsafe { sys::audio::SDL_ResumeAudioStreamDevice(self.base_stream.stream) } {
+        let result = unsafe { sys::audio::SDL_ResumeAudioStreamDevice(self.stream) };
+        if result {
             Ok(())
         } else {
             Err(get_error())
         }
+    }
+
+    /// Gets the number of converted/resampled bytes available.
+    #[doc(alias = "SDL_GetAudioStreamAvailable")]
+    pub fn available_bytes(&self) -> Result<i32, String> {
+        let available = unsafe { sys::audio::SDL_GetAudioStreamAvailable(self.stream) };
+        if available == -1 {
+            Err(get_error())
+        } else {
+            Ok(available)
+        }
+    }
+
+    /// Converts a slice of bytes to a f32 sample based on AudioFormat.
+    /// Returns a Result containing the converted f32 or an error message.
+    fn read_bytes_to_f32(&self, chunk: &[u8]) -> Result<f32, String> {
+        // TODO: store specs so we don't have to call get_format every time
+        let (_, output_spec) = self.get_format()?;
+        match output_spec.unwrap().format {
+            Some(AudioFormat::F32LE) => Ok(f32::from_le_bytes(
+                chunk
+                    .try_into()
+                    .map_err(|_| "Invalid byte slice length for f32 LE")?,
+            )),
+            Some(AudioFormat::F32BE) => Ok(f32::from_be_bytes(
+                chunk
+                    .try_into()
+                    .map_err(|_| "Invalid byte slice length for f32 BE")?,
+            )),
+            _ => Err("Unsupported AudioFormat for f32 conversion".to_string()),
+        }
+    }
+
+    /// Converts a slice of bytes to an i16 sample based on AudioFormat.
+    /// Returns a Result containing the converted i16 or an error message.
+    fn read_bytes_to_i16(&self, chunk: &[u8]) -> Result<i16, String> {
+        // TODO: store specs so we don't have to call get_format every time
+        let (_, output_spec) = self.get_format()?;
+        match output_spec.unwrap().format {
+            Some(AudioFormat::S16LE) => Ok(i16::from_le_bytes(
+                chunk
+                    .try_into()
+                    .map_err(|_| "Invalid byte slice length for i16 LE")?,
+            )),
+            Some(AudioFormat::S16BE) => Ok(i16::from_be_bytes(
+                chunk
+                    .try_into()
+                    .map_err(|_| "Invalid byte slice length for i16 BE")?,
+            )),
+            _ => Err("Unsupported AudioFormat for i16 conversion".to_string()),
+        }
+    }
+
+    /// Reads samples as f32 into the provided buffer.
+    /// Returns the number of samples read.
+    pub fn read_f32_samples(&mut self, buf: &mut [f32]) -> io::Result<usize> {
+        let byte_len = buf.len() * size_of::<f32>();
+        let mut byte_buf = vec![0u8; byte_len];
+
+        // Read bytes from the stream and capture the number of bytes read
+        let bytes_read = self.read(&mut byte_buf)?;
+
+        // Calculate the number of complete samples read
+        let samples_read = bytes_read / size_of::<f32>();
+
+        // Iterate over each complete sample
+        for i in 0..samples_read {
+            let start = i * size_of::<f32>();
+            let end = start + size_of::<f32>();
+            let chunk = &byte_buf[start..end];
+
+            // Convert bytes to f32 and handle potential errors
+            buf[i] = self
+                .read_bytes_to_f32(chunk)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        }
+
+        Ok(samples_read)
+    }
+
+    /// Reads samples as i16 into the provided buffer.
+    /// Returns the number of samples read.
+    pub fn read_i16_samples(&mut self, buf: &mut [i16]) -> io::Result<usize> {
+        let byte_len = buf.len() * size_of::<i16>();
+        let mut byte_buf = vec![0u8; byte_len];
+
+        // Read bytes from the stream and capture the number of bytes read
+        let bytes_read = self.read(&mut byte_buf)?;
+
+        // Calculate the number of complete samples read
+        let samples_read = bytes_read / size_of::<i16>();
+
+        // Iterate over each complete sample
+        for i in 0..samples_read {
+            let start = i * size_of::<i16>();
+            let end = start + size_of::<i16>();
+            let chunk = &byte_buf[start..end];
+
+            // Convert bytes to i16 and handle potential errors
+            buf[i] = self
+                .read_bytes_to_i16(chunk)
+                .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+        }
+
+        Ok(samples_read)
+    }
+
+    /// Adds data to the stream.
+    pub fn put_data(&self, buf: &[u8]) -> Result<(), String> {
+        let result = unsafe {
+            sys::audio::SDL_PutAudioStreamData(self.stream, buf.as_ptr().cast(), buf.len() as i32)
+        };
+        if result {
+            Ok(())
+        } else {
+            Err(get_error())
+        }
+    }
+}
+
+impl Read for AudioStream {
+    /// Reads audio data from the stream.
+    /// Note that this reads bytes from the stream, not samples.
+    /// You must convert the bytes to samples based on the format of the stream.
+    /// `read_f32_samples` and `read_i16_samples` are provided for convenience.
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let ret = unsafe {
+            sys::audio::SDL_GetAudioStreamData(
+                self.stream,
+                buf.as_mut_ptr().cast(),
+                buf.len() as c_int,
+            )
+        };
+        if ret == -1 {
+            Err(io::Error::new(io::ErrorKind::Other, get_error()))
+        } else {
+            Ok(ret as usize)
+        }
+    }
+}
+
+// Streams with callbacks
+pub struct AudioStreamWithCallback<CB> {
+    base_stream: AudioStream,
+    c_userdata: *mut c_void,
+    _marker: PhantomData<CB>,
+}
+
+impl<CB> Drop for AudioStreamWithCallback<CB> {
+    fn drop(&mut self) {
+        // `base_stream` will be dropped automatically.
+        if !self.c_userdata.is_null() {
+            unsafe {
+                // Drop the callback box
+                let _ = Box::from_raw(self.c_userdata as *mut CB);
+            }
+            self.c_userdata = std::ptr::null_mut();
+        }
+    }
+}
+
+impl<CB> AudioStreamWithCallback<CB> {
+    /// Pauses the audio stream.
+    pub fn pause(&self) -> Result<(), String> {
+        self.base_stream.pause()
+    }
+
+    /// Resumes the audio stream.
+    pub fn resume(&self) -> Result<(), String> {
+        self.base_stream.resume()
     }
 }
 
@@ -945,7 +1316,7 @@ unsafe extern "C" fn audio_recording_stream_callback<CB, Channel>(
     let callback = &mut *(userdata as *mut CB);
 
     // Allocate a buffer to receive the recorded data
-    let sample_count = len as usize / std::mem::size_of::<Channel>();
+    let sample_count = len as usize / size_of::<Channel>();
     let mut buffer = vec![Channel::SILENCE; sample_count];
 
     // Pull data from the stream
@@ -959,63 +1330,6 @@ unsafe extern "C" fn audio_recording_stream_callback<CB, Channel>(
 
     // Call the user's callback with the captured audio data
     callback.callback(&buffer);
-}
-
-impl AudioStream {
-    pub fn get_stream(&mut self) -> *mut sys::audio::SDL_AudioStream {
-        self.stream
-    }
-
-    fn get_device_id(&mut self) -> &mut AudioDeviceID {
-        let device = unsafe { sys::audio::SDL_GetAudioStreamDevice(self.stream) };
-        unsafe { &mut *(device as *mut AudioDeviceID) }
-    }
-
-    pub fn pause(&mut self) -> bool {
-        unsafe { sys::audio::SDL_PauseAudioStreamDevice(self.stream) }
-    }
-    pub fn resume(&mut self) -> bool {
-        unsafe { sys::audio::SDL_ResumeAudioStreamDevice(self.stream) }
-    }
-
-    ///Get the number of converted/resampled bytes available.
-    #[doc(alias = "SDL_GetAudioStreamAvailable")]
-    pub fn get_available(&self) -> Result<c_int, String> {
-        let available = unsafe { sys::audio::SDL_GetAudioStreamAvailable(self.stream) };
-        if available == -1 {
-            Err(get_error())
-        } else {
-            Ok(available)
-        }
-    }
-
-    // #[doc(alias = "SDL_LockAudioStream")]
-    // pub fn lock(&mut self) -> AudioStreamLockGuard<CB> {
-    //     unsafe { sys::audio::SDL_LockAudioStream(self.get_stream()) };
-    //     AudioStreamLockGuard {
-    //         stream: self,
-    //         _nosend: PhantomData,
-    //     }
-    // }
-}
-
-impl Read for AudioStream {
-    /// Read audio data from the stream.
-    #[doc(alias = "SDL_GetAudioStreamData")]
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let ret = unsafe {
-            sys::audio::SDL_GetAudioStreamData(
-                self.stream,
-                buf.as_mut_ptr().cast(),
-                buf.len() as c_int,
-            )
-        };
-        if ret == -1 {
-            Err(io::Error::new(io::ErrorKind::Other, get_error()))
-        } else {
-            Ok(ret as usize)
-        }
-    }
 }
 
 // TODO:

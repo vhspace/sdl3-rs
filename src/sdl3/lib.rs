@@ -107,3 +107,4 @@ pub use crate::common::IntegerOrSdlError;
 mod guid;
 #[cfg(feature = "raw-window-handle")]
 pub mod raw_window_handle;
+mod util;
