@@ -174,10 +174,10 @@ dependencies = ["sdl3"]
 # dependencies required when building examples and tests for this crate
 dev-dependencies = [
     "sdl3",
-    "sdl3-image[libjpeg-turbo,tiff,libwebp]",
-    "sdl3-ttf",
-    "sdl3-gfx",
-    "sdl3-mixer",
+    #    "sdl3-image[libjpeg-turbo,tiff,libwebp]",
+    #    "sdl3-ttf",
+    #    "sdl3-gfx",
+    #    "sdl3-mixer",
 ]
 git = "https://github.com/microsoft/vcpkg"
 rev = "acc3bcf" # release 2022.08.15
