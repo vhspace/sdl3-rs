@@ -68,7 +68,8 @@ test-mode = []
 
 [package.metadata.docs.rs]
 #features = ["default", "gfx", "mixer", "image", "ttf"]
-features = ["default", "gfx"]
+#features = ["default", "gfx"]
+features = ["default"]
 
 [[example]]
 name = "animation"
