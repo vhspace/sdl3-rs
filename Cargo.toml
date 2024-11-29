@@ -3,7 +3,7 @@ name = "sdl3"
 description = "Cross-platform multimedia"
 repository = "https://github.com/revmischa/sdl3-rs"
 documentation = "https://crates.io/crates/sdl3"
-version = "0.11.0"
+version = "0.11.1"
 license = "MIT"
 authors = [
     "Tony Aldridge <tony@angry-lawyer.com>",
@@ -27,7 +27,7 @@ libc = "0.2.92"
 lazy_static = "1.4.0"
 
 [dependencies.sdl3-sys]
-version = "0.1.1"
+version = "0.1.3+SDL3-preview-3.1.6"
 
 [dependencies.c_vec]
 # allow both 1.* and 2.0 versions

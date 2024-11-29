@@ -1190,7 +1190,7 @@ impl WindowBuilder {
                 sys::video::SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER,
                 raw_height.into(),
             );
-            let flags_cstr = CString::new("flags").unwrap();
+            let flags_cstr = CString::new("SDL.window.create.flags").unwrap();
             SDL_SetNumberProperty(props, flags_cstr.as_ptr(), self.window_flags.into());
 
             let raw = sys::video::SDL_CreateWindowWithProperties(props);
@@ -1610,7 +1610,7 @@ impl Window {
     /// function in the Vulkan library.
     #[doc(alias = "SDL_Vulkan_CreateSurface")]
     pub fn vulkan_create_surface(&self, instance: VkInstance) -> Result<VkSurfaceKHR, String> {
-        let mut surface: VkSurfaceKHR = null_mut();
+        let mut surface: VkSurfaceKHR = 0 as _;
         if unsafe {
             sys::vulkan::SDL_Vulkan_CreateSurface(self.context.raw, instance, null(), &mut surface)
         } == false
