@@ -1,8 +1,8 @@
 use crate::get_error;
 use crate::sys;
 use core::fmt;
-use std::ffi::NulError;
 use libc::{c_char, c_int, c_void};
+use std::ffi::NulError;
 use std::ffi::{CStr, CString};
 use std::path::{Path, PathBuf};
 use std::ptr;
@@ -104,6 +104,64 @@ extern "C" fn c_dialog_callback(
     }
 }
 
+/// Take a slice of DialogFileFilter and transform it into two vecs
+/// The filter_strings vec contains the CStrings.
+///     filter_strings must not be dropped until the callback is complete.
+/// The c_filters vec contains pointers to the CStrings in filter_strings.
+macro_rules! filters {
+    ($filters:ident, $filter_strings:ident, $c_filters:ident) => {
+        let mut $filter_strings = Vec::new();
+        for filter in $filters {
+            match (CString::new(filter.name), CString::new(filter.pattern)) {
+                (Ok(name), Ok(pattern)) => {
+                    $filter_strings.push((name, pattern));
+                }
+                (Err(error), _) | (_, Err(error)) => {
+                    return Err(DialogError::FilterError(error));
+                }
+            }
+        }
+        let $c_filters: Vec<SDL_DialogFileFilter> = $filter_strings
+            .iter()
+            .map(|(name, pattern)| SDL_DialogFileFilter {
+                name: name.as_ptr(),
+                pattern: pattern.as_ptr(),
+            })
+            .collect();
+    };
+}
+
+/// If an optional window exists get it's pointer, otherwise get a null pointer.
+macro_rules! window_ptr {
+    ($window:ident, $window_ptr:ident) => {
+        let $window_ptr = $window.map_or(ptr::null_mut(), |win| win.raw());
+    };
+}
+
+/// Take an optional path parameter and convert it into a CString and a pointer to it.
+/// If there is no path the pointer will be null.
+macro_rules! default_location_ptr {
+    ($default_location:ident, $default_location_ptr:ident) => {
+        let default_location = match $default_location {
+            Some(path) => Some(CString::new(path.as_ref().to_str().unwrap()).unwrap()),
+            None => None,
+        };
+        let $default_location_ptr = default_location
+            .as_ref()
+            .map_or(ptr::null(), |path| path.as_ptr());
+    };
+}
+
+macro_rules! callback_data_ptr {
+    ($callback:ident, $filter_strings:expr, $callback_data_ptr:ident) => {
+        let callback_data = DialogCallbackData {
+            callback: $callback,
+            filter_strings: $filter_strings,
+        };
+        let $callback_data_ptr = Box::into_raw(Box::new(callback_data));
+    };
+}
+
 #[doc(alias = "SDL_ShowOpenFileDialog")]
 pub fn show_open_file_dialog<'a, W>(
     filters: &[DialogFileFilter],
@@ -117,47 +175,19 @@ where
 {
     let window = window.into();
 
-    // Filter strings must be kept alive until callback is finished
-    let mut filter_strings = Vec::new();
-    for filter in filters {
-        match (CString::new(filter.name), CString::new(filter.pattern)) {
-            (Ok(name), Ok(pattern)) => {
-                filter_strings.push((name, pattern));
-            }
-            (Err(error), _) | (_, Err(error))=> {
-                return Err(DialogError::FilterError(error));
-            },
-        }
-    }
-    let filters: Vec<SDL_DialogFileFilter> = filter_strings
-        .iter()
-        .map(|(name, pattern)| SDL_DialogFileFilter {
-            name: name.as_ptr(),
-            pattern: pattern.as_ptr(),
-        })
-        .collect();
+    filters!(filters, filter_strings, c_filters);
 
     unsafe {
-        let window = window.map_or(ptr::null_mut(), |win| win.raw());
-
-        let default_location = match default_location {
-            Some(path) => Some(CString::new(path.as_ref().to_str().unwrap()).unwrap()),
-            None => None,
-        };
-        let default_location_ptr = default_location.map_or(ptr::null(), |path| path.as_ptr());
-
-        let callback_data = DialogCallbackData {
-            callback,
-            filter_strings: Some(filter_strings),
-        };
-        let callback_ptr = Box::into_raw(Box::new(callback_data));
+        window_ptr!(window, window_ptr);
+        default_location_ptr!(default_location, default_location_ptr);
+        callback_data_ptr!(callback, Some(filter_strings), callback_data_ptr);
 
         sys::dialog::SDL_ShowOpenFileDialog(
             Some(c_dialog_callback),
-            callback_ptr as *mut c_void,
-            window,
-            filters.as_ptr(),
-            filters.len() as i32,
+            callback_data_ptr as *mut c_void,
+            window_ptr,
+            c_filters.as_ptr(),
+            c_filters.len() as i32,
             default_location_ptr,
             allow_many,
         );
@@ -177,24 +207,14 @@ pub fn show_open_folder_dialog<'a, W>(
     let window = window.into();
 
     unsafe {
-        let window = window.map_or(ptr::null_mut(), |win| win.raw());
-
-        let default_location = match default_location {
-            Some(path) => Some(CString::new(path.as_ref().to_str().unwrap()).unwrap()),
-            None => None,
-        };
-        let default_location_ptr = default_location.map_or(ptr::null(), |path| path.as_ptr());
-
-        let callback_data = DialogCallbackData {
-            callback,
-            filter_strings: None,
-        };
-        let callback_ptr = Box::into_raw(Box::new(callback_data));
+        window_ptr!(window, window_ptr);
+        default_location_ptr!(default_location, default_location_ptr);
+        callback_data_ptr!(callback, None, callback_data_ptr);
 
         sys::dialog::SDL_ShowOpenFolderDialog(
             Some(c_dialog_callback),
-            callback_ptr as *mut c_void,
-            window,
+            callback_data_ptr as *mut c_void,
+            window_ptr,
             default_location_ptr,
             allow_many,
         );
@@ -213,47 +233,19 @@ where
 {
     let window = window.into();
 
-    // Filter strings must be kept alive until callback is finished
-    let mut filter_strings = Vec::new();
-    for filter in filters {
-        match (CString::new(filter.name), CString::new(filter.pattern)) {
-            (Ok(name), Ok(pattern)) => {
-                filter_strings.push((name, pattern));
-            }
-            (Err(error), _) | (_, Err(error))=> {
-                return Err(DialogError::FilterError(error));
-            },
-        }
-    }
-    let filters: Vec<SDL_DialogFileFilter> = filter_strings
-        .iter()
-        .map(|(name, pattern)| SDL_DialogFileFilter {
-            name: name.as_ptr(),
-            pattern: pattern.as_ptr(),
-        })
-        .collect();
+    filters!(filters, filter_strings, c_filters);
 
     unsafe {
-        let window = window.map_or(ptr::null_mut(), |win| win.raw());
-
-        let default_location = match default_location {
-            Some(path) => Some(CString::new(path.as_ref().to_str().unwrap()).unwrap()),
-            None => None,
-        };
-        let default_location_ptr = default_location.map_or(ptr::null(), |path| path.as_ptr());
-
-        let callback_data = DialogCallbackData {
-            callback,
-            filter_strings: Some(filter_strings),
-        };
-        let callback_ptr = Box::into_raw(Box::new(callback_data));
+        window_ptr!(window, window_ptr);
+        default_location_ptr!(default_location, default_location_ptr);
+        callback_data_ptr!(callback, Some(filter_strings), callback_data_ptr);
 
         sys::dialog::SDL_ShowSaveFileDialog(
             Some(c_dialog_callback),
-            callback_ptr as *mut c_void,
-            window,
-            filters.as_ptr(),
-            filters.len() as i32,
+            callback_data_ptr as *mut c_void,
+            window_ptr,
+            c_filters.as_ptr(),
+            c_filters.len() as i32,
             default_location_ptr,
         );
         Ok(())
