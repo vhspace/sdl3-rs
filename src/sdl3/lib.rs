@@ -66,6 +66,7 @@ pub mod cpuinfo;
 #[macro_use]
 mod macros;
 pub mod audio;
+pub mod dialog;
 pub mod event;
 pub mod filesystem;
 pub mod gamepad;
