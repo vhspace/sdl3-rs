@@ -161,3 +161,41 @@ pub fn show_open_file_dialog<'a, W, P>(
         );
     }
 }
+
+#[doc(alias = "SDL_ShowOpenFolderDialog")]
+pub fn show_open_folder_dialog<'a, W, P>(
+    default_location: P,
+    allow_many: bool,
+    window: W,
+    callback: DialogCallback,
+) where
+    P: Into<Option<&'a dyn AsRef<Path>>>,
+    W: Into<Option<&'a Window>>,
+{
+    let default_location = default_location.into();
+    let window = window.into();
+
+    unsafe {
+        let window = window.map_or(ptr::null_mut(), |win| win.raw());
+
+        let default_location = match default_location {
+            Some(path) => Some(CString::new(path.as_ref().to_str().unwrap()).unwrap()),
+            None => None,
+        };
+        let default_location_ptr = default_location.map_or(ptr::null(), |path| path.as_ptr());
+
+        let callback_data = DialogCallbackData {
+            callback,
+            filter_strings: None,
+        };
+        let callback_ptr = Box::into_raw(Box::new(callback_data));
+
+        sys::dialog::SDL_ShowOpenFolderDialog(
+            Some(c_dialog_callback),
+            callback_ptr as *mut c_void,
+            window,
+            default_location_ptr,
+            allow_many,
+        );
+    }
+}

@@ -39,23 +39,6 @@ pub fn main() -> Result<(), String> {
         },
     ];
 
-    show_open_file_dialog(
-        &filters,
-        None,
-        true,
-        canvas.window(),
-        Box::new(|result, filter| {
-            match result {
-                Ok(result) => {
-                    println!("Files: {result:?} Filter: {filter:?}");
-                }
-                Err(error) => {
-                    eprintln!("File dialog error {error}");
-                }
-            };
-        }),
-    );
-
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
@@ -65,7 +48,37 @@ pub fn main() -> Result<(), String> {
                     ..
                 } => {
                     break 'running;
-                }
+                },
+                Event::KeyDown {keycode: Some(Keycode::O), ..} => {
+                    show_open_file_dialog(
+                        &filters,
+                        None,
+                        true,
+                        canvas.window(),
+                        Box::new(|result, filter| {
+                            match result {
+                                Ok(result) => {
+                                    println!("Files: {result:?} Filter: {filter:?}");
+                                }
+                                Err(error) => {
+                                    eprintln!("File dialog error {error}");
+                                }
+                            };
+                        }),
+                    );
+                },
+                Event::KeyDown {keycode: Some(Keycode::D), ..} => {
+                    show_open_folder_dialog(None, false, canvas.window(), Box::new(|result, _| {
+                        match result {
+                            Ok(result) => {
+                                println!("Folder: {result:?}");
+                            }
+                            Err(error) => {
+                                eprintln!("Folder dialog error {error}");
+                            }
+                        };
+                    }));
+                },
                 _ => {}
             }
         }
