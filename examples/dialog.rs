@@ -4,6 +4,7 @@ use sdl3::dialog::{show_open_file_dialog, show_open_folder_dialog, show_save_fil
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
 use sdl3::pixels::Color;
+use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 pub fn main() -> Result<(), String> {
@@ -39,6 +40,8 @@ pub fn main() -> Result<(), String> {
         },
     ];
 
+    let default_path_path = PathBuf::from("/");
+
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
@@ -52,7 +55,7 @@ pub fn main() -> Result<(), String> {
                 Event::KeyDown {keycode: Some(Keycode::O), ..} => {
                     show_open_file_dialog(
                         &filters,
-                        None,
+                        None::<PathBuf>,
                         true,
                         canvas.window(),
                         Box::new(|result, filter| {
@@ -68,7 +71,7 @@ pub fn main() -> Result<(), String> {
                     );
                 },
                 Event::KeyDown {keycode: Some(Keycode::D), ..} => {
-                    show_open_folder_dialog(None, false, canvas.window(), Box::new(|result, _| {
+                    show_open_folder_dialog(Some(&default_path_path), false, canvas.window(), Box::new(|result, _| {
                         match result {
                             Ok(result) => {
                                 println!("Folder: {result:?}");
@@ -80,7 +83,7 @@ pub fn main() -> Result<(), String> {
                     }));
                 },
                 Event::KeyDown {keycode: Some(Keycode::S), ..} => {
-                    show_save_file_dialog(&filters, None, canvas.window(), Box::new(|result, filter| {
+                    show_save_file_dialog(&filters, Some("/home"), canvas.window(), Box::new(|result, filter| {
                         match result {
                             Ok(result) => {
                                 println!("Save File: {result:?} Filter: {filter:?}");

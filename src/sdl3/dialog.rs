@@ -102,17 +102,15 @@ extern "C" fn c_dialog_callback(
 }
 
 #[doc(alias = "SDL_ShowOpenFileDialog")]
-pub fn show_open_file_dialog<'a, W, P>(
+pub fn show_open_file_dialog<'a, W>(
     filters: &[DialogFileFilter],
-    default_location: P,
+    default_location: Option<impl AsRef<Path>>,
     allow_many: bool,
     window: W,
     callback: DialogCallback,
 ) where
-    P: Into<Option<&'a dyn AsRef<Path>>>,
     W: Into<Option<&'a Window>>,
 {
-    let default_location = default_location.into();
     let window = window.into();
 
     // Filter strings must be kept alive until callback is finished
@@ -163,16 +161,14 @@ pub fn show_open_file_dialog<'a, W, P>(
 }
 
 #[doc(alias = "SDL_ShowOpenFolderDialog")]
-pub fn show_open_folder_dialog<'a, W, P>(
-    default_location: P,
+pub fn show_open_folder_dialog<'a, W>(
+    default_location: Option<impl AsRef<Path>>,
     allow_many: bool,
     window: W,
     callback: DialogCallback,
 ) where
-    P: Into<Option<&'a dyn AsRef<Path>>>,
     W: Into<Option<&'a Window>>,
 {
-    let default_location = default_location.into();
     let window = window.into();
 
     unsafe {
@@ -201,16 +197,14 @@ pub fn show_open_folder_dialog<'a, W, P>(
 }
 
 #[doc(alias = "SDL_ShowSaveFileDialog")]
-pub fn show_save_file_dialog<'a, W, P>(
+pub fn show_save_file_dialog<'a, W>(
     filters: &[DialogFileFilter],
-    default_location: P,
+    default_location: Option<impl AsRef<Path>>,
     window: W,
     callback: DialogCallback,
 ) where
-    P: Into<Option<&'a dyn AsRef<Path>>>,
     W: Into<Option<&'a Window>>,
 {
-    let default_location = default_location.into();
     let window = window.into();
 
     // Filter strings must be kept alive until callback is finished
