@@ -68,7 +68,7 @@ pub fn main() -> Result<(), String> {
                                 }
                             };
                         }),
-                    );
+                    ).unwrap_or_else(|e| panic!("Failed to show open file dialog: {e}"));
                 },
                 Event::KeyDown {keycode: Some(Keycode::D), ..} => {
                     show_open_folder_dialog(Some(&default_path_path), false, canvas.window(), Box::new(|result, _| {
@@ -92,7 +92,7 @@ pub fn main() -> Result<(), String> {
                                 eprintln!("Save dialog error {error}");
                             }
                         };
-                    }));
+                    })).unwrap_or_else(|e| panic!("Failed to show save file dialog: {e}"));
                 },
                 _ => {}
             }

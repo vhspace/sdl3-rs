@@ -1,6 +1,7 @@
 use crate::get_error;
 use crate::sys;
 use core::fmt;
+use std::ffi::NulError;
 use libc::{c_char, c_int, c_void};
 use std::ffi::{CStr, CString};
 use std::path::{Path, PathBuf};
@@ -18,6 +19,7 @@ pub struct DialogFileFilter<'a> {
 
 #[derive(Debug, Clone)]
 pub enum DialogError {
+    FilterError(NulError),
     InvalidFilename(Utf8Error),
     Canceled,
     SdlError(String),
@@ -28,6 +30,7 @@ impl fmt::Display for DialogError {
         use self::DialogError::*;
 
         match *self {
+            FilterError(ref e) => write!(f, "Could not create filter: {}", e),
             InvalidFilename(ref e) => write!(f, "Invalid filename: {}", e),
             Canceled => write!(f, "Canceled"),
             SdlError(ref e) => write!(f, "SDL error: {}", e),
@@ -108,7 +111,8 @@ pub fn show_open_file_dialog<'a, W>(
     allow_many: bool,
     window: W,
     callback: DialogCallback,
-) where
+) -> Result<(), DialogError>
+where
     W: Into<Option<&'a Window>>,
 {
     let window = window.into();
@@ -120,9 +124,9 @@ pub fn show_open_file_dialog<'a, W>(
             (Ok(name), Ok(pattern)) => {
                 filter_strings.push((name, pattern));
             }
-            _ => {
-                return;
-            }
+            (Err(error), _) | (_, Err(error))=> {
+                return Err(DialogError::FilterError(error));
+            },
         }
     }
     let filters: Vec<SDL_DialogFileFilter> = filter_strings
@@ -157,6 +161,7 @@ pub fn show_open_file_dialog<'a, W>(
             default_location_ptr,
             allow_many,
         );
+        Ok(())
     }
 }
 
@@ -202,7 +207,8 @@ pub fn show_save_file_dialog<'a, W>(
     default_location: Option<impl AsRef<Path>>,
     window: W,
     callback: DialogCallback,
-) where
+) -> Result<(), DialogError>
+where
     W: Into<Option<&'a Window>>,
 {
     let window = window.into();
@@ -214,9 +220,9 @@ pub fn show_save_file_dialog<'a, W>(
             (Ok(name), Ok(pattern)) => {
                 filter_strings.push((name, pattern));
             }
-            _ => {
-                return;
-            }
+            (Err(error), _) | (_, Err(error))=> {
+                return Err(DialogError::FilterError(error));
+            },
         }
     }
     let filters: Vec<SDL_DialogFileFilter> = filter_strings
@@ -250,5 +256,6 @@ pub fn show_save_file_dialog<'a, W>(
             filters.len() as i32,
             default_location_ptr,
         );
+        Ok(())
     }
 }
