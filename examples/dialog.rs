@@ -1,6 +1,6 @@
 extern crate sdl3;
 
-use sdl3::dialog::{show_open_file_dialog, show_open_folder_dialog, DialogFileFilter};
+use sdl3::dialog::{show_open_file_dialog, show_open_folder_dialog, show_save_file_dialog, DialogFileFilter};
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
 use sdl3::pixels::Color;
@@ -75,6 +75,18 @@ pub fn main() -> Result<(), String> {
                             }
                             Err(error) => {
                                 eprintln!("Folder dialog error {error}");
+                            }
+                        };
+                    }));
+                },
+                Event::KeyDown {keycode: Some(Keycode::S), ..} => {
+                    show_save_file_dialog(&filters, None, canvas.window(), Box::new(|result, filter| {
+                        match result {
+                            Ok(result) => {
+                                println!("Save File: {result:?} Filter: {filter:?}");
+                            }
+                            Err(error) => {
+                                eprintln!("Save dialog error {error}");
                             }
                         };
                     }));

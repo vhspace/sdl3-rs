@@ -199,3 +199,62 @@ pub fn show_open_folder_dialog<'a, W, P>(
         );
     }
 }
+
+#[doc(alias = "SDL_ShowSaveFileDialog")]
+pub fn show_save_file_dialog<'a, W, P>(
+    filters: &[DialogFileFilter],
+    default_location: P,
+    window: W,
+    callback: DialogCallback,
+) where
+    P: Into<Option<&'a dyn AsRef<Path>>>,
+    W: Into<Option<&'a Window>>,
+{
+    let default_location = default_location.into();
+    let window = window.into();
+
+    // Filter strings must be kept alive until callback is finished
+    let mut filter_strings = Vec::new();
+    for filter in filters {
+        match (CString::new(filter.name), CString::new(filter.pattern)) {
+            (Ok(name), Ok(pattern)) => {
+                filter_strings.push((name, pattern));
+            }
+            _ => {
+                return;
+            }
+        }
+    }
+    let filters: Vec<SDL_DialogFileFilter> = filter_strings
+        .iter()
+        .map(|(name, pattern)| SDL_DialogFileFilter {
+            name: name.as_ptr(),
+            pattern: pattern.as_ptr(),
+        })
+        .collect();
+
+    unsafe {
+        let window = window.map_or(ptr::null_mut(), |win| win.raw());
+
+        let default_location = match default_location {
+            Some(path) => Some(CString::new(path.as_ref().to_str().unwrap()).unwrap()),
+            None => None,
+        };
+        let default_location_ptr = default_location.map_or(ptr::null(), |path| path.as_ptr());
+
+        let callback_data = DialogCallbackData {
+            callback,
+            filter_strings: Some(filter_strings),
+        };
+        let callback_ptr = Box::into_raw(Box::new(callback_data));
+
+        sys::dialog::SDL_ShowSaveFileDialog(
+            Some(c_dialog_callback),
+            callback_ptr as *mut c_void,
+            window,
+            filters.as_ptr(),
+            filters.len() as i32,
+            default_location_ptr,
+        );
+    }
+}
