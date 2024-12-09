@@ -1,26 +1,186 @@
-use crate::get_error;
-use libc::c_char;
-use libc::c_void;
+use libc::{c_char, c_void};
 use std::error;
 use std::ffi::{CStr, CString, NulError};
 use std::fmt;
+use std::marker::PhantomData;
+use std::path::{Path, PathBuf};
+use std::ptr;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use sys::filesystem::SDL_PathInfo;
 
+use crate::get_error;
 use crate::sys;
 
-#[doc(alias = "SDL_GetBasePath")]
-pub fn base_path() -> Result<String, String> {
-    let result = unsafe {
-        let buf = sys::filesystem::SDL_GetBasePath();
-        let s = CStr::from_ptr(buf as *const _).to_str().unwrap().to_owned();
-        sys::stdinc::SDL_free(buf as *mut c_void);
-        s
-    };
+#[derive(Debug, Clone)]
+pub enum FileSystemError {
+    InvalidPathError(PathBuf),
+    NulError(NulError),
+    SdlError(String),
+}
 
-    if result.is_empty() {
-        Err(get_error())
-    } else {
-        Ok(result)
+/// Turn a AsRef<Path> into a CString so it can be passed to C
+macro_rules! path_cstring {
+    ($pathref:ident) => {
+        let Some($pathref) = $pathref.as_ref().to_str() else {
+            return Err(FileSystemError::InvalidPathError(
+                $pathref.as_ref().to_owned(),
+            ));
+        };
+
+        let Ok($pathref) = CString::new($pathref) else {
+            return Err(FileSystemError::InvalidPathError(PathBuf::from($pathref)));
+        };
+    };
+}
+
+// Turn a CString into a Path for ease of use
+macro_rules! cstring_path {
+    ($path:ident, $error:expr) => {
+        let Ok($path) = CStr::from_ptr($path).to_str() else {
+            $error
+        };
+        let $path = Path::new($path);
+    };
+}
+
+#[doc(alias = "SDL_CopyFile")]
+pub fn copy_file(
+    old_path: impl AsRef<Path>,
+    new_path: impl AsRef<Path>,
+) -> Result<(), FileSystemError> {
+    path_cstring!(old_path);
+    path_cstring!(new_path);
+    unsafe {
+        if !sys::filesystem::SDL_CopyFile(old_path.as_ptr(), new_path.as_ptr()) {
+            return Err(FileSystemError::SdlError(get_error()));
+        }
     }
+    Ok(())
+}
+
+#[doc(alias = "SDL_CreateDirectory")]
+pub fn create_directory(path: impl AsRef<Path>) -> Result<(), FileSystemError> {
+    path_cstring!(path);
+    unsafe {
+        if !sys::filesystem::SDL_CreateDirectory(path.as_ptr()) {
+            return Err(FileSystemError::SdlError(get_error()));
+        }
+    }
+    Ok(())
+}
+
+pub use sys::filesystem::SDL_EnumerationResult as EnumerationResult;
+
+pub type EnumerateCallback = fn(&Path, &Path) -> EnumerationResult;
+
+unsafe extern "C" fn c_enumerate_directory(
+    userdata: *mut c_void,
+    dirname: *const c_char,
+    fname: *const c_char,
+) -> EnumerationResult {
+    let callback: EnumerateCallback = std::mem::transmute(userdata);
+
+    cstring_path!(dirname, return EnumerationResult::FAILURE);
+    cstring_path!(fname, return EnumerationResult::FAILURE);
+
+    callback(dirname, fname)
+}
+
+#[doc(alias = "SDL_EnumerateDirectory")]
+pub fn enumerate_directory(
+    path: impl AsRef<Path>,
+    callback: EnumerateCallback,
+) -> Result<(), FileSystemError> {
+    path_cstring!(path);
+    unsafe {
+        if !sys::filesystem::SDL_EnumerateDirectory(
+            path.as_ptr(),
+            Some(c_enumerate_directory),
+            callback as *mut c_void,
+        ) {
+            return Err(FileSystemError::SdlError(get_error()));
+        }
+    }
+    Ok(())
+}
+
+#[doc(alias = "SDL_GetBasePath")]
+pub fn get_base_path() -> Result<&'static Path, FileSystemError> {
+    unsafe {
+        let path = sys::filesystem::SDL_GetBasePath();
+        cstring_path!(path, return Err(FileSystemError::SdlError(get_error())));
+        Ok(path)
+    }
+}
+
+//TODO: Implement SDL_GetCurrentDirectory when sdl3-sys is updated to SDL 3.2.0.
+
+pub use sys::filesystem::SDL_PathType as PathType;
+
+pub struct PathInfo {
+    internal: SDL_PathInfo,
+}
+
+impl PathInfo {
+    fn path_type(&self) -> PathType {
+        self.internal.r#type as PathType
+    }
+
+    fn size(&self) -> usize {
+        self.internal.size as usize
+    }
+
+    fn create_time(&self) -> SystemTime {
+        UNIX_EPOCH + Duration::from_nanos(self.internal.create_time as u64)
+    }
+
+    fn modify_time(&self) -> SystemTime {
+        UNIX_EPOCH + Duration::from_nanos(self.internal.modify_time as u64)
+    }
+
+    fn access_time(&self) -> SystemTime {
+        UNIX_EPOCH + Duration::from_nanos(self.internal.access_time as u64)
+    }
+}
+
+impl fmt::Debug for PathInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PathInfo")
+            .field(
+                "path_type",
+                match self.path_type() {
+                    PathType::DIRECTORY => &"Directory",
+                    PathType::FILE => &"File",
+                    PathType::NONE => &"None",
+                    _ => &"Other",
+                },
+            )
+            .field("size", &self.size())
+            .field("create_time", &self.create_time())
+            .field("modify_time", &self.modify_time())
+            .field("access_time", &self.access_time())
+            .finish()
+    }
+}
+
+#[doc(alias = "SDL_GetPathInfo")]
+pub fn get_path_info(path: impl AsRef<Path>) -> Result<PathInfo, FileSystemError> {
+    let mut info = SDL_PathInfo {
+        r#type: PathType::NONE,
+        size: 0,
+        create_time: 0,
+        modify_time: 0,
+        access_time: 0,
+    };
+    path_cstring!(path);
+
+    unsafe {
+        if !sys::filesystem::SDL_GetPathInfo(path.as_ptr(), &mut info as *mut SDL_PathInfo) {
+            return Err(FileSystemError::SdlError(get_error()));
+        }
+    }
+
+    Ok(PathInfo { internal: info })
 }
 
 #[derive(Debug, Clone)]
@@ -54,29 +214,178 @@ impl error::Error for PrefPathError {
     }
 }
 
-// TODO: Change to OsStr or something?
 /// Return the preferred directory for the application to write files on this
 /// system, based on the given organization and application name.
 #[doc(alias = "SDL_GetPrefPath")]
-pub fn pref_path(org_name: &str, app_name: &str) -> Result<String, PrefPathError> {
-    use self::PrefPathError::*;
-    let result = unsafe {
-        let org = match CString::new(org_name) {
-            Ok(s) => s,
-            Err(err) => return Err(InvalidOrganizationName(err)),
-        };
-        let app = match CString::new(app_name) {
-            Ok(s) => s,
-            Err(err) => return Err(InvalidApplicationName(err)),
-        };
-        let buf =
-            sys::filesystem::SDL_GetPrefPath(org.as_ptr() as *const c_char, app.as_ptr() as *const c_char);
-        CStr::from_ptr(buf as *const _).to_str().unwrap().to_owned()
+pub fn get_pref_path(org_name: &str, app_name: &str) -> Result<PathBuf, PrefPathError> {
+    let org = match CString::new(org_name) {
+        Ok(s) => s,
+        Err(err) => return Err(PrefPathError::InvalidOrganizationName(err)),
+    };
+    let app = match CString::new(app_name) {
+        Ok(s) => s,
+        Err(err) => return Err(PrefPathError::InvalidApplicationName(err)),
     };
 
-    if result.is_empty() {
-        Err(SdlError(get_error()))
+    let path = unsafe {
+        let buf = sys::filesystem::SDL_GetPrefPath(
+            org.as_ptr() as *const c_char,
+            app.as_ptr() as *const c_char,
+        );
+        let path = PathBuf::from(CStr::from_ptr(buf).to_str().unwrap());
+        sys::stdinc::SDL_free(buf as *mut c_void);
+        path
+    };
+
+    if path.as_os_str().is_empty() {
+        Err(PrefPathError::SdlError(get_error()))
     } else {
-        Ok(result)
+        Ok(path)
     }
+}
+
+pub use sys::filesystem::SDL_Folder as Folder;
+
+#[doc(alias = "SDL_GetUserFolder")]
+pub fn get_user_folder(folder: Folder) -> Result<&'static Path, FileSystemError> {
+    unsafe {
+        let path = sys::filesystem::SDL_GetUserFolder(folder);
+        cstring_path!(path, return Err(FileSystemError::SdlError(get_error())));
+        Ok(path)
+    }
+}
+
+bitflags! {
+    pub struct GlobFlags: sys::filesystem::SDL_GlobFlags {
+        const NONE = 0;
+        const CASEINSENSITIVE = sys::filesystem::SDL_GLOB_CASEINSENSITIVE;
+    }
+}
+
+pub struct GlobResultsIter<'a> {
+    results: &'a GlobResults<'a>,
+    index: isize,
+}
+
+impl<'a> Iterator for GlobResultsIter<'a> {
+    type Item = &'a Path;
+    fn next(&mut self) -> Option<Self::Item> {
+        let current = self.results.get(self.index);
+        self.index += 1;
+        return current;
+    }
+}
+
+pub struct GlobResults<'a> {
+    internal: *mut *mut c_char,
+    count: isize,
+    phantom: PhantomData<&'a *mut *mut c_char>,
+}
+
+impl<'a> GlobResults<'a> {
+    fn new(internal: *mut *mut c_char, count: isize) -> Self {
+        Self {
+            internal,
+            count,
+            phantom: PhantomData,
+        }
+    }
+
+    fn len(&self) -> usize {
+        self.count as usize
+    }
+
+    fn get<I>(&self, index: I) -> Option<&Path>
+    where
+        I: Into<isize>,
+    {
+        let index = index.into();
+        if index >= self.count as isize {
+            return None;
+        }
+        unsafe {
+            let path = *self.internal.offset(index);
+            cstring_path!(path, return None);
+            return Some(path);
+        }
+    }
+}
+
+impl<'a> IntoIterator for &'a GlobResults<'a> {
+    type Item = &'a Path;
+    type IntoIter = GlobResultsIter<'a>;
+    fn into_iter(self) -> Self::IntoIter {
+        Self::IntoIter {
+            results: self,
+            index: 0,
+        }
+    }
+}
+
+impl<'a> Drop for GlobResults<'a> {
+    fn drop(&mut self) {
+        unsafe {
+            sys::stdinc::SDL_free(self.internal as *mut c_void);
+        }
+    }
+}
+
+#[doc(alias = "SDL_GlobDirectory")]
+pub fn glob_directory(
+    path: impl AsRef<Path>,
+    pattern: Option<&str>,
+    flags: GlobFlags,
+) -> Result<GlobResults, FileSystemError> {
+    path_cstring!(path);
+    let pattern = match pattern {
+        Some(pattern) => match CString::new(pattern) {
+            Ok(pattern) => Some(pattern),
+            Err(error) => return Err(FileSystemError::NulError(error)),
+        },
+        None => None,
+    };
+    let pattern_ptr = pattern.as_ref().map_or(ptr::null(), |pat| pat.as_ptr());
+    let mut count = 0;
+
+    let results = unsafe {
+        let paths = sys::filesystem::SDL_GlobDirectory(
+            path.as_ptr(),
+            pattern_ptr,
+            flags.bits(),
+            &mut count as *mut i32,
+        );
+        if paths.is_null() {
+            return Err(FileSystemError::SdlError(get_error()));
+        }
+        GlobResults::new(paths, count as isize)
+    };
+    Ok(results)
+}
+
+#[doc(alias = "SDL_RemovePath")]
+pub fn remove_path(path: impl AsRef<Path>) -> Result<(), FileSystemError> {
+    path_cstring!(path);
+    unsafe {
+        if !sys::filesystem::SDL_RemovePath(path.as_ptr()) {
+            return Err(FileSystemError::SdlError(get_error()));
+        }
+    }
+    Ok(())
+}
+
+#[doc(alias = "SDL_RenamePath")]
+pub fn rename_path(
+    old_path: impl AsRef<Path>,
+    new_path: impl AsRef<Path>,
+) -> Result<(), FileSystemError> {
+    path_cstring!(old_path);
+    path_cstring!(new_path);
+
+    unsafe {
+        if !sys::filesystem::SDL_RenamePath(old_path.as_ptr(), new_path.as_ptr()) {
+            return Err(FileSystemError::SdlError(get_error()));
+        }
+    }
+
+    Ok(())
 }
