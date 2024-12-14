@@ -12,20 +12,20 @@ unsafe impl HasRawWindowHandle for Window {
     fn raw_window_handle(&self) -> RawWindowHandle {
         // Windows
         #[cfg(target_os = "windows")]
-        {
+        unsafe {
             use self::raw_window_handle::Win32WindowHandle;
             let mut handle = Win32WindowHandle::empty();
 
             let window_properties = sys::video::SDL_GetWindowProperties(self.raw());
 
-            handle.hwnd = sys::video::SDL_GetPointerProperty(
+            handle.hwnd = SDL_GetPointerProperty(
                 window_properties,
                 sys::video::SDL_PROP_WINDOW_WIN32_HWND_POINTER,
                 std::ptr::null_mut(),
             ) as *mut libc::c_void;
-            handle.hinstance = sys::video::SDL_GetPointerProperty(
+            handle.hinstance = SDL_GetPointerProperty(
                 window_properties,
-                sys::video::SDL_PROP_WINDOW_WIN32_HINSTANCE_POINTER,
+                sys::video::SDL_PROP_WINDOW_WIN32_INSTANCE_POINTER,
                 std::ptr::null_mut(),
             ) as *mut libc::c_void;
 
@@ -57,7 +57,7 @@ unsafe impl HasRawWindowHandle for Window {
 
             let window_properties = sys::video::SDL_GetWindowProperties(self.raw());
 
-            handle.ui_window = sys::video::SDL_GetPointerProperty(
+            handle.ui_window = SDL_GetPointerProperty(
                 window_properties,
                 sys::video::SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER,
                 std::ptr::null_mut(),
@@ -75,7 +75,7 @@ unsafe impl HasRawWindowHandle for Window {
 
             let window_properties = sys::video::SDL_GetWindowProperties(self.raw());
 
-            handle.a_native_window = sys::video::SDL_GetPointerProperty(
+            handle.a_native_window = SDL_GetPointerProperty(
                 window_properties,
                 sys::video::SDL_PROP_WINDOW_ANDROID_NATIVE_WINDOW_POINTER,
                 std::ptr::null_mut(),
@@ -101,7 +101,7 @@ unsafe impl HasRawWindowHandle for Window {
 
                     let window_properties = sys::video::SDL_GetWindowProperties(self.raw());
 
-                    handle.display = sys::video::SDL_GetPointerProperty(
+                    handle.display = SDL_GetPointerProperty(
                         window_properties,
                         sys::video::SDL_PROP_WINDOW_X11_DISPLAY_POINTER,
                         std::ptr::null_mut(),
@@ -120,12 +120,12 @@ unsafe impl HasRawWindowHandle for Window {
 
                     let window_properties = sys::video::SDL_GetWindowProperties(self.raw());
 
-                    handle.display = sys::video::SDL_GetPointerProperty(
+                    handle.display = SDL_GetPointerProperty(
                         window_properties,
                         sys::video::SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER,
                         std::ptr::null_mut(),
                     ) as *mut libc::c_void;
-                    handle.surface = sys::video::SDL_GetPointerProperty(
+                    handle.surface = SDL_GetPointerProperty(
                         window_properties,
                         sys::video::SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER,
                         std::ptr::null_mut(),
@@ -182,7 +182,7 @@ unsafe impl HasRawDisplayHandle for Window {
 
             let window_properties = sys::video::SDL_GetWindowProperties(self.raw());
 
-            handle.a_native_window = sys::video::SDL_GetPointerProperty(
+            handle.a_native_window = SDL_GetPointerProperty(
                 window_properties,
                 sys::video::SDL_PROP_WINDOW_ANDROID_NATIVE_WINDOW_POINTER,
                 std::ptr::null_mut(),
@@ -208,7 +208,7 @@ unsafe impl HasRawDisplayHandle for Window {
 
                     let window_properties = sys::video::SDL_GetWindowProperties(self.raw());
 
-                    handle.display = sys::video::SDL_GetPointerProperty(
+                    handle.display = SDL_GetPointerProperty(
                         window_properties,
                         sys::video::SDL_PROP_WINDOW_X11_DISPLAY_POINTER,
                         std::ptr::null_mut(),
@@ -222,7 +222,7 @@ unsafe impl HasRawDisplayHandle for Window {
 
                     let window_properties = sys::video::SDL_GetWindowProperties(self.raw());
 
-                    handle.display = sys::video::SDL_GetPointerProperty(
+                    handle.display = SDL_GetPointerProperty(
                         window_properties,
                         sys::video::SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER,
                         std::ptr::null_mut(),

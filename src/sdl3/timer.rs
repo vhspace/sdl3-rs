@@ -109,10 +109,12 @@ mod test {
     use std::sync::{Arc, Mutex};
     use std::time::Duration;
 
+    use crate::timer::add_timer;
+
     #[test]
     fn test_timer_runs_multiple_times() {
         let sdl_context = crate::sdl::init().unwrap();
-        let timer_subsystem = sdl_context.timer().unwrap();
+        //let timer_subsystem = sdl_context.timer().unwrap();
 
         let local_num = Arc::new(Mutex::new(0));
         let timer_num = local_num.clone();
@@ -138,7 +140,7 @@ mod test {
     #[test]
     fn test_timer_runs_at_least_once() {
         let sdl_context = crate::sdl::init().unwrap();
-        let timer_subsystem = sdl_context.timer().unwrap();
+        //let timer_subsystem = sdl_context.timer().unwrap();
 
         let local_flag = Arc::new(Mutex::new(false));
         let timer_flag = local_flag.clone();
@@ -160,7 +162,7 @@ mod test {
     #[test]
     fn test_timer_can_be_recreated() {
         let sdl_context = crate::sdl::init().unwrap();
-        let timer_subsystem = sdl_context.timer().unwrap();
+        //let timer_subsystem = sdl_context.timer().unwrap();
 
         let local_num = Arc::new(Mutex::new(0));
         let timer_num = local_num.clone();

@@ -55,7 +55,7 @@ fn run(font_path: &Path) -> Result<(), String> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
+    let mut canvas = window.into_canvas();
     let texture_creator = canvas.texture_creator();
 
     // Load a font

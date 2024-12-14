@@ -4,7 +4,7 @@ Event Handling
 
 use std::borrow::ToOwned;
 use std::collections::HashMap;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 use std::ffi::CStr;
 use std::iter::FromIterator;
 use std::marker::PhantomData;

@@ -2,8 +2,9 @@ extern crate sdl3;
 
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
-use sdl3::pixels::{Color, PixelFormatEnum};
+use sdl3::pixels::{Color, PixelFormat};
 use sdl3::render::{FPoint, FRect};
+use sdl3_sys::pixels::SDL_PixelFormat;
 
 fn main() -> Result<(), String> {
     let sdl_context = sdl3::init()?;
@@ -13,14 +14,10 @@ fn main() -> Result<(), String> {
         .position_centered()
         .build()
         .map_err(|e| e.to_string())?;
-    let mut canvas = window
-        .into_canvas()
-        .software()
-        .build()
-        .map_err(|e| e.to_string())?;
+    let mut canvas = window.into_canvas();
     let creator = canvas.texture_creator();
     let mut texture = creator
-        .create_texture_target(PixelFormatEnum::RGBA8888, 400, 300)
+        .create_texture_target(unsafe {PixelFormat::from_ll(SDL_PixelFormat::RGBA8888)}, 400, 300)
         .map_err(|e| e.to_string())?;
 
     let mut angle = 0.0;
