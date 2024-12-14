@@ -1,6 +1,6 @@
 extern crate sdl3;
 
-use sdl3::audio::AudioSpecDesired;
+use sdl3::audio::AudioSpec;
 
 use std::time::Duration;
 
@@ -21,15 +21,17 @@ fn gen_wave(bytes_to_write: i32) -> Vec<i16> {
     result
 }
 
+// FIXME
+fn main() -> () {}
+#[cfg(feature = "")]
 fn main() -> Result<(), String> {
     let sdl_context = sdl3::init()?;
     let audio_subsystem = sdl_context.audio()?;
 
-    let desired_spec = AudioSpecDesired {
+    let desired_spec = AudioSpec {
         freq: Some(48_000),
         channels: Some(2),
-        // mono  -
-        samples: None, // default sample size
+        format: None,
     };
 
     let device = audio_subsystem.open_queue::<i16, _>(None, &desired_spec)?;

@@ -5,28 +5,31 @@ fn main() -> Result<(), String> {
     let joystick_subsystem = sdl_context.joystick()?;
     let haptic_subsystem = sdl_context.haptic()?;
 
-    let available = joystick_subsystem
-        .num_joysticks()
+    let joysticks = joystick_subsystem
+        .joysticks()
         .map_err(|e| format!("can't enumerate joysticks: {}", e))?;
 
-    println!("{} joysticks available", available);
+    println!("{} joysticks available", joysticks.len());
 
     // Iterate over all available joysticks and stop once we manage to open one.
-    let joystick_index = (0..available)
-        .find_map(|id| match joystick_subsystem.open(id) {
-            Ok(c) => {
-                println!("Success: opened \"{}\"", c.name());
-                Some(id)
-            }
-            Err(e) => {
-                println!("failed: {:?}", e);
-                None
+    let (_joystick, joystick_id) = joysticks.into_iter()
+        .find_map(|joystick| {
+            let id = joystick.id;
+            match joystick_subsystem.open(joystick) {
+                Ok(c) => {
+                    println!("Success: opened \"{}\"", c.name());
+                    Some((c, id))
+                }
+                Err(e) => {
+                    println!("failed: {:?}", e);
+                    None
+                }
             }
         })
         .expect("Couldn't open any joystick");
 
     let mut haptic = haptic_subsystem
-        .open_from_joystick_id(joystick_index)
+        .open_from_joystick_id(joystick_id)
         .map_err(|e| e.to_string())?;
 
     for event in sdl_context.event_pump()?.wait_iter() {

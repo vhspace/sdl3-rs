@@ -2,6 +2,7 @@ extern crate sdl3;
 
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
+use sdl3_sys::keycode::SDL_KMOD_NONE;
 use std::collections::HashSet;
 use std::time::Duration;
 
@@ -30,7 +31,7 @@ pub fn main() -> Result<(), String> {
         let keys = events
             .keyboard_state()
             .pressed_scancodes()
-            .filter_map(Keycode::from_scancode)
+            .filter_map(|scancode| Keycode::from_scancode(scancode, SDL_KMOD_NONE, false))
             .collect();
 
         // Get the difference between the new and old sets.

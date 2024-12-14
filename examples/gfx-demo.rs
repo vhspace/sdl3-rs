@@ -23,7 +23,7 @@ fn main() -> Result<(), String> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
+    let mut canvas = window.into_canvas();
 
     canvas.set_draw_color(pixels::Color::RGB(0, 0, 0));
     canvas.clear();

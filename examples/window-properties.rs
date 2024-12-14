@@ -14,11 +14,12 @@ pub fn main() -> Result<(), String> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let mut canvas = window
-        .into_canvas()
-        .present_vsync()
-        .build()
-        .map_err(|e| e.to_string())?;
+    let mut canvas = window.into_canvas();
+    //let mut canvas = window
+    //    .into_canvas()
+    //    .present_vsync()
+    //    .build()
+    //    .map_err(|e| e.to_string())?;
 
     let mut tick = 0;
 

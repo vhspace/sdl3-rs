@@ -4,7 +4,7 @@ use sdl3::dialog::{show_open_file_dialog, show_open_folder_dialog, show_save_fil
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
 use sdl3::pixels::Color;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::Duration;
 
 pub fn main() -> Result<(), String> {

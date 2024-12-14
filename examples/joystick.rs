@@ -1,3 +1,5 @@
+use sdl3::get_error;
+
 extern crate sdl3;
 
 fn main() -> Result<(), String> {
@@ -11,9 +13,8 @@ fn main() -> Result<(), String> {
     println!("{} joysticks available", joysticks.len());
 
     // Iterate over all available joysticks and stop once we manage to open one.
-    let mut joystick = joysticks
-        .iter()
-        .find_map(|joystick_instance| match joystick_subsystem.open(*joystick_instance.id) {
+    let mut joystick = joysticks.into_iter()
+        .find_map(|joystick| match joystick_subsystem.open(joystick) {
             Ok(c) => {
                 println!("Success: opened \"{}\"", c.name());
                 Some(c)
@@ -59,12 +60,13 @@ fn main() -> Result<(), String> {
                     hi_freq = 65535;
                 }
                 if button_idx < 2 {
-                    match joystick.set_rumble(lo_freq, hi_freq, 15000) {
-                        Ok(()) => println!("Set rumble to ({}, {})", lo_freq, hi_freq),
-                        Err(e) => println!(
+                    if joystick.set_rumble(lo_freq, hi_freq, 15000) {
+                        println!("Set rumble to ({}, {})", lo_freq, hi_freq);
+                    } else {
+                        println!(
                             "Error setting rumble to ({}, {}): {:?}",
-                            lo_freq, hi_freq, e
-                        ),
+                            lo_freq, hi_freq, get_error()
+                        );
                     }
                 }
             }
@@ -76,12 +78,13 @@ fn main() -> Result<(), String> {
                     hi_freq = 0;
                 }
                 if button_idx < 2 {
-                    match joystick.set_rumble(lo_freq, hi_freq, 15000) {
-                        Ok(()) => println!("Set rumble to ({}, {})", lo_freq, hi_freq),
-                        Err(e) => println!(
+                    if joystick.set_rumble(lo_freq, hi_freq, 15000) {
+                        println!("Set rumble to ({}, {})", lo_freq, hi_freq);
+                    } else {
+                        println!(
                             "Error setting rumble to ({}, {}): {:?}",
-                            lo_freq, hi_freq, e
-                        ),
+                            lo_freq, hi_freq, get_error()
+                        );
                     }
                 }
             }

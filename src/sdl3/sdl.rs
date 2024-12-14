@@ -88,12 +88,12 @@ impl Sdl {
         IS_MAIN_THREAD.with(|is_main_thread| {
             if was_main_thread_declared {
                 if !is_main_thread.get() {
-		    // Since 'cargo test' runs its tests in a separate thread, we must disable
-		    // this safety check during testing.
-		    if !(cfg!(test) || cfg!(feature = "test-mode")) {
-			return Err("Cannot initialize `Sdl` from a thread other than the main thread.  For testing, you can disable this check with the feature 'test-mode'.".to_owned());
+            // Since 'cargo test' runs its tests in a separate thread, we must disable
+            // this safety check during testing.
+            if !(cfg!(test) || cfg!(feature = "test-mode")) {
+            return Err("Cannot initialize `Sdl` from a thread other than the main thread.  For testing, you can disable this check with the feature 'test-mode'.".to_owned());
                     }
-		}
+        }
             } else {
                 is_main_thread.set(true);
             }
