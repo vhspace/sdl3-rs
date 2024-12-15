@@ -47,6 +47,12 @@ fn main() -> Result<(), String> {
         Err(e) => return Err(e.to_string()),
     };
 
+    let capabilities = surface.get_capabilities(&adapter);
+    let mut formats = capabilities.formats;
+    let main_format = *formats.iter()
+        .find(|format| format.is_srgb())
+        .unwrap_or(&formats[0]);
+
     let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("shader"),
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
@@ -77,7 +83,7 @@ fn main() -> Result<(), String> {
         },
         fragment: Some(wgpu::FragmentState {
             targets: &[Some(wgpu::ColorTargetState {
-                format: wgpu::TextureFormat::Bgra8UnormSrgb,
+                format: main_format,
                 blend: None,
                 write_mask: wgpu::ColorWrites::ALL,
             })],
@@ -107,7 +113,7 @@ fn main() -> Result<(), String> {
 
     let mut config = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        format: wgpu::TextureFormat::Bgra8UnormSrgb,
+        format: main_format,
         width,
         height,
         present_mode: wgpu::PresentMode::Fifo,
