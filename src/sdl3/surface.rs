@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 use std::mem;
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::get_error;
 use crate::pixels;
@@ -38,12 +38,12 @@ impl<'a> Drop for SurfaceContext<'a> {
     }
 }
 
-/// Holds a `Rc<SurfaceContext>`.
+/// Holds an `Arc<SurfaceContext>`.
 ///
 /// Note: If a `Surface` goes out of scope but it cloned its context,
 /// then the `SDL_Surface` will not be free'd until there are no more references to the `SurfaceContext`.
 pub struct Surface<'a> {
-    context: Rc<SurfaceContext<'a>>,
+    context: Arc<SurfaceContext<'a>>,
 }
 
 /// An unsized Surface reference.
@@ -108,7 +108,7 @@ impl<'a> Surface<'a> {
             _marker: PhantomData,
         };
         Surface {
-            context: Rc::new(context),
+            context: Arc::new(context),
         }
     }
 
@@ -312,7 +312,7 @@ impl<'a> Surface<'a> {
         Canvas::from_surface(self)
     }
 
-    pub fn context(&self) -> Rc<SurfaceContext<'a>> {
+    pub fn context(&self) -> Arc<SurfaceContext<'a>> {
         self.context.clone()
     }
 }

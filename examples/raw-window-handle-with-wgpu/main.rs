@@ -5,7 +5,7 @@ extern crate sdl3;
 extern crate wgpu;
 
 use std::borrow::Cow;
-use wgpu::SurfaceError;
+use wgpu::{InstanceDescriptor, SurfaceError};
 
 use sdl3::event::{Event, WindowEvent};
 use sdl3::keyboard::Keycode;
@@ -25,23 +25,21 @@ fn main() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     let (width, height) = window.size();
 
-    let instance = wgpu::Instance::new(wgpu::Backends::PRIMARY);
-    let surface = unsafe { instance.create_surface(&window) };
+    let instance = wgpu::Instance::new(InstanceDescriptor::default());
+    let surface = instance.create_surface(&window).map_err(|err| err.to_string())?;
     let adapter_opt = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::HighPerformance,
         force_fallback_adapter: false,
         compatible_surface: Some(&surface),
     }));
-    let adapter = match adapter_opt {
-        Some(a) => a,
-        None => return Err(String::from("No adapter found")),
-    };
+    let Some(adapter) = adapter_opt else {return Err(String::from("No adapter found"))};
 
     let (device, queue) = match pollster::block_on(adapter.request_device(
         &wgpu::DeviceDescriptor {
-            limits: wgpu::Limits::default(),
+            required_limits: wgpu::Limits::default(),
             label: Some("device"),
-            features: wgpu::Features::empty(),
+            required_features: wgpu::Features::empty(),
+            memory_hints: wgpu::MemoryHints::Performance,
         },
         None,
     )) {
@@ -74,7 +72,8 @@ fn main() -> Result<(), String> {
         vertex: wgpu::VertexState {
             buffers: &[],
             module: &shader,
-            entry_point: "vs_main",
+            entry_point: Some("vs_main"),
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
         },
         fragment: Some(wgpu::FragmentState {
             targets: &[Some(wgpu::ColorTargetState {
@@ -83,7 +82,8 @@ fn main() -> Result<(), String> {
                 write_mask: wgpu::ColorWrites::ALL,
             })],
             module: &shader,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
         }),
         primitive: wgpu::PrimitiveState {
             topology: wgpu::PrimitiveTopology::TriangleList,
@@ -102,15 +102,18 @@ fn main() -> Result<(), String> {
             alpha_to_coverage_enabled: false,
         },
         multiview: None,
+        cache: None,
     });
 
     let mut config = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        format: surface.get_supported_formats(&adapter)[0],
+        format: wgpu::TextureFormat::Bgra8UnormSrgb,
         width,
         height,
         present_mode: wgpu::PresentMode::Fifo,
         alpha_mode: wgpu::CompositeAlphaMode::Auto,
+        desired_maximum_frame_latency: 0,
+        view_formats: vec!(),
     };
     surface.configure(&device, &config);
 
@@ -167,11 +170,13 @@ fn main() -> Result<(), String> {
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::GREEN),
-                        store: true,
+                        store: wgpu::StoreOp::Store,
                     },
                 })],
                 depth_stencil_attachment: None,
                 label: None,
+                timestamp_writes: None,
+                occlusion_query_set: None,
             });
             rpass.set_pipeline(&render_pipeline);
             rpass.set_bind_group(0, &bind_group, &[]);
