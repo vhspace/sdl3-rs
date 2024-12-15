@@ -538,9 +538,6 @@ pub struct WindowContext {
     pub(crate) metal_view: sys::metal::SDL_MetalView,
 }
 
-unsafe impl Send for WindowContext {}
-unsafe impl Sync for WindowContext {}
-
 impl Drop for WindowContext {
     #[inline]
     #[doc(alias = "SDL_DestroyWindow")]
@@ -674,7 +671,7 @@ impl FlashOperation {
 /// then the `SDL_Window` will not be destroyed until there are no more references to the `WindowContext`.
 /// This may happen when a `TextureCreator<Window>` outlives the `Canvas<Window>`
 pub struct Window {
-    context: Arc<WindowContext>,
+    context: Arc<WindowContext>, // Arc may not be needed, added because wgpu expects Window to be send/sync, though even with Arc this technically still isn't send/sync
 }
 
 impl From<WindowContext> for Window {
