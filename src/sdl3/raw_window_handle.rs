@@ -1,35 +1,37 @@
 extern crate raw_window_handle;
 
-use self::raw_window_handle::{
-    HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle,
-};
+use std::num::NonZero;
+
+use self::raw_window_handle::{HandleError, HasDisplayHandle, HasWindowHandle, WindowHandle, DisplayHandle, RawWindowHandle};
 use sys::properties::SDL_GetPointerProperty;
 
 use crate::video::Window;
 
 // Access window handle using SDL3 properties
-unsafe impl HasRawWindowHandle for Window {
-    fn raw_window_handle(&self) -> RawWindowHandle {
+impl HasWindowHandle for Window {
+    fn window_handle(&self) -> Result<WindowHandle<'_>, HandleError> {
         // Windows
         #[cfg(target_os = "windows")]
         unsafe {
             use self::raw_window_handle::Win32WindowHandle;
-            let mut handle = Win32WindowHandle::empty();
 
             let window_properties = sys::video::SDL_GetWindowProperties(self.raw());
 
-            handle.hwnd = SDL_GetPointerProperty(
+            let hwnd = SDL_GetPointerProperty(
                 window_properties,
                 sys::video::SDL_PROP_WINDOW_WIN32_HWND_POINTER,
                 std::ptr::null_mut(),
-            ) as *mut libc::c_void;
-            handle.hinstance = SDL_GetPointerProperty(
+            );
+            let hinstance = SDL_GetPointerProperty(
                 window_properties,
                 sys::video::SDL_PROP_WINDOW_WIN32_INSTANCE_POINTER,
                 std::ptr::null_mut(),
-            ) as *mut libc::c_void;
+            );
+            let mut handle = Win32WindowHandle::new(NonZero::new_unchecked(hwnd.addr() as isize));
+            handle.hinstance = Some(NonZero::new_unchecked(hinstance.addr() as isize));
+            let raw_window_handle = RawWindowHandle::Win32(handle);
 
-            return RawWindowHandle::Win32(handle);
+            return Ok(WindowHandle::borrow_raw(raw_window_handle));
         }
 
         // macOS
@@ -145,15 +147,16 @@ unsafe impl HasRawWindowHandle for Window {
 }
 
 // Access display handle using SDL3 properties
-unsafe impl HasRawDisplayHandle for Window {
-    fn raw_display_handle(&self) -> RawDisplayHandle {
+impl HasDisplayHandle for Window {
+    fn display_handle(&self) -> Result<DisplayHandle<'_>, HandleError> {
         // Windows
         #[cfg(target_os = "windows")]
-        {
+        unsafe {
             use self::raw_window_handle::WindowsDisplayHandle;
-            let handle = WindowsDisplayHandle::empty();
+            let handle = WindowsDisplayHandle::new();
+            let raw_window_handle = raw_window_handle::RawDisplayHandle::Windows(handle);
 
-            return RawDisplayHandle::Windows(handle);
+            return Ok(DisplayHandle::borrow_raw(raw_window_handle));
         }
 
         // macOS

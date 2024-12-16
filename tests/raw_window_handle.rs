@@ -3,34 +3,46 @@ mod raw_window_handle_test {
     extern crate raw_window_handle;
     extern crate sdl3;
 
-    use self::raw_window_handle::{
-        HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle,
-    };
     use self::sdl3::video::Window;
+    use self::raw_window_handle::{HasWindowHandle, HasDisplayHandle, RawWindowHandle};
 
     #[cfg(target_os = "windows")]
     #[test]
     fn get_windows_handle() {
+        use raw_window_handle::RawDisplayHandle;
+
         let window = new_hidden_window();
-        match window.raw_window_handle() {
-            RawWindowHandle::Win32(windows_handle) => {
-                assert_ne!(windows_handle.hwnd, 0 as *mut libc::c_void);
-                println!("Successfully received Windows RawWindowHandle!");
-            }
-            x => assert!(
-                false,
+        let window_handle = match window.window_handle() {
+            Ok(v) => v,
+            Err(err) => panic!(
+                "Received error while getting window handle for Windows: {:?}",
+                err
+            ),
+        };
+        let raw_handle = match window_handle.as_raw() {
+            RawWindowHandle::Win32(v) => v,
+            x => panic!(
                 "Received wrong RawWindowHandle type for Windows: {:?}",
                 x
             ),
-        }
-        match window.raw_display_handle() {
-            RawDisplayHandle::Windows(_) => {}
-            x => assert!(
-                false,
+        };
+        assert_ne!(raw_handle.hwnd.get(), 0);
+        println!("Successfully received Windows RawWindowHandle!");
+        let display_handle = match window.display_handle() {
+            Ok(v) => v,
+            Err(err) => panic!(
+                "Received error while getting display handle for Windows: {:?}",
+                err
+            ),
+        };
+        match display_handle.as_raw() {
+            RawDisplayHandle::Windows(_) => {},
+            x => panic!(
                 "Received wrong RawDisplayHandle type for Windows: {:?}",
                 x
             ),
         }
+        println!("Successfully received Windows RawDisplayHandle!");
     }
 
     #[cfg(any(

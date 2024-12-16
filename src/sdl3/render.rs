@@ -49,6 +49,7 @@ use std::mem::{transmute, MaybeUninit};
 use std::ops::Deref;
 use std::ptr;
 use std::rc::Rc;
+use std::sync::Arc;
 use sys::blendmode::SDL_BlendMode;
 use sys::everything::SDL_PropertiesID;
 use sys::render::{SDL_GetTextureProperties, SDL_TextureAccess};
@@ -293,7 +294,7 @@ impl TryFrom<u32> for BlendMode {
 /// When the `RendererContext` is dropped, it destroys the `SDL_Renderer`
 pub struct RendererContext<T> {
     raw: *mut sys::render::SDL_Renderer,
-    _target: Rc<T>,
+    _target: Arc<T>,
 }
 
 impl<T> Drop for RendererContext<T> {
@@ -314,7 +315,7 @@ impl<T> RendererContext<T> {
         self.raw
     }
 
-    pub unsafe fn from_ll(raw: *mut sys::render::SDL_Renderer, target: Rc<T>) -> Self {
+    pub unsafe fn from_ll(raw: *mut sys::render::SDL_Renderer, target: Arc<T>) -> Self {
         RendererContext {
             raw,
             _target: target,

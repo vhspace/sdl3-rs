@@ -12,7 +12,7 @@ use std::error::Error;
 use std::ffi::{CStr, CString, NulError};
 use std::ops::{Deref, DerefMut};
 use std::ptr::{null, null_mut};
-use std::rc::Rc;
+use std::sync::Arc;
 use std::{fmt, mem, ptr};
 use sys::properties::{
     SDL_CreateProperties, SDL_DestroyProperties, SDL_SetNumberProperty, SDL_SetStringProperty,
@@ -671,13 +671,13 @@ impl FlashOperation {
 /// then the `SDL_Window` will not be destroyed until there are no more references to the `WindowContext`.
 /// This may happen when a `TextureCreator<Window>` outlives the `Canvas<Window>`
 pub struct Window {
-    context: Rc<WindowContext>,
+    context: Arc<WindowContext>, // Arc may not be needed, added because wgpu expects Window to be send/sync, though even with Arc this technically still isn't send/sync
 }
 
 impl From<WindowContext> for Window {
     fn from(context: WindowContext) -> Window {
         Window {
-            context: Rc::new(context),
+            context: Arc::new(context),
         }
     }
 }
@@ -1495,7 +1495,7 @@ impl Window {
 
     #[inline]
     /// Create a new `Window` without taking ownership of the `WindowContext`
-    pub const unsafe fn from_ref(context: Rc<WindowContext>) -> Window {
+    pub const unsafe fn from_ref(context: Arc<WindowContext>) -> Window {
         Window { context }
     }
 
@@ -1509,7 +1509,7 @@ impl Window {
         self.into()
     }
 
-    pub fn context(&self) -> Rc<WindowContext> {
+    pub fn context(&self) -> Arc<WindowContext> {
         self.context.clone()
     }
 
