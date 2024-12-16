@@ -71,8 +71,7 @@ impl Timer {
             sys::timer::SDL_RemoveTimer(self.raw);
             if let Some(callback_ptr) = self.callback.take() {
                 // Reconstruct the Box from the raw pointer.
-                let callback = Box::from_raw(callback_ptr.as_ptr());
-                callback
+                Box::from_raw(callback_ptr.as_ptr())
             } else {
                 panic!("Timer callback already taken");
             }

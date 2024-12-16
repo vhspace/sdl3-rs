@@ -28,7 +28,7 @@ pub struct SurfaceContext<'a> {
     _marker: PhantomData<&'a ()>,
 }
 
-impl<'a> Drop for SurfaceContext<'a> {
+impl Drop for SurfaceContext<'_> {
     #[inline]
     #[doc(alias = "SDL_DestroySurface")]
     fn drop(&mut self) {
@@ -71,7 +71,7 @@ fn test_surface_ref_size() {
     assert_eq!(::std::mem::size_of::<SurfaceRef>(), 0);
 }
 
-impl<'a> Deref for Surface<'a> {
+impl Deref for Surface<'_> {
     type Target = SurfaceRef;
 
     #[inline]
@@ -80,21 +80,21 @@ impl<'a> Deref for Surface<'a> {
     }
 }
 
-impl<'a> DerefMut for Surface<'a> {
+impl DerefMut for Surface<'_> {
     #[inline]
     fn deref_mut(&mut self) -> &mut SurfaceRef {
         unsafe { mem::transmute(self.context.raw) }
     }
 }
 
-impl<'a> AsRef<SurfaceRef> for Surface<'a> {
+impl AsRef<SurfaceRef> for Surface<'_> {
     #[inline]
     fn as_ref(&self) -> &SurfaceRef {
         unsafe { mem::transmute(self.context.raw) }
     }
 }
 
-impl<'a> AsMut<SurfaceRef> for Surface<'a> {
+impl AsMut<SurfaceRef> for Surface<'_> {
     #[inline]
     fn as_mut(&mut self) -> &mut SurfaceRef {
         unsafe { mem::transmute(self.context.raw) }
@@ -368,7 +368,7 @@ impl SurfaceRef {
     }
 
     pub fn pixel_format_enum(&self) -> pixels::PixelFormat {
-        pixels::PixelFormat::from(self.pixel_format())
+        self.pixel_format()
     }
 
     /// Locks a surface so that the pixels can be directly accessed safely.
@@ -562,9 +562,7 @@ impl SurfaceRef {
     #[allow(clippy::clone_on_copy)]
     pub fn fill_rects(&mut self, rects: &[Rect], color: pixels::Color) -> Result<(), String> {
         for rect in rects.iter() {
-            if let Err(e) = self.fill_rect(rect.clone(), color) {
-                return Err(e);
-            }
+            self.fill_rect(rect.clone(), color)?;
         }
 
         Ok(())
@@ -609,7 +607,7 @@ impl SurfaceRef {
         let result = unsafe { sys::surface::SDL_GetSurfaceBlendMode(self.raw(), &mut mode) };
 
         match result {
-            true => BlendMode::try_from(mode as u32).unwrap(),
+            true => BlendMode::try_from(mode).unwrap(),
             // Should only fail on a null Surface
             _ => panic!("{}", get_error()),
         }
@@ -733,19 +731,18 @@ impl SurfaceRef {
         let src_rect = src_rect.into();
         let dst_rect = dst_rect.into();
 
-        match {
-            // The rectangles don't change, but the function requires mutable pointers.
-            let src_rect_ptr = src_rect.as_ref().map(|r| r.raw()).unwrap_or(ptr::null()) as *mut _;
-            let dst_rect_ptr = dst_rect.as_ref().map(|r| r.raw()).unwrap_or(ptr::null()) as *mut _;
-            sys::surface::SDL_BlitSurfaceUnchecked(
-                self.raw(),
-                src_rect_ptr,
-                dst.raw(),
-                dst_rect_ptr,
-            )
-        } {
-            true => Ok(()),
-            _ => Err(get_error()),
+        // The rectangles don't change, but the function requires mutable pointers.
+        let src_rect_ptr = src_rect.as_ref().map(|r| r.raw()).unwrap_or(ptr::null()) as *mut _;
+        let dst_rect_ptr = dst_rect.as_ref().map(|r| r.raw()).unwrap_or(ptr::null()) as *mut _;
+        if sys::surface::SDL_BlitSurfaceUnchecked(
+            self.raw(),
+            src_rect_ptr,
+            dst.raw(),
+            dst_rect_ptr,
+        ) {
+            Ok(())
+        } else {
+            Err(get_error())
         }
     }
 
@@ -766,17 +763,17 @@ impl SurfaceRef {
         let src_rect = src_rect.into();
         let dst_rect = dst_rect.into();
 
-        match {
-            let src_rect_ptr = src_rect.as_ref().map(|r| r.raw()).unwrap_or(ptr::null());
+        let src_rect_ptr = src_rect.as_ref().map(|r| r.raw()).unwrap_or(ptr::null());
 
-            // Copy the rect here to make a mutable copy without requiring
-            // a mutable argument
-            let mut dst_rect = dst_rect;
-            let dst_rect_ptr = dst_rect
-                .as_mut()
-                .map(|r| r.raw_mut())
-                .unwrap_or(ptr::null_mut());
+        // Copy the rect here to make a mutable copy without requiring
+        // a mutable argument
+        let mut dst_rect = dst_rect;
+        let dst_rect_ptr = dst_rect
+            .as_mut()
+            .map(|r| r.raw_mut())
+            .unwrap_or(ptr::null_mut());
 
+        let result = unsafe {
             sys::surface::SDL_BlitSurfaceScaled(
                 self.raw(),
                 src_rect_ptr,
@@ -784,9 +781,11 @@ impl SurfaceRef {
                 dst_rect_ptr,
                 SDL_SCALEMODE_LINEAR,
             )
-        } {
-            true => Ok(dst_rect),
-            _ => Err(get_error()),
+        };
+        if result {
+            Ok(dst_rect)
+        } else {
+            Err(get_error())
         }
     }
 
@@ -807,17 +806,17 @@ impl SurfaceRef {
     {
         let src_rect = src_rect.into();
         let dst_rect = dst_rect.into();
+    
+        let src_rect_ptr = src_rect.as_ref().map(|r| r.raw()).unwrap_or(ptr::null());
 
-        match unsafe {
-            let src_rect_ptr = src_rect.as_ref().map(|r| r.raw()).unwrap_or(ptr::null());
-
-            // Copy the rect here to make a mutable copy without requiring
-            // a mutable argument
-            let mut dst_rect = dst_rect;
-            let dst_rect_ptr = dst_rect
-                .as_mut()
-                .map(|r| r.raw_mut())
-                .unwrap_or(ptr::null_mut());
+        // Copy the rect here to make a mutable copy without requiring
+        // a mutable argument
+        let mut dst_rect = dst_rect;
+        let dst_rect_ptr = dst_rect
+            .as_mut()
+            .map(|r| r.raw_mut())
+            .unwrap_or(ptr::null_mut());
+        let result = unsafe {
             sys::surface::SDL_BlitSurfaceScaled(
                 self.raw(),
                 src_rect_ptr,
@@ -825,9 +824,11 @@ impl SurfaceRef {
                 dst_rect_ptr,
                 scale_mode,
             )
-        } {
-            true => Ok(dst_rect),
-            _ => Err(get_error()),
+        };
+        if result {
+            Ok(dst_rect)
+        } else {
+            Err(get_error())
         }
     }
 
@@ -847,28 +848,27 @@ impl SurfaceRef {
         R1: Into<Option<Rect>>,
         R2: Into<Option<Rect>>,
     {
-        match {
-            // The rectangles don't change, but the function requires mutable pointers.
-            let src_rect_ptr = src_rect
-                .into()
-                .as_ref()
-                .map(|r| r.raw())
-                .unwrap_or(ptr::null()) as *mut _;
-            let dst_rect_ptr = dst_rect
-                .into()
-                .as_ref()
-                .map(|r| r.raw())
-                .unwrap_or(ptr::null()) as *mut _;
-            sys::surface::SDL_BlitSurfaceUncheckedScaled(
-                self.raw(),
-                src_rect_ptr,
-                dst.raw(),
-                dst_rect_ptr,
-                scale_mode,
-            )
-        } {
-            true => Ok(()),
-            _ => Err(get_error()),
+        // The rectangles don't change, but the function requires mutable pointers.
+        let src_rect_ptr = src_rect
+            .into()
+            .as_ref()
+            .map(|r| r.raw())
+            .unwrap_or(ptr::null()) as *mut _;
+        let dst_rect_ptr = dst_rect
+            .into()
+            .as_ref()
+            .map(|r| r.raw())
+            .unwrap_or(ptr::null()) as *mut _;
+        if sys::surface::SDL_BlitSurfaceUncheckedScaled(
+            self.raw(),
+            src_rect_ptr,
+            dst.raw(),
+            dst_rect_ptr,
+            scale_mode,
+        ) {
+            Ok(())
+        } else {
+            Err(get_error())
         }
     }
 

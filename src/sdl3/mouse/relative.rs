@@ -23,8 +23,8 @@ impl RelativeMouseState {
 
         RelativeMouseState {
             mouse_state,
-            x: x as f32,
-            y: y as f32,
+            x,
+            y,
         }
     }
 

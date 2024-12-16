@@ -118,7 +118,7 @@ impl crate::EventSubsystem {
 
                 events
                     .into_iter()
-                    .map(|event_raw| Event::from_ll(event_raw))
+                    .map(Event::from_ll)
                     .collect()
             }
         }
@@ -166,7 +166,7 @@ impl crate::EventSubsystem {
     /// Returns an error, if no more user events can be created.
     pub unsafe fn register_events(&self, nr: u32) -> Result<Vec<u32>, String> {
         let result = sys::events::SDL_RegisterEvents(nr as ::libc::c_int);
-        const ERR_NR: u32 = ::std::u32::MAX - 1;
+        const ERR_NR: u32 = u32::MAX - 1;
 
         match result {
             ERR_NR => Err("No more user events can be created; SDL_EVENT_LAST reached".to_owned()),
@@ -479,8 +479,8 @@ impl DisplayEvent {
         }
     }
 
-    fn to_ll(&self) -> (u32, i32) {
-        match *self {
+    fn to_ll(self) -> (u32, i32) {
+        match self {
             DisplayEvent::Orientation(orientation) => (
                 sys::events::SDL_EVENT_DISPLAY_ORIENTATION.into(),
                 orientation.to_ll().into(),
@@ -492,13 +492,12 @@ impl DisplayEvent {
     }
 
     pub fn is_same_kind_as(&self, other: &DisplayEvent) -> bool {
-        match (self, other) {
+        matches!((self, other),
             (Self::None, Self::None)
             | (Self::Orientation(_), Self::Orientation(_))
             | (Self::Added, Self::Added)
-            | (Self::Removed, Self::Removed) => true,
-            _ => false,
-        }
+            | (Self::Removed, Self::Removed)
+		)
     }
 }
 
@@ -553,8 +552,8 @@ impl WindowEvent {
         }
     }
 
-    fn to_ll(&self) -> (EventType, i32, i32) {
-        match *self {
+    fn to_ll(self) -> (EventType, i32, i32) {
+        match self {
             WindowEvent::None => panic!("Cannot convert WindowEvent::None"),
             WindowEvent::Shown => (EventType::WindowShown, 0, 0),
             WindowEvent::Hidden => (EventType::WindowHidden, 0, 0),
@@ -577,7 +576,7 @@ impl WindowEvent {
     }
 
     pub fn is_same_kind_as(&self, other: &WindowEvent) -> bool {
-        match (self, other) {
+        matches!((self, other),
             (Self::None, Self::None)
             | (Self::Shown, Self::Shown)
             | (Self::Hidden, Self::Hidden)
@@ -595,9 +594,8 @@ impl WindowEvent {
             | (Self::CloseRequested, Self::CloseRequested)
             | (Self::HitTest(_, _), Self::HitTest(_, _))
             | (Self::ICCProfChanged, Self::ICCProfChanged)
-            | (Self::DisplayChanged(_), Self::DisplayChanged(_)) => true,
-            _ => false,
-        }
+            | (Self::DisplayChanged(_), Self::DisplayChanged(_))
+		)
     }
 }
 
@@ -986,7 +984,7 @@ impl Event {
                     r#type: sys::events::SDL_EVENT_USER.into(),
                     timestamp,
                     windowID: window_id,
-                    code: code as i32,
+                    code,
                     data1,
                     data2,
                     reserved: 0,
@@ -1003,7 +1001,7 @@ impl Event {
 
             Event::Quit { timestamp } => {
                 let event = sys::events::SDL_QuitEvent {
-                    r#type: sys::events::SDL_EVENT_QUIT.into(),
+                    r#type: sys::events::SDL_EVENT_QUIT,
                     timestamp,
                     reserved: 0,
                 };
@@ -1052,7 +1050,7 @@ impl Event {
                 raw,
             } => {
                 let event = SDL_KeyboardEvent {
-                    r#type: sys::events::SDL_EVENT_KEY_DOWN.into(),
+                    r#type: sys::events::SDL_EVENT_KEY_DOWN,
                     timestamp,
                     windowID: window_id,
                     repeat,
@@ -1084,7 +1082,7 @@ impl Event {
                 raw,
             } => {
                 let event = SDL_KeyboardEvent {
-                    r#type: sys::events::SDL_EVENT_KEY_UP.into(),
+                    r#type: sys::events::SDL_EVENT_KEY_UP,
                     timestamp,
                     windowID: window_id,
                     repeat,
@@ -1117,7 +1115,7 @@ impl Event {
             } => {
                 let state = mousestate.to_sdl_state();
                 let event = SDL_MouseMotionEvent {
-                    r#type: sys::events::SDL_EVENT_MOUSE_MOTION.into(),
+                    r#type: sys::events::SDL_EVENT_MOUSE_MOTION,
                     timestamp,
                     windowID: window_id,
                     which,
@@ -1147,7 +1145,7 @@ impl Event {
                 y,
             } => {
                 let event = SDL_MouseButtonEvent {
-                    r#type: sys::events::SDL_EVENT_MOUSE_BUTTON_DOWN.into(),
+                    r#type: sys::events::SDL_EVENT_MOUSE_BUTTON_DOWN,
                     timestamp,
                     windowID: window_id,
                     which,
@@ -1178,7 +1176,7 @@ impl Event {
                 y,
             } => {
                 let event = sys::events::SDL_MouseButtonEvent {
-                    r#type: sys::events::SDL_EVENT_MOUSE_BUTTON_UP.into(),
+                    r#type: sys::events::SDL_EVENT_MOUSE_BUTTON_UP,
                     timestamp,
                     windowID: window_id,
                     which,
@@ -1211,15 +1209,15 @@ impl Event {
                 mouse_y,
             } => {
                 let event = SDL_MouseWheelEvent {
-                    r#type: sys::events::SDL_EVENT_MOUSE_WHEEL.into(),
+                    r#type: sys::events::SDL_EVENT_MOUSE_WHEEL,
                     timestamp,
                     windowID: window_id,
                     which,
                     x,
                     y,
                     direction: direction.into(),
-                    mouse_x: mouse_x,
-                    mouse_y: mouse_y,
+                    mouse_x,
+                    mouse_y,
                     reserved: 0,
                 };
                 unsafe {
@@ -1238,7 +1236,7 @@ impl Event {
                 value,
             } => {
                 let event = SDL_JoyAxisEvent {
-                    r#type: sys::events::SDL_EVENT_JOYSTICK_AXIS_MOTION.into(),
+                    r#type: sys::events::SDL_EVENT_JOYSTICK_AXIS_MOTION,
                     timestamp,
                     which,
                     axis: axis_idx,
@@ -1266,7 +1264,7 @@ impl Event {
             } => {
                 let hatvalue = state.to_raw();
                 let event = SDL_JoyHatEvent {
-                    r#type: sys::events::SDL_EVENT_JOYSTICK_HAT_MOTION.into(),
+                    r#type: sys::events::SDL_EVENT_JOYSTICK_HAT_MOTION,
                     timestamp,
                     which,
                     hat: hat_idx,
@@ -1290,7 +1288,7 @@ impl Event {
                 button_idx,
             } => {
                 let event = SDL_JoyButtonEvent {
-                    r#type: sys::events::SDL_EVENT_JOYSTICK_BUTTON_DOWN.into(),
+                    r#type: sys::events::SDL_EVENT_JOYSTICK_BUTTON_DOWN,
                     timestamp,
                     which,
                     button: button_idx,
@@ -1315,7 +1313,7 @@ impl Event {
                 button_idx,
             } => {
                 let event = SDL_JoyButtonEvent {
-                    r#type: sys::events::SDL_EVENT_JOYSTICK_BUTTON_UP.into(),
+                    r#type: sys::events::SDL_EVENT_JOYSTICK_BUTTON_UP,
                     timestamp,
                     which,
                     button: button_idx,
@@ -1336,7 +1334,7 @@ impl Event {
 
             Event::JoyDeviceAdded { timestamp, which } => {
                 let event = SDL_JoyDeviceEvent {
-                    r#type: sys::events::SDL_EVENT_JOYSTICK_ADDED.into(),
+                    r#type: sys::events::SDL_EVENT_JOYSTICK_ADDED,
                     timestamp,
                     which,
                     reserved: 0,
@@ -1353,7 +1351,7 @@ impl Event {
 
             Event::JoyDeviceRemoved { timestamp, which } => {
                 let event = SDL_JoyDeviceEvent {
-                    r#type: sys::events::SDL_EVENT_JOYSTICK_REMOVED.into(),
+                    r#type: sys::events::SDL_EVENT_JOYSTICK_REMOVED,
                     timestamp,
                     which,
                     reserved: 0,
@@ -1374,7 +1372,7 @@ impl Event {
                 value,
             } => {
                 let event = SDL_GamepadAxisEvent {
-                    r#type: sys::events::SDL_EVENT_GAMEPAD_AXIS_MOTION.into(),
+                    r#type: sys::events::SDL_EVENT_GAMEPAD_AXIS_MOTION,
                     timestamp,
                     which,
                     axis: axis.into(),
@@ -1400,7 +1398,7 @@ impl Event {
                 button,
             } => {
                 let event = SDL_GamepadButtonEvent {
-                    r#type: sys::events::SDL_EVENT_GAMEPAD_BUTTON_DOWN.into(),
+                    r#type: sys::events::SDL_EVENT_GAMEPAD_BUTTON_DOWN,
                     timestamp,
                     which,
                     // This conversion turns an i32 into a u8; signed-to-unsigned conversions
@@ -1427,7 +1425,7 @@ impl Event {
                 button,
             } => {
                 let event = SDL_GamepadButtonEvent {
-                    r#type: sys::events::SDL_EVENT_GAMEPAD_BUTTON_UP.into(),
+                    r#type: sys::events::SDL_EVENT_GAMEPAD_BUTTON_UP,
                     reserved: 0,
                     timestamp,
                     which,
@@ -1448,7 +1446,7 @@ impl Event {
 
             Event::ControllerDeviceAdded { timestamp, which } => {
                 let event = SDL_GamepadDeviceEvent {
-                    r#type: sys::events::SDL_EVENT_GAMEPAD_ADDED.into(),
+                    r#type: sys::events::SDL_EVENT_GAMEPAD_ADDED,
                     timestamp,
                     which,
                     reserved: 0,
@@ -1465,7 +1463,7 @@ impl Event {
 
             Event::ControllerDeviceRemoved { timestamp, which } => {
                 let event = SDL_GamepadDeviceEvent {
-                    r#type: sys::events::SDL_EVENT_GAMEPAD_REMOVED.into(),
+                    r#type: sys::events::SDL_EVENT_GAMEPAD_REMOVED,
                     timestamp,
                     which,
                     reserved: 0,
@@ -1482,7 +1480,7 @@ impl Event {
 
             Event::ControllerDeviceRemapped { timestamp, which } => {
                 let event = SDL_GamepadDeviceEvent {
-                    r#type: sys::events::SDL_EVENT_GAMEPAD_REMAPPED.into(),
+                    r#type: sys::events::SDL_EVENT_GAMEPAD_REMAPPED,
                     timestamp,
                     which,
                     reserved: 0,
@@ -1675,7 +1673,7 @@ impl Event {
                     Event::MouseMotion {
                         timestamp: event.timestamp,
                         window_id: event.windowID,
-                        which: event.which.into(),
+                        which: event.which,
                         mousestate: mouse::MouseState::from_sdl_state(event.state),
                         x: event.x,
                         y: event.y,
@@ -1689,7 +1687,7 @@ impl Event {
                     Event::MouseButtonDown {
                         timestamp: event.timestamp,
                         window_id: event.windowID,
-                        which: event.which.into(),
+                        which: event.which,
                         mouse_btn: mouse::MouseButton::from_ll(event.button),
                         clicks: event.clicks,
                         x: event.x,
@@ -1702,7 +1700,7 @@ impl Event {
                     Event::MouseButtonUp {
                         timestamp: event.timestamp,
                         window_id: event.windowID,
-                        which: event.which.into(),
+                        which: event.which,
                         mouse_btn: mouse::MouseButton::from_ll(event.button),
                         clicks: event.clicks,
                         x: event.x,
@@ -1715,7 +1713,7 @@ impl Event {
                     Event::MouseWheel {
                         timestamp: event.timestamp,
                         window_id: event.windowID,
-                        which: event.which.into(),
+                        which: event.which,
                         x: event.x,
                         y: event.y,
                         direction: event.direction.into(),
@@ -1728,7 +1726,7 @@ impl Event {
                     let event = raw.jaxis;
                     Event::JoyAxisMotion {
                         timestamp: event.timestamp,
-                        which: event.which.into(),
+                        which: event.which,
                         axis_idx: event.axis,
                         value: event.value,
                     }
@@ -1737,7 +1735,7 @@ impl Event {
                     let event = raw.jhat;
                     Event::JoyHatMotion {
                         timestamp: event.timestamp,
-                        which: event.which.into(),
+                        which: event.which,
                         hat_idx: event.hat,
                         state: joystick::HatState::from_raw(event.value),
                     }
@@ -1746,7 +1744,7 @@ impl Event {
                     let event = raw.jbutton;
                     Event::JoyButtonDown {
                         timestamp: event.timestamp,
-                        which: event.which.into(),
+                        which: event.which,
                         button_idx: event.button,
                     }
                 }
@@ -1754,7 +1752,7 @@ impl Event {
                     let event = raw.jbutton;
                     Event::JoyButtonUp {
                         timestamp: event.timestamp,
-                        which: event.which.into(),
+                        which: event.which,
                         button_idx: event.button,
                     }
                 }
@@ -1762,14 +1760,14 @@ impl Event {
                     let event = raw.jdevice;
                     Event::JoyDeviceAdded {
                         timestamp: event.timestamp,
-                        which: event.which.into(),
+                        which: event.which,
                     }
                 }
                 EventType::JoyDeviceRemoved => {
                     let event = raw.jdevice;
                     Event::JoyDeviceRemoved {
                         timestamp: event.timestamp,
-                        which: event.which.into(),
+                        which: event.which,
                     }
                 }
 
@@ -1779,7 +1777,7 @@ impl Event {
 
                     Event::ControllerAxisMotion {
                         timestamp: event.timestamp,
-                        which: event.which.into(),
+                        which: event.which,
                         axis,
                         value: event.value,
                     }
@@ -1790,7 +1788,7 @@ impl Event {
 
                     Event::ControllerButtonDown {
                         timestamp: event.timestamp,
-                        which: event.which.into(),
+                        which: event.which,
                         button,
                     }
                 }
@@ -1800,7 +1798,7 @@ impl Event {
 
                     Event::ControllerButtonUp {
                         timestamp: event.timestamp,
-                        which: event.which.into(),
+                        which: event.which,
                         button,
                     }
                 }
@@ -1808,30 +1806,30 @@ impl Event {
                     let event = raw.gdevice;
                     Event::ControllerDeviceAdded {
                         timestamp: event.timestamp,
-                        which: event.which.into(),
+                        which: event.which,
                     }
                 }
                 EventType::ControllerDeviceRemoved => {
                     let event = raw.gdevice;
                     Event::ControllerDeviceRemoved {
                         timestamp: event.timestamp,
-                        which: event.which.into(),
+                        which: event.which,
                     }
                 }
                 EventType::ControllerDeviceRemapped => {
                     let event = raw.gdevice;
                     Event::ControllerDeviceRemapped {
                         timestamp: event.timestamp,
-                        which: event.which.into(),
+                        which: event.which,
                     }
                 }
                 EventType::ControllerTouchpadDown => {
                     let event = raw.gtouchpad;
                     Event::ControllerTouchpadDown {
                         timestamp: event.timestamp,
-                        which: event.which.into(),
-                        touchpad: event.touchpad.into(),
-                        finger: event.finger.into(),
+                        which: event.which,
+                        touchpad: event.touchpad,
+                        finger: event.finger,
                         x: event.x,
                         y: event.y,
                         pressure: event.pressure,
@@ -1841,9 +1839,9 @@ impl Event {
                     let event = raw.gtouchpad;
                     Event::ControllerTouchpadMotion {
                         timestamp: event.timestamp,
-                        which: event.which.into(),
-                        touchpad: event.touchpad.into(),
-                        finger: event.finger.into(),
+                        which: event.which,
+                        touchpad: event.touchpad,
+                        finger: event.finger,
                         x: event.x,
                         y: event.y,
                         pressure: event.pressure,
@@ -1853,9 +1851,9 @@ impl Event {
                     let event = raw.gtouchpad;
                     Event::ControllerTouchpadUp {
                         timestamp: event.timestamp,
-                        which: event.which.into(),
-                        touchpad: event.touchpad.into(),
-                        finger: event.finger.into(),
+                        which: event.which,
+                        touchpad: event.touchpad,
+                        finger: event.finger,
                         x: event.x,
                         y: event.y,
                         pressure: event.pressure,
@@ -1866,7 +1864,7 @@ impl Event {
                     let event = raw.gsensor;
                     Event::ControllerSensorUpdated {
                         timestamp: event.timestamp,
-                        which: event.which.into(),
+                        which: event.which,
                         sensor: crate::sensor::SensorType::from_ll(event.sensor),
                         data: event.data,
                     }
@@ -2017,10 +2015,7 @@ impl Event {
     }
 
     pub fn is_user_event(&self) -> bool {
-        match *self {
-            Event::User { .. } => true,
-            _ => false,
-        }
+        matches!(*self, Event::User { .. })
     }
 
     pub fn as_user_event_type<T: ::std::any::Any>(&self) -> Option<T> {
@@ -2258,7 +2253,7 @@ impl Event {
     /// assert!(another_ev.is_window() == false); // Not a window event!
     /// ```
     pub fn is_window(&self) -> bool {
-        match self {
+        matches!(self,
             Self::Quit { .. }
             | Self::AppTerminating { .. }
             | Self::AppLowMemory { .. }
@@ -2266,9 +2261,8 @@ impl Event {
             | Self::AppDidEnterBackground { .. }
             | Self::AppWillEnterForeground { .. }
             | Self::AppDidEnterForeground { .. }
-            | Self::Window { .. } => true,
-            _ => false,
-        }
+            | Self::Window { .. }
+		)
     }
 
     /// Returns `true` if this is a keyboard event.
@@ -2297,10 +2291,9 @@ impl Event {
     /// assert!(another_ev.is_keyboard() == false); // Not a keyboard event!
     /// ```
     pub fn is_keyboard(&self) -> bool {
-        match self {
-            Self::KeyDown { .. } | Self::KeyUp { .. } => true,
-            _ => false,
-        }
+        matches!(self,
+            Self::KeyDown { .. } | Self::KeyUp { .. }
+		)
     }
 
     /// Returns `true` if this is a text event.
@@ -2323,10 +2316,9 @@ impl Event {
     /// assert!(another_ev.is_text() == false); // Not a text event!
     /// ```
     pub fn is_text(&self) -> bool {
-        match self {
-            Self::TextEditing { .. } | Self::TextInput { .. } => true,
-            _ => false,
-        }
+        matches!(self,
+            Self::TextEditing { .. } | Self::TextInput { .. }
+		)
     }
 
     /// Returns `true` if this is a mouse event.
@@ -2355,13 +2347,12 @@ impl Event {
     /// assert!(another_ev.is_mouse() == false); // Not a mouse event!
     /// ```
     pub fn is_mouse(&self) -> bool {
-        match self {
+        matches!(self,
             Self::MouseMotion { .. }
             | Self::MouseButtonDown { .. }
             | Self::MouseButtonUp { .. }
-            | Self::MouseWheel { .. } => true,
-            _ => false,
-        }
+            | Self::MouseWheel { .. }
+		)
     }
 
     /// Returns `true` if this is a controller event.
@@ -2383,15 +2374,14 @@ impl Event {
     /// assert!(another_ev.is_controller() == false); // Not a controller event!
     /// ```
     pub fn is_controller(&self) -> bool {
-        match self {
+        matches!(self,
             Self::ControllerAxisMotion { .. }
             | Self::ControllerButtonDown { .. }
             | Self::ControllerButtonUp { .. }
             | Self::ControllerDeviceAdded { .. }
             | Self::ControllerDeviceRemoved { .. }
-            | Self::ControllerDeviceRemapped { .. } => true,
-            _ => false,
-        }
+            | Self::ControllerDeviceRemapped { .. }
+		)
     }
 
     /// Returns `true` if this is a joy event.
@@ -2414,15 +2404,14 @@ impl Event {
     /// assert!(another_ev.is_joy() == false); // Not a joy event!
     /// ```
     pub fn is_joy(&self) -> bool {
-        match self {
+        matches!(self,
             Self::JoyAxisMotion { .. }
             | Self::JoyHatMotion { .. }
             | Self::JoyButtonDown { .. }
             | Self::JoyButtonUp { .. }
             | Self::JoyDeviceAdded { .. }
-            | Self::JoyDeviceRemoved { .. } => true,
-            _ => false,
-        }
+            | Self::JoyDeviceRemoved { .. }
+		)
     }
 
     /// Returns `true` if this is a finger event.
@@ -2450,10 +2439,9 @@ impl Event {
     /// assert!(another_ev.is_finger() == false); // Not a finger event!
     /// ```
     pub fn is_finger(&self) -> bool {
-        match self {
-            Self::FingerDown { .. } | Self::FingerUp { .. } | Self::FingerMotion { .. } => true,
-            _ => false,
-        }
+        matches!(self,
+            Self::FingerDown { .. } | Self::FingerUp { .. } | Self::FingerMotion { .. }
+		)
     }
 
     /// Returns `true` if this is a drop event.
@@ -2475,13 +2463,12 @@ impl Event {
     /// assert!(another_ev.is_drop() == false); // Not a drop event!
     /// ```
     pub fn is_drop(&self) -> bool {
-        match self {
+        matches!(self,
             Self::DropFile { .. }
             | Self::DropText { .. }
             | Self::DropBegin { .. }
-            | Self::DropComplete { .. } => true,
-            _ => false,
-        }
+            | Self::DropComplete { .. }
+		)
     }
 
     /// Returns `true` if this is an audio event.
@@ -2504,10 +2491,7 @@ impl Event {
     /// assert!(another_ev.is_audio() == false); // Not an audio event!
     /// ```
     pub fn is_audio(&self) -> bool {
-        match self {
-            Self::AudioDeviceAdded { .. } | Self::AudioDeviceRemoved { .. } => true,
-            _ => false,
-        }
+		matches!(self, Self::AudioDeviceAdded { .. } | Self::AudioDeviceRemoved { .. })
     }
 
     /// Returns `true` if this is a render event.
@@ -2528,10 +2512,7 @@ impl Event {
     /// assert!(another_ev.is_render() == false); // Not a render event!
     /// ```
     pub fn is_render(&self) -> bool {
-        match self {
-            Self::RenderTargetsReset { .. } | Self::RenderDeviceReset { .. } => true,
-            _ => false,
-        }
+        matches!(self, Self::RenderTargetsReset { .. } | Self::RenderDeviceReset { .. })
     }
 
     /// Returns `true` if this is a user event.
@@ -2557,10 +2538,7 @@ impl Event {
     /// assert!(another_ev.is_user() == false); // Not a user event!
     /// ```
     pub fn is_user(&self) -> bool {
-        match self {
-            Self::User { .. } => true,
-            _ => false,
-        }
+        matches!(self, Self::User { .. })
     }
 
     /// Returns `true` if this is an unknown event.
@@ -2582,10 +2560,7 @@ impl Event {
     /// assert!(another_ev.is_unknown() == false); // Not an unknown event!
     /// ```
     pub fn is_unknown(&self) -> bool {
-        match self {
-            Self::Unknown { .. } => true,
-            _ => false,
-        }
+        matches!(self, Self::Unknown { .. })
     }
 }
 
@@ -2712,7 +2687,7 @@ pub struct EventPollIterator<'a> {
     _marker: PhantomData<&'a ()>,
 }
 
-impl<'a> Iterator for EventPollIterator<'a> {
+impl Iterator for EventPollIterator<'_> {
     type Item = Event;
 
     fn next(&mut self) -> Option<Event> {
@@ -2726,7 +2701,7 @@ pub struct EventWaitIterator<'a> {
     _marker: PhantomData<&'a ()>,
 }
 
-impl<'a> Iterator for EventWaitIterator<'a> {
+impl Iterator for EventWaitIterator<'_> {
     type Item = Event;
     fn next(&mut self) -> Option<Event> {
         unsafe { Some(wait_event()) }
@@ -2740,7 +2715,7 @@ pub struct EventWaitTimeoutIterator<'a> {
     timeout: u32,
 }
 
-impl<'a> Iterator for EventWaitTimeoutIterator<'a> {
+impl Iterator for EventWaitTimeoutIterator<'_> {
     type Item = Event;
     fn next(&mut self) -> Option<Event> {
         unsafe { wait_event_timeout(self.timeout) }
@@ -3112,7 +3087,7 @@ impl EventSender {
 
 /// A callback trait for [`EventSubsystem::add_event_watch`].
 pub trait EventWatchCallback {
-    fn callback(&mut self, event: Event) -> ();
+    fn callback(&mut self, event: Event);
 }
 
 /// An handler for the event watch callback.
@@ -3193,8 +3168,8 @@ extern "C" fn event_callback_marshall<CB: EventWatchCallback>(
     false
 }
 
-impl<F: FnMut(Event) -> ()> EventWatchCallback for F {
-    fn callback(&mut self, event: Event) -> () {
+impl<F: FnMut(Event)> EventWatchCallback for F {
+    fn callback(&mut self, event: Event) {
         self(event)
     }
 }

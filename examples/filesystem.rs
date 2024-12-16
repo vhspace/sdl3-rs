@@ -54,7 +54,7 @@ pub fn main() -> Result<(), String> {
                 Ok(()) => println!("Removed {path:?}"),
                 Err(e) => eprintln!("Failed to remove: {e:?}")
             }
-        }, 
+        },
         Err(error) => {
             eprintln!("Failed to get pref path for org 'sdl-rs' app 'filesystem': {error:?}")
         }

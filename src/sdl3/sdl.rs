@@ -58,7 +58,7 @@ static SDL_COUNT: AtomicU32 = AtomicU32::new(0);
 
 thread_local! {
     /// True if the current thread is the main thread.
-    static IS_MAIN_THREAD: Cell<bool> = Cell::new(false);
+    static IS_MAIN_THREAD: Cell<bool> = const { Cell::new(false) };
 }
 
 /// The SDL context type. Initialize with `sdl3::init()`.
@@ -305,37 +305,37 @@ impl Drop for SubsystemDrop {
     }
 }
 
-subsystem!(AudioSubsystem, SDL_INIT_AUDIO as u32, AUDIO_COUNT, nosync);
-subsystem!(VideoSubsystem, SDL_INIT_VIDEO as u32, VIDEO_COUNT, nosync);
+subsystem!(AudioSubsystem, SDL_INIT_AUDIO, AUDIO_COUNT, nosync);
+subsystem!(VideoSubsystem, SDL_INIT_VIDEO, VIDEO_COUNT, nosync);
 subsystem!(
     JoystickSubsystem,
-    SDL_INIT_JOYSTICK as u32,
+    SDL_INIT_JOYSTICK,
     JOYSTICK_COUNT,
     nosync
 );
 subsystem!(
     HapticSubsystem,
-    SDL_INIT_HAPTIC as u32,
+    SDL_INIT_HAPTIC,
     HAPTIC_COUNT,
     nosync
 );
 subsystem!(
     GamepadSubsystem,
-    SDL_INIT_GAMEPAD as u32,
+    SDL_INIT_GAMEPAD,
     GAMEPAD_COUNT,
     nosync
 );
 // The event queue can be read from other threads.
-subsystem!(EventSubsystem, SDL_INIT_EVENTS as u32, EVENT_COUNT, sync);
+subsystem!(EventSubsystem, SDL_INIT_EVENTS, EVENT_COUNT, sync);
 subsystem!(
     SensorSubsystem,
-    SDL_INIT_SENSOR as u32,
+    SDL_INIT_SENSOR,
     SENSOR_COUNT,
     nosync
 );
 subsystem!(
     CameraSubsystem,
-    SDL_INIT_CAMERA as u32,
+    SDL_INIT_CAMERA,
     CAMERA_COUNT,
     nosync
 );
@@ -416,7 +416,7 @@ pub fn set_error(err: &str) -> Result<(), NulError> {
     let c_string = CString::new(err)?;
     unsafe {
         sys::error::SDL_SetError(
-            b"%s\0".as_ptr() as *const c_char,
+            c"%s".as_ptr() as *const c_char,
             c_string.as_ptr() as *const c_char,
         );
     }

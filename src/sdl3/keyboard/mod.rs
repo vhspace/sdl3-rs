@@ -4,7 +4,6 @@ use crate::EventPump;
 
 use crate::sys;
 use std::fmt;
-use std::mem::transmute;
 use sys::video::SDL_GetWindowID;
 
 mod keycode;
@@ -13,7 +12,7 @@ pub use self::keycode::Keycode;
 pub use self::scancode::Scancode;
 
 bitflags! {
-	#[derive(Copy, Clone, PartialEq, Debug)]
+    #[derive(Debug, Copy, Clone, PartialEq)]
     pub struct Mod: u16 {
         const NOMOD = 0x0000;
         const LSHIFTMOD = 0x0001;
@@ -111,7 +110,7 @@ pub struct ScancodeIterator<'a> {
     keyboard_state: &'a [bool],
 }
 
-impl<'a> Iterator for ScancodeIterator<'a> {
+impl Iterator for ScancodeIterator<'_> {
     type Item = (Scancode, bool);
 
     fn next(&mut self) -> Option<(Scancode, bool)> {
@@ -136,11 +135,11 @@ pub struct PressedScancodeIterator<'a> {
     iter: ScancodeIterator<'a>,
 }
 
-impl<'a> Iterator for PressedScancodeIterator<'a> {
+impl Iterator for PressedScancodeIterator<'_> {
     type Item = Scancode;
 
     fn next(&mut self) -> Option<Scancode> {
-        while let Some((scancode, pressed)) = self.iter.next() {
+        for (scancode, pressed) in self.iter.by_ref() {
             if pressed {
                 return Some(scancode);
             }
@@ -200,9 +199,7 @@ impl KeyboardUtil {
     #[doc(alias = "SDL_SetModState")]
     pub fn set_mod_state(&self, flags: Mod) {
         unsafe {
-            sys::keyboard::SDL_SetModState(transmute::<u16, sys::keycode::SDL_Keymod>(
-                flags.bits(),
-            ));
+            sys::keyboard::SDL_SetModState(flags.bits());
         }
     }
 }

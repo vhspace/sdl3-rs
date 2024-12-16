@@ -4,7 +4,6 @@ use libc::c_void;
 use std::ffi::CString;
 use std::io;
 use std::marker::PhantomData;
-use std::mem::transmute;
 use std::path::Path;
 
 use crate::sys;
@@ -123,7 +122,7 @@ impl<'a> IOStream<'a> {
     }
 }
 
-impl<'a> Drop for IOStream<'a> {
+impl Drop for IOStream<'_> {
     fn drop(&mut self) {
         let ret = unsafe { sys::iostream::SDL_CloseIO(self.raw) };
         if !ret {
@@ -132,21 +131,21 @@ impl<'a> Drop for IOStream<'a> {
     }
 }
 
-impl<'a> io::Read for IOStream<'a> {
+impl io::Read for IOStream<'_> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let out_len = buf.len();
         let ret =
             unsafe { sys::iostream::SDL_ReadIO(self.raw, buf.as_ptr() as *mut c_void, out_len) };
-        Ok(ret as usize)
+        Ok(ret)
     }
 }
 
-impl<'a> io::Write for IOStream<'a> {
+impl io::Write for IOStream<'_> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let in_len = buf.len();
         let ret =
             unsafe { sys::iostream::SDL_WriteIO(self.raw, buf.as_ptr() as *const c_void, in_len) };
-        Ok(ret as usize)
+        Ok(ret)
     }
 
     fn flush(&mut self) -> io::Result<()> {
@@ -154,14 +153,14 @@ impl<'a> io::Write for IOStream<'a> {
     }
 }
 
-impl<'a> io::Seek for IOStream<'a> {
+impl io::Seek for IOStream<'_> {
     fn seek(&mut self, pos: io::SeekFrom) -> io::Result<u64> {
         let (whence, offset) = match pos {
             io::SeekFrom::Start(pos) => (sys::iostream::SDL_IO_SEEK_SET, pos as i64),
             io::SeekFrom::End(pos) => (sys::iostream::SDL_IO_SEEK_END, pos),
             io::SeekFrom::Current(pos) => (sys::iostream::SDL_IO_SEEK_CUR, pos),
         };
-        let ret = unsafe { sys::iostream::SDL_SeekIO(self.raw, offset, transmute(whence)) };
+        let ret = unsafe { sys::iostream::SDL_SeekIO(self.raw, offset, whence) };
         if ret == -1 {
             Err(io::Error::last_os_error())
         } else {

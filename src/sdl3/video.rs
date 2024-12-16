@@ -26,7 +26,7 @@ pub use crate::sys::vulkan::{VkInstance, VkSurfaceKHR};
 
 pub struct WindowSurfaceRef<'a>(&'a mut SurfaceRef, &'a Window);
 
-impl<'a> Deref for WindowSurfaceRef<'a> {
+impl Deref for WindowSurfaceRef<'_> {
     type Target = SurfaceRef;
 
     #[inline]
@@ -35,14 +35,14 @@ impl<'a> Deref for WindowSurfaceRef<'a> {
     }
 }
 
-impl<'a> DerefMut for WindowSurfaceRef<'a> {
+impl DerefMut for WindowSurfaceRef<'_> {
     #[inline]
     fn deref_mut(&mut self) -> &mut SurfaceRef {
-        &mut self.0
+        self.0
     }
 }
 
-impl<'a> WindowSurfaceRef<'a> {
+impl WindowSurfaceRef<'_> {
     /// Updates the change made to the inner Surface to the Window it was created from.
     ///
     /// This would effectively be the theoretical equivalent of `present` from a Canvas.
@@ -253,7 +253,7 @@ pub mod gl_attr {
         }};
     }
 
-    impl<'a> GLAttr<'a> {
+    impl GLAttr<'_> {
         gl_attr! {
             RED_SIZE, set_red_size, red_size, u8, "the minimum number of bits for the red channel of the color buffer; defaults to 3";
             GREEN_SIZE, set_green_size, green_size, u8, "the minimum number of bits for the green channel of the color buffer; defaults to 3";
@@ -359,7 +359,7 @@ pub mod gl_attr {
         }
     }
 
-    impl<'a> GLAttr<'a> {
+    impl GLAttr<'_> {
         /// **Sets** any combination of OpenGL context configuration flags.
         ///
         /// Note that calling this will reset any existing context flags.
@@ -515,8 +515,7 @@ pub struct GLContext {
 impl Drop for GLContext {
     #[doc(alias = "SDL_GL_DeleteContext")]
     fn drop(&mut self) {
-        unsafe { sys::video::SDL_GL_DestroyContext(self.raw) };
-        return;
+        unsafe { sys::video::SDL_GL_DestroyContext(self.raw); }
     }
 }
 
@@ -1546,7 +1545,7 @@ impl Window {
             let context_raw = sys::video::SDL_GL_GetCurrentContext();
 
             if !context_raw.is_null()
-                && sys::video::SDL_GL_MakeCurrent(self.context.raw, context_raw) == true
+                && sys::video::SDL_GL_MakeCurrent(self.context.raw, context_raw)
             {
                 Ok(())
             } else {
@@ -1558,7 +1557,7 @@ impl Window {
     #[doc(alias = "SDL_GL_MakeCurrent")]
     pub fn gl_make_current(&self, context: &GLContext) -> Result<(), String> {
         unsafe {
-            if sys::video::SDL_GL_MakeCurrent(self.context.raw, context.raw) == true {
+            if sys::video::SDL_GL_MakeCurrent(self.context.raw, context.raw) {
                 Ok(())
             } else {
                 Err(get_error())
@@ -1667,8 +1666,8 @@ impl Window {
             if data.is_null() {
                 return Err(get_error());
             }
-            let mut result = vec![0; size as usize];
-            result.copy_from_slice(std::slice::from_raw_parts(data as *const u8, size as usize));
+            let mut result = vec![0; size];
+            result.copy_from_slice(std::slice::from_raw_parts(data as *const u8, size));
             SDL_free(data);
             Ok(result)
         }

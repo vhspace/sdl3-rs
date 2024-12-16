@@ -87,7 +87,7 @@ extern "C" fn c_dialog_callback(
     }
     unsafe {
         if filter < 0 {
-            return ((*callback_info_ptr).callback)(Ok(files), None);
+            ((*callback_info_ptr).callback)(Ok(files), None)
         } else {
             // Seemingly not implemented in linux portals, untested
             if let Some(filter_strings) = &(*callback_info_ptr).filter_strings {
@@ -97,7 +97,7 @@ extern "C" fn c_dialog_callback(
                         name: filter.0.to_str().unwrap(),
                         pattern: filter.1.to_str().unwrap(),
                     };
-                    return ((*callback_info_ptr).callback)(Ok(files), Some(filter));
+                    ((*callback_info_ptr).callback)(Ok(files), Some(filter))
                 }
             }
         }

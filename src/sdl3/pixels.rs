@@ -1,7 +1,6 @@
 use crate::get_error;
 use crate::sys;
-use std::convert::TryInto;
-use std::convert::{Into, TryFrom};
+use std::convert::{TryInto, TryFrom};
 use std::ffi::c_int;
 use std::fmt::Debug;
 use std::ptr::null;
@@ -22,7 +21,7 @@ impl Palette {
             // This is kind of a hack. We have to cast twice because
             // ncolors is a c_int, and validate_int only takes a u32.
             // FIXME: Modify validate_int to make this unnecessary
-            let u32_max = u32::max_value() as usize;
+            let u32_max = u32::MAX as usize;
             if capacity > u32_max {
                 capacity = u32_max;
             }
@@ -185,9 +184,9 @@ impl Color {
     pub const CYAN: Color = Color::RGBA(0, 255, 255, 255);
 }
 
-impl Into<sys::pixels::SDL_Color> for Color {
-    fn into(self) -> sys::pixels::SDL_Color {
-        self.raw()
+impl From<Color> for sys::pixels::SDL_Color {
+    fn from(val: Color) -> Self {
+        val.raw()
     }
 }
 
@@ -243,7 +242,7 @@ impl PixelFormat {
      pub  unsafe  fn unknown() -> PixelFormat {
         PixelFormat::from_ll(SDL_PixelFormat::UNKNOWN)
     }
-    
+
     pub unsafe fn pixel_format_details(&self) -> *const SDL_PixelFormatDetails {
         sys::pixels::SDL_GetPixelFormatDetails(self.raw)
     }
@@ -387,11 +386,10 @@ impl PixelFormat {
     }
 
     pub fn supports_alpha(self) -> bool {
-        match self.raw {
+        matches!(self.raw,
             SDL_PixelFormat::ARGB4444 | SDL_PixelFormat::ARGB1555 | SDL_PixelFormat::ARGB8888 | SDL_PixelFormat::ARGB2101010 | SDL_PixelFormat::ABGR4444 | SDL_PixelFormat::ABGR1555 | SDL_PixelFormat::ABGR8888
-            | SDL_PixelFormat::BGRA4444 | SDL_PixelFormat::BGRA5551 | SDL_PixelFormat::BGRA8888 | SDL_PixelFormat::RGBA4444 | SDL_PixelFormat::RGBA5551 | SDL_PixelFormat::RGBA8888 => true,
-            _ => false,
-        }
+            | SDL_PixelFormat::BGRA4444 | SDL_PixelFormat::BGRA5551 | SDL_PixelFormat::BGRA8888 | SDL_PixelFormat::RGBA4444 | SDL_PixelFormat::RGBA5551 | SDL_PixelFormat::RGBA8888
+        )
     }
 }
 
@@ -417,7 +415,7 @@ impl TryFrom<SDL_PixelFormat> for PixelFormat {
     #[doc(alias = "SDL_GetPixelFormatDetails")]
     fn try_from(format: SDL_PixelFormat) -> Result<Self, Self::Error> {
         unsafe {
-            let pf_ptr = sys::pixels::SDL_GetPixelFormatDetails(format.into());
+            let pf_ptr = sys::pixels::SDL_GetPixelFormatDetails(format);
             if pf_ptr.is_null() {
                 Err(get_error())
             } else {

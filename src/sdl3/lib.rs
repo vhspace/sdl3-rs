@@ -47,7 +47,7 @@
 
 #![crate_name = "sdl3"]
 #![crate_type = "lib"]
-#![allow(clippy::cast_lossless, clippy::transmute_ptr_to_ref)]
+#![allow(clippy::cast_lossless, clippy::transmute_ptr_to_ref, clippy::missing_transmute_annotations, clippy::missing_safety_doc)]
 
 #[macro_use]
 extern crate bitflags;

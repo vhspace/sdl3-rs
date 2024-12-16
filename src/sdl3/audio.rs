@@ -509,9 +509,9 @@ pub struct AudioSpec {
     pub format: Option<AudioFormat>,
 }
 
-impl Into<sys::audio::SDL_AudioSpec> for AudioSpec {
-    fn into(self) -> sys::audio::SDL_AudioSpec {
-        AudioSpec::convert_to_ll(self.freq, self.channels, self.format)
+impl From<AudioSpec> for sys::audio::SDL_AudioSpec {
+    fn from(val: AudioSpec) -> Self {
+        AudioSpec::convert_to_ll(val.freq, val.channels, val.format)
     }
 }
 
@@ -576,15 +576,6 @@ impl AudioSpec {
         }
     }
 
-    /// Creates an `AudioSpec` with all fields set to `None` (use device defaults).
-    pub fn default() -> Self {
-        Self {
-            freq: None,
-            channels: None,
-            format: None,
-        }
-    }
-
     // fn convert_from_ll(spec: sys::audio::SDL_AudioSpec) -> AudioSpec {
     //     AudioSpec {
     //         freq: Some(spec.freq.into()),
@@ -592,6 +583,17 @@ impl AudioSpec {
     //         channels: Some(spec.channels),
     //     }
     // }
+}
+
+impl Default for AudioSpec {
+	/// Creates an `AudioSpec` with all fields set to `None` (use device defaults).
+    fn default() -> Self {
+        Self {
+            freq: None,
+            channels: None,
+            format: None,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -733,7 +735,7 @@ impl AudioDevice {
 
     /// Opens a new audio device for playback (given the desired parameters).
     pub fn open_playback<'a, D>(
-        a: &AudioSubsystem,
+        _a: &AudioSubsystem,
         device: D,
         spec: &AudioSpec,
     ) -> Result<AudioDevice, String>
@@ -745,7 +747,7 @@ impl AudioDevice {
 
     /// Opens a new audio device for recording (given the desired parameters).
     pub fn open_recording<'a, D>(
-        a: &AudioSubsystem,
+        _a: &AudioSubsystem,
         device: D,
         spec: &AudioSpec,
     ) -> Result<AudioDevice, String>
@@ -990,8 +992,8 @@ impl AudioStream {
     ///
     /// This function is safe to call from any thread.
     pub fn new(src_spec: Option<&AudioSpec>, dst_spec: Option<&AudioSpec>) -> Result<Self, String> {
-        let sdl_src_spec = src_spec.map(|spec| sys::audio::SDL_AudioSpec::from(spec));
-        let sdl_dst_spec = dst_spec.map(|spec| sys::audio::SDL_AudioSpec::from(spec));
+        let sdl_src_spec = src_spec.map(sys::audio::SDL_AudioSpec::from);
+        let sdl_dst_spec = dst_spec.map(sys::audio::SDL_AudioSpec::from);
 
         let sdl_src_spec_ptr = sdl_src_spec
             .as_ref()
@@ -1045,7 +1047,7 @@ impl AudioStream {
         device_id: AudioDeviceID,
         spec: Option<&AudioSpec>,
     ) -> Result<AudioStream, String> {
-        let sdl_spec = spec.clone().map(|spec| spec.into());
+        let sdl_spec = spec.map(|spec| spec.into());
         let sdl_spec_ptr = crate::util::option_to_ptr(sdl_spec.as_ref());
 
         let stream = unsafe {
@@ -1180,7 +1182,7 @@ impl AudioStream {
     /// Reads samples as f32 into the provided buffer.
     /// Returns the number of samples read.
     pub fn read_f32_samples(&mut self, buf: &mut [f32]) -> io::Result<usize> {
-        let byte_len = buf.len() * size_of::<f32>();
+        let byte_len = std::mem::size_of_val(buf);
         let mut byte_buf = vec![0u8; byte_len];
 
         // Read bytes from the stream and capture the number of bytes read
@@ -1190,13 +1192,13 @@ impl AudioStream {
         let samples_read = bytes_read / size_of::<f32>();
 
         // Iterate over each complete sample
-        for i in 0..samples_read {
+        for (i, v) in buf.iter_mut().enumerate().take(samples_read) {
             let start = i * size_of::<f32>();
             let end = start + size_of::<f32>();
             let chunk = &byte_buf[start..end];
 
             // Convert bytes to f32 and handle potential errors
-            buf[i] = self
+            *v = self
                 .read_bytes_to_f32(chunk)
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
         }
@@ -1207,7 +1209,7 @@ impl AudioStream {
     /// Reads samples as i16 into the provided buffer.
     /// Returns the number of samples read.
     pub fn read_i16_samples(&mut self, buf: &mut [i16]) -> io::Result<usize> {
-        let byte_len = buf.len() * size_of::<i16>();
+        let byte_len = std::mem::size_of_val(buf);
         let mut byte_buf = vec![0u8; byte_len];
 
         // Read bytes from the stream and capture the number of bytes read
@@ -1217,13 +1219,13 @@ impl AudioStream {
         let samples_read = bytes_read / size_of::<i16>();
 
         // Iterate over each complete sample
-        for i in 0..samples_read {
+        for (i, v) in buf.iter_mut().enumerate().take(samples_read) {
             let start = i * size_of::<i16>();
             let end = start + size_of::<i16>();
             let chunk = &byte_buf[start..end];
 
             // Convert bytes to i16 and handle potential errors
-            buf[i] = self
+            *v = self
                 .read_bytes_to_i16(chunk)
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
         }

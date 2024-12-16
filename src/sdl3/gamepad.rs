@@ -62,20 +62,20 @@ impl GamepadSubsystem {
         unsafe {
             // see: https://github.com/libsdl-org/SDL/blob/main/docs/README-migration.md#sdl_joystickh
             let gamepad_ids = sys::gamepad::SDL_GetGamepads(&mut num_gamepads);
-            if (gamepad_ids as *mut sys::gamepad::SDL_Gamepad) == std::ptr::null_mut() {
-                return Err(get_error());
+            if (gamepad_ids as *mut sys::gamepad::SDL_Gamepad).is_null() {
+                Err(get_error())
             } else {
                 sys::stdinc::SDL_free(gamepad_ids as *mut c_void);
-                return Ok(num_gamepads as u32);
-            };
-        };
+                Ok(num_gamepads as u32)
+            }
+        }
     }
 
     /// Return true if the joystick at index `joystick_index` is a game controller.
     #[inline]
     #[doc(alias = "SDL_IsGamepad")]
     pub fn is_game_controller(&self, joystick_index: u32) -> bool {
-        return unsafe { sys::gamepad::SDL_IsGamepad(joystick_index) != false };
+        unsafe { sys::gamepad::SDL_IsGamepad(joystick_index) }
     }
 
     /// Attempt to open the controller at index `joystick_index` and return it.
@@ -173,7 +173,7 @@ impl GamepadSubsystem {
 
     /// Load controller input mappings from an SDL [`IOStream`] object.
     #[doc(alias = "SDL_AddGamepadMappingsFromIO")]
-    pub fn load_mappings_from_rw<'a>(&self, rw: IOStream<'a>) -> Result<i32, AddMappingError> {
+    pub fn load_mappings_from_rw(&self, rw: IOStream<'_>) -> Result<i32, AddMappingError> {
         use self::AddMappingError::*;
 
         let result = unsafe { sys::gamepad::SDL_AddGamepadMappingsFromIO(rw.raw(), false) };
@@ -428,7 +428,7 @@ impl Gamepad {
     /// connected.
     #[doc(alias = "SDL_GamepadConnected")]
     pub fn attached(&self) -> bool {
-        unsafe { sys::gamepad::SDL_GamepadConnected(self.raw) != false }
+        unsafe { sys::gamepad::SDL_GamepadConnected(self.raw) }
     }
 
     /// Return the joystick instance id of this controller
