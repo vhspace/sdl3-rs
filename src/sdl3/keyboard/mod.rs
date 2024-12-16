@@ -13,6 +13,7 @@ pub use self::keycode::Keycode;
 pub use self::scancode::Scancode;
 
 bitflags! {
+	#[derive(Copy, Clone, PartialEq, Debug)]
     pub struct Mod: u16 {
         const NOMOD = 0x0000;
         const LSHIFTMOD = 0x0001;

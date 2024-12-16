@@ -976,7 +976,7 @@ impl Event {
         match *self {
             Event::User {
                 window_id,
-                type_,
+                type_: _,
                 code,
                 data1,
                 data2,
@@ -1638,7 +1638,7 @@ impl Event {
                     let event = raw.edit;
 
                     // event.text is a *const c_char (pointer to a C string)
-                    let c_str: &CStr = unsafe { CStr::from_ptr(event.text) };
+                    let c_str: &CStr = CStr::from_ptr(event.text);
 
                     // Convert the CStr to a Rust &str
                     let text_str = c_str.to_str().expect("Invalid UTF-8 string");
@@ -1656,7 +1656,7 @@ impl Event {
                     let event = raw.text;
 
                     // event.text is a *const c_char (pointer to a C string)
-                    let c_str: &CStr = unsafe { CStr::from_ptr(event.text) };
+                    let c_str: &CStr = CStr::from_ptr(event.text);
 
                     // Convert the CStr to a Rust &str
                     let text_str = c_str.to_str().expect("Invalid UTF-8 string");

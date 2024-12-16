@@ -326,7 +326,7 @@ impl<T> RendererContext<T> {
         &self,
         raw_texture: *mut sys::render::SDL_Texture,
     ) -> Result<(), SdlError> {
-        if sys::render::SDL_SetRenderTarget(self.raw, raw_texture) == true {
+        if sys::render::SDL_SetRenderTarget(self.raw, raw_texture) {
             Ok(())
         } else {
             Err(SdlError(get_error()))
@@ -1456,7 +1456,7 @@ impl<T: RenderTarget> Canvas<T> {
     ) -> Result<Surface, String> {
         unsafe {
             let rect = rect.into();
-            let (actual_rect, w, h) = match rect {
+            let (actual_rect, _w, _h) = match rect {
                 Some(ref rect) => (rect.raw(), rect.width() as usize, rect.height() as usize),
                 None => {
                     let (w, h) = self.output_size()?;

@@ -569,10 +569,10 @@ impl Gamepad {
     pub fn set_led(&mut self, red: u8, green: u8, blue: u8) -> Result<(), IntegerOrSdlError> {
         let result = unsafe { sys::gamepad::SDL_SetGamepadLED(self.raw, red, green, blue) };
 
-        if result == false {
-            Err(IntegerOrSdlError::SdlError(get_error()))
-        } else {
+        if result {
             Ok(())
+        } else {
+            Err(IntegerOrSdlError::SdlError(get_error()))
         }
     }
 
@@ -587,10 +587,10 @@ impl Gamepad {
             )
         };
 
-        if result == false {
-            Err(get_error())
-        } else {
+        if result {
             Ok(())
+        } else {
+            Err(get_error())
         }
     }
 }

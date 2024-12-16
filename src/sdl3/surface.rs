@@ -503,7 +503,7 @@ impl SurfaceRef {
 
         let result = unsafe { sys::surface::SDL_GetSurfaceColorKey(self.raw(), &mut key) };
 
-        if result == true {
+        if result {
             Ok(pixels::Color::from_u32(&self.pixel_format(), key))
         } else {
             Err(get_error())
@@ -515,7 +515,7 @@ impl SurfaceRef {
         let (r, g, b) = color.rgb();
         let result = unsafe { sys::surface::SDL_SetSurfaceColorMod(self.raw(), r, g, b) };
 
-        if result == false {
+        if !result {
             // Should only fail on a null Surface
             panic!("{}", get_error());
         }
@@ -707,7 +707,7 @@ impl SurfaceRef {
             let result =
                 sys::surface::SDL_BlitSurface(self.raw(), src_rect_ptr, dst.raw(), dst_rect_ptr);
 
-            if result == true {
+            if result {
                 Ok(dst_rect)
             } else {
                 Err(get_error())

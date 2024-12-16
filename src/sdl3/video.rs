@@ -224,7 +224,7 @@ pub mod gl_attr {
             let result =
                 unsafe { sys::video::SDL_GL_SetAttribute(sys::video::SDL_GLAttr::$attr, $value) };
 
-            if result == false {
+            if !result {
                 // Panic and print the attribute that failed.
                 panic!(
                     "couldn't set attribute {}: {}",
@@ -241,7 +241,7 @@ pub mod gl_attr {
             let result = unsafe {
                 sys::video::SDL_GL_GetAttribute(sys::video::SDL_GLAttr::$attr, &mut value)
             };
-            if result == false {
+            if !result {
                 // Panic and print the attribute that failed.
                 panic!(
                     "couldn't get attribute {}: {}",
@@ -1582,10 +1582,6 @@ impl Window {
             return Err(get_error());
         }
 
-        // get an array of pointers to C strings
-        let names_slice =
-            unsafe { std::slice::from_raw_parts(extension_names_raw, count as usize) };
-
         // Create a slice from the raw pointer to the array
         let names_slice =
             unsafe { std::slice::from_raw_parts(extension_names_raw, count as usize) };
@@ -1613,11 +1609,10 @@ impl Window {
         let mut surface: VkSurfaceKHR = 0 as _;
         if unsafe {
             sys::vulkan::SDL_Vulkan_CreateSurface(self.context.raw, instance, null(), &mut surface)
-        } == false
-        {
-            Err(get_error())
-        } else {
+        } {
             Ok(surface)
+        } else {
+            Err(get_error())
         }
     }
 
@@ -1644,10 +1639,10 @@ impl Window {
                     None => ptr::null(),
                 },
             );
-            if result == false {
-                Err(get_error())
-            } else {
+            if result {
                 Ok(())
+            } else {
+                Err(get_error())
             }
         }
     }
@@ -1791,10 +1786,10 @@ impl Window {
                 &mut right,
             )
         };
-        if result == false {
-            Err(get_error())
-        } else {
+        if result {
             Ok((top as u16, left as u16, bottom as u16, right as u16))
+        } else {
+            Err(get_error())
         }
     }
 
@@ -1980,10 +1975,10 @@ impl Window {
         };
 
         unsafe {
-            if sys::video::SDL_SetWindowMouseRect(self.context.raw, rect_raw_ptr) == false {
-                Ok(())
-            } else {
+            if sys::video::SDL_SetWindowMouseRect(self.context.raw, rect_raw_ptr) {
                 Err(get_error())
+            } else {
+                Ok(())
             }
         }
     }

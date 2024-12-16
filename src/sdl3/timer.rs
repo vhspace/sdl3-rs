@@ -113,7 +113,7 @@ mod test {
 
     #[test]
     fn test_timer_runs_multiple_times() {
-        let sdl_context = crate::sdl::init().unwrap();
+        let _sdl_context = crate::sdl::init().unwrap();
         //let timer_subsystem = sdl_context.timer().unwrap();
 
         let local_num = Arc::new(Mutex::new(0));
@@ -139,7 +139,7 @@ mod test {
 
     #[test]
     fn test_timer_runs_at_least_once() {
-        let sdl_context = crate::sdl::init().unwrap();
+        let _sdl_context = crate::sdl::init().unwrap();
         //let timer_subsystem = sdl_context.timer().unwrap();
 
         let local_flag = Arc::new(Mutex::new(false));

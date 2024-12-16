@@ -85,7 +85,7 @@ pub fn set(name: &str, value: &str) -> bool {
         sys::hints::SDL_SetHint(
             name.as_ptr() as *const c_char,
             value.as_ptr() as *const c_char,
-        ) == true
+        )
     }
 }
 
@@ -126,6 +126,6 @@ pub fn set_with_priority(name: &str, value: &str, priority: &Hint) -> bool {
             name.as_ptr() as *const c_char,
             value.as_ptr() as *const c_char,
             priority_val,
-        ) == true
+        )
     }
 }
