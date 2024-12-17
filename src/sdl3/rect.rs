@@ -16,7 +16,7 @@ use std::ptr;
 /// This value is smaller than strictly needed, but is useful in ensuring that
 /// rect sizes will never have to be truncated when clamping.
 pub fn max_int_value() -> u32 {
-    i32::max_value() as u32 / 2
+    i32::MAX as u32 / 2
 }
 
 /// The minimal integer value that can be used for rectangle positions
@@ -25,7 +25,7 @@ pub fn max_int_value() -> u32 {
 /// This value is needed, because otherwise the width of a rectangle created
 /// from a point would be able to exceed the maximum width.
 pub fn min_int_value() -> i32 {
-    i32::min_value() / 2
+    i32::MIN / 2
 }
 
 fn clamp_size(val: u32) -> u32 {
@@ -325,7 +325,7 @@ impl Rect {
                 if x >= 0 {
                     self.raw.x = max_int_value() as i32;
                 } else {
-                    self.raw.x = i32::min_value();
+                    self.raw.x = i32::MIN;
                 }
             }
         }
@@ -335,7 +335,7 @@ impl Rect {
                 if y >= 0 {
                     self.raw.y = max_int_value() as i32;
                 } else {
-                    self.raw.y = i32::min_value();
+                    self.raw.y = i32::MIN;
                 }
             }
         }
@@ -433,7 +433,7 @@ impl Rect {
     /// If a clipping rectangle is given, only points that are within it will be
     /// considered.
     #[doc(alias = "SDL_GetRectEnclosingPoints")]
-    pub fn from_enclose_points<R: Into<Option<Rect>>>(
+    pub fn from_enclose_points<R>(
         points: &[Point],
         clipping_rect: R,
     ) -> Option<Rect>
@@ -608,15 +608,15 @@ impl DerefMut for Rect {
     }
 }
 
-impl Into<sys::rect::SDL_Rect> for Rect {
-    fn into(self) -> sys::rect::SDL_Rect {
-        self.raw
+impl From<Rect> for sys::rect::SDL_Rect {
+    fn from(val: Rect) -> Self {
+        val.raw
     }
 }
 
-impl Into<(i32, i32, u32, u32)> for Rect {
-    fn into(self) -> (i32, i32, u32, u32) {
-        (self.raw.x, self.raw.y, self.raw.w as u32, self.raw.h as u32)
+impl From<Rect> for (i32, i32, u32, u32) {
+    fn from(val: Rect) -> Self {
+        (val.raw.x, val.raw.y, val.raw.w as u32, val.raw.h as u32)
     }
 }
 
@@ -626,13 +626,13 @@ impl From<sys::rect::SDL_Rect> for Rect {
     }
 }
 
-impl Into<Option<FRect>> for Rect {
-    fn into(self) -> Option<FRect> {
+impl From<Rect> for Option<FRect> {
+    fn from(val: Rect) -> Self {
         Some(FRect::new(
-            self.raw.x as f32,
-            self.raw.y as f32,
-            self.raw.w as f32,
-            self.raw.h as f32,
+            val.raw.x as f32,
+            val.raw.y as f32,
+            val.raw.w as f32,
+            val.raw.h as f32,
         ))
     }
 }
@@ -752,15 +752,15 @@ impl From<(i32, i32)> for Point {
     }
 }
 
-impl Into<sys::rect::SDL_Point> for Point {
-    fn into(self) -> sys::rect::SDL_Point {
-        self.raw
+impl From<Point> for sys::rect::SDL_Point {
+    fn from(val: Point) -> Self {
+        val.raw
     }
 }
 
-impl Into<(i32, i32)> for Point {
-    fn into(self) -> (i32, i32) {
-        (self.x(), self.y())
+impl From<Point> for (i32, i32) {
+    fn from(val: Point) -> Self {
+        (val.x(), val.y())
     }
 }
 

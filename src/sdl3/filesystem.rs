@@ -272,7 +272,7 @@ impl<'a> Iterator for GlobResultsIter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         let current = self.results.get(self.index);
         self.index += 1;
-        return current;
+        current
     }
 }
 
@@ -282,7 +282,7 @@ pub struct GlobResults<'a> {
     phantom: PhantomData<&'a *mut *mut c_char>,
 }
 
-impl<'a> GlobResults<'a> {
+impl GlobResults<'_> {
     fn new(internal: *mut *mut c_char, count: isize) -> Self {
         Self {
             internal,
@@ -300,13 +300,13 @@ impl<'a> GlobResults<'a> {
         I: Into<isize>,
     {
         let index = index.into();
-        if index >= self.count as isize {
+        if index >= self.count {
             return None;
         }
         unsafe {
             let path = *self.internal.offset(index);
             cstring_path!(path, return None);
-            return Some(path);
+            Some(path)
         }
     }
 }
@@ -322,7 +322,7 @@ impl<'a> IntoIterator for &'a GlobResults<'a> {
     }
 }
 
-impl<'a> Drop for GlobResults<'a> {
+impl Drop for GlobResults<'_> {
     fn drop(&mut self) {
         unsafe {
             sys::stdinc::SDL_free(self.internal as *mut c_void);

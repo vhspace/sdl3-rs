@@ -56,10 +56,10 @@ impl Cursor {
             let raw = sys::mouse::SDL_CreateCursor(
                 data.as_ptr(),
                 mask.as_ptr(),
-                width as i32,
-                height as i32,
-                hot_x as i32,
-                hot_y as i32,
+                width,
+                height,
+                hot_x,
+                hot_y,
             );
 
             if raw.is_null() {
@@ -213,8 +213,8 @@ impl MouseState {
 
         MouseState {
             mouse_state,
-            x: x as f32,
-            y: y as f32,
+            x,
+            y,
         }
     }
 
@@ -346,7 +346,7 @@ pub struct MouseButtonIterator<'a> {
     mouse_state: &'a u32,
 }
 
-impl<'a> Iterator for MouseButtonIterator<'a> {
+impl Iterator for MouseButtonIterator<'_> {
     type Item = (MouseButton, bool);
 
     fn next(&mut self) -> Option<(MouseButton, bool)> {
@@ -366,11 +366,11 @@ pub struct PressedMouseButtonIterator<'a> {
     iter: MouseButtonIterator<'a>,
 }
 
-impl<'a> Iterator for PressedMouseButtonIterator<'a> {
+impl Iterator for PressedMouseButtonIterator<'_> {
     type Item = MouseButton;
 
     fn next(&mut self) -> Option<MouseButton> {
-        while let Some((mouse_button, pressed)) = self.iter.next() {
+        for (mouse_button, pressed) in self.iter.by_ref() {
             if pressed {
                 return Some(mouse_button);
             }

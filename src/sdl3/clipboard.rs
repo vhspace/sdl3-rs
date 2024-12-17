@@ -60,6 +60,6 @@ impl ClipboardUtil {
 
     #[doc(alias = "SDL_HasClipboardText")]
     pub fn has_clipboard_text(&self) -> bool {
-        unsafe { sys::clipboard::SDL_HasClipboardText() == true }
+        unsafe { sys::clipboard::SDL_HasClipboardText() }
     }
 }

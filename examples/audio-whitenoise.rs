@@ -15,7 +15,7 @@ impl AudioCallback<f32> for MyCallback {
         let Ok(volume) = self.volume.lock() else {return};
         // Generate white noise
         for x in out.iter_mut() {
-            *x = (rng.gen_range(0.0, 2.0) - 1.0) * *volume;
+            *x = (rng.gen_range(0.0 ..= 2.0) - 1.0) * *volume;
         }
     }
 }

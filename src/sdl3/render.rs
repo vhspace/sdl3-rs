@@ -68,15 +68,13 @@ pub enum TargetRenderError {
 
 impl fmt::Display for SdlError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let &SdlError(ref e) = self;
-        write!(f, "SDL error: {}", e)
+        write!(f, "SDL error: {}", self.0)
     }
 }
 
 impl Error for SdlError {
     fn description(&self) -> &str {
-        let &SdlError(ref e) = self;
-        e
+        &self.0
     }
 }
 
@@ -277,7 +275,7 @@ impl TryFrom<u32> for BlendMode {
     fn try_from(n: u32) -> Result<Self, Self::Error> {
         use self::BlendMode::*;
 
-        Ok(match unsafe { transmute(n) } {
+        Ok(match n {
             sys::blendmode::SDL_BLENDMODE_NONE => None,
             sys::blendmode::SDL_BLENDMODE_BLEND => Blend,
             sys::blendmode::SDL_BLENDMODE_ADD => Add,
@@ -326,7 +324,7 @@ impl<T> RendererContext<T> {
         &self,
         raw_texture: *mut sys::render::SDL_Texture,
     ) -> Result<(), SdlError> {
-        if sys::render::SDL_SetRenderTarget(self.raw, raw_texture) == true {
+        if sys::render::SDL_SetRenderTarget(self.raw, raw_texture) {
             Ok(())
         } else {
             Err(SdlError(get_error()))
@@ -577,8 +575,8 @@ impl<T: RenderTarget> Canvas<T> {
     ///
     /// # Errors
     ///
-    /// * returns `TargetRenderError::NotSupported`
-    /// if the renderer does not support the use of render targets
+    /// * returns `TargetRenderError::NotSupported` if the renderer does not support the use of
+    /// render targets
     /// * returns `TargetRenderError::SdlError` if SDL2 returned with an error code.
     ///
     /// The texture *must* be created with the texture access:
@@ -609,7 +607,6 @@ impl<T: RenderTarget> Canvas<T> {
     /// });
     /// ```
     ///
-
     pub fn with_texture_canvas<F>(&mut self, texture: &mut Texture, f: F)
     where
         for<'r> F: FnOnce(&'r mut Canvas<T>),
@@ -686,7 +683,7 @@ impl<T: RenderTarget> Canvas<T> {
         I: Iterator<Item = &'s (&'a mut Texture<'t>, U)>,
     {
         let target = unsafe { self.get_raw_target() };
-        for &(ref texture, ref user_context) in textures {
+        for (texture, user_context) in textures {
             unsafe { self.set_raw_target(texture.raw) };
             f(self, user_context);
         }
@@ -743,10 +740,10 @@ pub fn create_renderer(
     let raw = unsafe {
         sys::render::SDL_CreateRenderer(
             window.raw(),
-            if renderer_name.is_none() {
-                std::ptr::null()
+            if let Some(renderer_name) = renderer_name {
+                renderer_name.as_ptr() as *const _
             } else {
-                renderer_name.unwrap().as_ptr() as *const _
+                std::ptr::null()
             },
         )
     };
@@ -1022,7 +1019,7 @@ impl<T: RenderTarget> Canvas<T> {
     #[doc(alias = "SDL_SetRenderDrawBlendMode")]
     pub fn set_blend_mode(&mut self, blend: BlendMode) {
         let ret = unsafe {
-            sys::render::SDL_SetRenderDrawBlendMode(self.context.raw, transmute(blend as u32))
+            sys::render::SDL_SetRenderDrawBlendMode(self.context.raw, blend as u32)
         };
         // Should only fail on an invalid renderer
         if !ret {
@@ -1042,7 +1039,7 @@ impl<T: RenderTarget> Canvas<T> {
             panic!("{}", get_error())
         } else {
             let blend = unsafe { blend.assume_init() };
-            BlendMode::try_from(blend as u32).unwrap()
+            BlendMode::try_from(blend).unwrap()
         }
     }
 
@@ -1456,7 +1453,7 @@ impl<T: RenderTarget> Canvas<T> {
     ) -> Result<Surface, String> {
         unsafe {
             let rect = rect.into();
-            let (actual_rect, w, h) = match rect {
+            let (actual_rect, _w, _h) = match rect {
                 Some(ref rect) => (rect.raw(), rect.width() as usize, rect.height() as usize),
                 None => {
                     let (w, h) = self.output_size()?;
@@ -1666,7 +1663,7 @@ pub struct Texture<'r> {
 }
 
 #[cfg(not(feature = "unsafe_textures"))]
-impl<'r> Drop for Texture<'r> {
+impl Drop for Texture<'_> {
     #[doc(alias = "SDL_DestroyTexture")]
     fn drop(&mut self) {
         unsafe {
@@ -1853,7 +1850,7 @@ struct InternalTexture {
 impl InternalTexture {
     #[doc(alias = "SDL_GetTextureProperties")]
     pub fn get_properties(&self) -> SDL_PropertiesID {
-        unsafe { SDL_GetTextureProperties(self.raw.into()) }
+        unsafe { SDL_GetTextureProperties(self.raw) }
     }
 
     pub fn get_format(&self) -> PixelFormat {
@@ -1946,7 +1943,7 @@ impl InternalTexture {
     #[doc(alias = "SDL_SetTextureBlendMode")]
     pub fn set_blend_mode(&mut self, blend: BlendMode) {
         let ret =
-            unsafe { sys::render::SDL_SetTextureBlendMode(self.raw, transmute(blend as u32)) };
+            unsafe { sys::render::SDL_SetTextureBlendMode(self.raw, blend as u32) };
 
         if !ret {
             panic!("Error setting blend: {}", get_error())
@@ -1963,7 +1960,7 @@ impl InternalTexture {
             panic!("{}", get_error())
         } else {
             let blend = unsafe { blend.assume_init() };
-            BlendMode::try_from(blend as u32).unwrap()
+            BlendMode::try_from(blend).unwrap()
         }
     }
 
@@ -2261,7 +2258,7 @@ impl InternalTexture {
 }
 
 #[cfg(not(feature = "unsafe_textures"))]
-impl<'r> Texture<'r> {
+impl Texture<'_> {
     /// Sets an additional color value multiplied into render copy operations.
     #[inline]
     pub fn set_color_mod(&mut self, red: u8, green: u8, blue: u8) {

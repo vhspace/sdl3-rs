@@ -10,6 +10,7 @@ use crate::video::Window;
 use crate::sys;
 
 bitflags! {
+    #[derive(Debug)]
     pub struct MessageBoxFlag: u32 {
         const ERROR =
             sys::messagebox::SDL_MESSAGEBOX_ERROR ;
@@ -21,6 +22,7 @@ bitflags! {
 }
 
 bitflags! {
+    #[derive(Debug)]
     pub struct MessageBoxButtonFlag: u32 {
         const ESCAPEKEY_DEFAULT =
             sys::messagebox::SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
@@ -39,10 +41,10 @@ pub struct MessageBoxColorScheme {
     pub button_selected: (u8, u8, u8),
 }
 
-impl Into<sys::messagebox::SDL_MessageBoxColorScheme> for MessageBoxColorScheme {
-    fn into(self) -> sys::messagebox::SDL_MessageBoxColorScheme {
+impl From<MessageBoxColorScheme> for sys::messagebox::SDL_MessageBoxColorScheme {
+    fn from(val: MessageBoxColorScheme) -> Self {
         sys::messagebox::SDL_MessageBoxColorScheme {
-            colors: self.into(),
+            colors: val.into(),
         }
     }
 }
@@ -88,19 +90,19 @@ impl From<MessageBoxColorScheme> for [sys::messagebox::SDL_MessageBoxColor; 5] {
     }
 }
 
-impl Into<MessageBoxColorScheme> for [sys::messagebox::SDL_MessageBoxColor; 5] {
-    fn into(self) -> MessageBoxColorScheme {
+impl From<[sys::messagebox::SDL_MessageBoxColor; 5]> for MessageBoxColorScheme {
+    fn from(val: [sys::messagebox::SDL_MessageBoxColor; 5]) -> Self {
         fn from_message_box_color(
             prim_color: sys::messagebox::SDL_MessageBoxColor,
         ) -> (u8, u8, u8) {
             (prim_color.r, prim_color.g, prim_color.b)
         }
         MessageBoxColorScheme {
-            background: from_message_box_color(self[0]),
-            text: from_message_box_color(self[1]),
-            button_border: from_message_box_color(self[2]),
-            button_background: from_message_box_color(self[3]),
-            button_selected: from_message_box_color(self[4]),
+            background: from_message_box_color(val[0]),
+            text: from_message_box_color(val[1]),
+            button_border: from_message_box_color(val[2]),
+            button_background: from_message_box_color(val[3]),
+            button_selected: from_message_box_color(val[4]),
         }
     }
 }

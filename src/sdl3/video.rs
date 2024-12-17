@@ -26,7 +26,7 @@ pub use crate::sys::vulkan::{VkInstance, VkSurfaceKHR};
 
 pub struct WindowSurfaceRef<'a>(&'a mut SurfaceRef, &'a Window);
 
-impl<'a> Deref for WindowSurfaceRef<'a> {
+impl Deref for WindowSurfaceRef<'_> {
     type Target = SurfaceRef;
 
     #[inline]
@@ -35,14 +35,14 @@ impl<'a> Deref for WindowSurfaceRef<'a> {
     }
 }
 
-impl<'a> DerefMut for WindowSurfaceRef<'a> {
+impl DerefMut for WindowSurfaceRef<'_> {
     #[inline]
     fn deref_mut(&mut self) -> &mut SurfaceRef {
-        &mut self.0
+        self.0
     }
 }
 
-impl<'a> WindowSurfaceRef<'a> {
+impl WindowSurfaceRef<'_> {
     /// Updates the change made to the inner Surface to the Window it was created from.
     ///
     /// This would effectively be the theoretical equivalent of `present` from a Canvas.
@@ -224,7 +224,7 @@ pub mod gl_attr {
             let result =
                 unsafe { sys::video::SDL_GL_SetAttribute(sys::video::SDL_GLAttr::$attr, $value) };
 
-            if result == false {
+            if !result {
                 // Panic and print the attribute that failed.
                 panic!(
                     "couldn't set attribute {}: {}",
@@ -241,7 +241,7 @@ pub mod gl_attr {
             let result = unsafe {
                 sys::video::SDL_GL_GetAttribute(sys::video::SDL_GLAttr::$attr, &mut value)
             };
-            if result == false {
+            if !result {
                 // Panic and print the attribute that failed.
                 panic!(
                     "couldn't get attribute {}: {}",
@@ -253,7 +253,7 @@ pub mod gl_attr {
         }};
     }
 
-    impl<'a> GLAttr<'a> {
+    impl GLAttr<'_> {
         gl_attr! {
             RED_SIZE, set_red_size, red_size, u8, "the minimum number of bits for the red channel of the color buffer; defaults to 3";
             GREEN_SIZE, set_green_size, green_size, u8, "the minimum number of bits for the green channel of the color buffer; defaults to 3";
@@ -359,7 +359,7 @@ pub mod gl_attr {
         }
     }
 
-    impl<'a> GLAttr<'a> {
+    impl GLAttr<'_> {
         /// **Sets** any combination of OpenGL context configuration flags.
         ///
         /// Note that calling this will reset any existing context flags.
@@ -515,8 +515,7 @@ pub struct GLContext {
 impl Drop for GLContext {
     #[doc(alias = "SDL_GL_DeleteContext")]
     fn drop(&mut self) {
-        unsafe { sys::video::SDL_GL_DestroyContext(self.raw) };
-        return;
+        unsafe { sys::video::SDL_GL_DestroyContext(self.raw); }
     }
 }
 
@@ -1546,7 +1545,7 @@ impl Window {
             let context_raw = sys::video::SDL_GL_GetCurrentContext();
 
             if !context_raw.is_null()
-                && sys::video::SDL_GL_MakeCurrent(self.context.raw, context_raw) == true
+                && sys::video::SDL_GL_MakeCurrent(self.context.raw, context_raw)
             {
                 Ok(())
             } else {
@@ -1558,7 +1557,7 @@ impl Window {
     #[doc(alias = "SDL_GL_MakeCurrent")]
     pub fn gl_make_current(&self, context: &GLContext) -> Result<(), String> {
         unsafe {
-            if sys::video::SDL_GL_MakeCurrent(self.context.raw, context.raw) == true {
+            if sys::video::SDL_GL_MakeCurrent(self.context.raw, context.raw) {
                 Ok(())
             } else {
                 Err(get_error())
@@ -1581,10 +1580,6 @@ impl Window {
         if extension_names_raw.is_null() {
             return Err(get_error());
         }
-
-        // get an array of pointers to C strings
-        let names_slice =
-            unsafe { std::slice::from_raw_parts(extension_names_raw, count as usize) };
 
         // Create a slice from the raw pointer to the array
         let names_slice =
@@ -1613,11 +1608,10 @@ impl Window {
         let mut surface: VkSurfaceKHR = 0 as _;
         if unsafe {
             sys::vulkan::SDL_Vulkan_CreateSurface(self.context.raw, instance, null(), &mut surface)
-        } == false
-        {
-            Err(get_error())
-        } else {
+        } {
             Ok(surface)
+        } else {
+            Err(get_error())
         }
     }
 
@@ -1644,10 +1638,10 @@ impl Window {
                     None => ptr::null(),
                 },
             );
-            if result == false {
-                Err(get_error())
-            } else {
+            if result {
                 Ok(())
+            } else {
+                Err(get_error())
             }
         }
     }
@@ -1672,8 +1666,8 @@ impl Window {
             if data.is_null() {
                 return Err(get_error());
             }
-            let mut result = vec![0; size as usize];
-            result.copy_from_slice(std::slice::from_raw_parts(data as *const u8, size as usize));
+            let mut result = vec![0; size];
+            result.copy_from_slice(std::slice::from_raw_parts(data as *const u8, size));
             SDL_free(data);
             Ok(result)
         }
@@ -1791,10 +1785,10 @@ impl Window {
                 &mut right,
             )
         };
-        if result == false {
-            Err(get_error())
-        } else {
+        if result {
             Ok((top as u16, left as u16, bottom as u16, right as u16))
+        } else {
+            Err(get_error())
         }
     }
 
@@ -1980,10 +1974,10 @@ impl Window {
         };
 
         unsafe {
-            if sys::video::SDL_SetWindowMouseRect(self.context.raw, rect_raw_ptr) == false {
-                Ok(())
-            } else {
+            if sys::video::SDL_SetWindowMouseRect(self.context.raw, rect_raw_ptr) {
                 Err(get_error())
+            } else {
+                Ok(())
             }
         }
     }
