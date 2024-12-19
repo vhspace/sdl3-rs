@@ -79,6 +79,7 @@ pub mod log;
 pub mod messagebox;
 pub mod mouse;
 pub mod pixels;
+pub mod properties;
 pub mod rect;
 pub mod render;
 mod sdl;

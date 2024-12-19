@@ -95,6 +95,9 @@ required-features = ["image"]
 name = "cursor"
 
 [[example]]
+name = "draw_triangle"
+
+[[example]]
 name = "demo"
 
 [[example]]
