@@ -164,6 +164,9 @@ required-features = ["hidapi"]
 name = "sensors"
 
 [[example]]
+name = "spinning_cube"
+
+[[example]]
 required-features = ["ttf"]
 name = "ttf-demo"
 
