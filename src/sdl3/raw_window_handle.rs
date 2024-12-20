@@ -182,12 +182,12 @@ impl HasDisplayHandle for Window {
         }
 
         // Linux (X11 or Wayland)
-        //#[cfg(all(
-        //    unix,
-        //    not(target_os = "macos"),
-        //    not(target_os = "ios"),
-        //    not(target_os = "android")
-        //))]
+        #[cfg(all(
+            unix,
+            not(target_os = "macos"),
+            not(target_os = "ios"),
+            not(target_os = "android")
+        ))]
         unsafe {
             let video_driver = CStr::from_ptr(sys::video::SDL_GetCurrentVideoDriver());
 
@@ -212,7 +212,7 @@ impl HasDisplayHandle for Window {
                     let handle = XlibDisplayHandle::new(display, window as i32);
                     let raw_window_handle = RawDisplayHandle::Xlib(handle);
 
-                    return Ok(DisplayHandle::borrow_raw(raw_window_handle));
+                    Ok(DisplayHandle::borrow_raw(raw_window_handle))
                 }
                 b"wayland" => {
                     use self::raw_window_handle::WaylandDisplayHandle;
@@ -224,17 +224,13 @@ impl HasDisplayHandle for Window {
                         sys::video::SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER,
                         std::ptr::null_mut(),
                     );
-                    let display = core::ptr::NonNull::<libc::c_void>::new(display);
-                    match display {
-                        Some(display) => {
-                            let handle = WaylandDisplayHandle::new(display);
-                            let raw_window_handle = RawDisplayHandle::Wayland(handle);
+                    let Some(display) = core::ptr::NonNull::<libc::c_void>::new(display) else {
+                        return Err(HandleError::Unavailable); // I'm unsure if this is the right error type, of if we should just panic here if the display isn't available?
+                    };
+                    let handle = WaylandDisplayHandle::new(display);
+                    let raw_window_handle = RawDisplayHandle::Wayland(handle);
 
-                            Ok(DisplayHandle::borrow_raw(raw_window_handle))
-                        }
-                        // I'm unsure if this is the right error type, of if we should just panic here if the display isn't available?
-                        None => Err(HandleError::Unavailable),
-                    }
+                    Ok(DisplayHandle::borrow_raw(raw_window_handle))
                 }
                 _ => {
                     panic!("{video_driver:?} video driver is not supported, please file an issue with raw-window-handle.");
