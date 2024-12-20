@@ -1,9 +1,12 @@
 extern crate raw_window_handle;
 
+use self::raw_window_handle::{
+    DisplayHandle, HandleError, HasDisplayHandle, HasWindowHandle, RawWindowHandle, WindowHandle,
+};
 use crate::video::Window;
+use raw_window_handle::RawDisplayHandle;
 use std::{ffi::CStr, num::NonZero, ptr::NonNull};
-use self::raw_window_handle::{HandleError, HasDisplayHandle, HasWindowHandle, WindowHandle, DisplayHandle, RawWindowHandle};
-use sys::properties::SDL_GetPointerProperty;
+use sys::properties::{SDL_GetNumberProperty, SDL_GetPointerProperty};
 
 // Access window handle using SDL3 properties
 impl HasWindowHandle for Window {
@@ -102,12 +105,12 @@ impl HasWindowHandle for Window {
 
                     let window_properties = sys::video::SDL_GetWindowProperties(self.raw());
 
-                    let window = SDL_GetPointerProperty(
+                    let window = SDL_GetNumberProperty(
                         window_properties,
                         sys::video::SDL_PROP_WINDOW_X11_WINDOW_NUMBER,
-                        std::ptr::null_mut(),
-                    ) as *mut u32;
-                    let handle = XlibWindowHandle::new(*window);
+                        0,
+                    );
+                    let handle = XlibWindowHandle::new(window as u64);
                     let raw_window_handle = RawWindowHandle::Xlib(handle);
 
                     Ok(WindowHandle::borrow_raw(raw_window_handle))
@@ -139,21 +142,21 @@ impl HasWindowHandle for Window {
 impl HasDisplayHandle for Window {
     fn display_handle(&self) -> Result<DisplayHandle<'_>, HandleError> {
         // Windows
-        //#[cfg(target_os = "windows")]
-        //unsafe {
-        //    use self::raw_window_handle::WindowsDisplayHandle;
-        //    let handle = WindowsDisplayHandle::new();
-        //    let raw_window_handle = raw_window_handle::RawDisplayHandle::Windows(handle);
+        #[cfg(target_os = "windows")]
+        unsafe {
+            use self::raw_window_handle::WindowsDisplayHandle;
+            let handle = WindowsDisplayHandle::new();
+            let raw_window_handle = RawDisplayHandle::Windows(handle);
 
-        //    Ok(DisplayHandle::borrow_raw(raw_window_handle))
-        //}
+            Ok(DisplayHandle::borrow_raw(raw_window_handle))
+        }
 
         // macOS
         #[cfg(target_os = "macos")]
         unsafe {
             use self::raw_window_handle::AppKitDisplayHandle;
             let handle = AppKitDisplayHandle::new();
-            let raw_window_handle = raw_window_handle::RawDisplayHandle::AppKit(handle);
+            let raw_window_handle = RawDisplayHandle::AppKit(handle);
 
             Ok(DisplayHandle::borrow_raw(raw_window_handle))
         }
@@ -163,7 +166,7 @@ impl HasDisplayHandle for Window {
         unsafe {
             use self::raw_window_handle::UiKitDisplayHandle;
             let handle = UiKitDisplayHandle::new();
-            let raw_window_handle = raw_window_handle::RawDisplayHandle::UiKit(handle);
+            let raw_window_handle = RawDisplayHandle::UiKit(handle);
 
             Ok(DisplayHandle::borrow_raw(raw_window_handle))
         }
@@ -173,7 +176,7 @@ impl HasDisplayHandle for Window {
         unsafe {
             use self::raw_window_handle::AndroidDisplayHandle;
             let handle = AndroidDisplayHandle::new();
-            let raw_window_handle = raw_window_handle::RawDisplayHandle::Android(handle);
+            let raw_window_handle = RawDisplayHandle::Android(handle);
 
             Ok(DisplayHandle::borrow_raw(raw_window_handle))
         }
@@ -194,35 +197,44 @@ impl HasDisplayHandle for Window {
 
                     let window_properties = sys::video::SDL_GetWindowProperties(self.raw());
 
-                    let display =  SDL_GetPointerProperty(
+                    let display = SDL_GetPointerProperty(
                         window_properties,
                         sys::video::SDL_PROP_WINDOW_X11_DISPLAY_POINTER,
                         std::ptr::null_mut(),
                     );
-                    let screen =  SDL_GetPointerProperty(
+                    let display = core::ptr::NonNull::<libc::c_void>::new(display);
+
+                    let window = SDL_GetNumberProperty(
                         window_properties,
                         sys::video::SDL_PROP_WINDOW_X11_SCREEN_NUMBER,
-                        std::ptr::null_mut(),
-                    ) as *const i32;
-                    let handle = XlibDisplayHandle::new(NonNull::new(display), *screen);
-                    let raw_window_handle = raw_window_handle::RawDisplayHandle::Xlib(handle);
+                        0,
+                    );
+                    let handle = XlibDisplayHandle::new(display, window as i32);
+                    let raw_window_handle = RawDisplayHandle::Xlib(handle);
 
-                    Ok(DisplayHandle::borrow_raw(raw_window_handle))
+                    return Ok(DisplayHandle::borrow_raw(raw_window_handle));
                 }
                 b"wayland" => {
                     use self::raw_window_handle::WaylandDisplayHandle;
 
                     let window_properties = sys::video::SDL_GetWindowProperties(self.raw());
 
-                    let display =  SDL_GetPointerProperty(
+                    let display = SDL_GetPointerProperty(
                         window_properties,
-                        sys::video::SDL_PROP_WINDOW_X11_DISPLAY_POINTER,
+                        sys::video::SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER,
                         std::ptr::null_mut(),
                     );
-                    let handle = WaylandDisplayHandle::new(NonNull::new_unchecked(display));
-                    let raw_window_handle = raw_window_handle::RawDisplayHandle::Wayland(handle);
+                    let display = core::ptr::NonNull::<libc::c_void>::new(display);
+                    match display {
+                        Some(display) => {
+                            let handle = WaylandDisplayHandle::new(display);
+                            let raw_window_handle = RawDisplayHandle::Wayland(handle);
 
-                    Ok(DisplayHandle::borrow_raw(raw_window_handle))
+                            Ok(DisplayHandle::borrow_raw(raw_window_handle))
+                        }
+                        // I'm unsure if this is the right error type, of if we should just panic here if the display isn't available?
+                        None => Err(HandleError::Unavailable),
+                    }
                 }
                 _ => {
                     panic!("{video_driver:?} video driver is not supported, please file an issue with raw-window-handle.");
