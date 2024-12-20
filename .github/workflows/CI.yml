@@ -54,25 +54,3 @@ jobs:
           cargo build --features "${CI_BUILD_FEATURES} ${{matrix.feature}}" ${{matrix.build_mode}}
           cargo build --examples --features "${CI_BUILD_FEATURES} ${{matrix.feature}}" ${{matrix.build_mode}}
           cargo test --features "${CI_BUILD_FEATURES} ${{matrix.feature}}" ${{matrix.build_mode}}
-
-  build-linux:
-    name: build linux pkg-config
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -y -qq
-          sudo apt-get install -y libsdl3-dev libsdl3-mixer-dev libsdl3-gfx-dev libsdl3-image-dev libsdl3-ttf-dev
-      - name: Build sdl3
-        shell: bash
-        env:
-          CI_BUILD_FEATURES: "gfx image ttf mixer"
-          RUST_TEST_THREADS: 1
-        run: |
-          set -xeuo pipefail
-          rustc --version
-          cargo --version
-          # SDL 2.0.10 so no hidapi
-          cargo build --no-default-features --features "${CI_BUILD_FEATURES}"
-          cargo test --no-default-features --features "${CI_BUILD_FEATURES}"
