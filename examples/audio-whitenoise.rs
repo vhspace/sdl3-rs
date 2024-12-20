@@ -2,7 +2,10 @@ extern crate rand;
 extern crate sdl3;
 
 use sdl3::audio::{AudioCallback, AudioSpec};
-use std::{sync::{Arc, Mutex}, time::Duration};
+use std::{
+    sync::{Arc, Mutex},
+    time::Duration,
+};
 
 struct MyCallback {
     volume: Arc<Mutex<f32>>, // it seems like AudioStreamWithCallback<> is supposed to have a lock() method which allows us to modify MyCallback, but that function no longer seems to exist
@@ -12,10 +15,12 @@ impl AudioCallback<f32> for MyCallback {
         use self::rand::{thread_rng, Rng};
         let mut rng = thread_rng();
 
-        let Ok(volume) = self.volume.lock() else {return};
+        let Ok(volume) = self.volume.lock() else {
+            return;
+        };
         // Generate white noise
         for x in out.iter_mut() {
-            *x = (rng.gen_range(0.0 ..= 2.0) - 1.0) * *volume;
+            *x = (rng.gen_range(0.0..=2.0) - 1.0) * *volume;
         }
     }
 }
@@ -33,7 +38,13 @@ fn main() -> Result<(), String> {
 
     // None: use default device
     let volume = Arc::new(Mutex::new(0.5));
-    let device = audio_subsystem.open_playback_stream_with_callback(&device, &desired_spec, MyCallback { volume: volume.clone() })?;
+    let device = audio_subsystem.open_playback_stream_with_callback(
+        &device,
+        &desired_spec,
+        MyCallback {
+            volume: volume.clone(),
+        },
+    )?;
 
     // Start playback
     device.resume()?;

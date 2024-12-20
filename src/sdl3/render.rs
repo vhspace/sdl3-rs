@@ -1018,9 +1018,8 @@ impl<T: RenderTarget> Canvas<T> {
     /// Sets the blend mode used for drawing operations (Fill and Line).
     #[doc(alias = "SDL_SetRenderDrawBlendMode")]
     pub fn set_blend_mode(&mut self, blend: BlendMode) {
-        let ret = unsafe {
-            sys::render::SDL_SetRenderDrawBlendMode(self.context.raw, blend as u32)
-        };
+        let ret =
+            unsafe { sys::render::SDL_SetRenderDrawBlendMode(self.context.raw, blend as u32) };
         // Should only fail on an invalid renderer
         if !ret {
             panic!("{}", get_error())
@@ -1942,8 +1941,7 @@ impl InternalTexture {
 
     #[doc(alias = "SDL_SetTextureBlendMode")]
     pub fn set_blend_mode(&mut self, blend: BlendMode) {
-        let ret =
-            unsafe { sys::render::SDL_SetTextureBlendMode(self.raw, blend as u32) };
+        let ret = unsafe { sys::render::SDL_SetTextureBlendMode(self.raw, blend as u32) };
 
         if !ret {
             panic!("Error setting blend: {}", get_error())

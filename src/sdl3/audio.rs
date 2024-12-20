@@ -586,7 +586,7 @@ impl AudioSpec {
 }
 
 impl Default for AudioSpec {
-	/// Creates an `AudioSpec` with all fields set to `None` (use device defaults).
+    /// Creates an `AudioSpec` with all fields set to `None` (use device defaults).
     fn default() -> Self {
         Self {
             freq: None,

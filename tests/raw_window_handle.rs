@@ -3,8 +3,8 @@ mod raw_window_handle_test {
     extern crate raw_window_handle;
     extern crate sdl3;
 
+    use self::raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawWindowHandle};
     use self::sdl3::video::Window;
-    use self::raw_window_handle::{HasWindowHandle, HasDisplayHandle, RawWindowHandle};
 
     #[cfg(target_os = "windows")]
     #[test]
@@ -21,10 +21,7 @@ mod raw_window_handle_test {
         };
         let raw_handle = match window_handle.as_raw() {
             RawWindowHandle::Win32(v) => v,
-            x => panic!(
-                "Received wrong RawWindowHandle type for Windows: {:?}",
-                x
-            ),
+            x => panic!("Received wrong RawWindowHandle type for Windows: {:?}", x),
         };
         assert_ne!(raw_handle.hwnd.get(), 0);
         println!("Successfully received Windows RawWindowHandle!");
@@ -36,11 +33,8 @@ mod raw_window_handle_test {
             ),
         };
         match display_handle.as_raw() {
-            RawDisplayHandle::Windows(_) => {},
-            x => panic!(
-                "Received wrong RawDisplayHandle type for Windows: {:?}",
-                x
-            ),
+            RawDisplayHandle::Windows(_) => {}
+            x => panic!("Received wrong RawDisplayHandle type for Windows: {:?}", x),
         }
         println!("Successfully received Windows RawDisplayHandle!");
     }

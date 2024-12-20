@@ -240,7 +240,7 @@ macro_rules! subsystem {
                         result = sys::init::SDL_InitSubSystem($flag);
                     }
 
-                    if !result  {
+                    if !result {
                         $counter.store(0, Ordering::Relaxed);
                         return Err(get_error());
                     }
@@ -307,38 +307,13 @@ impl Drop for SubsystemDrop {
 
 subsystem!(AudioSubsystem, SDL_INIT_AUDIO, AUDIO_COUNT, nosync);
 subsystem!(VideoSubsystem, SDL_INIT_VIDEO, VIDEO_COUNT, nosync);
-subsystem!(
-    JoystickSubsystem,
-    SDL_INIT_JOYSTICK,
-    JOYSTICK_COUNT,
-    nosync
-);
-subsystem!(
-    HapticSubsystem,
-    SDL_INIT_HAPTIC,
-    HAPTIC_COUNT,
-    nosync
-);
-subsystem!(
-    GamepadSubsystem,
-    SDL_INIT_GAMEPAD,
-    GAMEPAD_COUNT,
-    nosync
-);
+subsystem!(JoystickSubsystem, SDL_INIT_JOYSTICK, JOYSTICK_COUNT, nosync);
+subsystem!(HapticSubsystem, SDL_INIT_HAPTIC, HAPTIC_COUNT, nosync);
+subsystem!(GamepadSubsystem, SDL_INIT_GAMEPAD, GAMEPAD_COUNT, nosync);
 // The event queue can be read from other threads.
 subsystem!(EventSubsystem, SDL_INIT_EVENTS, EVENT_COUNT, sync);
-subsystem!(
-    SensorSubsystem,
-    SDL_INIT_SENSOR,
-    SENSOR_COUNT,
-    nosync
-);
-subsystem!(
-    CameraSubsystem,
-    SDL_INIT_CAMERA,
-    CAMERA_COUNT,
-    nosync
-);
+subsystem!(SensorSubsystem, SDL_INIT_SENSOR, SENSOR_COUNT, nosync);
+subsystem!(CameraSubsystem, SDL_INIT_CAMERA, CAMERA_COUNT, nosync);
 
 static IS_EVENT_PUMP_ALIVE: AtomicBool = AtomicBool::new(false);
 

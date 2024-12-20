@@ -433,10 +433,7 @@ impl Rect {
     /// If a clipping rectangle is given, only points that are within it will be
     /// considered.
     #[doc(alias = "SDL_GetRectEnclosingPoints")]
-    pub fn from_enclose_points<R>(
-        points: &[Point],
-        clipping_rect: R,
-    ) -> Option<Rect>
+    pub fn from_enclose_points<R>(points: &[Point], clipping_rect: R) -> Option<Rect>
     where
         R: Into<Option<Rect>>,
     {
@@ -902,7 +899,7 @@ impl DivAssign<i32> for Point {
 }
 
 impl std::iter::Sum for Point {
-    fn sum<I: Iterator<Item=Self>>(iter: I) -> Self {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Point::new(0, 0), Point::add)
     }
 }
@@ -953,7 +950,7 @@ mod test {
                 ],
                 None
             )
-                .map(|r| r.into())
+            .map(|r| r.into())
         );
     }
 

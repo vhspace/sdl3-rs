@@ -5,6 +5,7 @@ use std::path::Path;
 use std::sync::Arc;
 
 use crate::get_error;
+use crate::iostream::IOStream;
 use crate::pixels;
 use crate::rect::Rect;
 use crate::render::{BlendMode, Canvas};
@@ -16,7 +17,6 @@ use std::mem::transmute;
 use std::ptr;
 use sys::blendmode::SDL_BLENDMODE_NONE;
 use sys::surface::{SDL_ScaleMode, SDL_MUSTLOCK, SDL_SCALEMODE_LINEAR};
-use crate::iostream::IOStream;
 
 /// Holds a `SDL_Surface`
 ///
@@ -57,7 +57,6 @@ pub struct SurfaceRef {
     // and b) prevent user initialization of this type.
     _raw: (),
 }
-
 
 impl AsRef<SurfaceRef> for SurfaceRef {
     fn as_ref(&self) -> &SurfaceRef {
@@ -548,7 +547,7 @@ impl SurfaceRef {
         unsafe {
             let rect = rect.into();
             let rect_ptr = mem::transmute(rect.as_ref()); // TODO find a better way to transform
-            // Option<&...> into a *const _
+                                                          // Option<&...> into a *const _
             let format = self.pixel_format();
             let result =
                 sys::surface::SDL_FillSurfaceRect(self.raw(), rect_ptr, color.to_u32(&format));
@@ -734,12 +733,8 @@ impl SurfaceRef {
         // The rectangles don't change, but the function requires mutable pointers.
         let src_rect_ptr = src_rect.as_ref().map(|r| r.raw()).unwrap_or(ptr::null()) as *mut _;
         let dst_rect_ptr = dst_rect.as_ref().map(|r| r.raw()).unwrap_or(ptr::null()) as *mut _;
-        if sys::surface::SDL_BlitSurfaceUnchecked(
-            self.raw(),
-            src_rect_ptr,
-            dst.raw(),
-            dst_rect_ptr,
-        ) {
+        if sys::surface::SDL_BlitSurfaceUnchecked(self.raw(), src_rect_ptr, dst.raw(), dst_rect_ptr)
+        {
             Ok(())
         } else {
             Err(get_error())
@@ -806,7 +801,7 @@ impl SurfaceRef {
     {
         let src_rect = src_rect.into();
         let dst_rect = dst_rect.into();
-    
+
         let src_rect_ptr = src_rect.as_ref().map(|r| r.raw()).unwrap_or(ptr::null());
 
         // Copy the rect here to make a mutable copy without requiring

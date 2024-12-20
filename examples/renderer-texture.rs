@@ -21,7 +21,11 @@ pub fn main() -> Result<(), String> {
     let texture_creator = canvas.texture_creator();
 
     let mut texture = texture_creator
-        .create_texture_streaming(unsafe {PixelFormat::from_ll(SDL_PixelFormat::RGB24)}, 256, 256)
+        .create_texture_streaming(
+            unsafe { PixelFormat::from_ll(SDL_PixelFormat::RGB24) },
+            256,
+            256,
+        )
         .map_err(|e| e.to_string())?;
     // Create a red-green gradient
     texture.with_lock(None, |buffer: &mut [u8], pitch: usize| {
