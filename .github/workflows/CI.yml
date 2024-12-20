@@ -21,7 +21,7 @@ jobs:
       - name: Build sdl3
         shell: bash
         env:
-          CI_BUILD_FEATURES: "use-vcpkg static-link gfx image ttf mixer"
+          CI_BUILD_FEATURES: "use-vcpkg"
           RUST_TEST_THREADS: 1
         run: |
           set -xeuo pipefail
@@ -42,6 +42,8 @@ jobs:
         os: [macos-latest, ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v2
+      - name: Install Linux dependencies
+        uses: ./.github/actions/install-linux-deps
       - name: Build sdl3
         shell: bash
         env:
