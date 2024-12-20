@@ -31,13 +31,13 @@ jobs:
           cargo build --examples --features "${CI_BUILD_FEATURES}"
           cargo test --features "${CI_BUILD_FEATURES}"
 
-  build-bundled:
-    name: build bundled
+  build-from-source:
+    name: build from source
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        feature: ["", "static-link"]
+        feature: ["build-from-source"]
         build_mode: ["", "--release"]
         os: [macos-latest, ubuntu-latest, windows-latest]
     steps:
@@ -45,8 +45,7 @@ jobs:
       - name: Build sdl3
         shell: bash
         env:
-          # Bundled doesn't yet support gfx, image, ttf, mixer.
-          CI_BUILD_FEATURES: "bundled"
+          CI_BUILD_FEATURES: ""
           RUST_TEST_THREADS: 1
         run: |
           set -xeuo pipefail
