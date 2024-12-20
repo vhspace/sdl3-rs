@@ -18,7 +18,6 @@
 /// - -z ... +z is roll from right to left
 use crate::sys;
 
-
 use crate::common::IntegerOrSdlError;
 use crate::get_error;
 use crate::SensorSubsystem;

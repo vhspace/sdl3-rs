@@ -116,10 +116,7 @@ impl crate::EventSubsystem {
             } else {
                 events.set_len(result as usize);
 
-                events
-                    .into_iter()
-                    .map(Event::from_ll)
-                    .collect()
+                events.into_iter().map(Event::from_ll).collect()
             }
         }
     }
@@ -492,12 +489,13 @@ impl DisplayEvent {
     }
 
     pub fn is_same_kind_as(&self, other: &DisplayEvent) -> bool {
-        matches!((self, other),
+        matches!(
+            (self, other),
             (Self::None, Self::None)
-            | (Self::Orientation(_), Self::Orientation(_))
-            | (Self::Added, Self::Added)
-            | (Self::Removed, Self::Removed)
-		)
+                | (Self::Orientation(_), Self::Orientation(_))
+                | (Self::Added, Self::Added)
+                | (Self::Removed, Self::Removed)
+        )
     }
 }
 
@@ -576,26 +574,27 @@ impl WindowEvent {
     }
 
     pub fn is_same_kind_as(&self, other: &WindowEvent) -> bool {
-        matches!((self, other),
+        matches!(
+            (self, other),
             (Self::None, Self::None)
-            | (Self::Shown, Self::Shown)
-            | (Self::Hidden, Self::Hidden)
-            | (Self::Exposed, Self::Exposed)
-            | (Self::Moved(_, _), Self::Moved(_, _))
-            | (Self::Resized(_, _), Self::Resized(_, _))
-            | (Self::PixelSizeChanged(_, _), Self::PixelSizeChanged(_, _))
-            | (Self::Minimized, Self::Minimized)
-            | (Self::Maximized, Self::Maximized)
-            | (Self::Restored, Self::Restored)
-            | (Self::MouseEnter, Self::MouseEnter)
-            | (Self::MouseLeave, Self::MouseLeave)
-            | (Self::FocusGained, Self::FocusGained)
-            | (Self::FocusLost, Self::FocusLost)
-            | (Self::CloseRequested, Self::CloseRequested)
-            | (Self::HitTest(_, _), Self::HitTest(_, _))
-            | (Self::ICCProfChanged, Self::ICCProfChanged)
-            | (Self::DisplayChanged(_), Self::DisplayChanged(_))
-		)
+                | (Self::Shown, Self::Shown)
+                | (Self::Hidden, Self::Hidden)
+                | (Self::Exposed, Self::Exposed)
+                | (Self::Moved(_, _), Self::Moved(_, _))
+                | (Self::Resized(_, _), Self::Resized(_, _))
+                | (Self::PixelSizeChanged(_, _), Self::PixelSizeChanged(_, _))
+                | (Self::Minimized, Self::Minimized)
+                | (Self::Maximized, Self::Maximized)
+                | (Self::Restored, Self::Restored)
+                | (Self::MouseEnter, Self::MouseEnter)
+                | (Self::MouseLeave, Self::MouseLeave)
+                | (Self::FocusGained, Self::FocusGained)
+                | (Self::FocusLost, Self::FocusLost)
+                | (Self::CloseRequested, Self::CloseRequested)
+                | (Self::HitTest(_, _), Self::HitTest(_, _))
+                | (Self::ICCProfChanged, Self::ICCProfChanged)
+                | (Self::DisplayChanged(_), Self::DisplayChanged(_))
+        )
     }
 }
 
@@ -2253,16 +2252,17 @@ impl Event {
     /// assert!(another_ev.is_window() == false); // Not a window event!
     /// ```
     pub fn is_window(&self) -> bool {
-        matches!(self,
+        matches!(
+            self,
             Self::Quit { .. }
-            | Self::AppTerminating { .. }
-            | Self::AppLowMemory { .. }
-            | Self::AppWillEnterBackground { .. }
-            | Self::AppDidEnterBackground { .. }
-            | Self::AppWillEnterForeground { .. }
-            | Self::AppDidEnterForeground { .. }
-            | Self::Window { .. }
-		)
+                | Self::AppTerminating { .. }
+                | Self::AppLowMemory { .. }
+                | Self::AppWillEnterBackground { .. }
+                | Self::AppDidEnterBackground { .. }
+                | Self::AppWillEnterForeground { .. }
+                | Self::AppDidEnterForeground { .. }
+                | Self::Window { .. }
+        )
     }
 
     /// Returns `true` if this is a keyboard event.
@@ -2291,9 +2291,7 @@ impl Event {
     /// assert!(another_ev.is_keyboard() == false); // Not a keyboard event!
     /// ```
     pub fn is_keyboard(&self) -> bool {
-        matches!(self,
-            Self::KeyDown { .. } | Self::KeyUp { .. }
-		)
+        matches!(self, Self::KeyDown { .. } | Self::KeyUp { .. })
     }
 
     /// Returns `true` if this is a text event.
@@ -2316,9 +2314,7 @@ impl Event {
     /// assert!(another_ev.is_text() == false); // Not a text event!
     /// ```
     pub fn is_text(&self) -> bool {
-        matches!(self,
-            Self::TextEditing { .. } | Self::TextInput { .. }
-		)
+        matches!(self, Self::TextEditing { .. } | Self::TextInput { .. })
     }
 
     /// Returns `true` if this is a mouse event.
@@ -2347,12 +2343,13 @@ impl Event {
     /// assert!(another_ev.is_mouse() == false); // Not a mouse event!
     /// ```
     pub fn is_mouse(&self) -> bool {
-        matches!(self,
+        matches!(
+            self,
             Self::MouseMotion { .. }
-            | Self::MouseButtonDown { .. }
-            | Self::MouseButtonUp { .. }
-            | Self::MouseWheel { .. }
-		)
+                | Self::MouseButtonDown { .. }
+                | Self::MouseButtonUp { .. }
+                | Self::MouseWheel { .. }
+        )
     }
 
     /// Returns `true` if this is a controller event.
@@ -2374,14 +2371,15 @@ impl Event {
     /// assert!(another_ev.is_controller() == false); // Not a controller event!
     /// ```
     pub fn is_controller(&self) -> bool {
-        matches!(self,
+        matches!(
+            self,
             Self::ControllerAxisMotion { .. }
-            | Self::ControllerButtonDown { .. }
-            | Self::ControllerButtonUp { .. }
-            | Self::ControllerDeviceAdded { .. }
-            | Self::ControllerDeviceRemoved { .. }
-            | Self::ControllerDeviceRemapped { .. }
-		)
+                | Self::ControllerButtonDown { .. }
+                | Self::ControllerButtonUp { .. }
+                | Self::ControllerDeviceAdded { .. }
+                | Self::ControllerDeviceRemoved { .. }
+                | Self::ControllerDeviceRemapped { .. }
+        )
     }
 
     /// Returns `true` if this is a joy event.
@@ -2404,14 +2402,15 @@ impl Event {
     /// assert!(another_ev.is_joy() == false); // Not a joy event!
     /// ```
     pub fn is_joy(&self) -> bool {
-        matches!(self,
+        matches!(
+            self,
             Self::JoyAxisMotion { .. }
-            | Self::JoyHatMotion { .. }
-            | Self::JoyButtonDown { .. }
-            | Self::JoyButtonUp { .. }
-            | Self::JoyDeviceAdded { .. }
-            | Self::JoyDeviceRemoved { .. }
-		)
+                | Self::JoyHatMotion { .. }
+                | Self::JoyButtonDown { .. }
+                | Self::JoyButtonUp { .. }
+                | Self::JoyDeviceAdded { .. }
+                | Self::JoyDeviceRemoved { .. }
+        )
     }
 
     /// Returns `true` if this is a finger event.
@@ -2439,9 +2438,10 @@ impl Event {
     /// assert!(another_ev.is_finger() == false); // Not a finger event!
     /// ```
     pub fn is_finger(&self) -> bool {
-        matches!(self,
+        matches!(
+            self,
             Self::FingerDown { .. } | Self::FingerUp { .. } | Self::FingerMotion { .. }
-		)
+        )
     }
 
     /// Returns `true` if this is a drop event.
@@ -2463,12 +2463,13 @@ impl Event {
     /// assert!(another_ev.is_drop() == false); // Not a drop event!
     /// ```
     pub fn is_drop(&self) -> bool {
-        matches!(self,
+        matches!(
+            self,
             Self::DropFile { .. }
-            | Self::DropText { .. }
-            | Self::DropBegin { .. }
-            | Self::DropComplete { .. }
-		)
+                | Self::DropText { .. }
+                | Self::DropBegin { .. }
+                | Self::DropComplete { .. }
+        )
     }
 
     /// Returns `true` if this is an audio event.
@@ -2491,7 +2492,10 @@ impl Event {
     /// assert!(another_ev.is_audio() == false); // Not an audio event!
     /// ```
     pub fn is_audio(&self) -> bool {
-		matches!(self, Self::AudioDeviceAdded { .. } | Self::AudioDeviceRemoved { .. })
+        matches!(
+            self,
+            Self::AudioDeviceAdded { .. } | Self::AudioDeviceRemoved { .. }
+        )
     }
 
     /// Returns `true` if this is a render event.
@@ -2512,7 +2516,10 @@ impl Event {
     /// assert!(another_ev.is_render() == false); // Not a render event!
     /// ```
     pub fn is_render(&self) -> bool {
-        matches!(self, Self::RenderTargetsReset { .. } | Self::RenderDeviceReset { .. })
+        matches!(
+            self,
+            Self::RenderTargetsReset { .. } | Self::RenderDeviceReset { .. }
+        )
     }
 
     /// Returns `true` if this is a user event.

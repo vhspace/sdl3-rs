@@ -1,9 +1,9 @@
-use std::convert::TryInto;
 use crate::get_error;
 use crate::surface::SurfaceRef;
 use crate::sys;
 use crate::video;
 use crate::EventPump;
+use std::convert::TryInto;
 use std::mem::transmute;
 use sys::mouse::{
     SDL_GetWindowRelativeMouseMode, SDL_MouseWheelDirection, SDL_SetWindowRelativeMouseMode,
@@ -211,11 +211,7 @@ impl MouseState {
         let mut y = 0.;
         let mouse_state: u32 = unsafe { sys::mouse::SDL_GetMouseState(&mut x, &mut y) };
 
-        MouseState {
-            mouse_state,
-            x,
-            y,
-        }
+        MouseState { mouse_state, x, y }
     }
 
     pub fn from_sdl_state(state: u32) -> MouseState {

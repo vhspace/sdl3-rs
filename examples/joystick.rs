@@ -13,7 +13,8 @@ fn main() -> Result<(), String> {
     println!("{} joysticks available", joysticks.len());
 
     // Iterate over all available joysticks and stop once we manage to open one.
-    let mut joystick = joysticks.into_iter()
+    let mut joystick = joysticks
+        .into_iter()
         .find_map(|joystick| match joystick_subsystem.open(joystick) {
             Ok(c) => {
                 println!("Success: opened \"{}\"", c.name());
@@ -65,7 +66,9 @@ fn main() -> Result<(), String> {
                     } else {
                         println!(
                             "Error setting rumble to ({}, {}): {:?}",
-                            lo_freq, hi_freq, get_error()
+                            lo_freq,
+                            hi_freq,
+                            get_error()
                         );
                     }
                 }
@@ -83,7 +86,9 @@ fn main() -> Result<(), String> {
                     } else {
                         println!(
                             "Error setting rumble to ({}, {}): {:?}",
-                            lo_freq, hi_freq, get_error()
+                            lo_freq,
+                            hi_freq,
+                            get_error()
                         );
                     }
                 }

@@ -32,7 +32,9 @@ fn main() -> Result<(), String> {
         force_fallback_adapter: false,
         compatible_surface: Some(&surface),
     }));
-    let Some(adapter) = adapter_opt else {return Err(String::from("No adapter found"))};
+    let Some(adapter) = adapter_opt else {
+        return Err(String::from("No adapter found"));
+    };
 
     let (device, queue) = match pollster::block_on(adapter.request_device(
         &wgpu::DeviceDescriptor {
@@ -49,7 +51,8 @@ fn main() -> Result<(), String> {
 
     let capabilities = surface.get_capabilities(&adapter);
     let mut formats = capabilities.formats;
-    let main_format = *formats.iter()
+    let main_format = *formats
+        .iter()
         .find(|format| format.is_srgb())
         .unwrap_or(&formats[0]);
 
@@ -119,7 +122,7 @@ fn main() -> Result<(), String> {
         present_mode: wgpu::PresentMode::Fifo,
         alpha_mode: wgpu::CompositeAlphaMode::Auto,
         desired_maximum_frame_latency: 0,
-        view_formats: vec!(),
+        view_formats: vec![],
     };
     surface.configure(&device, &config);
 
@@ -195,14 +198,12 @@ fn main() -> Result<(), String> {
     Ok(())
 }
 
-
-
 mod create_surface {
     use sdl3::video::Window;
     use wgpu::rwh::{HasDisplayHandle, HasWindowHandle};
 
     // contains the unsafe impl as much as possible by putting it in this module
-    struct SyncWindow<'a> (&'a Window);
+    struct SyncWindow<'a>(&'a Window);
 
     unsafe impl<'a> Send for SyncWindow<'a> {}
     unsafe impl<'a> Sync for SyncWindow<'a> {}
@@ -218,8 +219,12 @@ mod create_surface {
         }
     }
 
-    pub fn create_surface<'a>(instance: &wgpu::Instance, window: &'a Window) -> Result<wgpu::Surface<'a>, String> {
-        instance.create_surface(SyncWindow(&window)).map_err(|err| err.to_string())
+    pub fn create_surface<'a>(
+        instance: &wgpu::Instance,
+        window: &'a Window,
+    ) -> Result<wgpu::Surface<'a>, String> {
+        instance
+            .create_surface(SyncWindow(&window))
+            .map_err(|err| err.to_string())
     }
-
 }

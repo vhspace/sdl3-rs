@@ -37,10 +37,7 @@ impl AudioCallback<i16> for Recording {
     }
 }
 
-fn record(
-    audio_subsystem: &AudioSubsystem,
-    desired_spec: &AudioSpec,
-) -> Result<Vec<i16>, String> {
+fn record(audio_subsystem: &AudioSubsystem, desired_spec: &AudioSpec) -> Result<Vec<i16>, String> {
     println!(
         "Capturing {:} seconds... Please rock!",
         RECORDING_LENGTH_SECONDS
@@ -48,22 +45,22 @@ fn record(
 
     let (done_sender, done_receiver) = mpsc::channel();
 
-    let capture_device = audio_subsystem.open_recording_stream(desired_spec, Recording {
-        record_buffer: vec![
-            0;
-            desired_spec.freq.unwrap() as usize
-                * RECORDING_LENGTH_SECONDS
-                * desired_spec.channels.unwrap() as usize
-        ],
-        pos: 0,
-        done_sender,
-        done: false,
-    })?;
+    let capture_device = audio_subsystem.open_recording_stream(
+        desired_spec,
+        Recording {
+            record_buffer: vec![
+                0;
+                desired_spec.freq.unwrap() as usize
+                    * RECORDING_LENGTH_SECONDS
+                    * desired_spec.channels.unwrap() as usize
+            ],
+            pos: 0,
+            done_sender,
+            done: false,
+        },
+    )?;
 
-    println!(
-        "AudioDriver: {:?}",
-        audio_subsystem.current_audio_driver()
-    );
+    println!("AudioDriver: {:?}", audio_subsystem.current_audio_driver());
     capture_device.resume()?;
 
     // Wait until the recording is done.
@@ -115,10 +112,13 @@ fn replay_recorded_vec(
 ) -> Result<(), String> {
     println!("Playing...");
 
-    let playback_device = audio_subsystem.open_playback_stream(desired_spec, SoundPlayback {
-        data: recorded_vec,
-        pos: 0,
-    })?;
+    let playback_device = audio_subsystem.open_playback_stream(
+        desired_spec,
+        SoundPlayback {
+            data: recorded_vec,
+            pos: 0,
+        },
+    )?;
 
     // Start playback
     playback_device.resume()?;
