@@ -225,12 +225,12 @@ impl HasDisplayHandle for Window {
                         std::ptr::null_mut(),
                     );
                     let Some(display) = core::ptr::NonNull::<libc::c_void>::new(display) else {
-						return Err(HandleError::Unavailable); // I'm unsure if this is the right error type, of if we should just panic here if the display isn't available?
-					};
-					let handle = WaylandDisplayHandle::new(display);
-					let raw_window_handle = RawDisplayHandle::Wayland(handle);
+                        return Err(HandleError::Unavailable); // I'm unsure if this is the right error type, of if we should just panic here if the display isn't available?
+                    };
+                    let handle = WaylandDisplayHandle::new(display);
+                    let raw_window_handle = RawDisplayHandle::Wayland(handle);
 
-					Ok(DisplayHandle::borrow_raw(raw_window_handle))
+                    Ok(DisplayHandle::borrow_raw(raw_window_handle))
                 }
                 _ => {
                     panic!("{video_driver:?} video driver is not supported, please file an issue with raw-window-handle.");
