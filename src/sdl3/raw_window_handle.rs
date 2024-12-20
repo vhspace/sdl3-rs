@@ -232,7 +232,8 @@ impl HasDisplayHandle for Window {
 
                             Ok(DisplayHandle::borrow_raw(raw_window_handle))
                         }
-                        None => todo!("wayland display error"),
+                        // I'm unsure if this is the right error type, of if we should just panic here if the display isn't available?
+                        None => Err(HandleError::Unavailable),
                     }
                 }
                 _ => {
