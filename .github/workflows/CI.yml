@@ -14,6 +14,13 @@ jobs:
       fail-fast: false
     steps:
       - uses: actions/checkout@v2
+      - name: Install Linux dependencies
+        shell: bash
+        if: ${{ runner.os == 'linux' }}
+        run: >
+          sudo apt-get update
+          # Required for libxcrypt
+          sudo apt-get install libtool libltdl-dev
       - name: Install cargo-vcpkg
         run: cargo install cargo-vcpkg
       - name: Install dependencies
