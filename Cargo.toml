@@ -239,7 +239,7 @@ dev-dependencies = [
     #    "sdl3-mixer",
 ]
 git = "https://github.com/microsoft/vcpkg"
-rev = "acc3bcf" # release 2022.08.15
+rev = "b322364" # 2024.12.16 Release
 
 [package.metadata.vcpkg.target]
 x86_64-pc-windows-msvc = { triplet = "x64-windows-static-md" }
