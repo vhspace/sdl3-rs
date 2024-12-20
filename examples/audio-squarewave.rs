@@ -33,11 +33,14 @@ fn main() -> Result<(), String> {
         format: None,
     };
 
-    let device = audio_subsystem.open_playback_stream(&desired_spec, SquareWave {
-        phase_inc: 440.0 / desired_spec.freq.unwrap() as f32,
-        phase: 0.0,
-        volume: 0.25,
-    })?;
+    let device = audio_subsystem.open_playback_stream(
+        &desired_spec,
+        SquareWave {
+            phase_inc: 440.0 / desired_spec.freq.unwrap() as f32,
+            phase: 0.0,
+            volume: 0.25,
+        },
+    )?;
 
     // Start playback
     device.resume()?;

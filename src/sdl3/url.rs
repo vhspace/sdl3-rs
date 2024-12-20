@@ -6,7 +6,6 @@ use std::ffi::{CString, NulError};
 use std::fmt;
 use sys::misc::SDL_OpenURL;
 
-
 #[derive(Debug, Clone)]
 pub enum OpenUrlError {
     InvalidUrl(NulError),

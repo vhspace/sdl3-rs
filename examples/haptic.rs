@@ -12,7 +12,8 @@ fn main() -> Result<(), String> {
     println!("{} joysticks available", joysticks.len());
 
     // Iterate over all available joysticks and stop once we manage to open one.
-    let (_joystick, joystick_id) = joysticks.into_iter()
+    let (_joystick, joystick_id) = joysticks
+        .into_iter()
         .find_map(|joystick| {
             let id = joystick.id;
             match joystick_subsystem.open(joystick) {

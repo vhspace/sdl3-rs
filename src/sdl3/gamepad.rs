@@ -14,11 +14,11 @@ use std::convert::TryInto;
 
 use crate::common::IntegerOrSdlError;
 use crate::get_error;
+use crate::guid::Guid;
 use crate::sys;
 use crate::GamepadSubsystem;
 use std::mem::transmute;
 use sys::joystick::SDL_GetJoystickID;
-use crate::guid::Guid;
 
 #[derive(Debug, Clone)]
 pub enum AddMappingError {

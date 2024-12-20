@@ -43,9 +43,7 @@ pub struct MessageBoxColorScheme {
 
 impl From<MessageBoxColorScheme> for sys::messagebox::SDL_MessageBoxColorScheme {
     fn from(val: MessageBoxColorScheme) -> Self {
-        sys::messagebox::SDL_MessageBoxColorScheme {
-            colors: val.into(),
-        }
+        sys::messagebox::SDL_MessageBoxColorScheme { colors: val.into() }
     }
 }
 

@@ -17,7 +17,11 @@ fn main() -> Result<(), String> {
     let mut canvas = window.into_canvas();
     let creator = canvas.texture_creator();
     let mut texture = creator
-        .create_texture_target(unsafe {PixelFormat::from_ll(SDL_PixelFormat::RGBA8888)}, 400, 300)
+        .create_texture_target(
+            unsafe { PixelFormat::from_ll(SDL_PixelFormat::RGBA8888) },
+            400,
+            300,
+        )
         .map_err(|e| e.to_string())?;
 
     let mut angle = 0.0;
@@ -34,14 +38,13 @@ fn main() -> Result<(), String> {
             }
         }
         angle = (angle + 0.5) % 360.;
-        canvas
-            .with_texture_canvas(&mut texture, |texture_canvas| {
-                texture_canvas.clear();
-                texture_canvas.set_draw_color(Color::RGBA(255, 0, 0, 255));
-                texture_canvas
-                    .fill_rect(FRect::new(0.0, 0.0, 400.0, 300.0))
-                    .expect("could not fill rect");
-            });
+        canvas.with_texture_canvas(&mut texture, |texture_canvas| {
+            texture_canvas.clear();
+            texture_canvas.set_draw_color(Color::RGBA(255, 0, 0, 255));
+            texture_canvas
+                .fill_rect(FRect::new(0.0, 0.0, 400.0, 300.0))
+                .expect("could not fill rect");
+        });
         canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
         let dst = Some(FRect::new(0.0, 0.0, 400.0, 300.0));
         canvas.clear();

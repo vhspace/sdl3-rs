@@ -515,7 +515,9 @@ pub struct GLContext {
 impl Drop for GLContext {
     #[doc(alias = "SDL_GL_DeleteContext")]
     fn drop(&mut self) {
-        unsafe { sys::video::SDL_GL_DestroyContext(self.raw); }
+        unsafe {
+            sys::video::SDL_GL_DestroyContext(self.raw);
+        }
     }
 }
 

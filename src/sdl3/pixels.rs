@@ -1,6 +1,6 @@
 use crate::get_error;
 use crate::sys;
-use std::convert::{TryInto, TryFrom};
+use std::convert::{TryFrom, TryInto};
 use std::ffi::c_int;
 use std::fmt::Debug;
 use std::ptr::null;
@@ -239,7 +239,7 @@ impl Debug for PixelFormat {
 }
 
 impl PixelFormat {
-     pub  unsafe  fn unknown() -> PixelFormat {
+    pub unsafe fn unknown() -> PixelFormat {
         PixelFormat::from_ll(SDL_PixelFormat::UNKNOWN)
     }
 
@@ -386,9 +386,21 @@ impl PixelFormat {
     }
 
     pub fn supports_alpha(self) -> bool {
-        matches!(self.raw,
-            SDL_PixelFormat::ARGB4444 | SDL_PixelFormat::ARGB1555 | SDL_PixelFormat::ARGB8888 | SDL_PixelFormat::ARGB2101010 | SDL_PixelFormat::ABGR4444 | SDL_PixelFormat::ABGR1555 | SDL_PixelFormat::ABGR8888
-            | SDL_PixelFormat::BGRA4444 | SDL_PixelFormat::BGRA5551 | SDL_PixelFormat::BGRA8888 | SDL_PixelFormat::RGBA4444 | SDL_PixelFormat::RGBA5551 | SDL_PixelFormat::RGBA8888
+        matches!(
+            self.raw,
+            SDL_PixelFormat::ARGB4444
+                | SDL_PixelFormat::ARGB1555
+                | SDL_PixelFormat::ARGB8888
+                | SDL_PixelFormat::ARGB2101010
+                | SDL_PixelFormat::ABGR4444
+                | SDL_PixelFormat::ABGR1555
+                | SDL_PixelFormat::ABGR8888
+                | SDL_PixelFormat::BGRA4444
+                | SDL_PixelFormat::BGRA5551
+                | SDL_PixelFormat::BGRA8888
+                | SDL_PixelFormat::RGBA4444
+                | SDL_PixelFormat::RGBA5551
+                | SDL_PixelFormat::RGBA8888
         )
     }
 }
