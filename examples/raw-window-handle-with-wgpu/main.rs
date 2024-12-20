@@ -132,7 +132,7 @@ fn main() -> Result<(), String> {
             match event {
                 Event::Window {
                     window_id,
-                    win_event: WindowEvent::PixelSizeChanged(width, height),
+                    win_event: WindowEvent::PixelSizeChanged(width, height) | WindowEvent::Resized(width, height),
                     ..
                 } if window_id == window.id() => {
                     config.width = width as u32;
