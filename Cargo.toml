@@ -150,6 +150,15 @@ name = "renderer-target"
 name = "events"
 
 [[example]]
+name = "renderer_01_change_the_color"
+path = "examples/renderer/a01_change_the_color.rs"
+
+[[example]]
+# required-dependency = "rand"
+name = "renderer_02_primitives"
+path = "examples/renderer/a02_primitives.rs"
+
+[[example]]
 name = "renderer-texture"
 
 [[example]]
