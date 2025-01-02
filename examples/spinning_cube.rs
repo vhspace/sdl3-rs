@@ -64,7 +64,7 @@ fn draw_line(canvas: &mut Canvas<Window>, p1: (i32, i32), p2: (i32, i32), color:
         .unwrap();
 }
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
 

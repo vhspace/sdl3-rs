@@ -1,6 +1,8 @@
 use libc::c_char;
 use std::cell::Cell;
+use std::error;
 use std::ffi::{CStr, CString, NulError};
+use std::fmt;
 use std::os::raw::c_void;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use sys::init::{
@@ -10,44 +12,26 @@ use sys::init::{
 
 use crate::sys;
 
-// seems like these are gone?
-// #[repr(i32)]
-// #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
-// pub enum Error {
-//     NoMemError = sys::SDL_errorcode::SDL_ENOMEM as i32,
-//     ReadError = SDL_errorcode::SDL_EFREAD as i32,
-//     WriteError = sys::SDL_errorcode::SDL_EFWRITE as i32,
-//     SeekError = sys::SDL_errorcode::SDL_EFSEEK as i32,
-//     UnsupportedError = sys::SDL_errorcode::SDL_UNSUPPORTED as i32,
-// }
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Error(pub(crate) String);
 
-// impl fmt::Display for Error {
-//     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//         use self::Error::*;
-//
-//         match *self {
-//             NoMemError => write!(f, "Out of memory"),
-//             ReadError => write!(f, "Error reading from datastream"),
-//             WriteError => write!(f, "Error writing to datastream"),
-//             SeekError => write!(f, "Error seeking in datastream"),
-//             UnsupportedError => write!(f, "Unknown SDL error"),
-//         }
-//     }
-// }
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
 
-// impl error::Error for Error {
-//     fn description(&self) -> &str {
-//         use self::Error::*;
-//
-//         match *self {
-//             NoMemError => "out of memory",
-//             ReadError => "error reading from datastream",
-//             WriteError => "error writing to datastream",
-//             SeekError => "error seeking in datastream",
-//             UnsupportedError => "unknown SDL error",
-//         }
-//     }
-// }
+impl error::Error for Error {
+    fn description(&self) -> &str {
+        &self.0
+    }
+}
+
+impl Error {
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
 
 /// True if the main thread has been declared. The main thread is declared when
 /// SDL is first initialized.
@@ -81,17 +65,17 @@ pub struct Sdl {
 impl Sdl {
     #[inline]
     #[doc(alias = "SDL_Init")]
-    fn new() -> Result<Sdl, String> {
+    fn new() -> Result<Sdl, Error> {
         // Check if we can safely initialize SDL on this thread.
         let was_main_thread_declared = IS_MAIN_THREAD_DECLARED.swap(true, Ordering::SeqCst);
 
         IS_MAIN_THREAD.with(|is_main_thread| {
             if was_main_thread_declared {
                 if !is_main_thread.get() {
-            // Since 'cargo test' runs its tests in a separate thread, we must disable
-            // this safety check during testing.
-            if !(cfg!(test) || cfg!(feature = "test-mode")) {
-            return Err("Cannot initialize `Sdl` from a thread other than the main thread.  For testing, you can disable this check with the feature 'test-mode'.".to_owned());
+                    // Since 'cargo test' runs its tests in a separate thread, we must disable
+                    // this safety check during testing.
+                    if !(cfg!(test) || cfg!(feature = "test-mode")) {
+                        return Err(Error("Cannot initialize `Sdl` from a thread other than the main thread.  For testing, you can disable this check with the feature 'test-mode'.".to_owned()));
                     }
         }
             } else {
@@ -123,43 +107,43 @@ impl Sdl {
 
     /// Initializes the audio subsystem.
     #[inline]
-    pub fn audio(&self) -> Result<AudioSubsystem, String> {
+    pub fn audio(&self) -> Result<AudioSubsystem, Error> {
         AudioSubsystem::new(self)
     }
 
     /// Initializes the event subsystem.
     #[inline]
-    pub fn event(&self) -> Result<EventSubsystem, String> {
+    pub fn event(&self) -> Result<EventSubsystem, Error> {
         EventSubsystem::new(self)
     }
 
     /// Initializes the joystick subsystem.
     #[inline]
-    pub fn joystick(&self) -> Result<JoystickSubsystem, String> {
+    pub fn joystick(&self) -> Result<JoystickSubsystem, Error> {
         JoystickSubsystem::new(self)
     }
 
     /// Initializes the haptic subsystem.
     #[inline]
-    pub fn haptic(&self) -> Result<HapticSubsystem, String> {
+    pub fn haptic(&self) -> Result<HapticSubsystem, Error> {
         HapticSubsystem::new(self)
     }
 
     /// Initializes the gamepad subsystem.
     #[inline]
-    pub fn gamepad(&self) -> Result<GamepadSubsystem, String> {
+    pub fn gamepad(&self) -> Result<GamepadSubsystem, Error> {
         GamepadSubsystem::new(self)
     }
 
     /// Initializes the game controller subsystem.
     #[inline]
-    pub fn sensor(&self) -> Result<SensorSubsystem, String> {
+    pub fn sensor(&self) -> Result<SensorSubsystem, Error> {
         SensorSubsystem::new(self)
     }
 
     /// Initializes the video subsystem.
     #[inline]
-    pub fn video(&self) -> Result<VideoSubsystem, String> {
+    pub fn video(&self) -> Result<VideoSubsystem, Error> {
         VideoSubsystem::new(self)
     }
 
@@ -169,7 +153,7 @@ impl Sdl {
     /// If this function is called while an `EventPump` instance is alive, the function will return
     /// an error.
     #[inline]
-    pub fn event_pump(&self) -> Result<EventPump, String> {
+    pub fn event_pump(&self) -> Result<EventPump, Error> {
         EventPump::new(self)
     }
 
@@ -232,7 +216,7 @@ macro_rules! subsystem {
         impl $name {
             #[inline]
             #[doc(alias = "SDL_InitSubSystem")]
-            fn new(sdl: &Sdl) -> Result<$name, String> {
+            fn new(sdl: &Sdl) -> Result<$name, Error> {
                 if $counter.fetch_add(1, Ordering::Relaxed) == 0 {
                     let result;
 
@@ -326,10 +310,10 @@ impl EventPump {
     /// Obtains the SDL event pump.
     #[inline]
     #[doc(alias = "SDL_InitSubSystem")]
-    fn new(sdl: &Sdl) -> Result<EventPump, String> {
+    fn new(sdl: &Sdl) -> Result<EventPump, Error> {
         // Called on the main SDL thread.
         if IS_EVENT_PUMP_ALIVE.load(Ordering::Relaxed) {
-            Err("an `EventPump` instance is already alive - there can only be one `EventPump` in use at a time.".to_owned())
+            Err(Error("an `EventPump` instance is already alive - there can only be one `EventPump` in use at a time.".to_owned()))
         } else {
             let _event_subsystem = sdl.event()?;
             IS_EVENT_PUMP_ALIVE.store(true, Ordering::Relaxed);
@@ -375,14 +359,14 @@ pub fn get_platform() -> &'static str {
 /// ```
 #[inline]
 #[doc(alias = "SDL_GetError")]
-pub fn init() -> Result<Sdl, String> {
+pub fn init() -> Result<Sdl, Error> {
     Sdl::new()
 }
 
-pub fn get_error() -> String {
+pub fn get_error() -> Error {
     unsafe {
         let err = sys::error::SDL_GetError();
-        CStr::from_ptr(err as *const _).to_str().unwrap().to_owned()
+        Error(CStr::from_ptr(err as *const _).to_str().unwrap().to_owned())
     }
 }
 

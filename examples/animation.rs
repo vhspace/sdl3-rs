@@ -6,7 +6,7 @@ use sdl3::keyboard::Keycode;
 use sdl3::render::FRect;
 use std::time::Duration;
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
 

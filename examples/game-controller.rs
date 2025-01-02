@@ -1,6 +1,6 @@
 extern crate sdl3;
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     // This is required for certain controllers to work on Windows without the
     // video subsystem enabled:
     sdl3::hint::set("SDL_JOYSTICK_THREAD", "1");

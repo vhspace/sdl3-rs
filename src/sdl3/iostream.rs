@@ -1,3 +1,4 @@
+use crate::Error;
 use crate::get_error;
 use libc::c_char;
 use libc::c_void;
@@ -28,7 +29,7 @@ impl<'a> IOStream<'a> {
 
     /// Creates an SDL file stream.
     #[doc(alias = "SDL_IOFromFile")]
-    pub fn from_file<P: AsRef<Path>>(path: P, mode: &str) -> Result<IOStream<'static>, String> {
+    pub fn from_file<P: AsRef<Path>>(path: P, mode: &str) -> Result<IOStream<'static>, Error> {
         let raw = unsafe {
             let path_c = CString::new(path.as_ref().to_str().unwrap()).unwrap();
             let mode_c = CString::new(mode).unwrap();
@@ -52,7 +53,7 @@ impl<'a> IOStream<'a> {
     ///
     /// This method can only fail if the buffer size is zero.
     #[doc(alias = "SDL_IOFromConstMem")]
-    pub fn from_bytes(buf: &'a [u8]) -> Result<IOStream<'a>, String> {
+    pub fn from_bytes(buf: &'a [u8]) -> Result<IOStream<'a>, Error> {
         let raw =
             unsafe { sys::iostream::SDL_IOFromConstMem(buf.as_ptr() as *const c_void, buf.len()) };
 
@@ -70,7 +71,7 @@ impl<'a> IOStream<'a> {
     ///
     /// The buffer must be provided to this function and must live as long as the
     /// `IOStream`, but the `IOStream` does not take ownership of it.
-    pub fn from_read<T>(r: &mut T, buffer: &'a mut Vec<u8>) -> Result<IOStream<'a>, String>
+    pub fn from_read<T>(r: &mut T, buffer: &'a mut Vec<u8>) -> Result<IOStream<'a>, Error>
     where
         T: io::Read + Sized,
     {
@@ -78,7 +79,7 @@ impl<'a> IOStream<'a> {
             Ok(_size) => IOStream::from_bytes(buffer),
             Err(ioerror) => {
                 let msg = format!("IO error: {}", ioerror);
-                Err(msg)
+                Err(Error(msg))
             }
         }
     }
@@ -87,7 +88,7 @@ impl<'a> IOStream<'a> {
     ///
     /// This method can only fail if the buffer size is zero.
     #[doc(alias = "SDL_IOFromMem")]
-    pub fn from_bytes_mut(buf: &'a mut [u8]) -> Result<IOStream<'a>, String> {
+    pub fn from_bytes_mut(buf: &'a mut [u8]) -> Result<IOStream<'a>, Error> {
         let raw = unsafe { sys::iostream::SDL_IOFromMem(buf.as_ptr() as *mut c_void, buf.len()) };
 
         if raw.is_null() {

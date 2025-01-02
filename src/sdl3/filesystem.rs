@@ -8,6 +8,7 @@ use std::ptr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use sys::filesystem::SDL_PathInfo;
 
+use crate::Error;
 use crate::get_error;
 use crate::sys;
 
@@ -15,7 +16,7 @@ use crate::sys;
 pub enum FileSystemError {
     InvalidPathError(PathBuf),
     NulError(NulError),
-    SdlError(String),
+    SdlError(Error),
 }
 
 /// Turn a AsRef<Path> into a CString so it can be passed to C
@@ -187,7 +188,7 @@ pub fn get_path_info(path: impl AsRef<Path>) -> Result<PathInfo, FileSystemError
 pub enum PrefPathError {
     InvalidOrganizationName(NulError),
     InvalidApplicationName(NulError),
-    SdlError(String),
+    SdlError(Error),
 }
 
 impl fmt::Display for PrefPathError {
@@ -209,7 +210,7 @@ impl error::Error for PrefPathError {
         match *self {
             InvalidOrganizationName(_) => "invalid organization name",
             InvalidApplicationName(_) => "invalid application name",
-            SdlError(ref e) => e,
+            SdlError(ref e) => &e.0,
         }
     }
 }

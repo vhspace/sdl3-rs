@@ -25,7 +25,7 @@ impl AudioCallback<f32> for MyCallback {
     }
 }
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let audio_subsystem = sdl_context.audio()?;
 

@@ -37,7 +37,7 @@ impl AudioCallback<i16> for Recording {
     }
 }
 
-fn record(audio_subsystem: &AudioSubsystem, desired_spec: &AudioSpec) -> Result<Vec<i16>, String> {
+fn record(audio_subsystem: &AudioSubsystem, desired_spec: &AudioSpec) -> Result<Vec<i16>, Box<dyn std::error::Error>> {
     println!(
         "Capturing {:} seconds... Please rock!",
         RECORDING_LENGTH_SECONDS
@@ -109,7 +109,7 @@ fn replay_recorded_vec(
     audio_subsystem: &AudioSubsystem,
     desired_spec: &AudioSpec,
     recorded_vec: Vec<i16>,
-) -> Result<(), String> {
+) -> Result<(), Box<dyn std::error::Error>> {
     println!("Playing...");
 
     let playback_device = audio_subsystem.open_playback_stream(
@@ -129,7 +129,7 @@ fn replay_recorded_vec(
     Ok(())
 }
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let audio_subsystem = sdl_context.audio()?;
 

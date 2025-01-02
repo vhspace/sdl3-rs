@@ -1,3 +1,4 @@
+use crate::Error;
 use crate::get_error;
 use libc::c_char;
 use libc::c_void;
@@ -30,7 +31,7 @@ impl crate::VideoSubsystem {
 
 impl ClipboardUtil {
     #[doc(alias = "SDL_SetClipboardText")]
-    pub fn set_clipboard_text(&self, text: &str) -> Result<(), String> {
+    pub fn set_clipboard_text(&self, text: &str) -> Result<(), Error> {
         unsafe {
             let text = CString::new(text).unwrap();
             let result = sys::clipboard::SDL_SetClipboardText(text.as_ptr() as *const c_char);
@@ -44,7 +45,7 @@ impl ClipboardUtil {
     }
 
     #[doc(alias = "SDL_GetClipboardText")]
-    pub fn clipboard_text(&self) -> Result<String, String> {
+    pub fn clipboard_text(&self) -> Result<String, Error> {
         unsafe {
             let buf = sys::clipboard::SDL_GetClipboardText();
 
