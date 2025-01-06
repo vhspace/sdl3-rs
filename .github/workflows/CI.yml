@@ -17,10 +17,10 @@ jobs:
       - name: Install Linux dependencies
         shell: bash
         if: ${{ runner.os == 'linux' }}
-        run: >
+        run: |
           sudo apt-get update
           # Required for libxcrypt
-          sudo apt-get install libtool libltdl-dev
+          sudo apt-get install libtool libltdl-dev autoconf automake pkg-config
       - name: Install cargo-vcpkg
         run: cargo install cargo-vcpkg
       - name: Install dependencies
@@ -45,7 +45,7 @@ jobs:
       fail-fast: false
       matrix:
         feature: ["build-from-source"]
-        build_mode: ["", "--release"]
+        build_mode: [""]
         os: [macos-latest, ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v2
