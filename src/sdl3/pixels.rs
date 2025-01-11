@@ -1,3 +1,4 @@
+use crate::Error;
 use crate::get_error;
 use crate::sys;
 use std::convert::{TryFrom, TryInto};
@@ -14,7 +15,7 @@ impl Palette {
     #[inline]
     /// Creates a new, uninitialized palette
     #[doc(alias = "SDL_CreatePalette")]
-    pub fn new(mut capacity: usize) -> Result<Self, String> {
+    pub fn new(mut capacity: usize) -> Result<Self, Error> {
         use crate::common::*;
 
         let ncolors = {
@@ -28,7 +29,10 @@ impl Palette {
 
             match validate_int(capacity as u32, "capacity") {
                 Ok(len) => len,
-                Err(e) => return Err(format!("{}", e)),
+                Err(e) => return Err(match e {
+                    IntegerOrSdlError::SdlError(e) => e,
+                    o => Error(o.to_string()),
+                })
             }
         };
 
@@ -43,7 +47,7 @@ impl Palette {
 
     /// Creates a palette from the provided colors
     #[doc(alias = "SDL_SetPaletteColors")]
-    pub fn with_colors(colors: &[Color]) -> Result<Self, String> {
+    pub fn with_colors(colors: &[Color]) -> Result<Self, Error> {
         let pal = Self::new(colors.len())?;
 
         // Already validated, so don't check again
@@ -261,7 +265,7 @@ impl PixelFormat {
     }
 
     #[doc(alias = "SDL_GetMasksForPixelFormat")]
-    pub fn into_masks(self) -> Result<PixelMasks, String> {
+    pub fn into_masks(self) -> Result<PixelMasks, Error> {
         let mut bpp = 0;
         let mut rmask = 0;
         let mut gmask = 0;
@@ -422,7 +426,7 @@ impl From<i64> for PixelFormat {
 }
 
 impl TryFrom<SDL_PixelFormat> for PixelFormat {
-    type Error = String;
+    type Error = Error;
 
     #[doc(alias = "SDL_GetPixelFormatDetails")]
     fn try_from(format: SDL_PixelFormat) -> Result<Self, Self::Error> {

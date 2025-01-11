@@ -4,6 +4,7 @@ use std::fmt;
 use std::os::raw::{c_char, c_int};
 use std::ptr;
 
+use crate::Error;
 use crate::get_error;
 use crate::video::Window;
 
@@ -112,7 +113,7 @@ pub enum ShowMessageError {
     /// Second argument of the tuple (i32) corresponds to the
     /// first button_id having an error
     InvalidButton(NulError, i32),
-    SdlError(String),
+    SdlError(Error),
 }
 
 impl fmt::Display for ShowMessageError {
@@ -136,7 +137,7 @@ impl error::Error for ShowMessageError {
             InvalidTitle(_) => "invalid title",
             InvalidMessage(_) => "invalid message",
             InvalidButton(..) => "invalid button",
-            SdlError(ref e) => e,
+            SdlError(ref e) => &e.0,
         }
     }
 }

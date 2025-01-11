@@ -9,7 +9,7 @@ use sdl3::gfx::primitives::DrawRenderer;
 const SCREEN_WIDTH: u32 = 800;
 const SCREEN_HEIGHT: u32 = 600;
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsys = sdl_context.video()?;
     let window = video_subsys

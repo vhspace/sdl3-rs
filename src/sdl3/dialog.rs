@@ -1,3 +1,5 @@
+
+use crate::Error;
 use crate::get_error;
 use crate::sys;
 use core::fmt;
@@ -22,7 +24,7 @@ pub enum DialogError {
     FilterError(NulError),
     InvalidFilename(Utf8Error),
     Canceled,
-    SdlError(String),
+    SdlError(Error),
 }
 
 impl fmt::Display for DialogError {

@@ -2,7 +2,7 @@ extern crate sdl3;
 
 use sdl3::filesystem::*;
 
-pub fn main() -> Result<(), String> {
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     sdl3::init().ok();
     let base_path = get_base_path().unwrap();
     println!("Base path: {base_path:?}");

@@ -6,7 +6,7 @@ use sdl3::pixels::{Color, PixelFormat};
 use sdl3::render::{FPoint, FRect};
 use sdl3_sys::pixels::SDL_PixelFormat;
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
     let window = video_subsystem

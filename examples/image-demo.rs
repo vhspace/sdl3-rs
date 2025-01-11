@@ -6,7 +6,7 @@ use sdl3::keyboard::Keycode;
 use std::env;
 use std::path::Path;
 
-pub fn run(png: &Path) -> Result<(), String> {
+pub fn run(png: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
     let _image_context = sdl3::image::init(InitFlag::PNG | InitFlag::JPG)?;
@@ -43,7 +43,7 @@ pub fn run(png: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = env::args().collect();
 
     if args.len() < 2 {

@@ -4,6 +4,7 @@ use std::ops::{Deref, DerefMut};
 use std::path::Path;
 use std::sync::Arc;
 
+use crate::Error;
 use crate::get_error;
 use crate::iostream::IOStream;
 use crate::pixels;
@@ -124,7 +125,7 @@ impl<'a> Surface<'a> {
         width: u32,
         height: u32,
         format: pixels::PixelFormat,
-    ) -> Result<Surface<'static>, String> {
+    ) -> Result<Surface<'static>, Error> {
         let masks = format.into_masks()?;
         Surface::from_pixelmasks(width, height, &masks)
     }
@@ -144,10 +145,10 @@ impl<'a> Surface<'a> {
         width: u32,
         height: u32,
         masks: &pixels::PixelMasks,
-    ) -> Result<Surface<'static>, String> {
+    ) -> Result<Surface<'static>, Error> {
         unsafe {
             if width >= (1 << 31) || height >= (1 << 31) {
-                Err("Image is too large.".to_owned())
+                Err(Error("Image is too large.".to_owned()))
             } else {
                 let raw = sys::surface::SDL_CreateSurface(
                     width as c_int,
@@ -177,7 +178,7 @@ impl<'a> Surface<'a> {
         height: u32,
         pitch: u32,
         format: pixels::PixelFormat,
-    ) -> Result<Surface<'a>, String> {
+    ) -> Result<Surface<'a>, Error> {
         let masks = format.into_masks()?;
         Surface::from_data_pixelmasks(data, width, height, pitch, &masks)
     }
@@ -190,12 +191,12 @@ impl<'a> Surface<'a> {
         height: u32,
         pitch: u32,
         masks: &pixels::PixelMasks,
-    ) -> Result<Surface<'a>, String> {
+    ) -> Result<Surface<'a>, Error> {
         unsafe {
             if width >= (1 << 31) || height >= (1 << 31) {
-                Err("Image is too large.".to_owned())
+                Err(Error("Image is too large.".to_owned()))
             } else if pitch >= (1 << 31) {
-                Err("Pitch is too large.".to_owned())
+                Err(Error("Pitch is too large.".to_owned()))
             } else {
                 let raw = sys::surface::SDL_CreateSurfaceFrom(
                     width as c_int,
@@ -285,7 +286,7 @@ impl<'a> Surface<'a> {
     }
 
     #[doc(alias = "SDL_LoadBMP_RW")]
-    pub fn load_bmp_rw(iostream: &mut IOStream) -> Result<Surface<'static>, String> {
+    pub fn load_bmp_rw(iostream: &mut IOStream) -> Result<Surface<'static>, Error> {
         let raw = unsafe { sys::surface::SDL_LoadBMP_IO(iostream.raw(), false) };
 
         if raw.is_null() {
@@ -295,7 +296,7 @@ impl<'a> Surface<'a> {
         }
     }
 
-    pub fn load_bmp<P: AsRef<Path>>(path: P) -> Result<Surface<'static>, String> {
+    pub fn load_bmp<P: AsRef<Path>>(path: P) -> Result<Surface<'static>, Error> {
         let mut file = IOStream::from_file(path, "rb")?;
         Surface::load_bmp_rw(&mut file)
     }
@@ -307,7 +308,7 @@ impl<'a> Surface<'a> {
     /// The only change is this case is that `Canvas` has a
     /// better API to draw stuff in the `Surface` in that case, but don't expect any performance
     /// changes, there will be none.
-    pub fn into_canvas(self) -> Result<Canvas<Surface<'a>>, String> {
+    pub fn into_canvas(self) -> Result<Canvas<Surface<'a>>, Error> {
         Canvas::from_surface(self)
     }
 
@@ -436,7 +437,7 @@ impl SurfaceRef {
     }
 
     #[doc(alias = "SDL_SaveBMP_RW")]
-    pub fn save_bmp_rw(&self, iostream: &mut IOStream) -> Result<(), String> {
+    pub fn save_bmp_rw(&self, iostream: &mut IOStream) -> Result<(), Error> {
         let ret = unsafe { sys::surface::SDL_SaveBMP_IO(self.raw(), iostream.raw(), false) };
         if !ret {
             Ok(())
@@ -445,13 +446,13 @@ impl SurfaceRef {
         }
     }
 
-    pub fn save_bmp<P: AsRef<Path>>(&self, path: P) -> Result<(), String> {
+    pub fn save_bmp<P: AsRef<Path>>(&self, path: P) -> Result<(), Error> {
         let mut file = IOStream::from_file(path, "wb")?;
         self.save_bmp_rw(&mut file)
     }
 
     #[doc(alias = "SDL_SetSurfacePalette")]
-    pub fn set_palette(&mut self, palette: &pixels::Palette) -> Result<(), String> {
+    pub fn set_palette(&mut self, palette: &pixels::Palette) -> Result<(), Error> {
         let result = unsafe { sys::surface::SDL_SetSurfacePalette(self.raw(), palette.raw()) };
 
         match result {
@@ -483,7 +484,7 @@ impl SurfaceRef {
     }
 
     #[doc(alias = "SDL_SetSurfaceColorKey")]
-    pub fn set_color_key(&mut self, enable: bool, color: pixels::Color) -> Result<(), String> {
+    pub fn set_color_key(&mut self, enable: bool, color: pixels::Color) -> Result<(), Error> {
         let key = color.to_u32(&self.pixel_format());
         let result = unsafe { sys::surface::SDL_SetSurfaceColorKey(self.raw(), enable, key) };
         if result {
@@ -495,7 +496,7 @@ impl SurfaceRef {
 
     /// The function will fail if the surface doesn't have color key enabled.
     #[doc(alias = "SDL_GetSurfaceColorKey")]
-    pub fn color_key(&self) -> Result<pixels::Color, String> {
+    pub fn color_key(&self) -> Result<pixels::Color, Error> {
         let mut key = 0;
 
         // SDL_GetSurfaceColorKey does not mutate, but requires a non-const pointer anyway.
@@ -540,7 +541,7 @@ impl SurfaceRef {
     }
 
     #[doc(alias = "SDL_FillSurfaceRect")]
-    pub fn fill_rect<R>(&mut self, rect: R, color: pixels::Color) -> Result<(), String>
+    pub fn fill_rect<R>(&mut self, rect: R, color: pixels::Color) -> Result<(), Error>
     where
         R: Into<Option<Rect>>,
     {
@@ -559,7 +560,7 @@ impl SurfaceRef {
     }
 
     #[allow(clippy::clone_on_copy)]
-    pub fn fill_rects(&mut self, rects: &[Rect], color: pixels::Color) -> Result<(), String> {
+    pub fn fill_rects(&mut self, rects: &[Rect], color: pixels::Color) -> Result<(), Error> {
         for rect in rects.iter() {
             self.fill_rect(rect.clone(), color)?;
         }
@@ -591,7 +592,7 @@ impl SurfaceRef {
 
     /// The function will fail if the blend mode is not supported by SDL.
     #[doc(alias = "SDL_SetSurfaceBlendMode")]
-    pub fn set_blend_mode(&mut self, mode: BlendMode) -> Result<(), String> {
+    pub fn set_blend_mode(&mut self, mode: BlendMode) -> Result<(), Error> {
         let result = unsafe { sys::surface::SDL_SetSurfaceBlendMode(self.raw(), transmute(mode)) };
 
         match result {
@@ -650,7 +651,7 @@ impl SurfaceRef {
 
     /// Copies the surface into a new one that is optimized for blitting to a surface of a specified pixel format.
     #[doc(alias = "SDL_ConvertSurface")]
-    pub fn convert(&self, format: &pixels::PixelFormat) -> Result<Surface<'static>, String> {
+    pub fn convert(&self, format: &pixels::PixelFormat) -> Result<Surface<'static>, Error> {
         // SDL_ConvertSurface takes a flag as the last parameter, which should be 0 by the docs.
         let surface_ptr = unsafe { sys::surface::SDL_ConvertSurface(self.raw(), format.raw()) };
 
@@ -663,7 +664,7 @@ impl SurfaceRef {
 
     /// Copies the surface into a new one of a specified pixel format.
     #[doc(alias = "SDL_ConvertSurfaceFormat")]
-    pub fn convert_format(&self, format: pixels::PixelFormat) -> Result<Surface<'static>, String> {
+    pub fn convert_format(&self, format: pixels::PixelFormat) -> Result<Surface<'static>, Error> {
         // SDL_ConvertSurfaceFormat takes a flag as the last parameter, which should be 0 by the docs.
         let surface_ptr = unsafe { sys::surface::SDL_ConvertSurface(self.raw(), format.raw()) };
 
@@ -683,7 +684,7 @@ impl SurfaceRef {
         src_rect: R1,
         dst: &mut SurfaceRef,
         dst_rect: R2,
-    ) -> Result<Option<Rect>, String>
+    ) -> Result<Option<Rect>, Error>
     where
         R1: Into<Option<Rect>>,
         R2: Into<Option<Rect>>,
@@ -722,7 +723,7 @@ impl SurfaceRef {
         src_rect: R1,
         dst: &mut SurfaceRef,
         dst_rect: R2,
-    ) -> Result<(), String>
+    ) -> Result<(), Error>
     where
         R1: Into<Option<Rect>>,
         R2: Into<Option<Rect>>,
@@ -750,7 +751,7 @@ impl SurfaceRef {
         src_rect: R1,
         dst: &mut SurfaceRef,
         dst_rect: R2,
-    ) -> Result<Option<Rect>, String>
+    ) -> Result<Option<Rect>, Error>
     where
         R1: Into<Option<Rect>>,
         R2: Into<Option<Rect>>,
@@ -794,7 +795,7 @@ impl SurfaceRef {
         dst: &mut SurfaceRef,
         dst_rect: R2,
         scale_mode: SDL_ScaleMode,
-    ) -> Result<Option<Rect>, String>
+    ) -> Result<Option<Rect>, Error>
     where
         R1: Into<Option<Rect>>,
         R2: Into<Option<Rect>>,
@@ -838,7 +839,7 @@ impl SurfaceRef {
         dst: &mut SurfaceRef,
         dst_rect: R2,
         scale_mode: SDL_ScaleMode,
-    ) -> Result<(), String>
+    ) -> Result<(), Error>
     where
         R1: Into<Option<Rect>>,
         R2: Into<Option<Rect>>,

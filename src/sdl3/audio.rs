@@ -52,6 +52,7 @@
 //! std::thread::sleep(Duration::from_millis(2000));
 //! ```
 
+use crate::Error;
 use crate::get_error;
 use crate::iostream::IOStream;
 use crate::sys;
@@ -70,7 +71,7 @@ use sys::stdinc::SDL_free;
 impl AudioSubsystem {
     /// Enumerate audio playback devices.
     #[doc(alias = "SDL_GetAudioPlaybackDevices")]
-    pub fn audio_playback_device_ids(&self) -> Result<Vec<AudioDeviceID>, String> {
+    pub fn audio_playback_device_ids(&self) -> Result<Vec<AudioDeviceID>, Error> {
         unsafe {
             self.audio_device_ids(|num_devices| {
                 sys::audio::SDL_GetAudioPlaybackDevices(num_devices)
@@ -80,13 +81,13 @@ impl AudioSubsystem {
 
     /// Enumerate audio recording devices.
     #[doc(alias = "SDL_GetAudioRecordingDevices")]
-    pub fn audio_recording_device_ids(&self) -> Result<Vec<AudioDeviceID>, String> {
+    pub fn audio_recording_device_ids(&self) -> Result<Vec<AudioDeviceID>, Error> {
         self.audio_device_ids(|num_devices| unsafe {
             sys::audio::SDL_GetAudioRecordingDevices(num_devices)
         })
     }
 
-    fn audio_device_ids<F>(&self, get_devices: F) -> Result<Vec<AudioDeviceID>, String>
+    fn audio_device_ids<F>(&self, get_devices: F) -> Result<Vec<AudioDeviceID>, Error>
     where
         F: FnOnce(&mut i32) -> *mut sys::audio::SDL_AudioDeviceID,
     {
@@ -106,12 +107,12 @@ impl AudioSubsystem {
         Ok(ret)
     }
     /// Open a default playback device with the specified audio spec.
-    pub fn open_playback_device(&self, spec: &AudioSpec) -> Result<AudioDevice, String> {
+    pub fn open_playback_device(&self, spec: &AudioSpec) -> Result<AudioDevice, Error> {
         self.open_device(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, spec)
     }
 
     /// Open a default recording device with the specified audio spec.
-    pub fn open_recording_device(&self, spec: &AudioSpec) -> Result<AudioDevice, String> {
+    pub fn open_recording_device(&self, spec: &AudioSpec) -> Result<AudioDevice, Error> {
         self.open_device(SDL_AUDIO_DEVICE_DEFAULT_RECORDING, spec)
     }
 
@@ -128,7 +129,7 @@ impl AudioSubsystem {
         &self,
         device_id: sys::audio::SDL_AudioDeviceID,
         spec: &AudioSpec,
-    ) -> Result<AudioDevice, String> {
+    ) -> Result<AudioDevice, Error> {
         let sdl_spec: sys::audio::SDL_AudioSpec = spec.clone().into();
         let device = unsafe { sys::audio::SDL_OpenAudioDevice(device_id, &sdl_spec) };
         if device == 0 {
@@ -143,7 +144,7 @@ impl AudioSubsystem {
         device: &AudioDevice,
         spec: &AudioSpec,
         callback: CB,
-    ) -> Result<AudioStreamWithCallback<CB>, String>
+    ) -> Result<AudioStreamWithCallback<CB>, Error>
     where
         CB: AudioCallback<Channel>,
         Channel: AudioFormatNum + 'static,
@@ -155,7 +156,7 @@ impl AudioSubsystem {
         &self,
         spec: &AudioSpec,
         callback: CB,
-    ) -> Result<AudioStreamWithCallback<CB>, String>
+    ) -> Result<AudioStreamWithCallback<CB>, Error>
     where
         CB: AudioCallback<Channel>,
         Channel: AudioFormatNum + 'static,
@@ -168,7 +169,7 @@ impl AudioSubsystem {
         &self,
         spec: &AudioSpec,
         callback: CB,
-    ) -> Result<AudioStreamWithCallback<CB>, String>
+    ) -> Result<AudioStreamWithCallback<CB>, Error>
     where
         CB: AudioCallback<Channel>,
         Channel: AudioFormatNum + 'static,
@@ -188,7 +189,7 @@ impl AudioSubsystem {
     }
 
     #[doc(alias = "SDL_GetAudioDeviceName")]
-    pub fn audio_playback_device_name(&self, index: u32) -> Result<String, String> {
+    pub fn audio_playback_device_name(&self, index: u32) -> Result<String, Error> {
         unsafe {
             let dev_name = sys::audio::SDL_GetAudioDeviceName(index);
             if dev_name.is_null() {
@@ -201,7 +202,7 @@ impl AudioSubsystem {
     }
 
     #[doc(alias = "SDL_GetAudioDeviceName")]
-    pub fn audio_recording_device_name(&self, index: u32) -> Result<String, String> {
+    pub fn audio_recording_device_name(&self, index: u32) -> Result<String, Error> {
         unsafe {
             let dev_name = sys::audio::SDL_GetAudioDeviceName(index);
             if dev_name.is_null() {
@@ -371,14 +372,14 @@ pub struct AudioSpecWAV {
 
 impl AudioSpecWAV {
     /// Loads a WAVE from the file path.
-    pub fn load_wav<P: AsRef<Path>>(path: P) -> Result<AudioSpecWAV, String> {
+    pub fn load_wav<P: AsRef<Path>>(path: P) -> Result<AudioSpecWAV, Error> {
         let mut file = IOStream::from_file(path, "rb")?;
         AudioSpecWAV::load_wav_rw(&mut file)
     }
 
     /// Loads a WAVE from the data source.
     #[doc(alias = "SDL_LoadWAV_RW")]
-    pub fn load_wav_rw(src: &mut IOStream) -> Result<AudioSpecWAV, String> {
+    pub fn load_wav_rw(src: &mut IOStream) -> Result<AudioSpecWAV, Error> {
         use std::mem::MaybeUninit;
         use std::ptr::null_mut;
 
@@ -610,13 +611,13 @@ impl AudioDeviceID {
         }
     }
 
-    pub fn name(&self) -> String {
+    pub fn name(&self) -> Result<String, Error> {
         unsafe {
             let name_ptr = sys::audio::SDL_GetAudioDeviceName(self.id());
             if name_ptr.is_null() {
-                return get_error();
+                return Err(get_error());
             }
-            CStr::from_ptr(name_ptr).to_str().unwrap().to_owned()
+            Ok(CStr::from_ptr(name_ptr).to_str().unwrap().to_owned())
         }
     }
 }
@@ -661,19 +662,19 @@ impl AudioDevice {
 
     /// Get the name of the audio device.
     #[doc(alias = "SDL_GetAudioDeviceName")]
-    pub fn name(&self) -> String {
+    pub fn name(&self) -> Result<String, Error> {
         unsafe {
             let name_ptr = sys::audio::SDL_GetAudioDeviceName(self.device_id.id());
             if name_ptr.is_null() {
-                return get_error();
+                return Err(get_error());
             }
-            CStr::from_ptr(name_ptr).to_str().unwrap().to_owned()
+            Ok(CStr::from_ptr(name_ptr).to_str().unwrap().to_owned())
         }
     }
 
     /// Binds an audio stream to this device.
     #[doc(alias = "SDL_BindAudioStream")]
-    pub fn bind_stream(&self, stream: &AudioStream) -> Result<(), String> {
+    pub fn bind_stream(&self, stream: &AudioStream) -> Result<(), Error> {
         let result = unsafe { sys::audio::SDL_BindAudioStream(self.device_id.id(), stream.stream) };
         if result {
             Ok(())
@@ -684,7 +685,7 @@ impl AudioDevice {
 
     /// Binds multiple audio streams to this device.
     #[doc(alias = "SDL_BindAudioStreams")]
-    pub fn bind_streams(&self, streams: &[&AudioStream]) -> Result<(), String> {
+    pub fn bind_streams(&self, streams: &[&AudioStream]) -> Result<(), Error> {
         let streams_ptrs: Vec<*mut sys::audio::SDL_AudioStream> =
             streams.iter().map(|s| s.stream).collect();
         let result = unsafe {
@@ -703,7 +704,7 @@ impl AudioDevice {
 
     /// Opens a new audio device for playback or recording (given the desired parameters).
     #[doc(alias = "SDL_OpenAudioDevice")]
-    fn open<'a, D>(device: D, spec: &AudioSpec, recording: bool) -> Result<AudioDevice, String>
+    fn open<'a, D>(device: D, spec: &AudioSpec, recording: bool) -> Result<AudioDevice, Error>
     where
         D: Into<Option<&'a AudioDeviceID>>,
     {
@@ -738,7 +739,7 @@ impl AudioDevice {
         _a: &AudioSubsystem,
         device: D,
         spec: &AudioSpec,
-    ) -> Result<AudioDevice, String>
+    ) -> Result<AudioDevice, Error>
     where
         D: Into<Option<&'a AudioDeviceID>>,
     {
@@ -750,7 +751,7 @@ impl AudioDevice {
         _a: &AudioSubsystem,
         device: D,
         spec: &AudioSpec,
-    ) -> Result<AudioDevice, String>
+    ) -> Result<AudioDevice, Error>
     where
         D: Into<Option<&'a AudioDeviceID>>,
     {
@@ -776,7 +777,7 @@ impl AudioDevice {
         &self,
         spec: &AudioSpec,
         callback: CB,
-    ) -> Result<AudioStreamWithCallback<CB>, String>
+    ) -> Result<AudioStreamWithCallback<CB>, Error>
     where
         CB: AudioCallback<Channel>,
         Channel: AudioFormatNum + 'static,
@@ -784,7 +785,7 @@ impl AudioDevice {
         let sdl_audiospec: sys::audio::SDL_AudioSpec = spec.clone().into();
 
         if sdl_audiospec.format != Channel::audio_format().to_ll() {
-            return Err("AudioSpec format does not match AudioCallback Channel type".to_string());
+            return Err(Error("AudioSpec format does not match AudioCallback Channel type".to_string()));
         }
 
         let callback_box = Box::new(callback);
@@ -839,7 +840,7 @@ impl AudioDevice {
         &self,
         spec: &AudioSpec,
         callback: CB,
-    ) -> Result<AudioStreamWithCallback<CB>, String>
+    ) -> Result<AudioStreamWithCallback<CB>, Error>
     where
         CB: AudioRecordingCallback<Channel>,
         Channel: AudioFormatNum + 'static,
@@ -848,7 +849,7 @@ impl AudioDevice {
         let sdl_audiospec: sys::audio::SDL_AudioSpec = spec.clone().into();
 
         if sdl_audiospec.format != Channel::audio_format().to_ll() {
-            return Err("AudioSpec format does not match AudioCallback Channel type".to_string());
+            return Err(Error("AudioSpec format does not match AudioCallback Channel type".to_string()));
         }
 
         let callback_box = Box::new(callback);
@@ -899,7 +900,7 @@ impl Debug for AudioStream {
         // Get the device "name [ID]"
         let device_name = self
             .device_id()
-            .map(|id| id.name())
+            .and_then(|id| id.name().ok())
             .unwrap_or("Unknown".to_string());
         let device_name = format!(
             "{} [{}]",
@@ -944,8 +945,8 @@ impl Debug for AudioStream {
 }
 impl Display for AudioStream {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if let Some(id) = self.device_id() {
-            write!(f, "AudioStream({})", id.name())
+        if let Some(name) = self.device_id().and_then(|id| id.name().ok()) {
+            write!(f, "AudioStream({})", name)
         } else {
             write!(f, "AudioStream")
         }
@@ -973,7 +974,7 @@ impl AudioStream {
     }
 
     pub fn device_name(&self) -> Option<String> {
-        self.device_id().map(|id| id.name())
+        self.device_id().and_then(|id| id.name().ok())
     }
 
     /// Creates a new audio stream that converts audio data from the source format (`src_spec`)
@@ -991,7 +992,7 @@ impl AudioStream {
     /// # Safety
     ///
     /// This function is safe to call from any thread.
-    pub fn new(src_spec: Option<&AudioSpec>, dst_spec: Option<&AudioSpec>) -> Result<Self, String> {
+    pub fn new(src_spec: Option<&AudioSpec>, dst_spec: Option<&AudioSpec>) -> Result<Self, Error> {
         let sdl_src_spec = src_spec.map(sys::audio::SDL_AudioSpec::from);
         let sdl_dst_spec = dst_spec.map(sys::audio::SDL_AudioSpec::from);
 
@@ -1021,7 +1022,7 @@ impl AudioStream {
     pub fn new_playback_stream(
         app_spec: &AudioSpec,
         device_spec: Option<&AudioSpec>,
-    ) -> Result<Self, String> {
+    ) -> Result<Self, Error> {
         Self::new(Some(app_spec), device_spec)
     }
 
@@ -1035,7 +1036,7 @@ impl AudioStream {
     pub fn new_recording_stream(
         device_spec: Option<&AudioSpec>,
         app_spec: &AudioSpec,
-    ) -> Result<Self, String> {
+    ) -> Result<Self, Error> {
         Self::new(device_spec, Some(app_spec))
     }
 
@@ -1046,7 +1047,7 @@ impl AudioStream {
     pub fn open_device_stream(
         device_id: AudioDeviceID,
         spec: Option<&AudioSpec>,
-    ) -> Result<AudioStream, String> {
+    ) -> Result<AudioStream, Error> {
         let sdl_spec = spec.map(|spec| spec.into());
         let sdl_spec_ptr = crate::util::option_to_ptr(sdl_spec.as_ref());
 
@@ -1070,7 +1071,7 @@ impl AudioStream {
     ///
     /// Returns a tuple `(src_spec, dst_spec)` where each is an `Option<AudioSpec>`.
     #[doc(alias = "SDL_GetAudioStreamFormat")]
-    pub fn get_format(&self) -> Result<(Option<AudioSpec>, Option<AudioSpec>), String> {
+    pub fn get_format(&self) -> Result<(Option<AudioSpec>, Option<AudioSpec>), Error> {
         let mut sdl_src_spec = AudioSpec::default().into();
         let mut sdl_dst_spec = AudioSpec::default().into();
         let result = unsafe {
@@ -1097,7 +1098,7 @@ impl AudioStream {
     ///
     /// Returns the gain as a `f32` on success, or an error message on failure.
     #[doc(alias = "SDL_GetAudioStreamGain")]
-    pub fn get_gain(&self) -> Result<f32, String> {
+    pub fn get_gain(&self) -> Result<f32, Error> {
         let gain = unsafe { sys::audio::SDL_GetAudioStreamGain(self.stream) };
         if gain >= 0.0 {
             Ok(gain)
@@ -1108,7 +1109,7 @@ impl AudioStream {
 
     /// Pauses playback of the audio stream.
     #[doc(alias = "SDL_PauseAudioStream")]
-    pub fn pause(&self) -> Result<(), String> {
+    pub fn pause(&self) -> Result<(), Error> {
         let result = unsafe { sys::audio::SDL_PauseAudioStreamDevice(self.stream) };
         if result {
             Ok(())
@@ -1119,7 +1120,7 @@ impl AudioStream {
 
     /// Resumes playback of the audio stream.
     #[doc(alias = "SDL_ResumeAudioStream")]
-    pub fn resume(&self) -> Result<(), String> {
+    pub fn resume(&self) -> Result<(), Error> {
         let result = unsafe { sys::audio::SDL_ResumeAudioStreamDevice(self.stream) };
         if result {
             Ok(())
@@ -1130,7 +1131,7 @@ impl AudioStream {
 
     /// Gets the number of converted/resampled bytes available.
     #[doc(alias = "SDL_GetAudioStreamAvailable")]
-    pub fn available_bytes(&self) -> Result<i32, String> {
+    pub fn available_bytes(&self) -> Result<i32, Error> {
         let available = unsafe { sys::audio::SDL_GetAudioStreamAvailable(self.stream) };
         if available == -1 {
             Err(get_error())
@@ -1141,41 +1142,41 @@ impl AudioStream {
 
     /// Converts a slice of bytes to a f32 sample based on AudioFormat.
     /// Returns a Result containing the converted f32 or an error message.
-    fn read_bytes_to_f32(&self, chunk: &[u8]) -> Result<f32, String> {
+    fn read_bytes_to_f32(&self, chunk: &[u8]) -> Result<f32, Error> {
         // TODO: store specs so we don't have to call get_format every time
         let (_, output_spec) = self.get_format()?;
         match output_spec.unwrap().format {
             Some(AudioFormat::F32LE) => Ok(f32::from_le_bytes(
                 chunk
                     .try_into()
-                    .map_err(|_| "Invalid byte slice length for f32 LE")?,
+                    .map_err(|_| Error("Invalid byte slice length for f32 LE".to_owned()))?,
             )),
             Some(AudioFormat::F32BE) => Ok(f32::from_be_bytes(
                 chunk
                     .try_into()
-                    .map_err(|_| "Invalid byte slice length for f32 BE")?,
+                    .map_err(|_| Error("Invalid byte slice length for f32 BE".to_owned()))?,
             )),
-            _ => Err("Unsupported AudioFormat for f32 conversion".to_string()),
+            _ => Err(Error("Unsupported AudioFormat for f32 conversion".to_string())),
         }
     }
 
     /// Converts a slice of bytes to an i16 sample based on AudioFormat.
     /// Returns a Result containing the converted i16 or an error message.
-    fn read_bytes_to_i16(&self, chunk: &[u8]) -> Result<i16, String> {
+    fn read_bytes_to_i16(&self, chunk: &[u8]) -> Result<i16, Error> {
         // TODO: store specs so we don't have to call get_format every time
         let (_, output_spec) = self.get_format()?;
         match output_spec.unwrap().format {
             Some(AudioFormat::S16LE) => Ok(i16::from_le_bytes(
                 chunk
                     .try_into()
-                    .map_err(|_| "Invalid byte slice length for i16 LE")?,
+                    .map_err(|_| Error("Invalid byte slice length for i16 LE".to_owned()))?,
             )),
             Some(AudioFormat::S16BE) => Ok(i16::from_be_bytes(
                 chunk
                     .try_into()
-                    .map_err(|_| "Invalid byte slice length for i16 BE")?,
+                    .map_err(|_| Error("Invalid byte slice length for i16 BE".to_owned()))?,
             )),
-            _ => Err("Unsupported AudioFormat for i16 conversion".to_string()),
+            _ => Err(Error("Unsupported AudioFormat for i16 conversion".to_string())),
         }
     }
 
@@ -1234,7 +1235,7 @@ impl AudioStream {
     }
 
     /// Adds data to the stream.
-    pub fn put_data(&self, buf: &[u8]) -> Result<(), String> {
+    pub fn put_data(&self, buf: &[u8]) -> Result<(), Error> {
         let result = unsafe {
             sys::audio::SDL_PutAudioStreamData(self.stream, buf.as_ptr().cast(), buf.len() as i32)
         };
@@ -1289,12 +1290,12 @@ impl<CB> Drop for AudioStreamWithCallback<CB> {
 
 impl<CB> AudioStreamWithCallback<CB> {
     /// Pauses the audio stream.
-    pub fn pause(&self) -> Result<(), String> {
+    pub fn pause(&self) -> Result<(), Error> {
         self.base_stream.pause()
     }
 
     /// Resumes the audio stream.
-    pub fn resume(&self) -> Result<(), String> {
+    pub fn resume(&self) -> Result<(), Error> {
         self.base_stream.resume()
     }
 }

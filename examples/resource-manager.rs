@@ -13,7 +13,7 @@ use std::env;
 use std::hash::Hash;
 use std::rc::Rc;
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = env::args().collect();
 
     if args.len() < 3 {
@@ -80,7 +80,7 @@ fn main() -> Result<(), String> {
     Ok(())
 }
 
-type TextureManager<'l, T> = ResourceManager<'l, String, Texture<'l>, TextureCreator<T>>;
+type TextureManager<'l, T> = ResourceManager<'l, Box<dyn std::error::Error>, Texture<'l>, TextureCreator<T>>;
 type FontManager<'l> = ResourceManager<'l, FontDetails, Font<'l, 'static>, Sdl3TtfContext>;
 
 // Generic struct to cache any resource loaded by a ResourceLoader
@@ -107,7 +107,7 @@ where
 
     // Generics magic to allow a HashMap to use String as a key
     // while allowing it to use &str for gets
-    pub fn load<D>(&mut self, details: &D) -> Result<Rc<R>, String>
+    pub fn load<D>(&mut self, details: &D) -> Result<Rc<R>, Box<dyn std::error::Error>>
     where
         L: ResourceLoader<'l, R, Args = D>,
         D: Eq + Hash + ?Sized,
@@ -127,7 +127,7 @@ where
 // TextureCreator knows how to load Textures
 impl<'l, T> ResourceLoader<'l, Texture<'l>> for TextureCreator<T> {
     type Args = str;
-    fn load(&'l self, path: &str) -> Result<Texture, String> {
+    fn load(&'l self, path: &str) -> Result<Texture, Box<dyn std::error::Error>> {
         println!("LOADED A TEXTURE");
         self.load_texture(path)
     }
@@ -136,7 +136,7 @@ impl<'l, T> ResourceLoader<'l, Texture<'l>> for TextureCreator<T> {
 // Font Context knows how to load Fonts
 impl<'l> ResourceLoader<'l, Font<'l, 'static>> for Sdl3TtfContext {
     type Args = FontDetails;
-    fn load(&'l self, details: &FontDetails) -> Result<Font<'l, 'static>, String> {
+    fn load(&'l self, details: &FontDetails) -> Result<Font<'l, 'static>, Box<dyn std::error::Error>> {
         println!("LOADED A FONT");
         self.load_font(&details.path, details.size)
     }
@@ -145,7 +145,7 @@ impl<'l> ResourceLoader<'l, Font<'l, 'static>> for Sdl3TtfContext {
 // Generic trait to Load any Resource Kind
 pub trait ResourceLoader<'l, R> {
     type Args: ?Sized;
-    fn load(&'l self, data: &Self::Args) -> Result<R, String>;
+    fn load(&'l self, data: &Self::Args) -> Result<R, Box<dyn std::error::Error>>;
 }
 
 // Information needed to load a Font

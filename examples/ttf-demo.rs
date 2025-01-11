@@ -43,7 +43,7 @@ fn get_centered_rect(rect_width: u32, rect_height: u32, cons_width: u32, cons_he
     rect!(cx, cy, w, h)
 }
 
-fn run(font_path: &Path) -> Result<(), String> {
+fn run(font_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsys = sdl_context.video()?;
     let ttf_context = sdl3::ttf::init().map_err(|e| e.to_string())?;
@@ -104,7 +104,7 @@ fn run(font_path: &Path) -> Result<(), String> {
     Ok(())
 }
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = env::args().collect();
 
     println!("linked sdl3_ttf: {}", sdl3::ttf::get_linked_version());

@@ -23,7 +23,7 @@ fn set_window_gradient(
     window: &mut Window,
     event_pump: &sdl3::EventPump,
     gradient: Gradient,
-) -> Result<(), String> {
+) -> Result<(), Box<dyn std::error::Error>> {
     let mut surface = window.surface(event_pump)?;
     for i in 0..(WINDOW_WIDTH / 4) {
         let c: u8 = 255 - (i as u8);
@@ -51,7 +51,7 @@ fn next_gradient(gradient: Gradient) -> Gradient {
     }
 }
 
-pub fn main() -> Result<(), String> {
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
 

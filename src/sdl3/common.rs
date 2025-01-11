@@ -1,4 +1,5 @@
-use std::error::Error;
+use crate::Error;
+use std::error;
 use std::fmt;
 
 /// A given integer was so big that its representation as a C integer would be
@@ -6,7 +7,7 @@ use std::fmt;
 #[derive(Debug, Clone, PartialEq)]
 pub enum IntegerOrSdlError {
     IntegerOverflows(&'static str, u32),
-    SdlError(String),
+    SdlError(Error),
 }
 /// Validates and converts the given u32 to a positive C integer.
 pub fn validate_int(value: u32, name: &'static str) -> Result<::libc::c_int, IntegerOrSdlError> {
@@ -36,13 +37,13 @@ impl fmt::Display for IntegerOrSdlError {
     }
 }
 
-impl Error for IntegerOrSdlError {
+impl error::Error for IntegerOrSdlError {
     fn description(&self) -> &str {
         use self::IntegerOrSdlError::*;
 
         match *self {
             IntegerOverflows(_, _) => "integer overflow",
-            SdlError(ref e) => e,
+            SdlError(ref e) => &e.0,
         }
     }
 }

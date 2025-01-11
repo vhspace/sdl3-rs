@@ -7,6 +7,7 @@ use std::ptr;
 use std::str::Utf8Error;
 use sys::properties::SDL_PropertiesID;
 
+use crate::Error;
 use crate::get_error;
 use crate::sys;
 
@@ -15,7 +16,7 @@ pub enum PropertiesError {
     ArgumentError(NulError),
     StringError(Utf8Error),
     NullPointer,
-    SdlError(String),
+    SdlError(Error),
 }
 
 #[derive(Debug, Clone)]

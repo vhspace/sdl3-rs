@@ -1,3 +1,4 @@
+use crate::Error;
 use crate::get_error;
 use crate::surface::SurfaceRef;
 use crate::sys;
@@ -51,7 +52,7 @@ impl Cursor {
         height: i32,
         hot_x: i32,
         hot_y: i32,
-    ) -> Result<Cursor, String> {
+    ) -> Result<Cursor, Error> {
         unsafe {
             let raw = sys::mouse::SDL_CreateCursor(
                 data.as_ptr(),
@@ -76,7 +77,7 @@ impl Cursor {
         surface: S,
         hot_x: i32,
         hot_y: i32,
-    ) -> Result<Cursor, String> {
+    ) -> Result<Cursor, Error> {
         unsafe {
             let raw = sys::mouse::SDL_CreateColorCursor(surface.as_ref().raw(), hot_x, hot_y);
 
@@ -89,7 +90,7 @@ impl Cursor {
     }
 
     #[doc(alias = "SDL_CreateSystemCursor")]
-    pub fn from_system(cursor: SystemCursor) -> Result<Cursor, String> {
+    pub fn from_system(cursor: SystemCursor) -> Result<Cursor, Error> {
         unsafe {
             let raw = sys::mouse::SDL_CreateSystemCursor(transmute(cursor as u32));
 
