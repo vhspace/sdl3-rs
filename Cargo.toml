@@ -22,8 +22,8 @@ name = "sdl3"
 path = "src/sdl3/lib.rs"
 
 [dependencies]
-bitflags = "2.6.0"
-libc = "0.2.92"
+bitflags = "2.8.0"
+libc = "0.2.169"
 lazy_static = "1.4.0"
 
 [dependencies.sdl3-sys]
@@ -34,17 +34,23 @@ version = "0.2.0+SDL3-preview-3.1.8"
 version = ">= 1.0"
 optional = true
 
-[dev-dependencies]
-rand = "0.8.5"
-wgpu = { version = "23.0.1", features = ["spirv"] }
-pollster = "0.4.0"
-env_logger = "0.11.5"
-
 [dependencies.raw-window-handle]
 version = "0.6.2"
 optional = true
 
+[dependencies.objc]
+version = "0.2.7"
+optional = true
+
+[dev-dependencies]
+rand = "0.8.5"
+wgpu = { version = "24.0.0", features = ["spirv"] }
+pollster = "0.4.0"
+env_logger = "0.11.6"
+
+
 [features]
+
 # various ways to link to libsdl3
 # provided by sdl3-sys: https://github.com/maia-s/sdl3-sys-rs/tree/main/sdl3-sys#usage
 use-pkg-config = ["sdl3-sys/use-pkg-config"]
@@ -55,8 +61,8 @@ build-from-source = ["sdl3-sys/build-from-source"]
 build-from-source-static = ["sdl3-sys/build-from-source-static"]
 build-from-source-unix-console = ["sdl3-sys/sdl-unix-console-build"]
 
-unsafe_textures = []
 default = []
+unsafe_textures = []
 gfx = ["c_vec"]      #, "sdl3-sys/gfx"]
 #mixer = ["sdl3-sys/mixer"]
 #image = ["sdl3-sys/image"]
@@ -65,6 +71,8 @@ gfx = ["c_vec"]      #, "sdl3-sys/gfx"]
 hidapi = []
 # test_mode allows SDL to be initialised from a thread that is not the main thread
 test-mode = []
+# allows sdl3 to be used with wgpu
+raw_window_handle = ["raw-window-handle", "objc"]
 
 
 [package.metadata.docs.rs]
