@@ -3,7 +3,7 @@ name = "sdl3"
 description = "Cross-platform multimedia"
 repository = "https://github.com/revmischa/sdl3-rs"
 documentation = "https://docs.rs/sdl3/latest/sdl3/"
-version = "0.11.13"
+version = "0.13.0"
 license = "MIT"
 authors = [
     "Tony Aldridge <tony@angry-lawyer.com>",
@@ -27,7 +27,7 @@ libc = "0.2.92"
 lazy_static = "1.4.0"
 
 [dependencies.sdl3-sys]
-version = "0.1.3+SDL3-preview-3.1.6"
+version = "0.2.0+SDL3-preview-3.1.8"
 
 [dependencies.c_vec]
 # allow both 1.* and 2.0 versions
@@ -148,6 +148,15 @@ name = "renderer-target"
 
 [[example]]
 name = "events"
+
+[[example]]
+name = "renderer_01_change_the_color"
+path = "examples/renderer/a01_change_the_color.rs"
+
+[[example]]
+# required-dependency = "rand"
+name = "renderer_02_primitives"
+path = "examples/renderer/a02_primitives.rs"
 
 [[example]]
 name = "renderer-texture"

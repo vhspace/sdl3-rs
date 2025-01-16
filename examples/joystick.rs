@@ -2,7 +2,7 @@ use sdl3::get_error;
 
 extern crate sdl3;
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let joystick_subsystem = sdl_context.joystick()?;
 

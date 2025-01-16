@@ -9,7 +9,7 @@ use sdl3::pixels::Color;
 use std::path::PathBuf;
 use std::time::Duration;
 
-pub fn main() -> Result<(), String> {
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
 

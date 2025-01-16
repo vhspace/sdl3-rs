@@ -13,6 +13,7 @@ use std::mem::transmute;
 use std::ptr;
 use std::sync::Mutex;
 
+use crate::Error;
 use crate::gamepad;
 use crate::gamepad::{Axis, Button};
 use crate::get_error;
@@ -122,7 +123,7 @@ impl crate::EventSubsystem {
     }
 
     /// Pushes an event to the event queue.
-    pub fn push_event(&self, event: Event) -> Result<(), String> {
+    pub fn push_event(&self, event: Event) -> Result<(), Error> {
         self.event_sender().push_event(event)
     }
 
@@ -154,19 +155,19 @@ impl crate::EventSubsystem {
     ///
     /// ```
     #[inline(always)]
-    pub unsafe fn register_event(&self) -> Result<u32, String> {
+    pub unsafe fn register_event(&self) -> Result<u32, Error> {
         Ok(*self.register_events(1)?.first().unwrap())
     }
 
     /// Registers custom SDL events.
     ///
     /// Returns an error, if no more user events can be created.
-    pub unsafe fn register_events(&self, nr: u32) -> Result<Vec<u32>, String> {
+    pub unsafe fn register_events(&self, nr: u32) -> Result<Vec<u32>, Error> {
         let result = sys::events::SDL_RegisterEvents(nr as ::libc::c_int);
         const ERR_NR: u32 = u32::MAX - 1;
 
         match result {
-            ERR_NR => Err("No more user events can be created; SDL_EVENT_LAST reached".to_owned()),
+            ERR_NR => Err(Error("No more user events can be created; SDL_EVENT_LAST reached".to_owned())),
             _ => {
                 let event_ids = (result..(result + nr)).collect();
                 Ok(event_ids)
@@ -181,14 +182,14 @@ impl crate::EventSubsystem {
     /// # Example
     /// See [push_custom_event](#method.push_custom_event)
     #[inline(always)]
-    pub fn register_custom_event<T: ::std::any::Any>(&self) -> Result<(), String> {
+    pub fn register_custom_event<T: ::std::any::Any>(&self) -> Result<(), Error> {
         use std::any::TypeId;
         let event_id = *(unsafe { self.register_events(1) })?.first().unwrap();
         let mut cet = CUSTOM_EVENT_TYPES.lock().unwrap();
         let type_id = TypeId::of::<Box<T>>();
 
         if cet.type_id_to_sdl_id.contains_key(&type_id) {
-            return Err("The same event type can not be registered twice!".to_owned());
+            return Err(Error("The same event type can not be registered twice!".to_owned()));
         }
 
         cet.sdl_id_to_type_id.insert(event_id, type_id);
@@ -225,7 +226,7 @@ impl crate::EventSubsystem {
     ///     assert_eq!(e2.a, 42);
     /// }
     /// ```
-    pub fn push_custom_event<T: ::std::any::Any>(&self, event: T) -> Result<(), String> {
+    pub fn push_custom_event<T: ::std::any::Any>(&self, event: T) -> Result<(), Error> {
         self.event_sender().push_custom_event(event)
     }
 
@@ -3020,7 +3021,7 @@ pub struct EventSender {
 impl EventSender {
     /// Pushes an event to the event queue.
     #[doc(alias = "SDL_PushEvent")]
-    pub fn push_event(&self, event: Event) -> Result<(), String> {
+    pub fn push_event(&self, event: Event) -> Result<(), Error> {
         match event.to_ll() {
             Some(mut raw_event) => {
                 let ok = unsafe { sys::events::SDL_PushEvent(&mut raw_event) };
@@ -3030,7 +3031,7 @@ impl EventSender {
                     Err(get_error())
                 }
             }
-            None => Err("Cannot push unsupported event type to the queue".to_owned()),
+            None => Err(Error("Cannot push unsupported event type to the queue".to_owned())),
         }
     }
 
@@ -3063,7 +3064,7 @@ impl EventSender {
     ///     assert_eq!(e2.a, 42);
     /// }
     /// ```
-    pub fn push_custom_event<T: ::std::any::Any>(&self, event: T) -> Result<(), String> {
+    pub fn push_custom_event<T: ::std::any::Any>(&self, event: T) -> Result<(), Error> {
         use std::any::TypeId;
         let cet = CUSTOM_EVENT_TYPES.lock().unwrap();
         let type_id = TypeId::of::<Box<T>>();
@@ -3071,7 +3072,7 @@ impl EventSender {
         let user_event_id = *match cet.type_id_to_sdl_id.get(&type_id) {
             Some(id) => id,
             None => {
-                return Err("Type is not registered as a custom event type!".to_owned());
+                return Err(Error("Type is not registered as a custom event type!".to_owned()));
             }
         };
 

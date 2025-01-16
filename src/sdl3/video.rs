@@ -1,4 +1,5 @@
 use crate::common::{validate_int, IntegerOrSdlError};
+use crate::Error;
 use crate::get_error;
 use crate::pixels::PixelFormat;
 use crate::rect::Rect;
@@ -8,7 +9,7 @@ use crate::EventPump;
 use crate::VideoSubsystem;
 use libc::{c_char, c_int, c_uint, c_void};
 use std::convert::TryFrom;
-use std::error::Error;
+use std::error;
 use std::ffi::{CStr, CString, NulError};
 use std::ops::{Deref, DerefMut};
 use std::ptr::{null, null_mut};
@@ -47,7 +48,7 @@ impl WindowSurfaceRef<'_> {
     ///
     /// This would effectively be the theoretical equivalent of `present` from a Canvas.
     #[doc(alias = "SDL_UpdateWindowSurface")]
-    pub fn update_window(&self) -> Result<(), String> {
+    pub fn update_window(&self) -> Result<(), Error> {
         unsafe {
             if sys::video::SDL_UpdateWindowSurface(self.1.context.raw) {
                 Ok(())
@@ -60,7 +61,7 @@ impl WindowSurfaceRef<'_> {
     /// Same as `update_window`, but only update the parts included in `rects` to the Window it was
     /// created from.
     #[doc(alias = "SDL_UpdateWindowSurfaceRects")]
-    pub fn update_window_rects(&self, rects: &[Rect]) -> Result<(), String> {
+    pub fn update_window_rects(&self, rects: &[Rect]) -> Result<(), Error> {
         unsafe {
             if sys::video::SDL_UpdateWindowSurfaceRects(
                 self.1.context.raw,
@@ -80,7 +81,7 @@ impl WindowSurfaceRef<'_> {
     /// If you don't want to `update_window` one last time, simply Drop this struct. However
     /// beware, since the Surface will still be in the state you left it the next time you will
     /// call `window.surface()` again.
-    pub fn finish(self) -> Result<(), String> {
+    pub fn finish(self) -> Result<(), Error> {
         self.update_window()
     }
 }
@@ -698,7 +699,7 @@ impl VideoSubsystem {
         title: &str,
         width: u32,
         height: u32,
-    ) -> Result<WindowCanvas, String> {
+    ) -> Result<WindowCanvas, Error> {
         let mut sdl_window = null_mut();
         let mut renderer = null_mut();
         let result = unsafe {
@@ -744,7 +745,7 @@ impl VideoSubsystem {
     }
 
     #[doc(alias = "SDL_GetNumVideoDrivers")]
-    pub fn num_video_drivers(&self) -> Result<i32, String> {
+    pub fn num_video_drivers(&self) -> Result<i32, Error> {
         let result = unsafe { sys::video::SDL_GetNumVideoDrivers() };
         if result < 0 {
             Err(get_error())
@@ -758,7 +759,7 @@ impl VideoSubsystem {
     /// Will return an error if the index is out of bounds or if SDL experienced a failure; inspect
     /// the returned string for further info.
     #[doc(alias = "SDL_GetDisplayName")]
-    pub fn display_name(&self, display_index: u32) -> Result<String, String> {
+    pub fn display_name(&self, display_index: u32) -> Result<String, Error> {
         unsafe {
             let display = sys::video::SDL_GetDisplayName(display_index);
             if display.is_null() {
@@ -773,7 +774,7 @@ impl VideoSubsystem {
     }
 
     #[doc(alias = "SDL_GetDisplayBounds")]
-    pub fn display_bounds(&self, display_index: u32) -> Result<Rect, String> {
+    pub fn display_bounds(&self, display_index: u32) -> Result<Rect, Error> {
         let mut out = mem::MaybeUninit::uninit();
         let result = unsafe { sys::video::SDL_GetDisplayBounds(display_index, out.as_mut_ptr()) };
 
@@ -786,7 +787,7 @@ impl VideoSubsystem {
     }
 
     #[doc(alias = "SDL_GetDisplayUsableBounds")]
-    pub fn display_usable_bounds(&self, display_index: u32) -> Result<Rect, String> {
+    pub fn display_usable_bounds(&self, display_index: u32) -> Result<Rect, Error> {
         let mut out = mem::MaybeUninit::uninit();
         let result =
             unsafe { sys::video::SDL_GetDisplayUsableBounds(display_index, out.as_mut_ptr()) };
@@ -802,7 +803,7 @@ impl VideoSubsystem {
     pub fn display_modes(
         &self,
         display_id: sys::video::SDL_DisplayID,
-    ) -> Result<Vec<DisplayMode>, String> {
+    ) -> Result<Vec<DisplayMode>, Error> {
         unsafe {
             let mut num_modes: c_int = 0;
             let modes = sys::video::SDL_GetFullscreenDisplayModes(display_id, &mut num_modes);
@@ -823,7 +824,7 @@ impl VideoSubsystem {
     }
 
     #[doc(alias = "SDL_GetDesktopDisplayMode")]
-    pub fn desktop_display_mode(&self, display_index: u32) -> Result<DisplayMode, String> {
+    pub fn desktop_display_mode(&self, display_index: u32) -> Result<DisplayMode, Error> {
         unsafe {
             let raw_mode = sys::video::SDL_GetDesktopDisplayMode(display_index);
             if raw_mode.is_null() {
@@ -840,7 +841,7 @@ impl VideoSubsystem {
     }
 
     #[doc(alias = "SDL_GetCurrentDisplayMode")]
-    pub fn current_display_mode(&self, display_index: u32) -> Result<DisplayMode, String> {
+    pub fn current_display_mode(&self, display_index: u32) -> Result<DisplayMode, Error> {
         unsafe {
             let raw_mode = sys::video::SDL_GetCurrentDisplayMode(display_index);
             if raw_mode.is_null() {
@@ -856,7 +857,7 @@ impl VideoSubsystem {
         display_index: u32,
         mode: &DisplayMode,
         include_high_density_modes: bool,
-    ) -> Result<DisplayMode, String> {
+    ) -> Result<DisplayMode, Error> {
         unsafe {
             // Allocate uninitialized memory for SDL_DisplayMode
             let mut mode_out = std::mem::MaybeUninit::<sys::video::SDL_DisplayMode>::uninit();
@@ -909,7 +910,7 @@ impl VideoSubsystem {
     ///
     /// If a different library is already loaded, this function will return an error.
     #[doc(alias = "SDL_GL_LoadLibrary")]
-    pub fn gl_load_library_default(&self) -> Result<(), String> {
+    pub fn gl_load_library_default(&self) -> Result<(), Error> {
         unsafe {
             if sys::video::SDL_GL_LoadLibrary(ptr::null()) {
                 Ok(())
@@ -926,7 +927,7 @@ impl VideoSubsystem {
     ///
     /// If a different library is already loaded, this function will return an error.
     #[doc(alias = "SDL_GL_LoadLibrary")]
-    pub fn gl_load_library<P: AsRef<::std::path::Path>>(&self, path: P) -> Result<(), String> {
+    pub fn gl_load_library<P: AsRef<::std::path::Path>>(&self, path: P) -> Result<(), Error> {
         unsafe {
             // TODO: use OsStr::to_cstring() once it's stable
             let path = CString::new(path.as_ref().to_str().unwrap()).unwrap();
@@ -975,7 +976,7 @@ impl VideoSubsystem {
     }
 
     #[doc(alias = "SDL_GL_GetCurrentWindow")]
-    pub fn gl_get_current_window_id(&self) -> Result<u32, String> {
+    pub fn gl_get_current_window_id(&self) -> Result<u32, Error> {
         let raw = unsafe { sys::video::SDL_GL_GetCurrentWindow() };
         if raw.is_null() {
             Err(get_error())
@@ -987,7 +988,7 @@ impl VideoSubsystem {
 
     /// Releases the thread's current OpenGL context, i.e. sets the current OpenGL context to nothing.
     #[doc(alias = "SDL_GL_MakeCurrent")]
-    pub fn gl_release_current_context(&self) -> Result<(), String> {
+    pub fn gl_release_current_context(&self) -> Result<(), Error> {
         let result = unsafe { sys::video::SDL_GL_MakeCurrent(ptr::null_mut(), ptr::null_mut()) };
 
         if result {
@@ -998,7 +999,7 @@ impl VideoSubsystem {
     }
 
     #[doc(alias = "SDL_GL_SetSwapInterval")]
-    pub fn gl_set_swap_interval<S: Into<SwapInterval>>(&self, interval: S) -> Result<(), String> {
+    pub fn gl_set_swap_interval<S: Into<SwapInterval>>(&self, interval: S) -> Result<(), Error> {
         let result = unsafe { sys::video::SDL_GL_SetSwapInterval(interval.into() as c_int) };
         if result {
             Ok(())
@@ -1008,7 +1009,7 @@ impl VideoSubsystem {
     }
 
     #[doc(alias = "SDL_GL_GetSwapInterval")]
-    pub fn gl_get_swap_interval(&self) -> Result<SwapInterval, String> {
+    pub fn gl_get_swap_interval(&self) -> Result<SwapInterval, Error> {
         unsafe {
             let mut interval = 0;
             let result = sys::video::SDL_GL_GetSwapInterval(&mut interval);
@@ -1027,7 +1028,7 @@ impl VideoSubsystem {
     ///
     /// If a different library is already loaded, this function will return an error.
     #[doc(alias = "SDL_Vulkan_LoadLibrary")]
-    pub fn vulkan_load_library_default(&self) -> Result<(), String> {
+    pub fn vulkan_load_library_default(&self) -> Result<(), Error> {
         unsafe {
             if sys::vulkan::SDL_Vulkan_LoadLibrary(ptr::null()) {
                 Ok(())
@@ -1044,7 +1045,7 @@ impl VideoSubsystem {
     ///
     /// If a different library is already loaded, this function will return an error.
     #[doc(alias = "SDL_Vulkan_LoadLibrary")]
-    pub fn vulkan_load_library<P: AsRef<::std::path::Path>>(&self, path: P) -> Result<(), String> {
+    pub fn vulkan_load_library<P: AsRef<::std::path::Path>>(&self, path: P) -> Result<(), Error> {
         unsafe {
             // TODO: use OsStr::to_cstring() once it's stable
             let path = CString::new(path.as_ref().to_str().unwrap()).unwrap();
@@ -1082,7 +1083,7 @@ pub enum WindowBuildError {
     HeightOverflows(u32),
     WidthOverflows(u32),
     InvalidTitle(NulError),
-    SdlError(String),
+    SdlError(Error),
 }
 
 impl fmt::Display for WindowBuildError {
@@ -1098,7 +1099,7 @@ impl fmt::Display for WindowBuildError {
     }
 }
 
-impl Error for WindowBuildError {
+impl error::Error for WindowBuildError {
     fn description(&self) -> &str {
         use self::WindowBuildError::*;
 
@@ -1106,7 +1107,7 @@ impl Error for WindowBuildError {
             HeightOverflows(_) => "window height overflow",
             WidthOverflows(_) => "window width overflow",
             InvalidTitle(_) => "invalid window title",
-            SdlError(ref e) => e,
+            SdlError(ref e) => &e.0,
         }
     }
 }
@@ -1350,16 +1351,16 @@ impl PopupWindowBuilder {
         if (self.window_flags & sys::video::SDL_WINDOW_TOOLTIP as u32 != 0)
             && (self.window_flags & sys::video::SDL_WINDOW_POPUP_MENU as u32 != 0)
         {
-            return Err(SdlError(
+            return Err(SdlError(Error(
                 "SDL_WINDOW_TOOLTIP and SDL_WINDOW_POPUP are mutually exclusive".to_owned(),
-            ));
+            )));
         }
         if (self.window_flags & sys::video::SDL_WINDOW_TOOLTIP as u32 == 0)
             && (self.window_flags & sys::video::SDL_WINDOW_POPUP_MENU as u32 == 0)
         {
-            return Err(SdlError(
+            return Err(SdlError(Error(
                 "SDL_WINDOW_TOOLTIP or SDL_WINDOW_POPUP are required for popup windows".to_owned(),
-            ));
+            )));
         }
 
         let raw_width = self.width as c_int;
@@ -1520,7 +1521,7 @@ impl Window {
     }
 
     #[doc(alias = "SDL_GL_CreateContext")]
-    pub fn gl_create_context(&self) -> Result<GLContext, String> {
+    pub fn gl_create_context(&self) -> Result<GLContext, Error> {
         let result = unsafe { sys::video::SDL_GL_CreateContext(self.context.raw) };
         if result.is_null() {
             Err(get_error())
@@ -1542,7 +1543,7 @@ impl Window {
 
     /// Set the window's OpenGL context to the current context on the thread.
     #[doc(alias = "SDL_GL_MakeCurrent")]
-    pub fn gl_set_context_to_current(&self) -> Result<(), String> {
+    pub fn gl_set_context_to_current(&self) -> Result<(), Error> {
         unsafe {
             let context_raw = sys::video::SDL_GL_GetCurrentContext();
 
@@ -1557,7 +1558,7 @@ impl Window {
     }
 
     #[doc(alias = "SDL_GL_MakeCurrent")]
-    pub fn gl_make_current(&self, context: &GLContext) -> Result<(), String> {
+    pub fn gl_make_current(&self, context: &GLContext) -> Result<(), Error> {
         unsafe {
             if sys::video::SDL_GL_MakeCurrent(self.context.raw, context.raw) {
                 Ok(())
@@ -1574,7 +1575,7 @@ impl Window {
 
     /// Get the names of the Vulkan instance extensions needed to create a surface with `vulkan_create_surface`.
     #[doc(alias = "SDL_Vulkan_GetInstanceExtensions")]
-    pub fn vulkan_instance_extensions(&self) -> Result<Vec<String>, String> {
+    pub fn vulkan_instance_extensions(&self) -> Result<Vec<String>, Error> {
         let mut count: c_uint = 0;
         // returns a pointer to an array of extension names
         let extension_names_raw =
@@ -1591,7 +1592,7 @@ impl Window {
         let mut extension_names = Vec::with_capacity(count as usize);
         for &ext in names_slice {
             if ext.is_null() {
-                return Err("Received null pointer for extension name".to_string());
+                return Err(Error("Received null pointer for extension name".to_string()));
             }
             let c_str = unsafe { CStr::from_ptr(ext) };
             extension_names.push(c_str.to_string_lossy().into_owned());
@@ -1606,7 +1607,7 @@ impl Window {
     /// [`vkCreateInstance`](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/vkCreateInstance.html)
     /// function in the Vulkan library.
     #[doc(alias = "SDL_Vulkan_CreateSurface")]
-    pub fn vulkan_create_surface(&self, instance: VkInstance) -> Result<VkSurfaceKHR, String> {
+    pub fn vulkan_create_surface(&self, instance: VkInstance) -> Result<VkSurfaceKHR, Error> {
         let mut surface: VkSurfaceKHR = 0 as _;
         if unsafe {
             sys::vulkan::SDL_Vulkan_CreateSurface(self.context.raw, instance, null(), &mut surface)
@@ -1618,7 +1619,7 @@ impl Window {
     }
 
     #[doc(alias = "SDL_GetDisplayForWindow")]
-    pub fn display_index(&self) -> Result<i32, String> {
+    pub fn display_index(&self) -> Result<i32, Error> {
         let result = unsafe { sys::video::SDL_GetDisplayForWindow(self.context.raw) };
         if result == 0 {
             Err(get_error())
@@ -1628,7 +1629,7 @@ impl Window {
     }
 
     #[doc(alias = "SDL_SetWindowFullscreenMode")]
-    pub fn set_display_mode<D>(&mut self, display_mode: D) -> Result<(), String>
+    pub fn set_display_mode<D>(&mut self, display_mode: D) -> Result<(), Error>
     where
         D: Into<Option<DisplayMode>>,
     {
@@ -1661,7 +1662,7 @@ impl Window {
     }
 
     #[doc(alias = "SDL_GetWindowICCProfile")]
-    pub fn icc_profile(&self) -> Result<Vec<u8>, String> {
+    pub fn icc_profile(&self) -> Result<Vec<u8>, Error> {
         unsafe {
             let mut size: usize = 0;
             let data = sys::video::SDL_GetWindowICCProfile(self.context.raw, &mut size as *mut _);
@@ -1773,7 +1774,7 @@ impl Window {
     /// # Remarks
     /// This function is only supported on X11, otherwise an error is returned.
     #[doc(alias = "SDL_GetWindowBordersSize")]
-    pub fn border_size(&self) -> Result<(u16, u16, u16, u16), String> {
+    pub fn border_size(&self) -> Result<(u16, u16, u16, u16), Error> {
         let mut top: c_int = 0;
         let mut left: c_int = 0;
         let mut bottom: c_int = 0;
@@ -1909,7 +1910,7 @@ impl Window {
     }
 
     #[doc(alias = "SDL_SetWindowFullscreen")]
-    pub fn set_fullscreen(&mut self, fullscreen: bool) -> Result<(), String> {
+    pub fn set_fullscreen(&mut self, fullscreen: bool) -> Result<(), Error> {
         unsafe {
             let result = sys::video::SDL_SetWindowFullscreen(self.context.raw, fullscreen);
             if result {
@@ -1933,7 +1934,7 @@ impl Window {
     /// Renderer which renders in a Software-based manner, so try to rely on a Renderer as much as
     /// possible !
     #[doc(alias = "SDL_GetWindowSurface")]
-    pub fn surface<'a>(&'a self, _e: &'a EventPump) -> Result<WindowSurfaceRef<'a>, String> {
+    pub fn surface<'a>(&'a self, _e: &'a EventPump) -> Result<WindowSurfaceRef<'a>, Error> {
         let raw = unsafe { sys::video::SDL_GetWindowSurface(self.context.raw) };
 
         if raw.is_null() {
@@ -1965,7 +1966,7 @@ impl Window {
     }
 
     #[doc(alias = "SDL_SetWindowMouseRect")]
-    pub fn set_mouse_rect<R>(&self, rect: R) -> Result<(), String>
+    pub fn set_mouse_rect<R>(&self, rect: R) -> Result<(), Error>
     where
         R: Into<Option<Rect>>,
     {
@@ -2006,7 +2007,7 @@ impl Window {
     ///
     /// This method returns an error if opacity isn't supported by the current platform.
     #[doc(alias = "SDL_SetWindowOpacity")]
-    pub fn set_opacity(&mut self, opacity: f32) -> Result<(), String> {
+    pub fn set_opacity(&mut self, opacity: f32) -> Result<(), Error> {
         let result = unsafe { sys::video::SDL_SetWindowOpacity(self.context.raw, opacity) };
         if !result {
             Err(get_error())
@@ -2021,7 +2022,7 @@ impl Window {
     /// If opacity isn't supported by the current platform, this method returns `Ok(1.0)` instead
     /// of an error.
     #[doc(alias = "SDL_GetWindowOpacity")]
-    pub fn opacity(&self) -> Result<f32, String> {
+    pub fn opacity(&self) -> Result<f32, Error> {
         let opacity = unsafe { sys::video::SDL_GetWindowOpacity(self.context.raw) };
         if opacity == -1.0f32 {
             Err(get_error())
@@ -2032,7 +2033,7 @@ impl Window {
 
     /// Requests a window to demand attention from the user.
     #[doc(alias = "SDL_FlashWindow")]
-    pub fn flash(&mut self, operation: FlashOperation) -> Result<(), String> {
+    pub fn flash(&mut self, operation: FlashOperation) -> Result<(), Error> {
         let result = unsafe { sys::video::SDL_FlashWindow(self.context.raw, operation.to_ll()) };
         if result {
             Ok(())

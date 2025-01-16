@@ -3,12 +3,13 @@ use crate::sys;
 
 use crate::clear_error;
 use crate::common::{validate_int, IntegerOrSdlError};
+use crate::Error;
 use crate::get_error;
 use crate::guid::Guid;
 use crate::JoystickSubsystem;
 use libc::{c_char, c_void};
 use std::ffi::CStr;
-use std::fmt::{Debug, Error, Formatter};
+use std::fmt;
 use sys::joystick::SDL_JoystickID;
 use sys::power::{SDL_PowerState, SDL_POWERSTATE_UNKNOWN};
 use sys::stdinc::SDL_free;
@@ -22,7 +23,7 @@ pub struct JoystickInstance {
 impl JoystickSubsystem {
     /// Get joystick instance IDs and names.
     #[doc(alias = "SDL_GetJoysticks")]
-    pub fn joysticks(&self) -> Result<Vec<JoystickInstance>, String> {
+    pub fn joysticks(&self) -> Result<Vec<JoystickInstance>, Error> {
         let mut num_joysticks: i32 = 0;
         unsafe {
             let joystick_ids = sys::joystick::SDL_GetJoysticks(&mut num_joysticks);
@@ -86,8 +87,8 @@ pub struct PowerInfo {
     pub percentage: i32,
 }
 
-impl Debug for PowerInfo {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), Error> {
+impl fmt::Debug for PowerInfo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
             "PowerInfo {{ state: {:?}, percentage: {} }}",

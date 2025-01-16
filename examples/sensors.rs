@@ -3,7 +3,7 @@ use std::time::{Duration, Instant};
 
 use sdl3::{event::Event, sensor::SensorType};
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let game_controller_subsystem = sdl_context.gamepad()?;
 

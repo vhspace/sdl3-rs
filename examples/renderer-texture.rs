@@ -6,7 +6,7 @@ use sdl3::pixels::PixelFormat;
 use sdl3::render::FRect;
 use sdl3_sys::pixels::SDL_PixelFormat;
 
-pub fn main() -> Result<(), String> {
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
 

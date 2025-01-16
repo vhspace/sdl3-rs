@@ -114,7 +114,7 @@ mod game_of_life {
 fn dummy_texture<'a>(
     canvas: &mut Canvas<Window>,
     texture_creator: &'a TextureCreator<WindowContext>,
-) -> Result<(Texture<'a>, Texture<'a>), String> {
+) -> Result<(Texture<'a>, Texture<'a>), Box<dyn std::error::Error>> {
     enum TextureColor {
         Yellow,
         White,
@@ -201,7 +201,7 @@ fn dummy_texture<'a>(
     Ok((square_texture1, square_texture2))
 }
 
-pub fn main() -> Result<(), String> {
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
 

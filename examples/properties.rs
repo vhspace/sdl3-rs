@@ -15,7 +15,7 @@ impl<'a> Drop for TestData<'a> {
     }
 }
 
-pub fn main() -> Result<(), String> {
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     sdl3::init().ok();
 
     let mut properties = Properties::new().unwrap();

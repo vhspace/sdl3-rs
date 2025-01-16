@@ -5,7 +5,7 @@ use sdl3::mixer::{InitFlag, AUDIO_S16LSB, DEFAULT_CHANNELS};
 use std::env;
 use std::path::Path;
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = env::args().collect();
 
     if args.len() < 2 {
@@ -18,7 +18,7 @@ fn main() -> Result<(), String> {
     Ok(())
 }
 
-fn demo(music_file: &Path, sound_file: Option<&Path>) -> Result<(), String> {
+fn demo(music_file: &Path, sound_file: Option<&Path>) -> Result<(), Box<dyn std::error::Error>> {
     println!("linked version: {}", sdl3::mixer::get_linked_version());
 
     let sdl = sdl3::init()?;

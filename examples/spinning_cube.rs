@@ -64,7 +64,7 @@ fn draw_line(canvas: &mut Canvas<Window>, p1: (i32, i32), p2: (i32, i32), color:
         .unwrap();
 }
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
 
@@ -77,46 +77,39 @@ fn main() -> Result<(), String> {
     let mut canvas = window.into_canvas();
     let mut event_pump = sdl_context.event_pump()?;
 
+    #[rustfmt::skip]
     let vertices = [
+        // vertex 0
         Vertex {
-            x: -CUBE_SIZE,
-            y: -CUBE_SIZE,
-            z: -CUBE_SIZE,
+            x: -CUBE_SIZE, y: -CUBE_SIZE, z: -CUBE_SIZE,
         },
+        // vertex 1
         Vertex {
-            x: CUBE_SIZE,
-            y: -CUBE_SIZE,
-            z: -CUBE_SIZE,
+            x: CUBE_SIZE, y: -CUBE_SIZE, z: -CUBE_SIZE,
         },
+        // vertex 2
         Vertex {
-            x: CUBE_SIZE,
-            y: CUBE_SIZE,
-            z: -CUBE_SIZE,
+            x: CUBE_SIZE, y: CUBE_SIZE, z: -CUBE_SIZE,
         },
+        // vertex 3
         Vertex {
-            x: -CUBE_SIZE,
-            y: CUBE_SIZE,
-            z: -CUBE_SIZE,
+            x: -CUBE_SIZE, y: CUBE_SIZE, z: -CUBE_SIZE,
         },
+        // vertex 4
         Vertex {
-            x: -CUBE_SIZE,
-            y: -CUBE_SIZE,
-            z: CUBE_SIZE,
+            x: -CUBE_SIZE, y: -CUBE_SIZE, z: CUBE_SIZE,
         },
+        // vertex 5
         Vertex {
-            x: CUBE_SIZE,
-            y: -CUBE_SIZE,
-            z: CUBE_SIZE,
+            x: CUBE_SIZE, y: -CUBE_SIZE, z: CUBE_SIZE,
         },
+        // vertex 6
         Vertex {
-            x: CUBE_SIZE,
-            y: CUBE_SIZE,
-            z: CUBE_SIZE,
+            x: CUBE_SIZE, y: CUBE_SIZE, z: CUBE_SIZE,
         },
+        // vertex 7
         Vertex {
-            x: -CUBE_SIZE,
-            y: CUBE_SIZE,
-            z: CUBE_SIZE,
+            x: -CUBE_SIZE, y: CUBE_SIZE, z: CUBE_SIZE,
         },
     ];
 
