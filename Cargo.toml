@@ -72,7 +72,7 @@ hidapi = []
 # test_mode allows SDL to be initialised from a thread that is not the main thread
 test-mode = []
 # allows sdl3 to be used with wgpu
-raw_window_handle = ["raw-window-handle", "objc"]
+raw-window-handle = ["dep:raw-window-handle", "dep:objc"]
 
 
 [package.metadata.docs.rs]
