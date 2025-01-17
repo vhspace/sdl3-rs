@@ -101,9 +101,7 @@ mod raw_window_handle_test {
         };
         match window_handle.as_raw() {
             RawWindowHandle::AppKit(macos_handle) => {
-                if macos_handle.ns_view.as_ptr().is_null() {
-                    assert!(false, "ns_view should not be null");
-                }
+                assert!(!macos_handle.ns_view.as_ptr().is_null(), "ns_view should not be null");
             }
             x => assert!(
                 false,

@@ -39,7 +39,7 @@ impl HasWindowHandle for Window {
         #[cfg(target_os = "macos")]
         unsafe {
             use self::raw_window_handle::AppKitWindowHandle;
-            use objc::{msg_send, sel, sel_impl, runtime::Object};
+            use objc2::{msg_send, sel, sel_impl, runtime::Object};
 
             let window_properties = sys::video::SDL_GetWindowProperties(self.raw());
 
