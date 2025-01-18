@@ -5,6 +5,7 @@ use sdl3::keyboard::Keycode;
 use sdl3::pixels::Color;
 use sdl3::rect::Rect;
 use sdl3::video::Window;
+use sdl3::Error;
 use std::time::Duration;
 
 const WINDOW_WIDTH: u32 = 800;
@@ -23,7 +24,7 @@ fn set_window_gradient(
     window: &mut Window,
     event_pump: &sdl3::EventPump,
     gradient: Gradient,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<(), Error> {
     let mut surface = window.surface(event_pump)?;
     for i in 0..(WINDOW_WIDTH / 4) {
         let c: u8 = 255 - (i as u8);
