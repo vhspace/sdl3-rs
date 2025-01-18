@@ -3,9 +3,9 @@ use crate::sys;
 
 use crate::clear_error;
 use crate::common::{validate_int, IntegerOrSdlError};
-use crate::Error;
 use crate::get_error;
 use crate::guid::Guid;
+use crate::Error;
 use crate::JoystickSubsystem;
 use libc::{c_char, c_void};
 use std::ffi::CStr;

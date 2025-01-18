@@ -1,8 +1,8 @@
-use crate::Error;
 use crate::get_error;
 use crate::surface::SurfaceRef;
 use crate::sys;
 use crate::video;
+use crate::Error;
 use crate::EventPump;
 use std::convert::TryInto;
 use std::mem::transmute;

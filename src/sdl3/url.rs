@@ -1,7 +1,7 @@
 //! Opening URLs in default system handlers
 
-use crate::Error;
 use crate::get_error;
+use crate::Error;
 use std::error;
 use std::ffi::{CString, NulError};
 use std::fmt;

@@ -1,10 +1,10 @@
 use crate::common::{validate_int, IntegerOrSdlError};
-use crate::Error;
 use crate::get_error;
 use crate::pixels::PixelFormat;
 use crate::rect::Rect;
 use crate::render::{create_renderer, WindowCanvas};
 use crate::surface::SurfaceRef;
+use crate::Error;
 use crate::EventPump;
 use crate::VideoSubsystem;
 use libc::{c_char, c_int, c_uint, c_void};
@@ -1592,7 +1592,9 @@ impl Window {
         let mut extension_names = Vec::with_capacity(count as usize);
         for &ext in names_slice {
             if ext.is_null() {
-                return Err(Error("Received null pointer for extension name".to_string()));
+                return Err(Error(
+                    "Received null pointer for extension name".to_string(),
+                ));
             }
             let c_str = unsafe { CStr::from_ptr(ext) };
             extension_names.push(c_str.to_string_lossy().into_owned());

@@ -13,10 +13,10 @@ use crate::sensor::SensorType;
 use std::convert::TryInto;
 
 use crate::common::IntegerOrSdlError;
-use crate::Error;
 use crate::get_error;
 use crate::guid::Guid;
 use crate::sys;
+use crate::Error;
 use crate::GamepadSubsystem;
 use std::mem::transmute;
 use sys::joystick::SDL_GetJoystickID;
