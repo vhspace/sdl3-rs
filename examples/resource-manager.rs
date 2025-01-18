@@ -80,7 +80,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-type TextureManager<'l, T> = ResourceManager<'l, Box<dyn std::error::Error>, Texture<'l>, TextureCreator<T>>;
+type TextureManager<'l, T> =
+    ResourceManager<'l, Box<dyn std::error::Error>, Texture<'l>, TextureCreator<T>>;
 type FontManager<'l> = ResourceManager<'l, FontDetails, Font<'l, 'static>, Sdl3TtfContext>;
 
 // Generic struct to cache any resource loaded by a ResourceLoader
@@ -136,7 +137,10 @@ impl<'l, T> ResourceLoader<'l, Texture<'l>> for TextureCreator<T> {
 // Font Context knows how to load Fonts
 impl<'l> ResourceLoader<'l, Font<'l, 'static>> for Sdl3TtfContext {
     type Args = FontDetails;
-    fn load(&'l self, details: &FontDetails) -> Result<Font<'l, 'static>, Box<dyn std::error::Error>> {
+    fn load(
+        &'l self,
+        details: &FontDetails,
+    ) -> Result<Font<'l, 'static>, Box<dyn std::error::Error>> {
         println!("LOADED A FONT");
         self.load_font(&details.path, details.size)
     }

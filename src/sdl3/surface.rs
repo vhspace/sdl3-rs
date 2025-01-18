@@ -4,7 +4,6 @@ use std::ops::{Deref, DerefMut};
 use std::path::Path;
 use std::sync::Arc;
 
-use crate::Error;
 use crate::get_error;
 use crate::iostream::IOStream;
 use crate::pixels;
@@ -12,6 +11,7 @@ use crate::rect::Rect;
 use crate::render::{BlendMode, Canvas};
 use crate::render::{Texture, TextureCreator, TextureValueError};
 use crate::sys;
+use crate::Error;
 use libc::c_int;
 use std::convert::TryFrom;
 use std::mem::transmute;

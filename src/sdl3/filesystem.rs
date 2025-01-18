@@ -8,9 +8,9 @@ use std::ptr;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use sys::filesystem::SDL_PathInfo;
 
-use crate::Error;
 use crate::get_error;
 use crate::sys;
+use crate::Error;
 
 #[derive(Debug, Clone)]
 pub enum FileSystemError {

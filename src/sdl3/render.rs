@@ -29,7 +29,6 @@
 //! If they do, a panic is raised and the program is aborted.
 
 use crate::common::{validate_int, IntegerOrSdlError};
-use crate::Error;
 use crate::get_error;
 use crate::pixels;
 use crate::rect::Point;
@@ -37,6 +36,7 @@ use crate::rect::Rect;
 use crate::surface::{Surface, SurfaceContext, SurfaceRef};
 use crate::sys;
 use crate::video::{Window, WindowContext};
+use crate::Error;
 use libc::{c_double, c_int};
 use pixels::PixelFormat;
 use std::convert::{Into, TryFrom, TryInto};

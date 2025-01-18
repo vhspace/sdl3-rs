@@ -13,7 +13,6 @@ use std::mem::transmute;
 use std::ptr;
 use std::sync::Mutex;
 
-use crate::Error;
 use crate::gamepad;
 use crate::gamepad::{Axis, Button};
 use crate::get_error;
@@ -28,6 +27,7 @@ use crate::mouse::{MouseButton, MouseState, MouseWheelDirection};
 use crate::sys;
 use crate::sys::events::SDL_EventFilter;
 use crate::video::Orientation;
+use crate::Error;
 use libc::c_int;
 use libc::c_void;
 use sys::events::{
@@ -167,7 +167,9 @@ impl crate::EventSubsystem {
         const ERR_NR: u32 = u32::MAX - 1;
 
         match result {
-            ERR_NR => Err(Error("No more user events can be created; SDL_EVENT_LAST reached".to_owned())),
+            ERR_NR => Err(Error(
+                "No more user events can be created; SDL_EVENT_LAST reached".to_owned(),
+            )),
             _ => {
                 let event_ids = (result..(result + nr)).collect();
                 Ok(event_ids)
@@ -189,7 +191,9 @@ impl crate::EventSubsystem {
         let type_id = TypeId::of::<Box<T>>();
 
         if cet.type_id_to_sdl_id.contains_key(&type_id) {
-            return Err(Error("The same event type can not be registered twice!".to_owned()));
+            return Err(Error(
+                "The same event type can not be registered twice!".to_owned(),
+            ));
         }
 
         cet.sdl_id_to_type_id.insert(event_id, type_id);
@@ -3031,7 +3035,9 @@ impl EventSender {
                     Err(get_error())
                 }
             }
-            None => Err(Error("Cannot push unsupported event type to the queue".to_owned())),
+            None => Err(Error(
+                "Cannot push unsupported event type to the queue".to_owned(),
+            )),
         }
     }
 
@@ -3072,7 +3078,9 @@ impl EventSender {
         let user_event_id = *match cet.type_id_to_sdl_id.get(&type_id) {
             Some(id) => id,
             None => {
-                return Err(Error("Type is not registered as a custom event type!".to_owned()));
+                return Err(Error(
+                    "Type is not registered as a custom event type!".to_owned(),
+                ));
             }
         };
 

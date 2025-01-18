@@ -1,7 +1,6 @@
-
-use crate::Error;
 use crate::get_error;
 use crate::sys;
+use crate::Error;
 use core::fmt;
 use libc::{c_char, c_int, c_void};
 use std::ffi::NulError;
