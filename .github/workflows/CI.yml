@@ -11,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        feature: ["build-from-source", "raw-window-handle"]
+        feature: ["build-from-source"]
         build_mode: [""]
         os: [macos-latest, ubuntu-latest]
     steps:
@@ -21,7 +21,7 @@ jobs:
       - name: Build sdl3
         shell: bash
         env:
-          CI_BUILD_FEATURES: ""
+          CI_BUILD_FEATURES: "raw-window-handle"
           RUST_TEST_THREADS: 1
         run: |
           set -xeuo pipefail
