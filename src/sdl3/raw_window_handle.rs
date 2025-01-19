@@ -39,7 +39,7 @@ impl HasWindowHandle for Window {
         #[cfg(target_os = "macos")]
         unsafe {
             use self::raw_window_handle::AppKitWindowHandle;
-            use objc2::{msg_send, sel, sel_impl, runtime::Object};
+            use objc2::{msg_send, runtime::NSObject};
 
             let window_properties = sys::video::SDL_GetWindowProperties(self.raw());
 
@@ -48,7 +48,7 @@ impl HasWindowHandle for Window {
                 sys::video::SDL_PROP_WINDOW_COCOA_WINDOW_POINTER,
                 std::ptr::null_mut(),
             );
-            let ns_view = msg_send![ns_window as *mut Object, contentView];
+            let ns_view = msg_send![ns_window as *mut NSObject, contentView];
             let handle = AppKitWindowHandle::new(NonNull::new_unchecked(ns_view));
             let raw_window_handle = RawWindowHandle::AppKit(handle);
 
