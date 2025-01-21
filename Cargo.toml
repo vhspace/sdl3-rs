@@ -167,6 +167,39 @@ name = "renderer_02_primitives"
 path = "examples/renderer/a02_primitives.rs"
 
 [[example]]
+name = "renderer_03_lines"
+path = "examples/renderer/a03_lines.rs"
+
+[[example]]
+# required-dependency = "rand"
+name = "renderer_04_points"
+path = "examples/renderer/a04_points.rs"
+
+[[example]]
+name = "renderer_05_rectangles"
+path = "examples/renderer/a05_rectangles.rs"
+
+[[example]]
+required-features = ["unsafe_textures"]
+name = "renderer_06_textures_lifetime_solution"
+path = "examples/renderer/a06_textures_lifetime_solution.rs"
+
+[[example]]
+required-features = ["unsafe_textures"]
+name = "renderer_07_streaming_textures"
+path = "examples/renderer/a07_streaming_textures.rs"
+
+[[example]]
+required-features = ["unsafe_textures"]
+name = "renderer_08_rotating_textures"
+path = "examples/renderer/a08_rotating_textures.rs"
+
+[[example]]
+required-features = ["unsafe_textures"]
+name = "renderer_09_scaling_textures"
+path = "examples/renderer/a09_scaling_textures.rs"
+
+[[example]]
 name = "renderer-texture"
 
 [[example]]

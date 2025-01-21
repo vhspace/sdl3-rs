@@ -52,11 +52,11 @@
 //! std::thread::sleep(Duration::from_millis(2000));
 //! ```
 
-use crate::Error;
 use crate::get_error;
 use crate::iostream::IOStream;
 use crate::sys;
 use crate::AudioSubsystem;
+use crate::Error;
 use libc::c_void;
 use std::convert::TryInto;
 use std::ffi::{c_int, CStr};
@@ -785,7 +785,9 @@ impl AudioDevice {
         let sdl_audiospec: sys::audio::SDL_AudioSpec = spec.clone().into();
 
         if sdl_audiospec.format != Channel::audio_format().to_ll() {
-            return Err(Error("AudioSpec format does not match AudioCallback Channel type".to_string()));
+            return Err(Error(
+                "AudioSpec format does not match AudioCallback Channel type".to_string(),
+            ));
         }
 
         let callback_box = Box::new(callback);
@@ -849,7 +851,9 @@ impl AudioDevice {
         let sdl_audiospec: sys::audio::SDL_AudioSpec = spec.clone().into();
 
         if sdl_audiospec.format != Channel::audio_format().to_ll() {
-            return Err(Error("AudioSpec format does not match AudioCallback Channel type".to_string()));
+            return Err(Error(
+                "AudioSpec format does not match AudioCallback Channel type".to_string(),
+            ));
         }
 
         let callback_box = Box::new(callback);
@@ -1146,17 +1150,19 @@ impl AudioStream {
         // TODO: store specs so we don't have to call get_format every time
         let (_, output_spec) = self.get_format()?;
         match output_spec.unwrap().format {
-            Some(AudioFormat::F32LE) => Ok(f32::from_le_bytes(
-                chunk
-                    .try_into()
-                    .map_err(|_| Error("Invalid byte slice length for f32 LE".to_owned()))?,
+            Some(AudioFormat::F32LE) => {
+                Ok(f32::from_le_bytes(chunk.try_into().map_err(|_| {
+                    Error("Invalid byte slice length for f32 LE".to_owned())
+                })?))
+            }
+            Some(AudioFormat::F32BE) => {
+                Ok(f32::from_be_bytes(chunk.try_into().map_err(|_| {
+                    Error("Invalid byte slice length for f32 BE".to_owned())
+                })?))
+            }
+            _ => Err(Error(
+                "Unsupported AudioFormat for f32 conversion".to_string(),
             )),
-            Some(AudioFormat::F32BE) => Ok(f32::from_be_bytes(
-                chunk
-                    .try_into()
-                    .map_err(|_| Error("Invalid byte slice length for f32 BE".to_owned()))?,
-            )),
-            _ => Err(Error("Unsupported AudioFormat for f32 conversion".to_string())),
         }
     }
 
@@ -1166,17 +1172,19 @@ impl AudioStream {
         // TODO: store specs so we don't have to call get_format every time
         let (_, output_spec) = self.get_format()?;
         match output_spec.unwrap().format {
-            Some(AudioFormat::S16LE) => Ok(i16::from_le_bytes(
-                chunk
-                    .try_into()
-                    .map_err(|_| Error("Invalid byte slice length for i16 LE".to_owned()))?,
+            Some(AudioFormat::S16LE) => {
+                Ok(i16::from_le_bytes(chunk.try_into().map_err(|_| {
+                    Error("Invalid byte slice length for i16 LE".to_owned())
+                })?))
+            }
+            Some(AudioFormat::S16BE) => {
+                Ok(i16::from_be_bytes(chunk.try_into().map_err(|_| {
+                    Error("Invalid byte slice length for i16 BE".to_owned())
+                })?))
+            }
+            _ => Err(Error(
+                "Unsupported AudioFormat for i16 conversion".to_string(),
             )),
-            Some(AudioFormat::S16BE) => Ok(i16::from_be_bytes(
-                chunk
-                    .try_into()
-                    .map_err(|_| Error("Invalid byte slice length for i16 BE".to_owned()))?,
-            )),
-            _ => Err(Error("Unsupported AudioFormat for i16 conversion".to_string())),
         }
     }
 

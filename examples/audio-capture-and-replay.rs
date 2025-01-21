@@ -37,7 +37,10 @@ impl AudioCallback<i16> for Recording {
     }
 }
 
-fn record(audio_subsystem: &AudioSubsystem, desired_spec: &AudioSpec) -> Result<Vec<i16>, Box<dyn std::error::Error>> {
+fn record(
+    audio_subsystem: &AudioSubsystem,
+    desired_spec: &AudioSpec,
+) -> Result<Vec<i16>, Box<dyn std::error::Error>> {
     println!(
         "Capturing {:} seconds... Please rock!",
         RECORDING_LENGTH_SECONDS
