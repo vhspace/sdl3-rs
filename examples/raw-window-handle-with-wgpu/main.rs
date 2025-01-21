@@ -10,7 +10,7 @@ use wgpu::{InstanceDescriptor, SurfaceError};
 use sdl3::event::{Event, WindowEvent};
 use sdl3::keyboard::Keycode;
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Show logs from wgpu
     env_logger::init();
 
@@ -25,7 +25,7 @@ fn main() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     let (width, height) = window.size();
 
-    let instance = wgpu::Instance::new(InstanceDescriptor::default());
+    let instance = wgpu::Instance::new(&InstanceDescriptor::default());
     let surface = create_surface::create_surface(&instance, &window)?;
     let adapter_opt = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::HighPerformance,
@@ -33,10 +33,10 @@ fn main() -> Result<(), String> {
         compatible_surface: Some(&surface),
     }));
     let Some(adapter) = adapter_opt else {
-        return Err(String::from("No adapter found"));
+        return Err("No adapter found".into());
     };
 
-    let (device, queue) = match pollster::block_on(adapter.request_device(
+    let (device, queue) = pollster::block_on(adapter.request_device(
         &wgpu::DeviceDescriptor {
             required_limits: wgpu::Limits::default(),
             label: Some("device"),
@@ -44,10 +44,7 @@ fn main() -> Result<(), String> {
             memory_hints: wgpu::MemoryHints::Performance,
         },
         None,
-    )) {
-        Ok(a) => a,
-        Err(e) => return Err(e.to_string()),
-    };
+    ))?;
 
     let capabilities = surface.get_capabilities(&adapter);
     let mut formats = capabilities.formats;
@@ -162,6 +159,7 @@ fn main() -> Result<(), String> {
                     SurfaceError::Outdated => "Outdated",
                     SurfaceError::Lost => "Lost",
                     SurfaceError::OutOfMemory => "OutOfMemory",
+                    SurfaceError::Other => "Other",
                 };
                 panic!("Failed to get current surface texture! Reason: {}", reason)
             }
