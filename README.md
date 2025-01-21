@@ -19,8 +19,8 @@ Feel free to create issues or work on them yourself.
 
 - [x] Update all modules to SDL3, use new [sdl3-sys](https://github.com/maia-s/sdl3-sys-rs) bindings,
       follow [migration guide](https://github.com/libsdl-org/SDL/blob/main/docs/README-migration.md).
-- [ ] Fix tests.
-- [ ] Update examples to SDL3.
+- [x] Fix tests.
+- [x] Update examples to SDL3.
 - [ ] Add [new features](https://wiki.libsdl.org/SDL3/NewFeatures) from SDL3.
 - [ ] Update documentation.
 
