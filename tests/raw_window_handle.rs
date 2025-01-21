@@ -3,7 +3,9 @@ mod raw_window_handle_test {
     extern crate raw_window_handle;
     extern crate sdl3;
 
-    use self::raw_window_handle::{HasDisplayHandle, HasWindowHandle, RawWindowHandle, RawDisplayHandle};
+    use self::raw_window_handle::{
+        HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle,
+    };
     use self::sdl3::video::Window;
 
     #[cfg(target_os = "windows")]
@@ -101,7 +103,10 @@ mod raw_window_handle_test {
         };
         match window_handle.as_raw() {
             RawWindowHandle::AppKit(macos_handle) => {
-                assert!(!macos_handle.ns_view.as_ptr().is_null(), "ns_view should not be null");
+                assert!(
+                    !macos_handle.ns_view.as_ptr().is_null(),
+                    "ns_view should not be null"
+                );
             }
             x => assert!(
                 false,
