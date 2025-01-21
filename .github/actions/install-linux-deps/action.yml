@@ -1,0 +1,27 @@
+# Copied from https://github.com/bevyengine/bevy/blob/main/.github/actions/install-linux-deps/action.yml
+#
+# This action installs the necessary dependencies to build sdl3 on Ubuntu.
+#
+# List of required dependencies taken from https://github.com/libsdl-org/SDL/blob/main/docs/README-linux.md#build-dependencies
+#
+# This action will only install dependencies when the current operating system is Linux. It will do
+# nothing on any other OS (macOS, Windows).
+
+name: Install Linux dependencies
+description: Installs the dependencies necessary to build sdl3 on Linux.
+runs:
+  using: composite
+  steps:
+    - name: Install Linux dependencies
+      shell: bash
+      if: ${{ runner.os == 'linux' }}
+      run: |
+        sudo apt-get update
+        sudo apt-get install --no-install-recommends \
+        build-essential git make \
+        pkg-config cmake ninja-build gnome-desktop-testing libasound2-dev libpulse-dev \
+        libaudio-dev libjack-dev libsndio-dev libx11-dev libxext-dev \
+        libxrandr-dev libxcursor-dev libxfixes-dev libxi-dev libxss-dev \
+        libxkbcommon-dev libdrm-dev libgbm-dev libgl1-mesa-dev libgles2-mesa-dev \
+        libegl1-mesa-dev libdbus-1-dev libibus-1.0-dev libudev-dev fcitx-libs-dev \
+        libpipewire-0.3-dev libwayland-dev libdecor-0-dev liburing-dev
