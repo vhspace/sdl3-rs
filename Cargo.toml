@@ -60,7 +60,7 @@ link-framework = ["sdl3-sys/link-framework"]
 build-from-source = ["sdl3-sys/build-from-source"]
 build-from-source-static = ["sdl3-sys/build-from-source-static"]
 build-from-source-unix-console = ["sdl3-sys/sdl-unix-console-build"]
-
+ash = ["sdl3-sys/use-ash-v0-38"]
 default = []
 unsafe_textures = []
 gfx = ["c_vec"]      #, "sdl3-sys/gfx"]
