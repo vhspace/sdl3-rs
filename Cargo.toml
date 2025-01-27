@@ -164,6 +164,11 @@ name = "gpu-clear"
 name = "gpu-triangle"
 
 [[example]]
+# required-dependency = "rand"
+name = "demo_games_02_woodeneye"
+path = "examples/demo_games/a02_woodeneye_008.rs"
+
+[[example]]
 name = "renderer_01_change_the_color"
 path = "examples/renderer/a01_change_the_color.rs"
 
