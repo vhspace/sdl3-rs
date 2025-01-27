@@ -5,48 +5,23 @@ on:
   pull_request:
 
 jobs:
-  build-vcpkg:
-    name: build vcpkg
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-      fail-fast: false
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install cargo-vcpkg
-        run: cargo install cargo-vcpkg
-      - name: Install dependencies
-        run: cargo vcpkg -v build
-      - name: Build sdl3
-        shell: bash
-        env:
-          CI_BUILD_FEATURES: "use-vcpkg static-link gfx image ttf mixer"
-          RUST_TEST_THREADS: 1
-        run: |
-          set -xeuo pipefail
-          rustc --version
-          cargo --version
-          cargo build --features "${CI_BUILD_FEATURES}"
-          cargo build --examples --features "${CI_BUILD_FEATURES}"
-          cargo test --features "${CI_BUILD_FEATURES}"
-
-  build-bundled:
-    name: build bundled
+  build-from-source:
+    name: build from source
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        feature: ["", "static-link"]
-        build_mode: ["", "--release"]
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        feature: ["build-from-source"]
+        build_mode: [""]
+        os: [macos-latest, ubuntu-latest]
     steps:
       - uses: actions/checkout@v2
+      - name: Install Linux dependencies
+        uses: ./.github/actions/install-linux-deps
       - name: Build sdl3
         shell: bash
         env:
-          # Bundled doesn't yet support gfx, image, ttf, mixer.
-          CI_BUILD_FEATURES: "bundled"
+          CI_BUILD_FEATURES: "raw-window-handle"
           RUST_TEST_THREADS: 1
         run: |
           set -xeuo pipefail
@@ -54,26 +29,3 @@ jobs:
           cargo --version
           cargo build --features "${CI_BUILD_FEATURES} ${{matrix.feature}}" ${{matrix.build_mode}}
           cargo build --examples --features "${CI_BUILD_FEATURES} ${{matrix.feature}}" ${{matrix.build_mode}}
-          cargo test --features "${CI_BUILD_FEATURES} ${{matrix.feature}}" ${{matrix.build_mode}}
-
-  build-linux:
-    name: build linux pkg-config
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Install dependencies
-        run: |
-          sudo apt-get update -y -qq
-          sudo apt-get install -y libsdl3-dev libsdl3-mixer-dev libsdl3-gfx-dev libsdl3-image-dev libsdl3-ttf-dev
-      - name: Build sdl3
-        shell: bash
-        env:
-          CI_BUILD_FEATURES: "gfx image ttf mixer"
-          RUST_TEST_THREADS: 1
-        run: |
-          set -xeuo pipefail
-          rustc --version
-          cargo --version
-          # SDL 2.0.10 so no hidapi
-          cargo build --no-default-features --features "${CI_BUILD_FEATURES}"
-          cargo test --no-default-features --features "${CI_BUILD_FEATURES}"

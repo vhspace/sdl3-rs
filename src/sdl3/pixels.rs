@@ -1,6 +1,6 @@
-use crate::Error;
 use crate::get_error;
 use crate::sys;
+use crate::Error;
 use std::convert::{TryFrom, TryInto};
 use std::ffi::c_int;
 use std::fmt::Debug;
@@ -29,10 +29,12 @@ impl Palette {
 
             match validate_int(capacity as u32, "capacity") {
                 Ok(len) => len,
-                Err(e) => return Err(match e {
-                    IntegerOrSdlError::SdlError(e) => e,
-                    o => Error(o.to_string()),
-                })
+                Err(e) => {
+                    return Err(match e {
+                        IntegerOrSdlError::SdlError(e) => e,
+                        o => Error(o.to_string()),
+                    })
+                }
             }
         };
 

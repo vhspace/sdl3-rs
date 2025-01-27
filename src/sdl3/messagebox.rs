@@ -4,9 +4,9 @@ use std::fmt;
 use std::os::raw::{c_char, c_int};
 use std::ptr;
 
-use crate::Error;
 use crate::get_error;
 use crate::video::Window;
+use crate::Error;
 
 use crate::sys;
 

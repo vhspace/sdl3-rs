@@ -7,9 +7,9 @@ use std::ptr;
 use std::str::Utf8Error;
 use sys::properties::SDL_PropertiesID;
 
-use crate::Error;
 use crate::get_error;
 use crate::sys;
+use crate::Error;
 
 #[derive(Debug)]
 pub enum PropertiesError {

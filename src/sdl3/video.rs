@@ -1,10 +1,10 @@
 use crate::common::{validate_int, IntegerOrSdlError};
-use crate::Error;
 use crate::get_error;
 use crate::pixels::PixelFormat;
 use crate::rect::Rect;
 use crate::render::{create_renderer, WindowCanvas};
 use crate::surface::SurfaceRef;
+use crate::Error;
 use crate::EventPump;
 use crate::VideoSubsystem;
 use libc::{c_char, c_int, c_uint, c_void};
@@ -672,6 +672,7 @@ impl FlashOperation {
 /// Note: If a `Window` goes out of scope but it cloned its context,
 /// then the `SDL_Window` will not be destroyed until there are no more references to the `WindowContext`.
 /// This may happen when a `TextureCreator<Window>` outlives the `Canvas<Window>`
+#[derive(Clone)]
 pub struct Window {
     context: Arc<WindowContext>, // Arc may not be needed, added because wgpu expects Window to be send/sync, though even with Arc this technically still isn't send/sync
 }
@@ -1592,7 +1593,9 @@ impl Window {
         let mut extension_names = Vec::with_capacity(count as usize);
         for &ext in names_slice {
             if ext.is_null() {
-                return Err(Error("Received null pointer for extension name".to_string()));
+                return Err(Error(
+                    "Received null pointer for extension name".to_string(),
+                ));
             }
             let c_str = unsafe { CStr::from_ptr(ext) };
             extension_names.push(c_str.to_string_lossy().into_owned());
@@ -1608,6 +1611,10 @@ impl Window {
     /// function in the Vulkan library.
     #[doc(alias = "SDL_Vulkan_CreateSurface")]
     pub fn vulkan_create_surface(&self, instance: VkInstance) -> Result<VkSurfaceKHR, Error> {
+        #[cfg(feature = "ash")]
+        let mut surface: VkSurfaceKHR = VkSurfaceKHR::default();
+
+        #[cfg(not(feature = "ash"))]
         let mut surface: VkSurfaceKHR = 0 as _;
         if unsafe {
             sys::vulkan::SDL_Vulkan_CreateSurface(self.context.raw, instance, null(), &mut surface)

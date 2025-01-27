@@ -75,6 +75,7 @@ pub mod dialog;
 pub mod event;
 pub mod filesystem;
 pub mod gamepad;
+pub mod gpu;
 pub mod haptic;
 pub mod hint;
 pub mod iostream;

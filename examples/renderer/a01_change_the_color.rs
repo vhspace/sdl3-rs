@@ -1,3 +1,4 @@
+use sdl3::Error;
 use sdl3::{event::Event, pixels::Color};
 
 use std::f64::consts::PI;
@@ -6,7 +7,7 @@ use std::time::Instant;
 const WINDOW_WIDTH: u32 = 640;
 const WINDOW_HEIGHT: u32 = 480;
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Error> {
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
     let window = video_subsystem

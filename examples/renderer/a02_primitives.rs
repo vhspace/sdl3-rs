@@ -4,13 +4,14 @@ extern crate sdl3;
 use rand::Rng;
 use sdl3::rect::Rect;
 use sdl3::render::FRect;
+use sdl3::Error;
 use sdl3::{event::Event, pixels::Color, rect::Point};
 
 const WINDOW_WIDTH: u32 = 640;
 const WINDOW_HEIGHT: u32 = 480;
 const NUM_POINTS: usize = 500;
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Error> {
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
     let window = video_subsystem

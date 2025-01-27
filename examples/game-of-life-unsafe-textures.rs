@@ -121,7 +121,9 @@ mod game_of_life {
 }
 
 #[cfg(feature = "unsafe_textures")]
-fn dummy_texture<'a>(canvas: &mut Canvas<Window>) -> Result<(Texture, Texture), Box<dyn std::error::Error>> {
+fn dummy_texture<'a>(
+    canvas: &mut Canvas<Window>,
+) -> Result<(Texture, Texture), Box<dyn std::error::Error>> {
     enum TextureColor {
         Yellow,
         White,
