@@ -48,8 +48,11 @@ impl HasWindowHandle for Window {
                 sys::video::SDL_PROP_WINDOW_COCOA_WINDOW_POINTER,
                 std::ptr::null_mut(),
             );
-            let ns_view = msg_send![ns_window as *mut NSObject, contentView];
-            let handle = AppKitWindowHandle::new(NonNull::new_unchecked(ns_view));
+            let ns_view: *mut NSObject = msg_send![ns_window as *mut NSObject, contentView];
+            if ns_view.is_null() {
+                return Err(HandleError::Unavailable);
+            }
+            let handle = AppKitWindowHandle::new(NonNull::new_unchecked(ns_view.cast()));
             let raw_window_handle = RawWindowHandle::AppKit(handle);
 
             Ok(WindowHandle::borrow_raw(raw_window_handle))
