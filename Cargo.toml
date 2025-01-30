@@ -164,7 +164,6 @@ name = "gpu-clear"
 name = "gpu-triangle"
 
 [[example]]
-# required-dependency = "rand"
 name = "demo_games_02_woodeneye"
 path = "examples/demo_games/a02_woodeneye_008.rs"
 
@@ -173,7 +172,6 @@ name = "renderer_01_change_the_color"
 path = "examples/renderer/a01_change_the_color.rs"
 
 [[example]]
-# required-dependency = "rand"
 name = "renderer_02_primitives"
 path = "examples/renderer/a02_primitives.rs"
 
@@ -182,7 +180,6 @@ name = "renderer_03_lines"
 path = "examples/renderer/a03_lines.rs"
 
 [[example]]
-# required-dependency = "rand"
 name = "renderer_04_points"
 path = "examples/renderer/a04_points.rs"
 
