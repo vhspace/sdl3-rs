@@ -236,7 +236,6 @@ pub struct PixelFormat {
 }
 
 impl_raw_accessors!((PixelFormat, sys::pixels::SDL_PixelFormat));
-impl_raw_constructor!((PixelFormat, PixelFormat(raw: sys::pixels::SDL_PixelFormat )));
 
 impl Debug for PixelFormat {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {

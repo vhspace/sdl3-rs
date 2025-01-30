@@ -1,7 +1,7 @@
 [package]
 name = "sdl3"
 description = "Cross-platform multimedia"
-repository = "https://github.com/revmischa/sdl3-rs"
+repository = "https://github.com/vhspace/sdl3-rs"
 documentation = "https://docs.rs/sdl3/latest/sdl3/"
 version = "0.14.2"
 license = "MIT"
