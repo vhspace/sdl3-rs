@@ -371,7 +371,7 @@ impl TryFrom<u32> for EventType {
         use self::EventType::*;
         use crate::sys::events::*;
 
-        Ok(match unsafe { transmute(n) } {
+        Ok(match SDL_EventType(n) {
             SDL_EVENT_FIRST => First,
 
             SDL_EVENT_QUIT => Quit,
