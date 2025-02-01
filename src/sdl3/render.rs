@@ -1289,10 +1289,11 @@ impl<T: RenderTarget> Canvas<T> {
     /// Errors if drawing fails for any reason (e.g. driver failure)
     #[doc(alias = "SDL_RenderFillRect")]
     pub fn fill_rect<R: Into<Option<FRect>>>(&mut self, rect: R) -> Result<(), Error> {
+        let rect_ll = rect.into().map(|r| r.to_ll());
         let result = unsafe {
             sys::render::SDL_RenderFillRect(
                 self.context.raw,
-                rect.into().map_or(ptr::null(), |r| &r.to_ll()),
+                rect_ll.as_ref().map_or(ptr::null(), |r| r),
             )
         };
         if !result {
