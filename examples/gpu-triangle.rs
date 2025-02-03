@@ -1,8 +1,8 @@
 extern crate sdl3;
 
-use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
 use sdl3::pixels::Color;
+use sdl3::{event::Event, gpu::GraphicsPipelineTargetInfo};
 use sdl3_sys::render;
 use std::time::Duration;
 
@@ -58,18 +58,20 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Create a pipeline, we specify that we want our target format in the one of the swapchain
     // since we are rendering directly unto the swapchain, however, we could specify one that
     // is different from the swapchain (i.e offscreen rendering)
-    let color_target = [sdl3::gpu::ColorTargetDescriptionBuilder::new()
-        .with_format(swapchain_format)
-        .build()];
     let pipeline = gpu
         .create_graphics_pipeline()
         .with_fragment_shader(&fs_shader)
         .with_vertex_shader(&vs_shader)
         .with_primitive_type(sdl3::gpu::PrimitiveType::TriangleList)
         .with_fill_mode(sdl3::gpu::FillMode::Fill)
-        .with_target_info(&color_target)
+        .with_target_info(
+            GraphicsPipelineTargetInfo::new().with_color_target_descriptions(&[
+                sdl3::gpu::ColorTargetDescriptionBuilder::new()
+                    .with_format(swapchain_format)
+                    .build(),
+            ]),
+        )
         .build()?;
-    drop(color_target);
 
     vs_shader.release(&gpu);
     fs_shader.release(&gpu);
