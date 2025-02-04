@@ -11,6 +11,7 @@ use sdl3::{
     },
     keyboard::Keycode,
     pixels::Color,
+    Error,
 };
 
 extern crate sdl3;
@@ -87,10 +88,10 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let gpu = sdl3::gpu::Device::new(
+    let gpu = Device::new(
         ShaderFormat::SpirV | ShaderFormat::Dxil | ShaderFormat::Dxbc | ShaderFormat::MetalLib,
         true,
-    )
+    )?
     .with_window(&window)?;
 
     // Our shaders, require to be precompiled by a SPIR-V compiler beforehand
@@ -127,7 +128,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             VertexInputState::new()
                 .with_vertex_buffer_descriptions(&[VertexBufferDescription::new()
                     .with_slot(0)
-                    .with_pitch((size_of::<f32>() * 3) as u32) // 3 floats per vertex
+                    .with_pitch(size_of::<VertexPosition>() as u32)
                     .with_input_rate(VertexInputRate::Vertex)
                     .with_instance_step_rate(0)])
                 .with_vertex_attributes(&[VertexAttribute::new()
@@ -160,8 +161,8 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build()?;
 
     // The pipeline now holds copies of our shaders, so we can release them
-    vert_shader.release(&gpu);
-    frag_shader.release(&gpu);
+    drop(vert_shader);
+    drop(frag_shader);
 
     // Next, we create a transfer buffer that is large enough to hold either
     // our vertices or indices since we will be transferring both with it.
@@ -171,10 +172,10 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         .create_transfer_buffer()
         .with_size(vertices_len_bytes.max(indices_len_bytes) as u32)
         .with_usage(TransferBufferUsage::Upload)
-        .build();
+        .build()?;
 
     // We need to start a copy pass in order to transfer data to the GPU
-    let copy_commands = gpu.acquire_command_buffer();
+    let copy_commands = gpu.acquire_command_buffer()?;
     let copy_pass = gpu.begin_copy_pass(&copy_commands)?;
 
     // Create GPU buffers to hold our vertices and indices and transfer data to them
@@ -184,17 +185,17 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         &copy_pass,
         BufferUsageFlags::Vertex,
         &CUBE_VERTICES,
-    );
+    )?;
     let index_buffer = create_buffer_with_data(
         &gpu,
         &transfer_buffer,
         &copy_pass,
         BufferUsageFlags::Index,
         &CUBE_INDICES,
-    );
+    )?;
 
     // We're done with the transfer buffer now, so release it.
-    transfer_buffer.release(&gpu);
+    drop(transfer_buffer);
 
     // Now complete and submit the copy pass commands to actually do the transfer work
     gpu.end_copy_pass(copy_pass);
@@ -211,7 +212,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_sample_count(SampleCount::NoMultiSampling)
             .with_format(TextureFormat::D16Unorm)
             .with_usage(TextureUsage::Sampler | TextureUsage::DepthStencilTarget),
-    );
+    )?;
 
     let mut rotation = 45.0f32;
     let mut event_pump = sdl_context.event_pump()?;
@@ -232,12 +233,11 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         //
         // This is because a swapchain needs to be "allocated", and it can quickly run out
         // if we don't properly time the rendering process.
-        let mut command_buffer = gpu.acquire_command_buffer();
-        if let Ok(swapchain) = gpu.wait_and_acquire_swapchain_texture(&window, &mut command_buffer)
-        {
+        let mut command_buffer = gpu.acquire_command_buffer()?;
+        if let Ok(swapchain) = command_buffer.wait_and_acquire_swapchain_texture(&window) {
             // Again, like in gpu-clear.rs, we'd want to define basic operations for our cube
             let color_targets = [ColorTargetInfo::default()
-                .with_texture(swapchain)
+                .with_texture(&swapchain)
                 .with_load_op(LoadOp::Clear)
                 .with_store_op(StoreOp::Store)
                 .with_clear_color(Color::RGB(128, 128, 128))];
@@ -296,7 +296,7 @@ fn create_buffer_with_data<T: Copy>(
     copy_pass: &CopyPass,
     usage: BufferUsageFlags,
     data: &[T],
-) -> Buffer {
+) -> Result<Buffer, Error> {
     // Figure out the length of the data in bytes
     let len_bytes = data.len() * std::mem::size_of::<T>();
 
@@ -305,7 +305,7 @@ fn create_buffer_with_data<T: Copy>(
         .create_buffer()
         .with_size(len_bytes as u32)
         .with_usage(usage)
-        .build();
+        .build()?;
 
     // Map the transfer buffer's memory into a place we can copy into, and copy the data
     //
@@ -335,5 +335,5 @@ fn create_buffer_with_data<T: Copy>(
         true,
     );
 
-    buffer
+    Ok(buffer)
 }

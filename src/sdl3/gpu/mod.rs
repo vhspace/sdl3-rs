@@ -1,11 +1,14 @@
-use crate::{pixels::Color, sys};
+use crate::{get_error, pixels::Color, sys, Error};
 use std::{
     ffi::CString,
+    marker::PhantomData,
     ops::{BitAnd, BitOr},
+    sync::{Arc, Weak},
 };
 use sys::gpu::{
-    SDL_BindGPUIndexBuffer, SDL_BindGPUVertexBuffers, SDL_CreateGPUBuffer, SDL_CreateGPUTexture,
-    SDL_CreateGPUTransferBuffer, SDL_DrawGPUIndexedPrimitives, SDL_GPUBuffer, SDL_GPUBufferBinding,
+    SDL_AcquireGPUSwapchainTexture, SDL_BindGPUIndexBuffer, SDL_BindGPUVertexBuffers,
+    SDL_CreateGPUBuffer, SDL_CreateGPUDevice, SDL_CreateGPUTexture, SDL_CreateGPUTransferBuffer,
+    SDL_DestroyGPUDevice, SDL_DrawGPUIndexedPrimitives, SDL_GPUBuffer, SDL_GPUBufferBinding,
     SDL_GPUBufferCreateInfo, SDL_GPUBufferRegion, SDL_GPUColorTargetDescription,
     SDL_GPUColorTargetInfo, SDL_GPUCommandBuffer, SDL_GPUCompareOp, SDL_GPUComputePass,
     SDL_GPUCopyPass, SDL_GPUCullMode, SDL_GPUDepthStencilState, SDL_GPUDepthStencilTargetInfo,
@@ -16,9 +19,10 @@ use sys::gpu::{
     SDL_GPUTexture, SDL_GPUTextureCreateInfo, SDL_GPUTextureFormat, SDL_GPUTextureType,
     SDL_GPUTransferBuffer, SDL_GPUTransferBufferCreateInfo, SDL_GPUTransferBufferLocation,
     SDL_GPUTransferBufferUsage, SDL_GPUVertexAttribute, SDL_GPUVertexBufferDescription,
-    SDL_GPUVertexInputState, SDL_GPUViewport, SDL_MapGPUTransferBuffer,
-    SDL_PushGPUVertexUniformData, SDL_ReleaseGPUBuffer, SDL_ReleaseGPUTransferBuffer,
-    SDL_UnmapGPUTransferBuffer, SDL_UploadToGPUBuffer,
+    SDL_GPUVertexInputRate, SDL_GPUVertexInputState, SDL_GPUViewport, SDL_MapGPUTransferBuffer,
+    SDL_PushGPUVertexUniformData, SDL_ReleaseGPUBuffer, SDL_ReleaseGPUGraphicsPipeline,
+    SDL_ReleaseGPUTexture, SDL_ReleaseGPUTransferBuffer, SDL_UnmapGPUTransferBuffer,
+    SDL_UploadToGPUBuffer, SDL_WaitAndAcquireGPUSwapchainTexture,
 };
 
 macro_rules! impl_with {
@@ -379,15 +383,6 @@ impl_with!(enum_ops VertexElementFormat);
 //
 pub struct CommandBuffer {
     inner: *mut SDL_GPUCommandBuffer,
-    swapchain: Texture,
-}
-impl Default for CommandBuffer {
-    fn default() -> Self {
-        Self {
-            inner: std::ptr::null_mut(),
-            swapchain: Texture::default(),
-        }
-    }
 }
 impl CommandBuffer {
     impl_with!(raw SDL_GPUCommandBuffer);
@@ -404,12 +399,60 @@ impl CommandBuffer {
         }
     }
 
+    #[doc(alias = "SDL_WaitAndAcquireGPUSwapchainTexture")]
+    pub fn wait_and_acquire_swapchain_texture<'a>(
+        &'a mut self,
+        w: &crate::video::Window,
+    ) -> Result<Texture<'a>, Error> {
+        let mut swapchain = std::ptr::null_mut();
+        let mut width = 0;
+        let mut height = 0;
+        let success = unsafe {
+            SDL_WaitAndAcquireGPUSwapchainTexture(
+                self.inner,
+                w.raw(),
+                &mut swapchain,
+                &mut width,
+                &mut height,
+            )
+        };
+        if success {
+            Ok(Texture::new_sdl_managed(swapchain, width, height))
+        } else {
+            Err(get_error())
+        }
+    }
+
+    #[doc(alias = "SDL_AcquireGPUSwapchainTexture")]
+    pub fn acquire_swapchain_texture<'a>(
+        &'a mut self,
+        w: &crate::video::Window,
+    ) -> Result<Texture<'a>, Error> {
+        let mut swapchain = std::ptr::null_mut();
+        let mut width = 0;
+        let mut height = 0;
+        let success = unsafe {
+            SDL_AcquireGPUSwapchainTexture(
+                self.inner,
+                w.raw(),
+                &mut swapchain,
+                &mut width,
+                &mut height,
+            )
+        };
+        if success {
+            Ok(Texture::new_sdl_managed(swapchain, width, height))
+        } else {
+            Err(get_error())
+        }
+    }
+
     #[doc(alias = "SDL_SubmitGPUCommandBuffer")]
-    pub fn submit(self) -> Result<(), crate::sdl::Error> {
+    pub fn submit(self) -> Result<(), Error> {
         if unsafe { sys::gpu::SDL_SubmitGPUCommandBuffer(self.inner) } {
             Ok(())
         } else {
-            Err(crate::sdl::get_error())
+            Err(get_error())
         }
     }
 
@@ -472,7 +515,7 @@ pub struct ColorTargetInfo {
 }
 impl ColorTargetInfo {
     pub fn with_texture(mut self, texture: &Texture) -> Self {
-        self.inner.texture = texture.inner;
+        self.inner.texture = texture.raw();
         self
     }
     pub fn with_load_op(mut self, value: LoadOp) -> Self {
@@ -533,10 +576,8 @@ impl RenderPass {
     impl_with!(raw SDL_GPURenderPass);
 
     #[doc(alias = "SDL_BindGPUGraphicsPipeline")]
-    pub fn bind_graphics_pipeline(&self, gp: &GraphicsPipeline) {
-        unsafe {
-            sys::gpu::SDL_BindGPUGraphicsPipeline(self.inner, gp.inner);
-        }
+    pub fn bind_graphics_pipeline(&self, pipeline: &GraphicsPipeline) {
+        unsafe { sys::gpu::SDL_BindGPUGraphicsPipeline(self.inner, pipeline.raw()) }
     }
 
     #[doc(alias = "SDL_BindGPUVertexBuffer")]
@@ -679,39 +720,104 @@ impl ComputePass {
     impl_with!(raw SDL_GPUComputePass);
 }
 
-pub struct Shader {
-    inner: *mut SDL_GPUShader,
+/// Manages the raw `SDL_GPUShader` pointer and releases it on drop
+struct ShaderContainer {
+    raw: *mut SDL_GPUShader,
+    device: Weak<DeviceContainer>,
 }
-impl Shader {
-    impl_with!(raw SDL_GPUShader);
-    pub fn release(self, device: &Device) {
-        unsafe {
-            sys::gpu::SDL_ReleaseGPUShader(device.raw(), self.inner);
-            std::mem::forget(self);
+impl Drop for ShaderContainer {
+    fn drop(&mut self) {
+        if let Some(device) = self.device.upgrade() {
+            unsafe { sys::gpu::SDL_ReleaseGPUShader(device.0, self.raw) }
         }
     }
 }
 
-#[derive(Debug)]
-pub struct Texture {
-    inner: *mut SDL_GPUTexture,
-    size: Option<(u32, u32)>,
+#[derive(Clone)]
+pub struct Shader {
+    inner: Arc<ShaderContainer>,
 }
-impl Default for Texture {
-    fn default() -> Self {
-        Self {
-            inner: std::ptr::null_mut(),
-            size: Some((0, 0)),
+impl Shader {
+    #[inline]
+    fn raw(&self) -> *mut SDL_GPUShader {
+        self.inner.raw
+    }
+}
+
+/// Manages the raw `SDL_GPUTexture` pointer and releases it on drop (if necessary)
+enum TextureContainer {
+    /// The user is responsible for releasing this texture
+    UserManaged {
+        raw: *mut SDL_GPUTexture,
+        device: Weak<DeviceContainer>,
+    },
+    /// SDL owns this texture and is responsible for releasing it
+    SdlManaged { raw: *mut SDL_GPUTexture },
+}
+impl TextureContainer {
+    fn raw(&self) -> *mut SDL_GPUTexture {
+        match self {
+            Self::UserManaged { raw, .. } => *raw,
+            Self::SdlManaged { raw } => *raw,
         }
     }
 }
-impl Texture {
-    impl_with!(raw SDL_GPUTexture);
-    pub fn width(&self) -> Option<usize> {
-        self.size.map(|(a, _)| a as usize)
+impl Drop for TextureContainer {
+    #[doc(alias = "SDL_ReleaseGPUTexture")]
+    fn drop(&mut self) {
+        match self {
+            Self::UserManaged { raw, device } => {
+                if let Some(device) = device.upgrade() {
+                    unsafe { SDL_ReleaseGPUTexture(device.0, *raw) };
+                }
+            }
+            _ => {}
+        }
     }
-    pub fn height(&self) -> Option<usize> {
-        self.size.map(|(_, b)| b as usize)
+}
+
+// Texture has a lifetime for the case of the special swapchain texture that must not
+// live longer than the command buffer it is bound to. Otherwise, it is always 'static.
+#[derive(Clone)]
+pub struct Texture<'a> {
+    inner: Arc<TextureContainer>,
+    width: u32,
+    height: u32,
+    _phantom: PhantomData<&'a ()>,
+}
+impl<'a> Texture<'a> {
+    fn new(device: &Device, raw: *mut SDL_GPUTexture, width: u32, height: u32) -> Texture<'a> {
+        Texture {
+            inner: Arc::new(TextureContainer::UserManaged {
+                raw,
+                device: Arc::downgrade(&device.inner),
+            }),
+            width,
+            height,
+            _phantom: Default::default(),
+        }
+    }
+
+    fn new_sdl_managed(raw: *mut SDL_GPUTexture, width: u32, height: u32) -> Texture<'a> {
+        Texture {
+            inner: Arc::new(TextureContainer::SdlManaged { raw }),
+            width,
+            height,
+            _phantom: Default::default(),
+        }
+    }
+
+    #[inline]
+    pub fn raw(&self) -> *mut SDL_GPUTexture {
+        self.inner.raw()
+    }
+
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+
+    pub fn height(&self) -> u32 {
+        self.height
     }
 }
 
@@ -795,12 +901,17 @@ impl<'a> ShaderBuilder<'a> {
         self.inner.entrypoint = self.entrypoint.as_c_str().as_ptr();
         self
     }
-    pub fn build(self) -> Result<Shader, crate::sdl::Error> {
-        let p = unsafe { sys::gpu::SDL_CreateGPUShader(self.device.inner, &self.inner) };
-        if p != std::ptr::null_mut() {
-            Ok(Shader { inner: p })
+    pub fn build(self) -> Result<Shader, Error> {
+        let raw_shader = unsafe { sys::gpu::SDL_CreateGPUShader(self.device.raw(), &self.inner) };
+        if !raw_shader.is_null() {
+            Ok(Shader {
+                inner: Arc::new(ShaderContainer {
+                    raw: raw_shader,
+                    device: Arc::downgrade(&self.device.inner),
+                }),
+            })
         } else {
-            Err(crate::sdl::get_error())
+            Err(get_error())
         }
     }
 }
@@ -888,7 +999,7 @@ impl VertexBufferDescription {
     }
 
     pub fn with_input_rate(mut self, value: VertexInputRate) -> Self {
-        self.inner.input_rate = unsafe { std::mem::transmute(value as u32) };
+        self.inner.input_rate = SDL_GPUVertexInputRate(value as i32);
         self
     }
 
@@ -1155,47 +1266,95 @@ impl<'a> GraphicsPipelineBuilder<'a> {
         self
     }
 
-    pub fn build(self) -> Result<GraphicsPipeline, crate::sdl::Error> {
-        let p = unsafe { sys::gpu::SDL_CreateGPUGraphicsPipeline(self.device.raw(), &self.inner) };
-        if p != std::ptr::null_mut() {
-            Ok(GraphicsPipeline { inner: p })
+    pub fn build(self) -> Result<GraphicsPipeline, Error> {
+        let raw_pipeline =
+            unsafe { sys::gpu::SDL_CreateGPUGraphicsPipeline(self.device.raw(), &self.inner) };
+        if raw_pipeline.is_null() {
+            Err(get_error())
         } else {
-            Err(crate::sdl::get_error())
+            Ok(GraphicsPipeline {
+                inner: Arc::new(GraphicsPipelineContainer {
+                    raw: raw_pipeline,
+                    device: Arc::downgrade(&self.device.inner),
+                }),
+            })
         }
     }
-}
-pub struct GraphicsPipeline {
-    inner: *mut SDL_GPUGraphicsPipeline,
 }
 
-#[derive(Debug)]
-pub struct Device {
-    inner: *mut SDL_GPUDevice,
+/// Manages the raw `SDL_GPUGraphicsPipeline` pointer and releases it on drop
+struct GraphicsPipelineContainer {
+    raw: *mut SDL_GPUGraphicsPipeline,
+    device: Weak<DeviceContainer>,
 }
-impl Device {
-    impl_with!(raw SDL_GPUDevice);
-    #[doc(alias = "SDL_CreateGPUDevice")]
-    pub fn new(flags: ShaderFormat, debug_mode: bool) -> Self {
-        Self {
-            inner: unsafe {
-                sys::gpu::SDL_CreateGPUDevice(flags as u32, debug_mode, std::ptr::null())
-            },
+impl Drop for GraphicsPipelineContainer {
+    #[doc(alias = "SDL_ReleaseGPUGraphicsPipeline")]
+    fn drop(&mut self) {
+        if let Some(device) = self.device.upgrade() {
+            unsafe { SDL_ReleaseGPUGraphicsPipeline(device.0, self.raw) }
         }
     }
+}
+
+#[derive(Clone)]
+pub struct GraphicsPipeline {
+    inner: Arc<GraphicsPipelineContainer>,
+}
+impl GraphicsPipeline {
+    #[inline]
+    fn raw(&self) -> *mut SDL_GPUGraphicsPipeline {
+        self.inner.raw
+    }
+}
+
+/// Manages the raw `SDL_GPUDevice` pointer and releases it on drop
+struct DeviceContainer(*mut SDL_GPUDevice);
+impl Drop for DeviceContainer {
+    #[doc(alias = "SDL_DestroyGPUDevice")]
+    fn drop(&mut self) {
+        unsafe { SDL_DestroyGPUDevice(self.0) }
+    }
+}
+
+#[derive(Clone)]
+pub struct Device {
+    inner: Arc<DeviceContainer>,
+}
+impl Device {
+    #[inline]
+    fn raw(&self) -> *mut SDL_GPUDevice {
+        self.inner.0
+    }
+
+    #[doc(alias = "SDL_CreateGPUDevice")]
+    pub fn new(flags: ShaderFormat, debug_mode: bool) -> Result<Self, Error> {
+        let raw_device = unsafe { SDL_CreateGPUDevice(flags as u32, debug_mode, std::ptr::null()) };
+        if raw_device.is_null() {
+            Err(get_error())
+        } else {
+            Ok(Self {
+                inner: Arc::new(DeviceContainer(raw_device)),
+            })
+        }
+    }
+
     #[doc(alias = "SDL_ClaimWindowForGPUDevice")]
-    pub fn with_window(self, w: &crate::video::Window) -> Result<Self, crate::sdl::Error> {
-        let p = unsafe { sys::gpu::SDL_ClaimWindowForGPUDevice(self.inner, w.raw()) };
+    pub fn with_window(self, w: &crate::video::Window) -> Result<Self, Error> {
+        let p = unsafe { sys::gpu::SDL_ClaimWindowForGPUDevice(self.inner.0, w.raw()) };
         if p {
             Ok(self)
         } else {
-            Err(crate::sdl::get_error())
+            Err(get_error())
         }
     }
+
     #[doc(alias = "SDL_AcquireGPUCommandBuffer")]
-    pub fn acquire_command_buffer(&self) -> CommandBuffer {
-        CommandBuffer {
-            inner: unsafe { sys::gpu::SDL_AcquireGPUCommandBuffer(self.inner) },
-            ..Default::default()
+    pub fn acquire_command_buffer(&self) -> Result<CommandBuffer, Error> {
+        let raw_buffer = unsafe { sys::gpu::SDL_AcquireGPUCommandBuffer(self.inner.0) };
+        if raw_buffer.is_null() {
+            Err(get_error())
+        } else {
+            Ok(CommandBuffer { inner: raw_buffer })
         }
     }
     pub fn create_shader(&self) -> ShaderBuilder {
@@ -1220,10 +1379,20 @@ impl Device {
         }
     }
     #[doc(alias = "SDL_CreateGPUTexture")]
-    pub fn create_texture(&self, create_info: TextureCreateInfo) -> Texture {
-        Texture {
-            inner: unsafe { SDL_CreateGPUTexture(self.raw(), &create_info.inner) },
-            size: Some((create_info.inner.width, create_info.inner.height)),
+    pub fn create_texture(
+        &self,
+        create_info: TextureCreateInfo,
+    ) -> Result<Texture<'static>, Error> {
+        let raw_texture = unsafe { SDL_CreateGPUTexture(self.raw(), &create_info.inner) };
+        if raw_texture.is_null() {
+            Err(get_error())
+        } else {
+            Ok(Texture::new(
+                self,
+                raw_texture,
+                create_info.inner.width,
+                create_info.inner.height,
+            ))
         }
     }
 
@@ -1235,67 +1404,10 @@ impl Device {
     }
     pub fn get_swapchain_texture_format(&self, w: &crate::video::Window) -> TextureFormat {
         unsafe {
-            std::mem::transmute(sys::gpu::SDL_GetGPUSwapchainTextureFormat(self.inner, w.raw()).0)
+            std::mem::transmute(sys::gpu::SDL_GetGPUSwapchainTextureFormat(self.inner.0, w.raw()).0)
         }
     }
-    // May not:
-    // - Live longer than command buffer
-    // - Or than the GPU object
-    #[doc(alias = "SDL_WaitAndAcquireGPUSwapchainTexture")]
-    pub fn wait_and_acquire_swapchain_texture<'a>(
-        &self,
-        w: &crate::video::Window,
-        command_buffer: &'a mut CommandBuffer,
-    ) -> Result<&'a Texture, crate::sdl::Error> {
-        unsafe {
-            let mut swapchain = std::ptr::null_mut();
-            let mut width = 0;
-            let mut height = 0;
-            if sys::gpu::SDL_WaitAndAcquireGPUSwapchainTexture(
-                command_buffer.inner,
-                w.raw(),
-                &mut swapchain,
-                &mut width,
-                &mut height,
-            ) {
-                command_buffer.swapchain.inner = swapchain;
-                command_buffer.swapchain.size = Some((width, height));
-                Ok(&command_buffer.swapchain)
-            } else {
-                Err(crate::sdl::get_error())
-            }
-        }
-    }
-    // Only use if you are aware of the timings: Will not wait for freed memory, potentially
-    // causing an out of memory error
-    // May not:
-    // - Live longer than command buffer
-    // - Or than the GPU object
-    #[doc(alias = "SDL_AcquireGPUSwapchainTexture")]
-    pub fn acquire_swapchain_texture<'a>(
-        &self,
-        w: &crate::video::Window,
-        command_buffer: &'a mut CommandBuffer,
-    ) -> Result<&'a Texture, crate::sdl::Error> {
-        unsafe {
-            let mut swapchain = std::ptr::null_mut();
-            let mut width = 0;
-            let mut height = 0;
-            if sys::gpu::SDL_AcquireGPUSwapchainTexture(
-                command_buffer.inner,
-                w.raw(),
-                &mut swapchain,
-                &mut width,
-                &mut height,
-            ) {
-                command_buffer.swapchain.inner = swapchain;
-                command_buffer.swapchain.size = Some((width, height));
-                Ok(&command_buffer.swapchain)
-            } else {
-                Err(crate::sdl::get_error())
-            }
-        }
-    }
+
     // You cannot begin another render pass, or begin a compute pass or copy pass until you have ended the render pass.
     #[doc(alias = "SDL_BeginGPURenderPass")]
     pub fn begin_render_pass(
@@ -1303,7 +1415,7 @@ impl Device {
         command_buffer: &CommandBuffer,
         color_info: &[ColorTargetInfo],
         depth_stencil_target: Option<&DepthStencilTargetInfo>,
-    ) -> Result<RenderPass, crate::sdl::Error> {
+    ) -> Result<RenderPass, Error> {
         let p = unsafe {
             sys::gpu::SDL_BeginGPURenderPass(
                 command_buffer.inner,
@@ -1319,33 +1431,30 @@ impl Device {
         if p != std::ptr::null_mut() {
             Ok(RenderPass { inner: p })
         } else {
-            Err(crate::sdl::get_error())
+            Err(get_error())
         }
     }
+
     #[doc(alias = "SDL_EndGPURenderPass")]
     pub fn end_render_pass(&self, pass: RenderPass) {
         unsafe {
             sys::gpu::SDL_EndGPURenderPass(pass.inner);
-            std::mem::forget(pass);
         }
     }
+
     #[doc(alias = "SDL_BeginGPUCopyPass")]
-    pub fn begin_copy_pass(
-        &self,
-        command_buffer: &CommandBuffer,
-    ) -> Result<CopyPass, crate::sdl::Error> {
+    pub fn begin_copy_pass(&self, command_buffer: &CommandBuffer) -> Result<CopyPass, Error> {
         let p = unsafe { sys::gpu::SDL_BeginGPUCopyPass(command_buffer.inner) };
         if p != std::ptr::null_mut() {
             Ok(CopyPass { inner: p })
         } else {
-            Err(crate::sdl::get_error())
+            Err(get_error())
         }
     }
     #[doc(alias = "SDL_EndGPURenderPass")]
     pub fn end_copy_pass(&self, pass: CopyPass) {
         unsafe {
             sys::gpu::SDL_EndGPUCopyPass(pass.inner);
-            std::mem::forget(pass);
         }
     }
     pub fn create_graphics_pipeline<'a>(&'a self) -> GraphicsPipelineBuilder<'a> {
@@ -1356,7 +1465,7 @@ impl Device {
     }
     #[doc(alias = "SDL_GetGPUShaderFormats")]
     pub fn get_shader_formats(&self) -> ShaderFormat {
-        unsafe { std::mem::transmute(sys::gpu::SDL_GetGPUShaderFormats(self.inner)) }
+        unsafe { std::mem::transmute(sys::gpu::SDL_GetGPUShaderFormats(self.raw())) }
     }
     #[cfg(target_os = "xbox")]
     #[doc(alias = "SDL_GDKSuspendGPU")]
@@ -1374,15 +1483,6 @@ impl Device {
     }
 }
 
-impl Drop for Device {
-    #[doc(alias = "SDL_DestroyGPUDevice")]
-    fn drop(&mut self) {
-        unsafe {
-            sys::gpu::SDL_DestroyGPUDevice(self.inner);
-        }
-    }
-}
-
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum BufferUsageFlags {
@@ -1392,25 +1492,41 @@ pub enum BufferUsageFlags {
 }
 impl_with!(enum_ops BufferUsageFlags);
 
+/// Manages the raw `SDL_GPUBuffer` pointer and releases it on drop
+struct BufferContainer {
+    raw: *mut SDL_GPUBuffer,
+    device: Weak<DeviceContainer>,
+}
+impl Drop for BufferContainer {
+    #[doc(alias = "SDL_ReleaseGPUBuffer")]
+    fn drop(&mut self) {
+        if let Some(device) = self.device.upgrade() {
+            unsafe {
+                SDL_ReleaseGPUBuffer(device.0, self.raw);
+            }
+        }
+    }
+}
+
+#[doc(alias = "SDL_GPUBuffer")]
+#[derive(Clone)]
 pub struct Buffer {
+    inner: Arc<BufferContainer>,
     len: u32,
-    inner: *mut SDL_GPUBuffer,
 }
 impl Buffer {
-    impl_with!(raw SDL_GPUBuffer);
+    /// Yields the raw SDL_GPUBuffer pointer.
+    #[inline]
+    pub fn raw(&self) -> *mut SDL_GPUBuffer {
+        self.inner.raw
+    }
 
     /// The length of this buffer in bytes.
     pub fn len(&self) -> u32 {
         self.len
     }
-
-    #[doc(alias = "SDL_ReleaseGPUBuffer")]
-    pub fn release(self, device: &Device) {
-        unsafe {
-            SDL_ReleaseGPUBuffer(device.raw(), self.inner);
-        }
-    }
 }
+
 pub struct BufferBuilder<'a> {
     device: &'a Device,
     inner: SDL_GPUBufferCreateInfo,
@@ -1426,10 +1542,18 @@ impl<'a> BufferBuilder<'a> {
         self
     }
 
-    pub fn build(self) -> Buffer {
-        Buffer {
-            len: self.inner.size,
-            inner: unsafe { SDL_CreateGPUBuffer(self.device.raw(), &self.inner) },
+    pub fn build(self) -> Result<Buffer, Error> {
+        let raw_buffer = unsafe { SDL_CreateGPUBuffer(self.device.raw(), &self.inner) };
+        if raw_buffer.is_null() {
+            Err(get_error())
+        } else {
+            Ok(Buffer {
+                len: self.inner.size,
+                inner: Arc::new(BufferContainer {
+                    raw: raw_buffer,
+                    device: Arc::downgrade(&self.device.inner),
+                }),
+            })
         }
     }
 }
@@ -1472,12 +1596,32 @@ where
     }
 }
 
+/// Manages the raw `SDL_GPUTransferBuffer` pointer and releases it on drop
+struct TransferBufferContainer {
+    raw: *mut SDL_GPUTransferBuffer,
+    device: Weak<DeviceContainer>,
+}
+impl Drop for TransferBufferContainer {
+    #[doc(alias = "SDL_ReleaseGPUTransferBuffer")]
+    fn drop(&mut self) {
+        if let Some(device) = self.device.upgrade() {
+            unsafe {
+                SDL_ReleaseGPUTransferBuffer(device.0, self.raw);
+            }
+        }
+    }
+}
+
+#[derive(Clone)]
 pub struct TransferBuffer {
+    inner: Arc<TransferBufferContainer>,
     len: u32,
-    inner: *mut SDL_GPUTransferBuffer,
 }
 impl TransferBuffer {
-    impl_with!(raw SDL_GPUTransferBuffer);
+    #[inline]
+    fn raw(&self) -> *mut SDL_GPUTransferBuffer {
+        self.inner.raw
+    }
 
     #[doc(alias = "SDL_MapGPUTransferBuffer")]
     pub fn map<'a, T: Copy>(&'a self, device: &'a Device, cycle: bool) -> BufferMemMap<'a, T> {
@@ -1491,13 +1635,6 @@ impl TransferBuffer {
     /// The length of this buffer in bytes.
     pub fn len(&self) -> u32 {
         self.len
-    }
-
-    #[doc(alias = "SDL_ReleaseGPUTransferBuffer")]
-    pub fn release(self, device: &Device) {
-        unsafe {
-            SDL_ReleaseGPUTransferBuffer(device.raw(), self.inner);
-        }
     }
 }
 
@@ -1518,10 +1655,18 @@ impl<'a> TransferBufferBuilder<'a> {
         self
     }
 
-    pub fn build(self) -> TransferBuffer {
-        TransferBuffer {
-            len: self.inner.size,
-            inner: unsafe { SDL_CreateGPUTransferBuffer(self.device.raw(), &self.inner) },
+    pub fn build(self) -> Result<TransferBuffer, Error> {
+        let raw_buffer = unsafe { SDL_CreateGPUTransferBuffer(self.device.raw(), &self.inner) };
+        if raw_buffer.is_null() {
+            Err(get_error())
+        } else {
+            Ok(TransferBuffer {
+                inner: Arc::new(TransferBufferContainer {
+                    raw: raw_buffer,
+                    device: Arc::downgrade(&self.device.inner),
+                }),
+                len: self.inner.size,
+            })
         }
     }
 }
