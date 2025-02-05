@@ -1,10 +1,7 @@
 extern crate sdl3;
 
 use sdl3::keyboard::Keycode;
-use sdl3::pixels::Color;
 use sdl3::{event::Event, gpu::GraphicsPipelineTargetInfo};
-use sdl3_sys::render;
-use std::time::Duration;
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
@@ -26,7 +23,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             | sdl3::gpu::ShaderFormat::Dxbc
             | sdl3::gpu::ShaderFormat::MetalLib,
         true,
-    )
+    )?
     .with_window(&window)?;
 
     let fs_source = include_bytes!("shaders/triangle.frag.spv");
@@ -73,8 +70,9 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .build()?;
 
-    vs_shader.release(&gpu);
-    fs_shader.release(&gpu);
+    // The pipeline now holds copies of our shaders, so we can release them
+    drop(vs_shader);
+    drop(fs_shader);
 
     let mut event_pump = sdl_context.event_pump()?;
     println!(
@@ -97,13 +95,12 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         //
         // This is because a swapchain needs to be "allocated", and it can quickly run out
         // if we don't properly time the rendering process.
-        let mut command_buffer = gpu.acquire_command_buffer();
-        if let Ok(swapchain) = gpu.wait_and_acquire_swapchain_texture(&window, &mut command_buffer)
-        {
+        let mut command_buffer = gpu.acquire_command_buffer()?;
+        if let Ok(swapchain) = command_buffer.wait_and_acquire_swapchain_texture(&window) {
             // Again, like in gpu-clear.rs, we'd want to define basic operations for our triangle
             let color_targets = [
                 sdl3::gpu::ColorTargetInfo::default()
-                    .with_texture(swapchain)
+                    .with_texture(&swapchain)
                     .with_load_op(sdl3::gpu::LoadOp::Clear)
                     .with_store_op(sdl3::gpu::StoreOp::Store)
                     .with_clear_color(sdl3::pixels::Color::RGB(5, 3, 255)), //blue with small RG bias
@@ -120,5 +117,6 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             command_buffer.cancel();
         }
     }
+
     Ok(())
 }
