@@ -6,23 +6,27 @@ use std::{
     sync::{Arc, Weak},
 };
 use sys::gpu::{
-    SDL_AcquireGPUSwapchainTexture, SDL_BindGPUIndexBuffer, SDL_BindGPUVertexBuffers,
-    SDL_CreateGPUBuffer, SDL_CreateGPUDevice, SDL_CreateGPUTexture, SDL_CreateGPUTransferBuffer,
-    SDL_DestroyGPUDevice, SDL_DrawGPUIndexedPrimitives, SDL_GPUBuffer, SDL_GPUBufferBinding,
-    SDL_GPUBufferCreateInfo, SDL_GPUBufferRegion, SDL_GPUColorTargetDescription,
-    SDL_GPUColorTargetInfo, SDL_GPUCommandBuffer, SDL_GPUCompareOp, SDL_GPUComputePass,
-    SDL_GPUCopyPass, SDL_GPUCullMode, SDL_GPUDepthStencilState, SDL_GPUDepthStencilTargetInfo,
-    SDL_GPUDevice, SDL_GPUFillMode, SDL_GPUFrontFace, SDL_GPUGraphicsPipeline,
-    SDL_GPUGraphicsPipelineCreateInfo, SDL_GPUGraphicsPipelineTargetInfo, SDL_GPUIndexElementSize,
-    SDL_GPULoadOp, SDL_GPUPrimitiveType, SDL_GPURasterizerState, SDL_GPURenderPass,
-    SDL_GPUSampleCount, SDL_GPUShader, SDL_GPUStencilOp, SDL_GPUStencilOpState, SDL_GPUStoreOp,
-    SDL_GPUTexture, SDL_GPUTextureCreateInfo, SDL_GPUTextureFormat, SDL_GPUTextureType,
+    SDL_AcquireGPUSwapchainTexture, SDL_BindGPUFragmentSamplers, SDL_BindGPUIndexBuffer,
+    SDL_BindGPUVertexBuffers, SDL_CreateGPUBuffer, SDL_CreateGPUDevice, SDL_CreateGPUSampler,
+    SDL_CreateGPUTexture, SDL_CreateGPUTransferBuffer, SDL_DestroyGPUDevice,
+    SDL_DrawGPUIndexedPrimitives, SDL_GPUBuffer, SDL_GPUBufferBinding, SDL_GPUBufferCreateInfo,
+    SDL_GPUBufferRegion, SDL_GPUColorTargetDescription, SDL_GPUColorTargetInfo,
+    SDL_GPUCommandBuffer, SDL_GPUCompareOp, SDL_GPUComputePass, SDL_GPUCopyPass, SDL_GPUCullMode,
+    SDL_GPUDepthStencilState, SDL_GPUDepthStencilTargetInfo, SDL_GPUDevice, SDL_GPUFillMode,
+    SDL_GPUFilter, SDL_GPUFrontFace, SDL_GPUGraphicsPipeline, SDL_GPUGraphicsPipelineCreateInfo,
+    SDL_GPUGraphicsPipelineTargetInfo, SDL_GPUIndexElementSize, SDL_GPULoadOp,
+    SDL_GPUPrimitiveType, SDL_GPURasterizerState, SDL_GPURenderPass, SDL_GPUSampleCount,
+    SDL_GPUSampler, SDL_GPUSamplerAddressMode, SDL_GPUSamplerCreateInfo, SDL_GPUSamplerMipmapMode,
+    SDL_GPUShader, SDL_GPUStencilOp, SDL_GPUStencilOpState, SDL_GPUStoreOp, SDL_GPUTexture,
+    SDL_GPUTextureCreateInfo, SDL_GPUTextureFormat, SDL_GPUTextureRegion,
+    SDL_GPUTextureSamplerBinding, SDL_GPUTextureTransferInfo, SDL_GPUTextureType,
     SDL_GPUTransferBuffer, SDL_GPUTransferBufferCreateInfo, SDL_GPUTransferBufferLocation,
     SDL_GPUTransferBufferUsage, SDL_GPUVertexAttribute, SDL_GPUVertexBufferDescription,
     SDL_GPUVertexInputRate, SDL_GPUVertexInputState, SDL_GPUViewport, SDL_MapGPUTransferBuffer,
     SDL_PushGPUVertexUniformData, SDL_ReleaseGPUBuffer, SDL_ReleaseGPUGraphicsPipeline,
-    SDL_ReleaseGPUTexture, SDL_ReleaseGPUTransferBuffer, SDL_UnmapGPUTransferBuffer,
-    SDL_UploadToGPUBuffer, SDL_WaitAndAcquireGPUSwapchainTexture,
+    SDL_ReleaseGPUSampler, SDL_ReleaseGPUTexture, SDL_ReleaseGPUTransferBuffer,
+    SDL_UnmapGPUTransferBuffer, SDL_UploadToGPUBuffer, SDL_UploadToGPUTexture,
+    SDL_WaitAndAcquireGPUSwapchainTexture,
 };
 
 macro_rules! impl_with {
@@ -378,6 +382,31 @@ pub enum VertexElementFormat {
 }
 impl_with!(enum_ops VertexElementFormat);
 
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum Filter {
+    #[default]
+    Nearest = sys::gpu::SDL_GPUFilter::NEAREST.0 as u32,
+    Linear = sys::gpu::SDL_GPUFilter::LINEAR.0 as u32,
+}
+
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum SamplerMipmapMode {
+    #[default]
+    Nearest = sys::gpu::SDL_GPUSamplerMipmapMode::NEAREST.0 as u32,
+    Linear = sys::gpu::SDL_GPUSamplerMipmapMode::LINEAR.0 as u32,
+}
+
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum SamplerAddressMode {
+    #[default]
+    Repeat = sys::gpu::SDL_GPUSamplerAddressMode::REPEAT.0 as u32,
+    MirroredRepeat = sys::gpu::SDL_GPUSamplerAddressMode::MIRRORED_REPEAT.0 as u32,
+    ClampToEdge = sys::gpu::SDL_GPUSamplerAddressMode::CLAMP_TO_EDGE.0 as u32,
+}
+
 //
 // STRUCTS
 //
@@ -603,6 +632,18 @@ impl RenderPass {
         }
     }
 
+    #[doc(alias = "SDL_BindGPUFragmentSamplers")]
+    pub fn bind_fragment_sampler(&self, first_slot: u32, bindings: &[TextureSamplerBinding]) {
+        unsafe {
+            SDL_BindGPUFragmentSamplers(
+                self.raw(),
+                first_slot,
+                bindings.as_ptr() as *const SDL_GPUTextureSamplerBinding,
+                bindings.len() as u32,
+            );
+        }
+    }
+
     #[doc(alias = "SDL_DrawGPUIndexedPrimitives")]
     pub fn draw_indexed_primitives(
         &self,
@@ -689,6 +730,104 @@ impl BufferRegion {
     }
 }
 
+#[derive(Default)]
+pub struct TextureTransferInfo {
+    inner: SDL_GPUTextureTransferInfo,
+}
+impl TextureTransferInfo {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    /// The transfer buffer used in the transfer operation.
+    pub fn with_transfer_buffer(mut self, buffer: &TransferBuffer) -> Self {
+        self.inner.transfer_buffer = buffer.raw();
+        self
+    }
+
+    /// The starting byte of the image data in the transfer buffer.
+    pub fn with_offset(mut self, offset: u32) -> Self {
+        self.inner.offset = offset;
+        self
+    }
+
+    /// The number of pixels from one row to the next.
+    pub fn with_pixels_per_row(mut self, value: u32) -> Self {
+        self.inner.pixels_per_row = value;
+        self
+    }
+
+    /// The number of rows from one layer/depth-slice to the next.
+    pub fn with_rows_per_layer(mut self, value: u32) -> Self {
+        self.inner.rows_per_layer = value;
+        self
+    }
+}
+
+#[derive(Default)]
+pub struct TextureRegion {
+    inner: SDL_GPUTextureRegion,
+}
+impl TextureRegion {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    /// The texture used in the copy operation.
+    pub fn with_texture(mut self, texture: &Texture) -> Self {
+        self.inner.texture = texture.raw();
+        self
+    }
+
+    /// The mip level index to transfer.
+    pub fn with_mip_level(mut self, mip_level: u32) -> Self {
+        self.inner.mip_level = mip_level;
+        self
+    }
+
+    /// The layer index to transfer.
+    pub fn with_layer(mut self, layer: u32) -> Self {
+        self.inner.layer = layer;
+        self
+    }
+
+    /// The left offset of the region.
+    pub fn with_x(mut self, x: u32) -> Self {
+        self.inner.x = x;
+        self
+    }
+
+    /// The top offset of the region.
+    pub fn with_y(mut self, y: u32) -> Self {
+        self.inner.y = y;
+        self
+    }
+
+    /// The front offset of the region.
+    pub fn with_z(mut self, z: u32) -> Self {
+        self.inner.z = z;
+        self
+    }
+
+    /// The width of the region.
+    pub fn with_width(mut self, width: u32) -> Self {
+        self.inner.w = width;
+        self
+    }
+
+    /// The height of the region.
+    pub fn with_height(mut self, height: u32) -> Self {
+        self.inner.h = height;
+        self
+    }
+
+    /// The depth of the region.
+    pub fn with_depth(mut self, depth: u32) -> Self {
+        self.inner.d = depth;
+        self
+    }
+}
+
 pub struct CopyPass {
     inner: *mut SDL_GPUCopyPass,
 }
@@ -710,6 +849,16 @@ impl CopyPass {
                 cycle,
             )
         }
+    }
+
+    #[doc(alias = "SDL_UploadToGPUTexture")]
+    pub fn upload_to_gpu_texture(
+        &self,
+        source: TextureTransferInfo,
+        destination: TextureRegion,
+        cycle: bool,
+    ) {
+        unsafe { SDL_UploadToGPUTexture(self.raw(), &source.inner, &destination.inner, cycle) }
     }
 }
 
@@ -741,6 +890,150 @@ impl Shader {
     #[inline]
     fn raw(&self) -> *mut SDL_GPUShader {
         self.inner.raw
+    }
+}
+
+#[derive(Default)]
+pub struct SamplerCreateInfo {
+    inner: SDL_GPUSamplerCreateInfo,
+}
+impl SamplerCreateInfo {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    /// The minification filter to apply to lookups.
+    pub fn with_min_filter(mut self, filter: Filter) -> Self {
+        self.inner.min_filter = SDL_GPUFilter(filter as i32);
+        self
+    }
+
+    /// The magnification filter to apply to lookups.
+    pub fn with_mag_filter(mut self, filter: Filter) -> Self {
+        self.inner.mag_filter = SDL_GPUFilter(filter as i32);
+        self
+    }
+
+    /// The mipmap filter to apply to lookups.
+    pub fn with_mipmap_mode(mut self, mode: SamplerMipmapMode) -> Self {
+        self.inner.mipmap_mode = SDL_GPUSamplerMipmapMode(mode as i32);
+        self
+    }
+
+    /// The addressing mode for U coordinates outside [0, 1).
+    pub fn with_address_mode_u(mut self, mode: SamplerAddressMode) -> Self {
+        self.inner.address_mode_u = SDL_GPUSamplerAddressMode(mode as i32);
+        self
+    }
+
+    /// The addressing mode for V coordinates outside [0, 1).
+    pub fn with_address_mode_v(mut self, mode: SamplerAddressMode) -> Self {
+        self.inner.address_mode_v = SDL_GPUSamplerAddressMode(mode as i32);
+        self
+    }
+
+    /// The addressing mode for W coordinates outside [0, 1).
+    pub fn with_address_mode_w(mut self, mode: SamplerAddressMode) -> Self {
+        self.inner.address_mode_w = SDL_GPUSamplerAddressMode(mode as i32);
+        self
+    }
+
+    /// The bias to be added to mipmap LOD calculation.
+    pub fn with_mip_lod_bias(mut self, value: f32) -> Self {
+        self.inner.mip_lod_bias = value;
+        self
+    }
+
+    /// The anisotropy value clamp used by the sampler. If enable_anisotropy is false, this is ignored.
+    pub fn with_max_anisotropy(mut self, value: f32) -> Self {
+        self.inner.max_anisotropy = value;
+        self
+    }
+
+    /// The comparison operator to apply to fetched data before filtering.
+    pub fn with_compare_op(mut self, value: CompareOp) -> Self {
+        self.inner.compare_op = SDL_GPUCompareOp(value as i32);
+        self
+    }
+
+    /// Clamps the minimum of the computed LOD value.
+    pub fn with_min_lod(mut self, value: f32) -> Self {
+        self.inner.min_lod = value;
+        self
+    }
+
+    /// Clamps the maximum of the computed LOD value.
+    pub fn with_max_lod(mut self, value: f32) -> Self {
+        self.inner.max_lod = value;
+        self
+    }
+
+    /// True to enable anisotropic filtering.
+    pub fn with_enable_anisotropy(mut self, enable: bool) -> Self {
+        self.inner.enable_anisotropy = enable;
+        self
+    }
+
+    /// True to enable comparison against a reference value during lookups.
+    pub fn with_enable_compare(mut self, enable: bool) -> Self {
+        self.inner.enable_compare = enable;
+        self
+    }
+}
+
+/// Manages the raw `SDL_GPUSampler` pointer and releases it on drop
+struct SamplerContainer {
+    raw: *mut SDL_GPUSampler,
+    device: Weak<DeviceContainer>,
+}
+impl Drop for SamplerContainer {
+    fn drop(&mut self) {
+        if let Some(device) = self.device.upgrade() {
+            unsafe { SDL_ReleaseGPUSampler(device.0, self.raw) }
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct Sampler {
+    inner: Arc<SamplerContainer>,
+}
+impl Sampler {
+    fn new(device: &Device, raw_sampler: *mut SDL_GPUSampler) -> Self {
+        Self {
+            inner: Arc::new(SamplerContainer {
+                raw: raw_sampler,
+                device: Arc::downgrade(&device.inner),
+            }),
+        }
+    }
+
+    #[inline]
+    fn raw(&self) -> *mut SDL_GPUSampler {
+        self.inner.raw
+    }
+}
+
+#[repr(C)]
+#[derive(Default)]
+pub struct TextureSamplerBinding {
+    inner: SDL_GPUTextureSamplerBinding,
+}
+impl TextureSamplerBinding {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    /// The texture to bind. Must have been created with [`SDL_GPU_TEXTUREUSAGE_SAMPLER`].
+    pub fn with_texture(mut self, texture: &Texture<'static>) -> Self {
+        self.inner.texture = texture.raw();
+        self
+    }
+
+    /// The sampler to bind.
+    pub fn with_sampler(mut self, sampler: &Sampler) -> Self {
+        self.inner.sampler = sampler.raw();
+        self
     }
 }
 
@@ -948,21 +1241,25 @@ impl VertexAttribute {
         Default::default()
     }
 
+    /// The shader input location index.
     pub fn with_location(mut self, value: u32) -> Self {
         self.inner.location = value;
         self
     }
 
+    /// The binding slot of the associated vertex buffer.
     pub fn with_buffer_slot(mut self, value: u32) -> Self {
         self.inner.buffer_slot = value;
         self
     }
 
+    /// The size and type of the attribute data.
     pub fn with_format(mut self, value: VertexElementFormat) -> Self {
         self.inner.format = unsafe { std::mem::transmute(value as u32) };
         self
     }
 
+    /// The byte offset of this attribute relative to the start of the vertex element.
     pub fn with_offset(mut self, value: u32) -> Self {
         self.inner.offset = value;
         self
@@ -1378,6 +1675,17 @@ impl Device {
             inner: Default::default(),
         }
     }
+
+    #[doc(alias = "SDL_CreateGPUSampler")]
+    pub fn create_sampler(&self, create_info: SamplerCreateInfo) -> Result<Sampler, Error> {
+        let raw_sampler = unsafe { SDL_CreateGPUSampler(self.raw(), &create_info.inner) };
+        if raw_sampler.is_null() {
+            Err(get_error())
+        } else {
+            Ok(Sampler::new(self, raw_sampler))
+        }
+    }
+
     #[doc(alias = "SDL_CreateGPUTexture")]
     pub fn create_texture(
         &self,
