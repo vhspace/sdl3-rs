@@ -29,6 +29,10 @@ lazy_static = "1.4.0"
 [dependencies.sdl3-sys]
 version = "0.4"
 
+[dependencies.sdl3-image-sys]
+version = "0.1"
+optional = true
+
 [dependencies.c_vec]
 # allow both 1.* and 2.0 versions
 version = ">= 1.0"
@@ -65,7 +69,7 @@ default = []
 unsafe_textures = []
 gfx = ["c_vec"]      #, "sdl3-sys/gfx"]
 #mixer = ["sdl3-sys/mixer"]
-#image = ["sdl3-sys/image"]
+image = ["dep:sdl3-image-sys"]
 #ttf = ["sdl3-sys/ttf"]
 # Use hidapi support in SDL. Only 2.0.12 and after
 hidapi = []

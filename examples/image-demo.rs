@@ -1,7 +1,7 @@
 extern crate sdl3;
 
 use sdl3::event::Event;
-use sdl3::image::{InitFlag, LoadTexture};
+use sdl3::image::LoadTexture;
 use sdl3::keyboard::Keycode;
 use std::env;
 use std::path::Path;
@@ -9,18 +9,13 @@ use std::path::Path;
 pub fn run(png: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
-    let _image_context = sdl3::image::init(InitFlag::PNG | InitFlag::JPG)?;
     let window = video_subsystem
         .window("rust-sdl3 demo: Video", 800, 600)
         .position_centered()
         .build()
         .map_err(|e| e.to_string())?;
 
-    let mut canvas = window
-        .into_canvas()
-        .software()
-        .build()
-        .map_err(|e| e.to_string())?;
+    let mut canvas = window.into_canvas();
     let texture_creator = canvas.texture_creator();
     let texture = texture_creator.load_texture(png)?;
 
