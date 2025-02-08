@@ -11,10 +11,10 @@ pub use device::Device;
 
 mod enums;
 pub use enums::{
-    BufferUsageFlags, CompareOp, CullMode, FillMode, Filter, FrontFace, IndexElementSize, LoadOp,
-    PrimitiveType, SampleCount, SamplerAddressMode, SamplerMipmapMode, ShaderFormat, ShaderStage,
-    StencilOp, StoreOp, TextureFormat, TextureType, TextureUsage, TransferBufferUsage,
-    VertexElementFormat, VertexInputRate,
+    BlendFactor, BlendOp, BufferUsageFlags, ColorComponentFlags, CompareOp, CullMode, FillMode,
+    Filter, FrontFace, IndexElementSize, LoadOp, PrimitiveType, SampleCount, SamplerAddressMode,
+    SamplerMipmapMode, ShaderFormat, ShaderStage, StencilOp, StoreOp, TextureFormat, TextureType,
+    TextureUsage, TransferBufferUsage, VertexElementFormat, VertexInputRate,
 };
 
 mod pass;
@@ -24,7 +24,7 @@ pub use pass::{
 
 mod pipeline;
 pub use pipeline::{
-    ColorTargetDescription, ColorTargetDescriptionBuilder, DepthStencilState, GraphicsPipeline,
+    ColorTargetBlendState, ColorTargetDescription, DepthStencilState, GraphicsPipeline,
     GraphicsPipelineBuilder, GraphicsPipelineTargetInfo, RasterizerState, StencilOpState,
     VertexAttribute, VertexInputState,
 };
