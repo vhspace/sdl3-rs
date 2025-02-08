@@ -287,15 +287,13 @@ impl ClippingRect {
         match self {
             ClippingRect::Zero => ClippingRect::Zero,
             ClippingRect::None => other,
-            ClippingRect::Some(self_rect) => {
-                match other {
-                    ClippingRect::Zero => ClippingRect::Zero,
-                    ClippingRect::None => *self,
-                    ClippingRect::Some(rect) => match self_rect.intersection(rect) {
-                        Some(v) => ClippingRect::Some(v),
-                        None => ClippingRect::Zero,
-                    },
-                }
+            ClippingRect::Some(self_rect) => match other {
+                ClippingRect::Zero => ClippingRect::Zero,
+                ClippingRect::None => *self,
+                ClippingRect::Some(rect) => match self_rect.intersection(rect) {
+                    Some(v) => ClippingRect::Some(v),
+                    None => ClippingRect::Zero,
+                },
             },
         }
     }
