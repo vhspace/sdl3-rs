@@ -19,7 +19,7 @@ use sys::properties::{
     SDL_CreateProperties, SDL_DestroyProperties, SDL_SetNumberProperty, SDL_SetStringProperty,
 };
 use sys::stdinc::{SDL_FunctionPointer, SDL_free, Uint64};
-use sys::video::{SDL_DisplayMode, SDL_DisplayModeData, SDL_DisplayOrientation, SDL_WindowFlags};
+use sys::video::{SDL_DisplayMode, SDL_DisplayModeData, SDL_DisplayOrientation, SDL_GetSystemTheme, SDL_WindowFlags, SDL_SYSTEM_THEME_DARK, SDL_SYSTEM_THEME_LIGHT, SDL_SYSTEM_THEME_UNKNOWN};
 
 use crate::sys;
 
@@ -687,6 +687,19 @@ impl From<WindowContext> for Window {
 
 impl_raw_accessors!((GLContext, sys::video::SDL_GLContext));
 
+/// System theme.
+pub enum SystemTheme {
+
+    /// Unknown system theme.
+    Unknown,
+
+    /// Light colored system theme.
+    Light,
+
+    /// Dark colored system theme.
+    Dark,
+}
+
 impl VideoSubsystem {
     /// Initializes a new `WindowBuilder`; a convenience method that calls `WindowBuilder::new()`.
     pub fn window(&self, title: &str, width: u32, height: u32) -> WindowBuilder {
@@ -1076,6 +1089,19 @@ impl VideoSubsystem {
     #[doc(alias = "SDL_Vulkan_GetVkGetInstanceProcAddr")]
     pub fn vulkan_get_proc_address_function(&self) -> SDL_FunctionPointer {
         unsafe { sys::vulkan::SDL_Vulkan_GetVkGetInstanceProcAddr() }
+    }
+
+    /// Get the current system theme.
+    #[doc(alias = "SDL_GetSystemTheme")]
+    pub fn get_system_theme() -> SystemTheme {
+        unsafe {
+            match SDL_GetSystemTheme() {
+                SDL_SYSTEM_THEME_DARK => SystemTheme::Dark,
+                SDL_SYSTEM_THEME_LIGHT => SystemTheme::Light,
+                SDL_SYSTEM_THEME_UNKNOWN => SystemTheme::Unknown,
+                _ => unreachable!(),
+            }
+        }
     }
 }
 
