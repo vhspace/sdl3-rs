@@ -1,7 +1,14 @@
 extern crate sdl3;
 
-use sdl3::keyboard::Keycode;
-use sdl3::{event::Event, gpu::GraphicsPipelineTargetInfo};
+use sdl3::{
+    event::Event,
+    gpu::{
+        ColorTargetDescription, ColorTargetInfo, Device, FillMode, GraphicsPipelineTargetInfo,
+        LoadOp, PrimitiveType, ShaderFormat, ShaderStage, StoreOp,
+    },
+    keyboard::Keycode,
+    pixels::Color,
+};
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
@@ -17,11 +24,8 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     // by default, and we specify that our shaders will be SPIR-V ones (even through we
     // aren't using any shaders)
     // We'll also turn on debug mode to true, so we get debug stuff
-    let gpu = sdl3::gpu::Device::new(
-        sdl3::gpu::ShaderFormat::SpirV
-            | sdl3::gpu::ShaderFormat::Dxil
-            | sdl3::gpu::ShaderFormat::Dxbc
-            | sdl3::gpu::ShaderFormat::MetalLib,
+    let gpu = Device::new(
+        ShaderFormat::SpirV | ShaderFormat::Dxil | ShaderFormat::Dxbc | ShaderFormat::MetalLib,
         true,
     )?
     .with_window(&window)?;
@@ -32,21 +36,13 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Our shaders, require to be precompiled by a SPIR-V compiler beforehand
     let vs_shader = gpu
         .create_shader()
-        .with_code(
-            sdl3::gpu::ShaderFormat::SpirV,
-            vs_source,
-            sdl3::gpu::ShaderStage::Vertex,
-        )
+        .with_code(ShaderFormat::SpirV, vs_source, ShaderStage::Vertex)
         .with_entrypoint("main")
         .build()?;
 
     let fs_shader = gpu
         .create_shader()
-        .with_code(
-            sdl3::gpu::ShaderFormat::SpirV,
-            fs_source,
-            sdl3::gpu::ShaderStage::Fragment,
-        )
+        .with_code(ShaderFormat::SpirV, fs_source, ShaderStage::Fragment)
         .with_entrypoint("main")
         .build()?;
 
@@ -59,13 +55,11 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         .create_graphics_pipeline()
         .with_fragment_shader(&fs_shader)
         .with_vertex_shader(&vs_shader)
-        .with_primitive_type(sdl3::gpu::PrimitiveType::TriangleList)
-        .with_fill_mode(sdl3::gpu::FillMode::Fill)
+        .with_primitive_type(PrimitiveType::TriangleList)
+        .with_fill_mode(FillMode::Fill)
         .with_target_info(
             GraphicsPipelineTargetInfo::new().with_color_target_descriptions(&[
-                sdl3::gpu::ColorTargetDescriptionBuilder::new()
-                    .with_format(swapchain_format)
-                    .build(),
+                ColorTargetDescription::new().with_format(swapchain_format),
             ]),
         )
         .build()?;
@@ -99,11 +93,11 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Ok(swapchain) = command_buffer.wait_and_acquire_swapchain_texture(&window) {
             // Again, like in gpu-clear.rs, we'd want to define basic operations for our triangle
             let color_targets = [
-                sdl3::gpu::ColorTargetInfo::default()
+                ColorTargetInfo::default()
                     .with_texture(&swapchain)
-                    .with_load_op(sdl3::gpu::LoadOp::Clear)
-                    .with_store_op(sdl3::gpu::StoreOp::Store)
-                    .with_clear_color(sdl3::pixels::Color::RGB(5, 3, 255)), //blue with small RG bias
+                    .with_load_op(LoadOp::Clear)
+                    .with_store_op(StoreOp::Store)
+                    .with_clear_color(Color::RGB(5, 3, 255)), //blue with small RG bias
             ];
             let render_pass = gpu.begin_render_pass(&command_buffer, &color_targets, None)?;
             render_pass.bind_graphics_pipeline(&pipeline);

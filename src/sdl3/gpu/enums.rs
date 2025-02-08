@@ -1,18 +1,22 @@
 use crate::sys;
 use std::ops::{BitAnd, BitOr};
+use sys::gpu::{
+    SDL_GPUBlendFactor, SDL_GPUBlendOp, SDL_GPU_COLORCOMPONENT_A, SDL_GPU_COLORCOMPONENT_B,
+    SDL_GPU_COLORCOMPONENT_G, SDL_GPU_COLORCOMPONENT_R,
+};
 
 macro_rules! impl_with {
-    (enum_ops $x:ident) => {
+    (bitwise_and_or $x:ident $prim:ident) => {
         impl BitOr<$x> for $x {
             type Output = $x;
             fn bitor(self, rhs: $x) -> Self::Output {
-                unsafe { std::mem::transmute((self as u32) | (rhs as u32)) }
+                unsafe { std::mem::transmute((self as $prim) | (rhs as $prim)) }
             }
         }
         impl BitAnd<$x> for $x {
             type Output = $x;
             fn bitand(self, rhs: $x) -> Self::Output {
-                unsafe { std::mem::transmute((self as u32) & (rhs as u32)) }
+                unsafe { std::mem::transmute((self as $prim) & (rhs as $prim)) }
             }
         }
     };
@@ -26,7 +30,7 @@ pub enum LoadOp {
     DontCare = sys::gpu::SDL_GPU_LOADOP_DONT_CARE.0 as u32,
     Clear = sys::gpu::SDL_GPU_LOADOP_CLEAR.0 as u32,
 }
-impl_with!(enum_ops LoadOp);
+impl_with!(bitwise_and_or LoadOp u32);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -37,12 +41,11 @@ pub enum StoreOp {
     Resolve = sys::gpu::SDL_GPU_STOREOP_RESOLVE.0 as u32,
     ResolveAndStore = sys::gpu::SDL_GPU_STOREOP_RESOLVE_AND_STORE.0 as u32,
 }
-impl_with!(enum_ops StoreOp);
+impl_with!(bitwise_and_or StoreOp u32);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
 pub enum TextureFormat {
-    // TODO: I should regex this somehow -- there must be a way
     #[default]
     Invalid = sys::gpu::SDL_GPU_TEXTUREFORMAT_INVALID.0 as u32,
     A8Unorm = sys::gpu::SDL_GPU_TEXTUREFORMAT_A8_UNORM.0 as u32,
@@ -150,7 +153,7 @@ pub enum TextureFormat {
     Astc12x10Float = sys::gpu::SDL_GPU_TEXTUREFORMAT_ASTC_12x10_FLOAT.0 as u32,
     Astc12x12Float = sys::gpu::SDL_GPU_TEXTUREFORMAT_ASTC_12x12_FLOAT.0 as u32,
 }
-impl_with!(enum_ops TextureFormat);
+impl_with!(bitwise_and_or TextureFormat u32);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -164,7 +167,7 @@ pub enum ShaderFormat {
     Private = sys::gpu::SDL_GPU_SHADERFORMAT_PRIVATE as u32,
     SpirV = sys::gpu::SDL_GPU_SHADERFORMAT_SPIRV as u32,
 }
-impl_with!(enum_ops ShaderFormat);
+impl_with!(bitwise_and_or ShaderFormat u32);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -180,7 +183,7 @@ pub enum TextureUsage {
     Sampler = sys::gpu::SDL_GPU_TEXTUREUSAGE_SAMPLER,
     ColorTarget = sys::gpu::SDL_GPU_TEXTUREUSAGE_COLOR_TARGET,
 }
-impl_with!(enum_ops TextureUsage);
+impl_with!(bitwise_and_or TextureUsage u32);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -189,7 +192,6 @@ pub enum ShaderStage {
     Vertex = sys::gpu::SDL_GPU_SHADERSTAGE_VERTEX.0 as u32,
     Fragment = sys::gpu::SDL_GPU_SHADERSTAGE_FRAGMENT.0 as u32,
 }
-impl_with!(enum_ops ShaderStage);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -201,7 +203,6 @@ pub enum PrimitiveType {
     LineStrip = sys::gpu::SDL_GPU_PRIMITIVETYPE_LINESTRIP.0 as u32,
     PointList = sys::gpu::SDL_GPU_PRIMITIVETYPE_POINTLIST.0 as u32,
 }
-impl_with!(enum_ops PrimitiveType);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -210,7 +211,6 @@ pub enum FillMode {
     Fill = sys::gpu::SDL_GPU_FILLMODE_FILL.0 as u32,
     Line = sys::gpu::SDL_GPU_FILLMODE_LINE.0 as u32,
 }
-impl_with!(enum_ops FillMode);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -220,7 +220,6 @@ pub enum CullMode {
     Front = sys::gpu::SDL_GPUCullMode::FRONT.0 as u32,
     Back = sys::gpu::SDL_GPUCullMode::BACK.0 as u32,
 }
-impl_with!(enum_ops CullMode);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -229,7 +228,6 @@ pub enum FrontFace {
     CounterClockwise = sys::gpu::SDL_GPUFrontFace::COUNTER_CLOCKWISE.0 as u32,
     Clockwise = sys::gpu::SDL_GPUFrontFace::CLOCKWISE.0 as u32,
 }
-impl_with!(enum_ops FrontFace);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -245,7 +243,6 @@ pub enum CompareOp {
     GreaterOrEqual = sys::gpu::SDL_GPUCompareOp::GREATER_OR_EQUAL.0 as u32,
     Always = sys::gpu::SDL_GPUCompareOp::ALWAYS.0 as u32,
 }
-impl_with!(enum_ops CompareOp);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -261,7 +258,6 @@ pub enum StencilOp {
     IncrementAndWrap = sys::gpu::SDL_GPUStencilOp::INCREMENT_AND_WRAP.0 as u32,
     DecrementAndWrap = sys::gpu::SDL_GPUStencilOp::DECREMENT_AND_WRAP.0 as u32,
 }
-impl_with!(enum_ops StencilOp);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -273,7 +269,6 @@ pub enum TextureType {
     Cube = sys::gpu::SDL_GPUTextureType::CUBE.0 as u32,
     CubeArray = sys::gpu::SDL_GPUTextureType::CUBE_ARRAY.0 as u32,
 }
-impl_with!(enum_ops TextureType);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -284,7 +279,6 @@ pub enum SampleCount {
     MSAA4x = sys::gpu::SDL_GPUSampleCount::_4.0 as u32,
     MSAA8x = sys::gpu::SDL_GPUSampleCount::_8.0 as u32,
 }
-impl_with!(enum_ops SampleCount);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -322,7 +316,6 @@ pub enum VertexElementFormat {
     Half2 = sys::gpu::SDL_GPUVertexElementFormat::HALF2.0 as u32,
     Half4 = sys::gpu::SDL_GPUVertexElementFormat::HALF4.0 as u32,
 }
-impl_with!(enum_ops VertexElementFormat);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -356,7 +349,7 @@ pub enum IndexElementSize {
     _16Bit = sys::gpu::SDL_GPUIndexElementSize::_16BIT.0 as u32,
     _32Bit = sys::gpu::SDL_GPUIndexElementSize::_32BIT.0 as u32,
 }
-impl_with!(enum_ops IndexElementSize);
+impl_with!(bitwise_and_or IndexElementSize u32);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -365,7 +358,6 @@ pub enum VertexInputRate {
     Vertex = sys::gpu::SDL_GPUVertexInputRate::VERTEX.0 as u32,
     Instance = sys::gpu::SDL_GPUVertexInputRate::INSTANCE.0 as u32,
 }
-impl_with!(enum_ops VertexInputRate);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -374,7 +366,6 @@ pub enum BufferUsageFlags {
     Vertex = sys::gpu::SDL_GPU_BUFFERUSAGE_VERTEX as u32,
     Index = sys::gpu::SDL_GPU_BUFFERUSAGE_INDEX as u32,
 }
-impl_with!(enum_ops BufferUsageFlags);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -383,4 +374,47 @@ pub enum TransferBufferUsage {
     Upload = sys::gpu::SDL_GPUTransferBufferUsage::UPLOAD.0 as u32,
     Download = sys::gpu::SDL_GPUTransferBufferUsage::DOWNLOAD.0 as u32,
 }
-impl_with!(enum_ops TransferBufferUsage);
+impl_with!(bitwise_and_or TransferBufferUsage u32);
+
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum BlendFactor {
+    #[default]
+    Invalid = SDL_GPUBlendFactor::INVALID.0 as u32,
+    Zero = SDL_GPUBlendFactor::ZERO.0 as u32,
+    One = SDL_GPUBlendFactor::ONE.0 as u32,
+    SrcColor = SDL_GPUBlendFactor::SRC_COLOR.0 as u32,
+    OneMinusSrcColor = SDL_GPUBlendFactor::ONE_MINUS_SRC_COLOR.0 as u32,
+    DstColor = SDL_GPUBlendFactor::DST_COLOR.0 as u32,
+    OneMinusDstColor = SDL_GPUBlendFactor::ONE_MINUS_DST_COLOR.0 as u32,
+    SrcAlpha = SDL_GPUBlendFactor::SRC_ALPHA.0 as u32,
+    OneMinusSrcAlpha = SDL_GPUBlendFactor::ONE_MINUS_SRC_ALPHA.0 as u32,
+    DstAlpha = SDL_GPUBlendFactor::DST_ALPHA.0 as u32,
+    OneMinusDstAlpha = SDL_GPUBlendFactor::ONE_MINUS_DST_ALPHA.0 as u32,
+    ConstantColor = SDL_GPUBlendFactor::CONSTANT_COLOR.0 as u32,
+    OneMinusConstantColor = SDL_GPUBlendFactor::ONE_MINUS_CONSTANT_COLOR.0 as u32,
+    SrcAlphaSaturate = SDL_GPUBlendFactor::SRC_ALPHA_SATURATE.0 as u32,
+}
+
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum BlendOp {
+    #[default]
+    Invalid = SDL_GPUBlendOp::INVALID.0 as u32,
+    Add = SDL_GPUBlendOp::ADD.0 as u32,
+    Subtract = SDL_GPUBlendOp::SUBTRACT.0 as u32,
+    ReverseSubtract = SDL_GPUBlendOp::REVERSE_SUBTRACT.0 as u32,
+    Min = SDL_GPUBlendOp::MIN.0 as u32,
+    Max = SDL_GPUBlendOp::MAX.0 as u32,
+}
+
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u8)]
+pub enum ColorComponentFlags {
+    #[default]
+    RBit = SDL_GPU_COLORCOMPONENT_R,
+    GBit = SDL_GPU_COLORCOMPONENT_G,
+    BBit = SDL_GPU_COLORCOMPONENT_B,
+    ABit = SDL_GPU_COLORCOMPONENT_A,
+}
+impl_with!(bitwise_and_or ColorComponentFlags u8);

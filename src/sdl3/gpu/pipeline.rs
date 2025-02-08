@@ -1,13 +1,15 @@
 use crate::{
     get_error,
     gpu::{
-        device::WeakDevice, CompareOp, CullMode, Device, FillMode, FrontFace, PrimitiveType,
-        Shader, StencilOp, TextureFormat, VertexBufferDescription, VertexElementFormat,
+        device::WeakDevice, BlendFactor, BlendOp, ColorComponentFlags, CompareOp, CullMode, Device,
+        FillMode, FrontFace, PrimitiveType, Shader, StencilOp, TextureFormat,
+        VertexBufferDescription, VertexElementFormat,
     },
     sys, Error,
 };
 use std::sync::Arc;
 use sys::gpu::{
+    SDL_GPUBlendFactor, SDL_GPUBlendOp, SDL_GPUColorTargetBlendState,
     SDL_GPUColorTargetDescription, SDL_GPUCompareOp, SDL_GPUCullMode, SDL_GPUDepthStencilState,
     SDL_GPUFillMode, SDL_GPUFrontFace, SDL_GPUGraphicsPipeline, SDL_GPUGraphicsPipelineCreateInfo,
     SDL_GPUGraphicsPipelineTargetInfo, SDL_GPUPrimitiveType, SDL_GPURasterizerState,
@@ -203,24 +205,89 @@ impl VertexInputState {
 }
 
 #[derive(Default)]
-pub struct ColorTargetDescriptionBuilder {
-    inner: SDL_GPUColorTargetDescription,
+pub struct ColorTargetBlendState {
+    inner: SDL_GPUColorTargetBlendState,
 }
+impl ColorTargetBlendState {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// The value to be multiplied by the source RGB value.
+    pub fn with_src_color_blendfactor(mut self, blend_factor: BlendFactor) -> Self {
+        self.inner.src_color_blendfactor = SDL_GPUBlendFactor(blend_factor as i32);
+        self
+    }
+
+    /// The value to be multiplied by the destination RGB value.
+    pub fn with_dst_color_blendfactor(mut self, blend_factor: BlendFactor) -> Self {
+        self.inner.dst_color_blendfactor = SDL_GPUBlendFactor(blend_factor as i32);
+        self
+    }
+
+    /// The blend operation for the RGB components.
+    pub fn with_color_blend_op(mut self, blend_op: BlendOp) -> Self {
+        self.inner.color_blend_op = SDL_GPUBlendOp(blend_op as i32);
+        self
+    }
+
+    /// The value to be multiplied by the source alpha.
+    pub fn with_src_alpha_blendfactor(mut self, blend_factor: BlendFactor) -> Self {
+        self.inner.src_alpha_blendfactor = SDL_GPUBlendFactor(blend_factor as i32);
+        self
+    }
+
+    /// The value to be multiplied by the destination alpha.
+    pub fn with_dst_alpha_blendfactor(mut self, blend_factor: BlendFactor) -> Self {
+        self.inner.dst_alpha_blendfactor = SDL_GPUBlendFactor(blend_factor as i32);
+        self
+    }
+
+    /// The blend operation for the alpha component.
+    pub fn with_alpha_blend_op(mut self, blend_op: BlendOp) -> Self {
+        self.inner.alpha_blend_op = SDL_GPUBlendOp(blend_op as i32);
+        self
+    }
+
+    /// A bitmask specifying which of the RGBA components are enabled for writing. Writes to all channels if enable_color_write_mask is false.
+    pub fn with_color_write_mask(mut self, flags: ColorComponentFlags) -> Self {
+        self.inner.color_write_mask = flags as u8;
+        self
+    }
+
+    /// Whether blending is enabled for the color target.
+    pub fn with_enable_blend(mut self, enable: bool) -> Self {
+        self.inner.enable_blend = enable;
+        self
+    }
+
+    /// Whether the color write mask is enabled.
+    pub fn with_enable_color_write_mask(mut self, enable: bool) -> Self {
+        self.inner.enable_color_write_mask = enable;
+        self
+    }
+}
+
 #[repr(C)]
 #[derive(Default)]
 pub struct ColorTargetDescription {
     inner: SDL_GPUColorTargetDescription,
 }
-impl ColorTargetDescriptionBuilder {
+impl ColorTargetDescription {
     pub fn new() -> Self {
         Self::default()
     }
+
+    /// The pixel format of the texture to be used as a color target.
     pub fn with_format(mut self, value: TextureFormat) -> Self {
-        self.inner.format = unsafe { std::mem::transmute(value as u32) };
+        self.inner.format = SDL_GPUTextureFormat(value as i32);
         self
     }
-    pub fn build(self) -> ColorTargetDescription {
-        ColorTargetDescription { inner: self.inner }
+
+    /// The blend state to be used for the color target.
+    pub fn with_blend_state(mut self, value: ColorTargetBlendState) -> Self {
+        self.inner.blend_state = value.inner;
+        self
     }
 }
 

@@ -1,7 +1,7 @@
 use sdl3::{
     event::Event,
     gpu::{
-        Buffer, BufferBinding, BufferRegion, BufferUsageFlags, ColorTargetDescriptionBuilder,
+        Buffer, BufferBinding, BufferRegion, BufferUsageFlags, ColorTargetDescription,
         ColorTargetInfo, CompareOp, CopyPass, CullMode, DepthStencilState, DepthStencilTargetInfo,
         Device, FillMode, GraphicsPipelineTargetInfo, IndexElementSize, LoadOp, PrimitiveType,
         RasterizerState, SampleCount, ShaderFormat, ShaderStage, StoreOp, TextureCreateInfo,
@@ -152,9 +152,9 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         )
         .with_target_info(
             GraphicsPipelineTargetInfo::new()
-                .with_color_target_descriptions(&[ColorTargetDescriptionBuilder::new()
-                    .with_format(swapchain_format)
-                    .build()])
+                .with_color_target_descriptions(&[
+                    ColorTargetDescription::new().with_format(swapchain_format)
+                ])
                 .with_has_depth_stencil_target(true)
                 .with_depth_stencil_format(TextureFormat::D16Unorm),
         )
