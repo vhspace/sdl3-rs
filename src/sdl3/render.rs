@@ -818,6 +818,36 @@ fn ll_create_texture(
     )
 }
 
+#[repr(i32)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub enum ScaleMode {
+    /// nearest pixel sampling.
+    Nearest = sdl3_sys::everything::SDL_ScaleMode::NEAREST.0,
+    /// linear filtering. this is the default
+    Linear = sdl3_sys::everything::SDL_ScaleMode::LINEAR.0,
+}
+
+impl Into<sdl3_sys::everything::SDL_ScaleMode> for ScaleMode {
+    fn into(self) -> sdl3_sys::everything::SDL_ScaleMode {
+        match self {
+            ScaleMode::Nearest => sdl3_sys::everything::SDL_ScaleMode::NEAREST,
+            ScaleMode::Linear => sdl3_sys::everything::SDL_ScaleMode::LINEAR,
+        }
+    }
+}
+
+impl TryFrom<sdl3_sys::everything::SDL_ScaleMode> for ScaleMode {
+    type Error = ();
+
+    fn try_from(n: sdl3_sys::everything::SDL_ScaleMode) -> Result<Self, Self::Error> {
+        Ok(match n {
+            sdl3_sys::everything::SDL_ScaleMode::NEAREST => Self::Nearest,
+            sdl3_sys::everything::SDL_ScaleMode::LINEAR => Self::Linear,
+            _ => return Err(()),
+        })
+    }
+}
+
 /// Texture-creating methods for the renderer
 impl<T> TextureCreator<T> {
     // this can prevent introducing UB until
@@ -1948,6 +1978,29 @@ impl InternalTexture {
         }
     }
 
+    #[doc(alias = "SDL_SetTextureScaleMode")]
+    pub fn set_scale_mode(&mut self, scale: ScaleMode) {
+        let ret = unsafe { sdl3_sys::everything::SDL_SetTextureScaleMode(self.raw, scale.into()) };
+
+        if !ret {
+            panic!("Error setting scale mode: {}", get_error())
+        }
+    }
+
+    #[doc(alias = "SDL_GetTextureScaleMode")]
+    pub fn scale_mode(&self) -> ScaleMode {
+        let mut scale: MaybeUninit<sdl3_sys::everything::SDL_ScaleMode> =
+            mem::MaybeUninit::uninit();
+        let ret =
+            unsafe { sdl3_sys::everything::SDL_GetTextureScaleMode(self.raw, scale.as_mut_ptr()) };
+        if !ret {
+            panic!("{}", get_error())
+        } else {
+            let scale = unsafe { scale.assume_init() };
+            ScaleMode::try_from(scale).unwrap()
+        }
+    }
+
     #[doc(alias = "SDL_UpdateTexture")]
     pub fn update<R>(
         &mut self,
@@ -2277,6 +2330,18 @@ impl Texture<'_> {
     #[inline]
     pub fn blend_mode(&self) -> BlendMode {
         InternalTexture { raw: self.raw }.blend_mode()
+    }
+
+    /// Sets the scale mode for use when rendered.
+    #[inline]
+    pub fn set_scale_mode(&mut self, scale: ScaleMode) {
+        InternalTexture { raw: self.raw }.set_scale_mode(scale)
+    }
+
+    /// Gets the scale mode for use when rendered.
+    #[inline]
+    pub fn scale_mode(&self) -> ScaleMode {
+        InternalTexture { raw: self.raw }.scale_mode()
     }
 
     /// Updates the given texture rectangle with new pixel data.
