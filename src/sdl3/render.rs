@@ -282,6 +282,52 @@ pub enum ClippingRect {
     None,
 }
 
+impl ClippingRect {
+    pub fn intersection(&self, other: ClippingRect) -> ClippingRect {
+        match self {
+            ClippingRect::Zero => ClippingRect::Zero,
+            ClippingRect::None => other,
+            ClippingRect::Some(self_rect) => {
+                match other {
+                    ClippingRect::Zero => ClippingRect::Zero,
+                    ClippingRect::None => *self,
+                    ClippingRect::Some(rect) => match self_rect.intersection(rect) {
+                        Some(v) => ClippingRect::Some(v),
+                        None => ClippingRect::Zero,
+                    },
+                }
+            },
+        }
+    }
+
+    /// shrink the clipping rect to the part which contains the position
+    pub fn intersect_rect<R>(&self, position: R) -> ClippingRect
+    where
+        R: Into<Option<Rect>>,
+    {
+        let position: Option<Rect> = position.into();
+        match position {
+            Some(position) => {
+                match self {
+                    ClippingRect::Some(rect) => match rect.intersection(position) {
+                        Some(v) => ClippingRect::Some(v),
+                        None => ClippingRect::Zero,
+                    },
+                    ClippingRect::Zero => ClippingRect::Zero,
+                    ClippingRect::None => {
+                        // clipping rect has infinite area, so it's just whatever position is
+                        ClippingRect::Some(position)
+                    }
+                }
+            }
+            None => {
+                // position is zero area so intersection result is zero
+                ClippingRect::Zero
+            }
+        }
+    }
+}
+
 /// Manages what keeps a `SDL_Renderer` alive
 ///
 /// When the `RendererContext` is dropped, it destroys the `SDL_Renderer`
