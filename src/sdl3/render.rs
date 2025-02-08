@@ -282,6 +282,21 @@ pub enum ClippingRect {
     None,
 }
 
+impl Into<ClippingRect> for Rect {
+    fn into(self) -> ClippingRect {
+        ClippingRect::Some(self)
+    }
+}
+
+impl Into<ClippingRect> for Option<Rect> {
+    fn into(self) -> ClippingRect {
+        match self {
+            Some(v) => v.into(),
+            None => ClippingRect::None,
+        }
+    }
+}
+
 impl ClippingRect {
     pub fn intersection(&self, other: ClippingRect) -> ClippingRect {
         match self {
@@ -1184,7 +1199,11 @@ impl<T: RenderTarget> Canvas<T> {
 
     /// Sets the clip rectangle for rendering on the specified target.
     #[doc(alias = "SDL_SetRenderClipRect")]
-    pub fn set_clip_rect(&mut self, arg: ClippingRect) {
+    pub fn set_clip_rect<R>(&mut self, arg: R)
+    where
+        R: Into<ClippingRect>,
+    {
+        let arg: ClippingRect = arg.into();
         let ret = match arg {
             ClippingRect::Some(r) => unsafe {
                 sdl3_sys::everything::SDL_SetRenderClipRect(self.context.raw, r.raw())
