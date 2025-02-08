@@ -1,6 +1,6 @@
 extern crate sdl3;
 
-use sdl3::audio::{AudioCallback, AudioSpecDesired};
+use sdl3::audio::{AudioCallback, AudioSpec};
 use std::time::Duration;
 
 struct SquareWave {
@@ -9,9 +9,7 @@ struct SquareWave {
     volume: f32,
 }
 
-impl AudioCallback for SquareWave {
-    type Channel = f32;
-
+impl AudioCallback<f32> for SquareWave {
     fn callback(&mut self, out: &mut [f32]) {
         // Generate a square wave
         for x in out.iter_mut() {
@@ -25,30 +23,27 @@ impl AudioCallback for SquareWave {
     }
 }
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let audio_subsystem = sdl_context.audio()?;
 
-    let desired_spec = AudioSpecDesired {
+    let desired_spec = AudioSpec {
         freq: Some(44_100),
         channels: Some(1), // mono
-        samples: None,     // default sample size
+        format: None,
     };
 
-    let device = audio_subsystem.open_playback(None, &desired_spec, |spec| {
-        // Show obtained AudioSpec
-        println!("{:?}", spec);
-
-        // initialize the audio callback
+    let device = audio_subsystem.open_playback_stream(
+        &desired_spec,
         SquareWave {
-            phase_inc: 440.0 / spec.freq as f32,
+            phase_inc: 440.0 / desired_spec.freq.unwrap() as f32,
             phase: 0.0,
             volume: 0.25,
-        }
-    })?;
+        },
+    )?;
 
     // Start playback
-    device.resume();
+    device.resume()?;
 
     // Play for 2 seconds
     std::thread::sleep(Duration::from_millis(2_000));

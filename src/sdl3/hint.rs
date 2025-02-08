@@ -68,13 +68,10 @@ pub fn set_video_minimize_on_focus_loss_with_priority(value: bool, priority: &Hi
 /// assert_eq!(sdl3::hint::get_video_minimize_on_focus_loss(), false);
 /// ```
 pub fn get_video_minimize_on_focus_loss() -> bool {
-    match get(VIDEO_MINIMIZE_ON_FOCUS_LOSS) {
-        Some(value) => match &*value {
-            "1" => true,
-            _ => false,
-        },
-        _ => true,
-    }
+    let Some(value) = get(VIDEO_MINIMIZE_ON_FOCUS_LOSS) else {
+        return true;
+    };
+    &*value == "1"
 }
 
 #[doc(alias = "SDL_SetHint")]
@@ -85,7 +82,7 @@ pub fn set(name: &str, value: &str) -> bool {
         sys::hints::SDL_SetHint(
             name.as_ptr() as *const c_char,
             value.as_ptr() as *const c_char,
-        ) == true
+        )
     }
 }
 
@@ -126,6 +123,6 @@ pub fn set_with_priority(name: &str, value: &str, priority: &Hint) -> bool {
             name.as_ptr() as *const c_char,
             value.as_ptr() as *const c_char,
             priority_val,
-        ) == true
+        )
     }
 }

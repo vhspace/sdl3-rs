@@ -2,10 +2,11 @@ extern crate sdl3;
 
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
-use sdl3::pixels::PixelFormatEnum;
+use sdl3::pixels::PixelFormat;
 use sdl3::render::FRect;
+use sdl3_sys::pixels::SDL_PixelFormat;
 
-pub fn main() -> Result<(), String> {
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
 
@@ -16,11 +17,15 @@ pub fn main() -> Result<(), String> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
+    let mut canvas = window.into_canvas();
     let texture_creator = canvas.texture_creator();
 
     let mut texture = texture_creator
-        .create_texture_streaming(PixelFormatEnum::RGB24, 256, 256)
+        .create_texture_streaming(
+            unsafe { PixelFormat::from_ll(SDL_PixelFormat::RGB24) },
+            256,
+            256,
+        )
         .map_err(|e| e.to_string())?;
     // Create a red-green gradient
     texture.with_lock(None, |buffer: &mut [u8], pitch: usize| {

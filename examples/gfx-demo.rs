@@ -9,7 +9,7 @@ use sdl3::gfx::primitives::DrawRenderer;
 const SCREEN_WIDTH: u32 = 800;
 const SCREEN_HEIGHT: u32 = 600;
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsys = sdl_context.video()?;
     let window = video_subsys
@@ -23,7 +23,7 @@ fn main() -> Result<(), String> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
+    let mut canvas = window.into_canvas();
 
     canvas.set_draw_color(pixels::Color::RGB(0, 0, 0));
     canvas.clear();

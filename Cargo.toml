@@ -1,9 +1,9 @@
 [package]
 name = "sdl3"
 description = "Cross-platform multimedia"
-repository = "https://github.com/revmischa/sdl3-rs"
-documentation = "https://crates.io/crates/sdl3"
-version = "0.11.1"
+repository = "https://github.com/vhspace/sdl3-rs"
+documentation = "https://docs.rs/sdl3/latest/sdl3/"
+version = "0.14.7"
 license = "MIT"
 authors = [
     "Tony Aldridge <tony@angry-lawyer.com>",
@@ -22,29 +22,39 @@ name = "sdl3"
 path = "src/sdl3/lib.rs"
 
 [dependencies]
-bitflags = "1.2.1"
-libc = "0.2.92"
+bitflags = "2.8.0"
+libc = "0.2.169"
 lazy_static = "1.4.0"
 
 [dependencies.sdl3-sys]
-version = "0.1.3+SDL3-preview-3.1.6"
+version = "0.4"
+
+[dependencies.sdl3-image-sys]
+version = "0.1"
+optional = true
 
 [dependencies.c_vec]
 # allow both 1.* and 2.0 versions
 version = ">= 1.0"
 optional = true
 
-[dev-dependencies]
-rand = "0.7"
-wgpu = { version = "0.14", features = ["spirv"] }
-pollster = "0.2.4"
-env_logger = "0.9.0"
-
 [dependencies.raw-window-handle]
-version = "0.5.0"
+version = "0.6.2"
 optional = true
 
+[target.'cfg(target_os = "macos")'.dependencies.objc2]
+version = "0.6.0"
+optional = true
+
+[dev-dependencies]
+rand = "0.8.5"
+wgpu = { version = "24.0.0", features = ["spirv"] }
+pollster = "0.4.0"
+env_logger = "0.11.6"
+
+
 [features]
+
 # various ways to link to libsdl3
 # provided by sdl3-sys: https://github.com/maia-s/sdl3-sys-rs/tree/main/sdl3-sys#usage
 use-pkg-config = ["sdl3-sys/use-pkg-config"]
@@ -53,21 +63,26 @@ static-link = ["sdl3-sys/link-static"]
 link-framework = ["sdl3-sys/link-framework"]
 build-from-source = ["sdl3-sys/build-from-source"]
 build-from-source-static = ["sdl3-sys/build-from-source-static"]
-
-unsafe_textures = []
+build-from-source-unix-console = ["sdl3-sys/sdl-unix-console-build"]
+ash = ["sdl3-sys/use-ash-v0-38"]
 default = []
+unsafe_textures = []
 gfx = ["c_vec"]      #, "sdl3-sys/gfx"]
 #mixer = ["sdl3-sys/mixer"]
-#image = ["sdl3-sys/image"]
+image = ["dep:sdl3-image-sys"]
 #ttf = ["sdl3-sys/ttf"]
 # Use hidapi support in SDL. Only 2.0.12 and after
 hidapi = []
 # test_mode allows SDL to be initialised from a thread that is not the main thread
 test-mode = []
+# allows sdl3 to be used with wgpu
+raw-window-handle = ["dep:raw-window-handle", "dep:objc2"]
 
 
 [package.metadata.docs.rs]
-features = ["default", "gfx", "mixer", "image", "ttf"]
+#features = ["default", "gfx", "mixer", "image", "ttf"]
+#features = ["default", "gfx"]
+features = ["default"]
 
 [[example]]
 name = "animation"
@@ -90,6 +105,9 @@ name = "audio-whitenoise"
 [[example]]
 required-features = ["image"]
 name = "cursor"
+
+[[example]]
+name = "draw_triangle"
 
 [[example]]
 name = "demo"
@@ -144,6 +162,56 @@ name = "renderer-target"
 name = "events"
 
 [[example]]
+name = "gpu-clear"
+
+[[example]]
+name = "gpu-triangle"
+
+[[example]]
+name = "demo_games_02_woodeneye"
+path = "examples/demo_games/a02_woodeneye_008.rs"
+
+[[example]]
+name = "renderer_01_change_the_color"
+path = "examples/renderer/a01_change_the_color.rs"
+
+[[example]]
+name = "renderer_02_primitives"
+path = "examples/renderer/a02_primitives.rs"
+
+[[example]]
+name = "renderer_03_lines"
+path = "examples/renderer/a03_lines.rs"
+
+[[example]]
+name = "renderer_04_points"
+path = "examples/renderer/a04_points.rs"
+
+[[example]]
+name = "renderer_05_rectangles"
+path = "examples/renderer/a05_rectangles.rs"
+
+[[example]]
+required-features = ["unsafe_textures"]
+name = "renderer_06_textures_lifetime_solution"
+path = "examples/renderer/a06_textures_lifetime_solution.rs"
+
+[[example]]
+required-features = ["unsafe_textures"]
+name = "renderer_07_streaming_textures"
+path = "examples/renderer/a07_streaming_textures.rs"
+
+[[example]]
+required-features = ["unsafe_textures"]
+name = "renderer_08_rotating_textures"
+path = "examples/renderer/a08_rotating_textures.rs"
+
+[[example]]
+required-features = ["unsafe_textures"]
+name = "renderer_09_scaling_textures"
+path = "examples/renderer/a09_scaling_textures.rs"
+
+[[example]]
 name = "renderer-texture"
 
 [[example]]
@@ -156,6 +224,9 @@ name = "resource-manager"
 [[example]]
 required-features = ["hidapi"]
 name = "sensors"
+
+[[example]]
+name = "spinning_cube"
 
 [[example]]
 required-features = ["ttf"]
@@ -174,13 +245,13 @@ dependencies = ["sdl3"]
 # dependencies required when building examples and tests for this crate
 dev-dependencies = [
     "sdl3",
-    "sdl3-image[libjpeg-turbo,tiff,libwebp]",
-    "sdl3-ttf",
-    "sdl3-gfx",
-    "sdl3-mixer",
+    #    "sdl3-image[libjpeg-turbo,tiff,libwebp]",
+    #    "sdl3-ttf",
+    #    "sdl3-gfx",
+    #    "sdl3-mixer",
 ]
 git = "https://github.com/microsoft/vcpkg"
-rev = "acc3bcf" # release 2022.08.15
+rev = "b322364" # 2024.12.16 Release
 
 [package.metadata.vcpkg.target]
 x86_64-pc-windows-msvc = { triplet = "x64-windows-static-md" }

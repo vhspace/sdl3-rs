@@ -1,6 +1,6 @@
 extern crate sdl3;
 
-use sdl3::audio::{AudioCallback, AudioSpecDesired, AudioSpecWAV};
+use sdl3::audio::{AudioCallback, AudioSpec, AudioSpecWAV};
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -14,9 +14,7 @@ struct Sound {
     pos: usize,
 }
 
-impl AudioCallback for Sound {
-    type Channel = u8;
-
+impl AudioCallback<u8> for Sound {
     fn callback(&mut self, out: &mut [u8]) {
         for dst in out.iter_mut() {
             // With channel type u8 the "silence" value is 128 (middle of the 0-2^8 range) so we need
@@ -41,7 +39,7 @@ impl AudioCallback for Sound {
 // FIXME: Convert to AudioStream library
 fn main() -> () {}
 #[cfg(feature = "")]
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let wav_file: Cow<'static, Path> = match std::env::args().nth(1) {
         None => Cow::from(Path::new("./assets/sine.wav")),
         Some(s) => Cow::from(PathBuf::from(s)),
@@ -88,4 +86,3 @@ fn main() -> Result<(), String> {
 
     Ok(())
 }
-

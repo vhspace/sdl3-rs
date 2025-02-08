@@ -1,6 +1,6 @@
 extern crate sdl3;
 
-use sdl3::audio::{AudioCallback, AudioSpecDesired};
+use sdl3::audio::{AudioCallback, AudioSpec};
 use sdl3::AudioSubsystem;
 use std::i16;
 use std::sync::mpsc;
@@ -17,9 +17,7 @@ struct Recording {
 
 // Append the input of the callback to the record_buffer.
 // When the record_buffer is full, send it to the main thread via done_sender.
-impl AudioCallback for Recording {
-    type Channel = i16;
-
+impl AudioCallback<i16> for Recording {
     fn callback(&mut self, input: &mut [i16]) {
         if self.done {
             return;
@@ -41,8 +39,8 @@ impl AudioCallback for Recording {
 
 fn record(
     audio_subsystem: &AudioSubsystem,
-    desired_spec: &AudioSpecDesired,
-) -> Result<Vec<i16>, String> {
+    desired_spec: &AudioSpec,
+) -> Result<Vec<i16>, Box<dyn std::error::Error>> {
     println!(
         "Capturing {:} seconds... Please rock!",
         RECORDING_LENGTH_SECONDS
@@ -50,31 +48,28 @@ fn record(
 
     let (done_sender, done_receiver) = mpsc::channel();
 
-    let capture_device = audio_subsystem.open_capture(None, desired_spec, |spec| {
-        println!("Capture Spec = {:?}", spec);
+    let capture_device = audio_subsystem.open_recording_stream(
+        desired_spec,
         Recording {
             record_buffer: vec![
                 0;
-                spec.freq as usize
+                desired_spec.freq.unwrap() as usize
                     * RECORDING_LENGTH_SECONDS
-                    * spec.channels as usize
+                    * desired_spec.channels.unwrap() as usize
             ],
             pos: 0,
             done_sender,
             done: false,
-        }
-    })?;
+        },
+    )?;
 
-    println!(
-        "AudioDriver: {:?}",
-        capture_device.subsystem().current_audio_driver()
-    );
-    capture_device.resume();
+    println!("AudioDriver: {:?}", audio_subsystem.current_audio_driver());
+    capture_device.resume()?;
 
     // Wait until the recording is done.
     let recorded_vec = done_receiver.recv().map_err(|e| e.to_string())?;
 
-    capture_device.pause();
+    capture_device.pause()?;
 
     // Device is automatically closed when dropped.
     // Depending on your system it might be even important that the capture_device is dropped
@@ -104,9 +99,7 @@ struct SoundPlayback {
     pos: usize,
 }
 
-impl AudioCallback for SoundPlayback {
-    type Channel = i16;
-
+impl AudioCallback<i16> for SoundPlayback {
     fn callback(&mut self, out: &mut [i16]) {
         for dst in out.iter_mut() {
             *dst = *self.data.get(self.pos).unwrap_or(&0);
@@ -117,21 +110,21 @@ impl AudioCallback for SoundPlayback {
 
 fn replay_recorded_vec(
     audio_subsystem: &AudioSubsystem,
-    desired_spec: &AudioSpecDesired,
+    desired_spec: &AudioSpec,
     recorded_vec: Vec<i16>,
-) -> Result<(), String> {
+) -> Result<(), Box<dyn std::error::Error>> {
     println!("Playing...");
 
-    let playback_device = audio_subsystem.open_playback(None, desired_spec, |spec| {
-        println!("Playback Spec = {:?}", spec);
+    let playback_device = audio_subsystem.open_playback_stream(
+        desired_spec,
         SoundPlayback {
             data: recorded_vec,
             pos: 0,
-        }
-    })?;
+        },
+    )?;
 
     // Start playback
-    playback_device.resume();
+    playback_device.resume()?;
 
     std::thread::sleep(Duration::from_secs(RECORDING_LENGTH_SECONDS as u64));
     // Device is automatically closed when dropped
@@ -139,14 +132,14 @@ fn replay_recorded_vec(
     Ok(())
 }
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let audio_subsystem = sdl_context.audio()?;
 
-    let desired_spec = AudioSpecDesired {
+    let desired_spec = AudioSpec {
         freq: None,
         channels: None,
-        samples: None,
+        format: None,
     };
 
     let recorded_vec = record(&audio_subsystem, &desired_spec)?;

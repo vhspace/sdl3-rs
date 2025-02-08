@@ -1,6 +1,6 @@
 extern crate sdl3;
 
-fn main() -> Result<(), String> {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     // This is required for certain controllers to work on Windows without the
     // video subsystem enabled:
     sdl3::hint::set("SDL_JOYSTICK_THREAD", "1");
@@ -17,7 +17,6 @@ fn main() -> Result<(), String> {
     // Iterate over all available joysticks and look for game controllers.
     let mut controller = (0..available)
         .find_map(|id| {
-
             println!("Attempting to open gamepad {}", id);
 
             match gamepad_subsystem.open(id) {
@@ -40,8 +39,8 @@ fn main() -> Result<(), String> {
     let (mut lo_freq, mut hi_freq) = (0, 0);
 
     for event in sdl_context.event_pump()?.wait_iter() {
-        use sdl3::gamepad::Axis;
         use sdl3::event::Event;
+        use sdl3::gamepad::Axis;
 
         match event {
             Event::ControllerAxisMotion {

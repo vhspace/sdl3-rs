@@ -5,7 +5,7 @@ use sdl3::keyboard::Keycode;
 use sdl3::pixels::Color;
 use std::time::Duration;
 
-pub fn main() -> Result<(), String> {
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
 
@@ -16,7 +16,7 @@ pub fn main() -> Result<(), String> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
+    let mut canvas = window.into_canvas();
 
     canvas.set_draw_color(Color::RGB(255, 0, 0));
     canvas.clear();

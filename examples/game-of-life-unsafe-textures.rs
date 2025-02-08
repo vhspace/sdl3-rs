@@ -121,7 +121,9 @@ mod game_of_life {
 }
 
 #[cfg(feature = "unsafe_textures")]
-fn dummy_texture<'a>(canvas: &mut Canvas<Window>) -> Result<(Texture, Texture), String> {
+fn dummy_texture<'a>(
+    canvas: &mut Canvas<Window>,
+) -> Result<(Texture, Texture), Box<dyn std::error::Error>> {
     enum TextureColor {
         Yellow,
         White,
@@ -211,7 +213,7 @@ fn dummy_texture<'a>(canvas: &mut Canvas<Window>) -> Result<(Texture, Texture), 
 }
 
 #[cfg(feature = "unsafe_textures")]
-pub fn main() -> Result<(), String> {
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
 

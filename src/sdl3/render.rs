@@ -36,10 +36,11 @@ use crate::rect::Rect;
 use crate::surface::{Surface, SurfaceContext, SurfaceRef};
 use crate::sys;
 use crate::video::{Window, WindowContext};
+use crate::Error;
 use libc::{c_double, c_int};
 use pixels::PixelFormat;
 use std::convert::{Into, TryFrom, TryInto};
-use std::error::Error;
+use std::error;
 use std::ffi::CStr;
 use std::fmt;
 #[cfg(not(feature = "unsafe_textures"))]
@@ -49,50 +50,33 @@ use std::mem::{transmute, MaybeUninit};
 use std::ops::Deref;
 use std::ptr;
 use std::rc::Rc;
+use std::sync::Arc;
 use sys::blendmode::SDL_BlendMode;
 use sys::everything::SDL_PropertiesID;
 use sys::render::{SDL_GetTextureProperties, SDL_TextureAccess};
 use sys::stdinc::Sint64;
 use sys::surface::{SDL_FLIP_HORIZONTAL, SDL_FLIP_NONE, SDL_FLIP_VERTICAL};
 
-/// Contains the description of an error returned by SDL
-#[derive(Debug, Clone)]
-pub struct SdlError(String);
-
 /// Possible errors returned by targeting a `Canvas` to render to a `Texture`
 #[derive(Debug, Clone)]
 pub enum TargetRenderError {
-    SdlError(SdlError),
-}
-
-impl fmt::Display for SdlError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let &SdlError(ref e) = self;
-        write!(f, "SDL error: {}", e)
-    }
-}
-
-impl Error for SdlError {
-    fn description(&self) -> &str {
-        let &SdlError(ref e) = self;
-        e
-    }
+    SdlError(Error),
 }
 
 impl fmt::Display for TargetRenderError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::TargetRenderError::*;
         match *self {
-            SdlError(ref e) => e.fmt(f),
+            SdlError(ref e) => write!(f, "SDL error: {}", e),
         }
     }
 }
 
-impl Error for TargetRenderError {
+impl error::Error for TargetRenderError {
     fn description(&self) -> &str {
         use self::TargetRenderError::*;
-        match *self {
-            SdlError(self::SdlError(ref e)) => e.as_str(),
+        match self {
+            SdlError(e) => &e.0,
         }
     }
 }
@@ -276,7 +260,7 @@ impl TryFrom<u32> for BlendMode {
     fn try_from(n: u32) -> Result<Self, Self::Error> {
         use self::BlendMode::*;
 
-        Ok(match unsafe { transmute(n) } {
+        Ok(match n {
             sys::blendmode::SDL_BLENDMODE_NONE => None,
             sys::blendmode::SDL_BLENDMODE_BLEND => Blend,
             sys::blendmode::SDL_BLENDMODE_ADD => Add,
@@ -288,12 +272,81 @@ impl TryFrom<u32> for BlendMode {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ClippingRect {
+    /// a non-zero area clipping rect
+    Some(Rect),
+    /// a clipping rect with zero area
+    Zero,
+    /// the absence of a clipping rect
+    None,
+}
+
+impl Into<ClippingRect> for Rect {
+    fn into(self) -> ClippingRect {
+        ClippingRect::Some(self)
+    }
+}
+
+impl Into<ClippingRect> for Option<Rect> {
+    fn into(self) -> ClippingRect {
+        match self {
+            Some(v) => v.into(),
+            None => ClippingRect::None,
+        }
+    }
+}
+
+impl ClippingRect {
+    pub fn intersection(&self, other: ClippingRect) -> ClippingRect {
+        match self {
+            ClippingRect::Zero => ClippingRect::Zero,
+            ClippingRect::None => other,
+            ClippingRect::Some(self_rect) => match other {
+                ClippingRect::Zero => ClippingRect::Zero,
+                ClippingRect::None => *self,
+                ClippingRect::Some(rect) => match self_rect.intersection(rect) {
+                    Some(v) => ClippingRect::Some(v),
+                    None => ClippingRect::Zero,
+                },
+            },
+        }
+    }
+
+    /// shrink the clipping rect to the part which contains the position
+    pub fn intersect_rect<R>(&self, position: R) -> ClippingRect
+    where
+        R: Into<Option<Rect>>,
+    {
+        let position: Option<Rect> = position.into();
+        match position {
+            Some(position) => {
+                match self {
+                    ClippingRect::Some(rect) => match rect.intersection(position) {
+                        Some(v) => ClippingRect::Some(v),
+                        None => ClippingRect::Zero,
+                    },
+                    ClippingRect::Zero => ClippingRect::Zero,
+                    ClippingRect::None => {
+                        // clipping rect has infinite area, so it's just whatever position is
+                        ClippingRect::Some(position)
+                    }
+                }
+            }
+            None => {
+                // position is zero area so intersection result is zero
+                ClippingRect::Zero
+            }
+        }
+    }
+}
+
 /// Manages what keeps a `SDL_Renderer` alive
 ///
 /// When the `RendererContext` is dropped, it destroys the `SDL_Renderer`
 pub struct RendererContext<T> {
     raw: *mut sys::render::SDL_Renderer,
-    _target: Rc<T>,
+    _target: Arc<T>,
 }
 
 impl<T> Drop for RendererContext<T> {
@@ -314,7 +367,7 @@ impl<T> RendererContext<T> {
         self.raw
     }
 
-    pub unsafe fn from_ll(raw: *mut sys::render::SDL_Renderer, target: Rc<T>) -> Self {
+    pub unsafe fn from_ll(raw: *mut sys::render::SDL_Renderer, target: Arc<T>) -> Self {
         RendererContext {
             raw,
             _target: target,
@@ -324,11 +377,11 @@ impl<T> RendererContext<T> {
     unsafe fn set_raw_target(
         &self,
         raw_texture: *mut sys::render::SDL_Texture,
-    ) -> Result<(), SdlError> {
-        if sys::render::SDL_SetRenderTarget(self.raw, raw_texture) == true {
+    ) -> Result<(), Error> {
+        if sys::render::SDL_SetRenderTarget(self.raw, raw_texture) {
             Ok(())
         } else {
-            Err(SdlError(get_error()))
+            Err(get_error())
         }
     }
 
@@ -427,7 +480,7 @@ impl<'s> Canvas<Surface<'s>> {
     /// This method should only fail if SDL2 is not built with rendering
     /// support, or there's an out-of-memory error.
     #[doc(alias = "SDL_CreateSoftwareRenderer")]
-    pub fn from_surface(surface: Surface<'s>) -> Result<Self, String> {
+    pub fn from_surface(surface: Surface<'s>) -> Result<Self, Error> {
         let raw_renderer = unsafe { sys::render::SDL_CreateSoftwareRenderer(surface.raw()) };
         if !raw_renderer.is_null() {
             let context =
@@ -576,8 +629,8 @@ impl<T: RenderTarget> Canvas<T> {
     ///
     /// # Errors
     ///
-    /// * returns `TargetRenderError::NotSupported`
-    /// if the renderer does not support the use of render targets
+    /// * returns `TargetRenderError::NotSupported` if the renderer does not support the use of
+    /// render targets
     /// * returns `TargetRenderError::SdlError` if SDL2 returned with an error code.
     ///
     /// The texture *must* be created with the texture access:
@@ -608,7 +661,6 @@ impl<T: RenderTarget> Canvas<T> {
     /// });
     /// ```
     ///
-
     pub fn with_texture_canvas<F>(&mut self, texture: &mut Texture, f: F)
     where
         for<'r> F: FnOnce(&'r mut Canvas<T>),
@@ -685,7 +737,7 @@ impl<T: RenderTarget> Canvas<T> {
         I: Iterator<Item = &'s (&'a mut Texture<'t>, U)>,
     {
         let target = unsafe { self.get_raw_target() };
-        for &(ref texture, ref user_context) in textures {
+        for (texture, user_context) in textures {
             unsafe { self.set_raw_target(texture.raw) };
             f(self, user_context);
         }
@@ -742,10 +794,10 @@ pub fn create_renderer(
     let raw = unsafe {
         sys::render::SDL_CreateRenderer(
             window.raw(),
-            if renderer_name.is_none() {
-                std::ptr::null()
+            if let Some(renderer_name) = renderer_name {
+                renderer_name.as_ptr() as *const _
             } else {
-                renderer_name.unwrap().as_ptr() as *const _
+                std::ptr::null()
             },
         )
     };
@@ -762,7 +814,7 @@ pub enum TextureValueError {
     WidthOverflows(u32),
     HeightOverflows(u32),
     WidthMustBeMultipleOfTwoForFormat(u32, PixelFormat),
-    SdlError(String),
+    SdlError(Error),
 }
 
 impl fmt::Display for TextureValueError {
@@ -784,7 +836,7 @@ impl fmt::Display for TextureValueError {
     }
 }
 
-impl Error for TextureValueError {
+impl error::Error for TextureValueError {
     fn description(&self) -> &str {
         use self::TextureValueError::*;
 
@@ -792,7 +844,7 @@ impl Error for TextureValueError {
             WidthOverflows(_) => "texture width overflow",
             HeightOverflows(_) => "texture height overflow",
             WidthMustBeMultipleOfTwoForFormat(..) => "texture width must be multiple of two",
-            SdlError(ref e) => e,
+            SdlError(ref e) => &e.0,
         }
     }
 }
@@ -833,6 +885,36 @@ fn ll_create_texture(
             sys::render::SDL_CreateTexture(context, pixel_format.into(), access.into(), w, h)
         },
     )
+}
+
+#[repr(i32)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+pub enum ScaleMode {
+    /// nearest pixel sampling.
+    Nearest = sdl3_sys::everything::SDL_ScaleMode::NEAREST.0,
+    /// linear filtering. this is the default
+    Linear = sdl3_sys::everything::SDL_ScaleMode::LINEAR.0,
+}
+
+impl Into<sdl3_sys::everything::SDL_ScaleMode> for ScaleMode {
+    fn into(self) -> sdl3_sys::everything::SDL_ScaleMode {
+        match self {
+            ScaleMode::Nearest => sdl3_sys::everything::SDL_ScaleMode::NEAREST,
+            ScaleMode::Linear => sdl3_sys::everything::SDL_ScaleMode::LINEAR,
+        }
+    }
+}
+
+impl TryFrom<sdl3_sys::everything::SDL_ScaleMode> for ScaleMode {
+    type Error = ();
+
+    fn try_from(n: sdl3_sys::everything::SDL_ScaleMode) -> Result<Self, Self::Error> {
+        Ok(match n {
+            sdl3_sys::everything::SDL_ScaleMode::NEAREST => Self::Nearest,
+            sdl3_sys::everything::SDL_ScaleMode::LINEAR => Self::Linear,
+            _ => return Err(()),
+        })
+    }
 }
 
 /// Texture-creating methods for the renderer
@@ -1020,9 +1102,8 @@ impl<T: RenderTarget> Canvas<T> {
     /// Sets the blend mode used for drawing operations (Fill and Line).
     #[doc(alias = "SDL_SetRenderDrawBlendMode")]
     pub fn set_blend_mode(&mut self, blend: BlendMode) {
-        let ret = unsafe {
-            sys::render::SDL_SetRenderDrawBlendMode(self.context.raw, transmute(blend as u32))
-        };
+        let ret =
+            unsafe { sys::render::SDL_SetRenderDrawBlendMode(self.context.raw, blend as u32) };
         // Should only fail on an invalid renderer
         if !ret {
             panic!("{}", get_error())
@@ -1041,7 +1122,7 @@ impl<T: RenderTarget> Canvas<T> {
             panic!("{}", get_error())
         } else {
             let blend = unsafe { blend.assume_init() };
-            BlendMode::try_from(blend as u32).unwrap()
+            BlendMode::try_from(blend).unwrap()
         }
     }
 
@@ -1070,7 +1151,7 @@ impl<T: RenderTarget> Canvas<T> {
 
     /// Gets the output size of a rendering context.
     #[doc(alias = "SDL_GetCurrentRenderOutputSize")]
-    pub fn output_size(&self) -> Result<(u32, u32), String> {
+    pub fn output_size(&self) -> Result<(u32, u32), Error> {
         let mut width = 0;
         let mut height = 0;
 
@@ -1147,37 +1228,57 @@ impl<T: RenderTarget> Canvas<T> {
     }
 
     /// Sets the clip rectangle for rendering on the specified target.
-    ///
-    /// If the rectangle is `None`, clipping will be disabled.
     #[doc(alias = "SDL_SetRenderClipRect")]
-    pub fn set_clip_rect<R: Into<Option<Rect>>>(&mut self, rect: R) {
-        let rect = rect.into();
-        // as_ref is important because we need rect to live until the end of the FFI call, but map_or consumes an Option<T>
-        let ptr = rect.as_ref().map_or(ptr::null(), |rect| rect.raw());
-        let ret = unsafe { sys::render::SDL_SetRenderClipRect(self.context.raw, ptr) };
+    pub fn set_clip_rect<R>(&mut self, arg: R)
+    where
+        R: Into<ClippingRect>,
+    {
+        let arg: ClippingRect = arg.into();
+        let ret = match arg {
+            ClippingRect::Some(r) => unsafe {
+                sdl3_sys::everything::SDL_SetRenderClipRect(self.context.raw, r.raw())
+            },
+            ClippingRect::Zero => {
+                let r = sdl3_sys::everything::SDL_Rect {
+                    x: 0,
+                    y: 0,
+                    w: 0,
+                    h: 0,
+                };
+                let r: *const sdl3_sys::everything::SDL_Rect = &r;
+                unsafe { sdl3_sys::everything::SDL_SetRenderClipRect(self.context.raw, r) }
+            }
+            ClippingRect::None => unsafe {
+                sdl3_sys::everything::SDL_SetRenderClipRect(self.context.raw, ptr::null())
+            },
+        };
         if !ret {
             panic!("Could not set clip rect: {}", get_error())
         }
     }
 
     /// Gets the clip rectangle for the current target.
-    ///
-    /// Returns `None` if clipping is disabled.
     #[doc(alias = "SDL_GetRenderClipRect")]
-    pub fn clip_rect(&self) -> Option<Rect> {
+    pub fn clip_rect(&self) -> ClippingRect {
+        let clip_enabled = unsafe { sdl3_sys::everything::SDL_RenderClipEnabled(self.context.raw) };
+
+        if !clip_enabled {
+            return ClippingRect::None;
+        }
+
         let mut raw = mem::MaybeUninit::uninit();
-        unsafe { sys::render::SDL_GetRenderClipRect(self.context.raw, raw.as_mut_ptr()) };
+        unsafe { sdl3_sys::everything::SDL_GetRenderClipRect(self.context.raw, raw.as_mut_ptr()) };
         let raw = unsafe { raw.assume_init() };
         if raw.w == 0 || raw.h == 0 {
-            None
+            ClippingRect::Zero
         } else {
-            Some(Rect::from_ll(raw))
+            ClippingRect::Some(Rect::from_ll(raw))
         }
     }
 
     /// Sets the drawing scale for rendering on the current target.
     #[doc(alias = "SDL_SetRenderScale")]
-    pub fn set_scale(&mut self, scale_x: f32, scale_y: f32) -> Result<(), String> {
+    pub fn set_scale(&mut self, scale_x: f32, scale_y: f32) -> Result<(), Error> {
         let ret = unsafe { sys::render::SDL_SetRenderScale(self.context.raw, scale_x, scale_y) };
         // Should only fail on an invalid renderer
         if !ret {
@@ -1199,7 +1300,7 @@ impl<T: RenderTarget> Canvas<T> {
     /// Draws a point on the current rendering target.
     /// Errors if drawing fails for any reason (e.g. driver failure)
     #[doc(alias = "SDL_RenderPoint")]
-    pub fn draw_point<P: Into<FPoint>>(&mut self, point: P) -> Result<(), String> {
+    pub fn draw_point<P: Into<FPoint>>(&mut self, point: P) -> Result<(), Error> {
         let point = point.into();
         let result = unsafe { sys::render::SDL_RenderPoint(self.context.raw, point.x, point.y) };
         if !result {
@@ -1212,7 +1313,7 @@ impl<T: RenderTarget> Canvas<T> {
     /// Draws multiple points on the current rendering target.
     /// Errors if drawing fails for any reason (e.g. driver failure)
     #[doc(alias = "SDL_RenderPoints")]
-    pub fn draw_points<'a, P: Into<&'a [FPoint]>>(&mut self, points: P) -> Result<(), String> {
+    pub fn draw_points<'a, P: Into<&'a [FPoint]>>(&mut self, points: P) -> Result<(), Error> {
         let points = points.into();
         let result = unsafe {
             sys::render::SDL_RenderPoints(
@@ -1235,7 +1336,7 @@ impl<T: RenderTarget> Canvas<T> {
         &mut self,
         start: P1,
         end: P2,
-    ) -> Result<(), String> {
+    ) -> Result<(), Error> {
         let start = start.into();
         let end = end.into();
         let result = unsafe {
@@ -1251,7 +1352,7 @@ impl<T: RenderTarget> Canvas<T> {
     /// Draws a series of connected lines on the current rendering target.
     /// Errors if drawing fails for any reason (e.g. driver failure)
     #[doc(alias = "SDL_RenderLines")]
-    pub fn draw_lines<'a, P: Into<&'a [FPoint]>>(&mut self, points: P) -> Result<(), String> {
+    pub fn draw_lines<'a, P: Into<&'a [FPoint]>>(&mut self, points: P) -> Result<(), Error> {
         let points = points.into();
         let result = unsafe {
             sys::render::SDL_RenderLines(
@@ -1274,7 +1375,7 @@ impl<T: RenderTarget> Canvas<T> {
     /// Draws a rectangle on the current rendering target.
     /// Errors if drawing fails for any reason (e.g. driver failure)
     #[doc(alias = "SDL_RenderRect")]
-    pub fn draw_rect(&mut self, rect: FRect) -> Result<(), String> {
+    pub fn draw_rect(&mut self, rect: FRect) -> Result<(), Error> {
         let result = unsafe { sys::render::SDL_RenderRect(self.context.raw, &rect.to_ll()) };
         if !result {
             Err(get_error())
@@ -1286,7 +1387,7 @@ impl<T: RenderTarget> Canvas<T> {
     /// Draws some number of rectangles on the current rendering target.
     /// Errors if drawing fails for any reason (e.g. driver failure)
     #[doc(alias = "SDL_RenderRects")]
-    pub fn draw_rects(&mut self, rects: &[FRect]) -> Result<(), String> {
+    pub fn draw_rects(&mut self, rects: &[FRect]) -> Result<(), Error> {
         let result = unsafe {
             sys::render::SDL_RenderRects(
                 self.context.raw,
@@ -1306,11 +1407,12 @@ impl<T: RenderTarget> Canvas<T> {
     /// Passing None will fill the entire rendering target.
     /// Errors if drawing fails for any reason (e.g. driver failure)
     #[doc(alias = "SDL_RenderFillRect")]
-    pub fn fill_rect<R: Into<Option<FRect>>>(&mut self, rect: R) -> Result<(), String> {
+    pub fn fill_rect<R: Into<Option<FRect>>>(&mut self, rect: R) -> Result<(), Error> {
+        let rect_ll = rect.into().map(|r| r.to_ll());
         let result = unsafe {
             sys::render::SDL_RenderFillRect(
                 self.context.raw,
-                rect.into().map_or(ptr::null(), |r| &r.to_ll()),
+                rect_ll.as_ref().map_or(ptr::null(), |r| r),
             )
         };
         if !result {
@@ -1324,7 +1426,7 @@ impl<T: RenderTarget> Canvas<T> {
     /// the drawing color.
     /// Errors if drawing fails for any reason (e.g. driver failure)
     #[doc(alias = "SDL_RenderFillRects")]
-    pub fn fill_rects(&mut self, rects: &[FRect]) -> Result<(), String> {
+    pub fn fill_rects(&mut self, rects: &[FRect]) -> Result<(), Error> {
         let result = unsafe {
             sys::render::SDL_RenderFillRects(
                 self.context.raw,
@@ -1348,7 +1450,7 @@ impl<T: RenderTarget> Canvas<T> {
     /// Errors if drawing fails for any reason (e.g. driver failure),
     /// or if the provided texture does not belong to the renderer.
     #[doc(alias = "SDL_RenderTexture")]
-    pub fn copy<R1, R2>(&mut self, texture: &Texture, src: R1, dst: R2) -> Result<(), String>
+    pub fn copy<R1, R2>(&mut self, texture: &Texture, src: R1, dst: R2) -> Result<(), Error>
     where
         R1: Into<Option<FRect>>,
         R2: Into<Option<FRect>>,
@@ -1398,7 +1500,7 @@ impl<T: RenderTarget> Canvas<T> {
         center: P,
         flip_horizontal: bool,
         flip_vertical: bool,
-    ) -> Result<(), String>
+    ) -> Result<(), Error>
     where
         R1: Into<Option<FRect>>,
         R2: Into<Option<FRect>>,
@@ -1452,10 +1554,10 @@ impl<T: RenderTarget> Canvas<T> {
         &self,
         rect: R,
         // format: pixels::PixelFormat,
-    ) -> Result<Surface, String> {
+    ) -> Result<Surface, Error> {
         unsafe {
             let rect = rect.into();
-            let (actual_rect, w, h) = match rect {
+            let (actual_rect, _w, _h) = match rect {
                 Some(ref rect) => (rect.raw(), rect.width() as usize, rect.height() as usize),
                 None => {
                     let (w, h) = self.output_size()?;
@@ -1665,7 +1767,7 @@ pub struct Texture<'r> {
 }
 
 #[cfg(not(feature = "unsafe_textures"))]
-impl<'r> Drop for Texture<'r> {
+impl Drop for Texture<'_> {
     #[doc(alias = "SDL_DestroyTexture")]
     fn drop(&mut self) {
         unsafe {
@@ -1705,7 +1807,7 @@ pub enum UpdateTextureError {
     YMustBeMultipleOfTwoForFormat(i32, PixelFormat),
     WidthMustBeMultipleOfTwoForFormat(u32, PixelFormat),
     HeightMustBeMultipleOfTwoForFormat(u32, PixelFormat),
-    SdlError(String),
+    SdlError(Error),
 }
 
 impl fmt::Display for UpdateTextureError {
@@ -1754,7 +1856,7 @@ impl fmt::Display for UpdateTextureError {
     }
 }
 
-impl Error for UpdateTextureError {
+impl error::Error for UpdateTextureError {
     fn description(&self) -> &str {
         use self::UpdateTextureError::*;
 
@@ -1765,7 +1867,7 @@ impl Error for UpdateTextureError {
             YMustBeMultipleOfTwoForFormat(..) => "y must be multiple of two",
             WidthMustBeMultipleOfTwoForFormat(..) => "width must be multiple of two",
             HeightMustBeMultipleOfTwoForFormat(..) => "height must be multiple of two",
-            SdlError(ref e) => e,
+            SdlError(ref e) => &e.0,
         }
     }
 }
@@ -1787,7 +1889,7 @@ pub enum UpdateTextureYUVError {
     WidthMustBeMultipleOfTwoForFormat(u32),
     HeightMustBeMultipleOfTwoForFormat(u32),
     RectNotInsideTexture(Rect),
-    SdlError(String),
+    SdlError(Error),
 }
 
 impl fmt::Display for UpdateTextureYUVError {
@@ -1828,7 +1930,7 @@ impl fmt::Display for UpdateTextureYUVError {
     }
 }
 
-impl Error for UpdateTextureYUVError {
+impl error::Error for UpdateTextureYUVError {
     fn description(&self) -> &str {
         use self::UpdateTextureYUVError::*;
 
@@ -1840,7 +1942,7 @@ impl Error for UpdateTextureYUVError {
             WidthMustBeMultipleOfTwoForFormat(_) => "width must be multiple of two",
             HeightMustBeMultipleOfTwoForFormat(_) => "height must be multiple of two",
             RectNotInsideTexture(_) => "rect must be inside texture",
-            SdlError(ref e) => e,
+            SdlError(ref e) => &e.0,
         }
     }
 }
@@ -1852,7 +1954,7 @@ struct InternalTexture {
 impl InternalTexture {
     #[doc(alias = "SDL_GetTextureProperties")]
     pub fn get_properties(&self) -> SDL_PropertiesID {
-        unsafe { SDL_GetTextureProperties(self.raw.into()) }
+        unsafe { SDL_GetTextureProperties(self.raw) }
     }
 
     pub fn get_format(&self) -> PixelFormat {
@@ -1944,8 +2046,7 @@ impl InternalTexture {
 
     #[doc(alias = "SDL_SetTextureBlendMode")]
     pub fn set_blend_mode(&mut self, blend: BlendMode) {
-        let ret =
-            unsafe { sys::render::SDL_SetTextureBlendMode(self.raw, transmute(blend as u32)) };
+        let ret = unsafe { sys::render::SDL_SetTextureBlendMode(self.raw, blend as u32) };
 
         if !ret {
             panic!("Error setting blend: {}", get_error())
@@ -1962,7 +2063,30 @@ impl InternalTexture {
             panic!("{}", get_error())
         } else {
             let blend = unsafe { blend.assume_init() };
-            BlendMode::try_from(blend as u32).unwrap()
+            BlendMode::try_from(blend).unwrap()
+        }
+    }
+
+    #[doc(alias = "SDL_SetTextureScaleMode")]
+    pub fn set_scale_mode(&mut self, scale: ScaleMode) {
+        let ret = unsafe { sdl3_sys::everything::SDL_SetTextureScaleMode(self.raw, scale.into()) };
+
+        if !ret {
+            panic!("Error setting scale mode: {}", get_error())
+        }
+    }
+
+    #[doc(alias = "SDL_GetTextureScaleMode")]
+    pub fn scale_mode(&self) -> ScaleMode {
+        let mut scale: MaybeUninit<sdl3_sys::everything::SDL_ScaleMode> =
+            mem::MaybeUninit::uninit();
+        let ret =
+            unsafe { sdl3_sys::everything::SDL_GetTextureScaleMode(self.raw, scale.as_mut_ptr()) };
+        if !ret {
+            panic!("{}", get_error())
+        } else {
+            let scale = unsafe { scale.assume_init() };
+            ScaleMode::try_from(scale).unwrap()
         }
     }
 
@@ -2162,7 +2286,7 @@ impl InternalTexture {
     }
 
     #[doc(alias = "SDL_LockTexture")]
-    pub fn with_lock<F, R, R2>(&mut self, rect: R2, func: F) -> Result<R, String>
+    pub fn with_lock<F, R, R2>(&mut self, rect: R2, func: F) -> Result<R, Error>
     where
         F: FnOnce(&mut [u8], usize) -> R,
         R2: Into<Option<Rect>>,
@@ -2260,7 +2384,7 @@ impl InternalTexture {
 }
 
 #[cfg(not(feature = "unsafe_textures"))]
-impl<'r> Texture<'r> {
+impl Texture<'_> {
     /// Sets an additional color value multiplied into render copy operations.
     #[inline]
     pub fn set_color_mod(&mut self, red: u8, green: u8, blue: u8) {
@@ -2295,6 +2419,18 @@ impl<'r> Texture<'r> {
     #[inline]
     pub fn blend_mode(&self) -> BlendMode {
         InternalTexture { raw: self.raw }.blend_mode()
+    }
+
+    /// Sets the scale mode for use when rendered.
+    #[inline]
+    pub fn set_scale_mode(&mut self, scale: ScaleMode) {
+        InternalTexture { raw: self.raw }.set_scale_mode(scale)
+    }
+
+    /// Gets the scale mode for use when rendered.
+    #[inline]
+    pub fn scale_mode(&self) -> ScaleMode {
+        InternalTexture { raw: self.raw }.scale_mode()
     }
 
     /// Updates the given texture rectangle with new pixel data.
@@ -2346,7 +2482,7 @@ impl<'r> Texture<'r> {
     /// This is a write-only operation, and if you need to keep a copy of the
     /// texture data you should do that at the application level.
     #[inline]
-    pub fn with_lock<F, R, R2>(&mut self, rect: R2, func: F) -> Result<R, String>
+    pub fn with_lock<F, R, R2>(&mut self, rect: R2, func: F) -> Result<R, Error>
     where
         F: FnOnce(&mut [u8], usize) -> R,
         R2: Into<Option<Rect>>,
@@ -2557,7 +2693,7 @@ impl Texture {
     /// This is a write-only operation, and if you need to keep a copy of the
     /// texture data you should do that at the application level.
     #[inline]
-    pub fn with_lock<F, R, R2>(&mut self, rect: R2, func: F) -> Result<R, String>
+    pub fn with_lock<F, R, R2>(&mut self, rect: R2, func: F) -> Result<R, Error>
     where
         F: FnOnce(&mut [u8], usize) -> R,
         R2: Into<Option<Rect>>,

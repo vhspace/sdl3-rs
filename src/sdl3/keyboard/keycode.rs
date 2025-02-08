@@ -267,7 +267,7 @@ impl Keycode {
         use self::Keycode::*;
         let n = n as u32;
 
-        Some(match unsafe { transmute(n) } {
+        Some(match n {
             SDLK_SCANCODE_MASK => ScancodeMask,
             SDLK_UNKNOWN => Unknown,
             SDLK_RETURN => Return,
@@ -551,7 +551,7 @@ impl Keycode {
         modstate: SDL_Keymod,
         key_event: bool,
     ) -> Option<Keycode> {
-        const UNKNOWN: u32 = sys::keycode::SDLK_UNKNOWN as u32;
+        const UNKNOWN: u32 = sys::keycode::SDLK_UNKNOWN;
         unsafe {
             match sys::keyboard::SDL_GetKeyFromScancode(
                 transmute::<u32, sys::scancode::SDL_Scancode>(scancode as u32),
@@ -566,7 +566,7 @@ impl Keycode {
 
     #[doc(alias = "SDL_GetKeyFromName")]
     pub fn from_name(name: &str) -> Option<Keycode> {
-        const UNKNOWN: u32 = sys::keycode::SDLK_UNKNOWN as u32;
+        const UNKNOWN: u32 = sys::keycode::SDLK_UNKNOWN;
         unsafe {
             match CString::new(name) {
                 Ok(name) => match sys::keyboard::SDL_GetKeyFromName(name.as_ptr() as *const c_char)

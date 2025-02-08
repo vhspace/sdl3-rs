@@ -1,9 +1,10 @@
-use std::convert::TryInto;
 use crate::get_error;
 use crate::surface::SurfaceRef;
 use crate::sys;
 use crate::video;
+use crate::Error;
 use crate::EventPump;
+use std::convert::TryInto;
 use std::mem::transmute;
 use sys::mouse::{
     SDL_GetWindowRelativeMouseMode, SDL_MouseWheelDirection, SDL_SetWindowRelativeMouseMode,
@@ -51,15 +52,15 @@ impl Cursor {
         height: i32,
         hot_x: i32,
         hot_y: i32,
-    ) -> Result<Cursor, String> {
+    ) -> Result<Cursor, Error> {
         unsafe {
             let raw = sys::mouse::SDL_CreateCursor(
                 data.as_ptr(),
                 mask.as_ptr(),
-                width as i32,
-                height as i32,
-                hot_x as i32,
-                hot_y as i32,
+                width,
+                height,
+                hot_x,
+                hot_y,
             );
 
             if raw.is_null() {
@@ -76,7 +77,7 @@ impl Cursor {
         surface: S,
         hot_x: i32,
         hot_y: i32,
-    ) -> Result<Cursor, String> {
+    ) -> Result<Cursor, Error> {
         unsafe {
             let raw = sys::mouse::SDL_CreateColorCursor(surface.as_ref().raw(), hot_x, hot_y);
 
@@ -89,7 +90,7 @@ impl Cursor {
     }
 
     #[doc(alias = "SDL_CreateSystemCursor")]
-    pub fn from_system(cursor: SystemCursor) -> Result<Cursor, String> {
+    pub fn from_system(cursor: SystemCursor) -> Result<Cursor, Error> {
         unsafe {
             let raw = sys::mouse::SDL_CreateSystemCursor(transmute(cursor as u32));
 
@@ -211,11 +212,7 @@ impl MouseState {
         let mut y = 0.;
         let mouse_state: u32 = unsafe { sys::mouse::SDL_GetMouseState(&mut x, &mut y) };
 
-        MouseState {
-            mouse_state,
-            x: x as f32,
-            y: y as f32,
-        }
+        MouseState { mouse_state, x, y }
     }
 
     pub fn from_sdl_state(state: u32) -> MouseState {
@@ -346,7 +343,7 @@ pub struct MouseButtonIterator<'a> {
     mouse_state: &'a u32,
 }
 
-impl<'a> Iterator for MouseButtonIterator<'a> {
+impl Iterator for MouseButtonIterator<'_> {
     type Item = (MouseButton, bool);
 
     fn next(&mut self) -> Option<(MouseButton, bool)> {
@@ -366,11 +363,11 @@ pub struct PressedMouseButtonIterator<'a> {
     iter: MouseButtonIterator<'a>,
 }
 
-impl<'a> Iterator for PressedMouseButtonIterator<'a> {
+impl Iterator for PressedMouseButtonIterator<'_> {
     type Item = MouseButton;
 
     fn next(&mut self) -> Option<MouseButton> {
-        while let Some((mouse_button, pressed)) = self.iter.next() {
+        for (mouse_button, pressed) in self.iter.by_ref() {
             if pressed {
                 return Some(mouse_button);
             }

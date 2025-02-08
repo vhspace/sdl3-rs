@@ -4,33 +4,41 @@ mod raw_window_handle_test {
     extern crate sdl3;
 
     use self::raw_window_handle::{
-        HasRawDisplayHandle, HasRawWindowHandle, RawDisplayHandle, RawWindowHandle,
+        HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle,
     };
     use self::sdl3::video::Window;
 
     #[cfg(target_os = "windows")]
     #[test]
     fn get_windows_handle() {
+        use raw_window_handle::RawDisplayHandle;
+
         let window = new_hidden_window();
-        match window.raw_window_handle() {
-            RawWindowHandle::Win32(windows_handle) => {
-                assert_ne!(windows_handle.hwnd, 0 as *mut libc::c_void);
-                println!("Successfully received Windows RawWindowHandle!");
-            }
-            x => assert!(
-                false,
-                "Received wrong RawWindowHandle type for Windows: {:?}",
-                x
+        let window_handle = match window.window_handle() {
+            Ok(v) => v,
+            Err(err) => panic!(
+                "Received error while getting window handle for Windows: {:?}",
+                err
             ),
-        }
-        match window.raw_display_handle() {
+        };
+        let raw_handle = match window_handle.as_raw() {
+            RawWindowHandle::Win32(v) => v,
+            x => panic!("Received wrong RawWindowHandle type for Windows: {:?}", x),
+        };
+        assert_ne!(raw_handle.hwnd.get(), 0);
+        println!("Successfully received Windows RawWindowHandle!");
+        let display_handle = match window.display_handle() {
+            Ok(v) => v,
+            Err(err) => panic!(
+                "Received error while getting display handle for Windows: {:?}",
+                err
+            ),
+        };
+        match display_handle.as_raw() {
             RawDisplayHandle::Windows(_) => {}
-            x => assert!(
-                false,
-                "Received wrong RawDisplayHandle type for Windows: {:?}",
-                x
-            ),
+            x => panic!("Received wrong RawDisplayHandle type for Windows: {:?}", x),
         }
+        println!("Successfully received Windows RawDisplayHandle!");
     }
 
     #[cfg(any(
@@ -86,25 +94,34 @@ mod raw_window_handle_test {
     #[test]
     fn get_macos_handle() {
         let window = new_hidden_window();
-        match window.raw_window_handle() {
+        let window_handle = match window.window_handle() {
+            Ok(v) => v,
+            Err(err) => panic!(
+                "Received error while getting window handle for MacOs: {:?}",
+                err
+            ),
+        };
+        match window_handle.as_raw() {
             RawWindowHandle::AppKit(macos_handle) => {
-                assert_ne!(
-                    macos_handle.ns_window, 0 as *mut libc::c_void,
-                    "ns_window should not be null"
+                assert!(
+                    !macos_handle.ns_view.as_ptr().is_null(),
+                    "ns_view should not be null"
                 );
-                assert_ne!(
-                    macos_handle.ns_view, 0 as *mut libc::c_void,
-                    "nw_view should not be null"
-                );
-                println!("Successfully received macOS RawWindowHandle!");
             }
             x => assert!(
                 false,
                 "Received wrong RawWindowHandle type for macOS: {:?}",
                 x
             ),
+        }
+        let display_handle = match window.display_handle() {
+            Ok(v) => v,
+            Err(err) => panic!(
+                "Received error while getting display handle for MacOS: {:?}",
+                err
+            ),
         };
-        match window.raw_display_handle() {
+        match display_handle.as_raw() {
             RawDisplayHandle::AppKit(_) => {}
             x => assert!(
                 false,

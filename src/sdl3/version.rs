@@ -22,9 +22,9 @@ impl Version {
     pub fn from_ll(v: i32) -> Version {
         // pub const SDL_VERSION: i32 = _; // 3_001_003i32
         Version {
-            major: (v >> 16) as u8,
-            minor: ((v >> 8) & 0xFF) as u8,
-            patch: (v & 0xFF) as u8,
+            major: (v / 1_000_000) as u8,
+            minor: (v % 1_000_000 / 1_000) as u8,
+            patch: (v % 1_000) as u8,
         }
     }
 }

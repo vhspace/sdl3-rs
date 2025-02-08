@@ -1,16 +1,16 @@
 //! Opening URLs in default system handlers
 
 use crate::get_error;
+use crate::Error;
 use std::error;
 use std::ffi::{CString, NulError};
 use std::fmt;
 use sys::misc::SDL_OpenURL;
 
-
 #[derive(Debug, Clone)]
 pub enum OpenUrlError {
     InvalidUrl(NulError),
-    SdlError(String),
+    SdlError(Error),
 }
 
 impl fmt::Display for OpenUrlError {
@@ -30,7 +30,7 @@ impl error::Error for OpenUrlError {
 
         match *self {
             InvalidUrl(_) => "invalid URL",
-            SdlError(ref e) => e,
+            SdlError(ref e) => &e.0,
         }
     }
 }

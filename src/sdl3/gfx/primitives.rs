@@ -1,16 +1,14 @@
 //! Graphic Primitives
 
-use get_error;
+use crate::render::Canvas;
+use crate::surface::Surface;
+use crate::{pixels, render};
 use libc::c_void;
 use libc::{c_char, c_int};
-use pixels;
-use render::Canvas;
 use std::convert::TryFrom;
 use std::ffi::CString;
 use std::mem;
 use std::ptr;
-use surface::Surface;
-use sys::gfx::primitives;
 
 /// generic Color type
 pub trait ToColor {

@@ -47,7 +47,12 @@
 
 #![crate_name = "sdl3"]
 #![crate_type = "lib"]
-#![allow(clippy::cast_lossless, clippy::transmute_ptr_to_ref)]
+#![allow(
+    clippy::cast_lossless,
+    clippy::transmute_ptr_to_ref,
+    clippy::missing_transmute_annotations,
+    clippy::missing_safety_doc
+)]
 
 #[macro_use]
 extern crate bitflags;
@@ -66,9 +71,11 @@ pub mod cpuinfo;
 #[macro_use]
 mod macros;
 pub mod audio;
+pub mod dialog;
 pub mod event;
 pub mod filesystem;
 pub mod gamepad;
+pub mod gpu;
 pub mod haptic;
 pub mod hint;
 pub mod iostream;
@@ -78,6 +85,7 @@ pub mod log;
 pub mod messagebox;
 pub mod mouse;
 pub mod pixels;
+pub mod properties;
 pub mod rect;
 pub mod render;
 mod sdl;
@@ -107,3 +115,4 @@ pub use crate::common::IntegerOrSdlError;
 mod guid;
 #[cfg(feature = "raw-window-handle")]
 pub mod raw_window_handle;
+mod util;

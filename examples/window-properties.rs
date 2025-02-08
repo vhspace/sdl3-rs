@@ -4,7 +4,7 @@ use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
 use sdl3::pixels::Color;
 
-pub fn main() -> Result<(), String> {
+pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
 
@@ -14,11 +14,12 @@ pub fn main() -> Result<(), String> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let mut canvas = window
-        .into_canvas()
-        .present_vsync()
-        .build()
-        .map_err(|e| e.to_string())?;
+    let mut canvas = window.into_canvas();
+    //let mut canvas = window
+    //    .into_canvas()
+    //    .present_vsync()
+    //    .build()
+    //    .map_err(|e| e.to_string())?;
 
     let mut tick = 0;
 

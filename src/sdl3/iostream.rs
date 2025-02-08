@@ -1,10 +1,10 @@
 use crate::get_error;
+use crate::Error;
 use libc::c_char;
 use libc::c_void;
 use std::ffi::CString;
 use std::io;
 use std::marker::PhantomData;
-use std::mem::transmute;
 use std::path::Path;
 
 use crate::sys;
@@ -29,7 +29,7 @@ impl<'a> IOStream<'a> {
 
     /// Creates an SDL file stream.
     #[doc(alias = "SDL_IOFromFile")]
-    pub fn from_file<P: AsRef<Path>>(path: P, mode: &str) -> Result<IOStream<'static>, String> {
+    pub fn from_file<P: AsRef<Path>>(path: P, mode: &str) -> Result<IOStream<'static>, Error> {
         let raw = unsafe {
             let path_c = CString::new(path.as_ref().to_str().unwrap()).unwrap();
             let mode_c = CString::new(mode).unwrap();
@@ -53,7 +53,7 @@ impl<'a> IOStream<'a> {
     ///
     /// This method can only fail if the buffer size is zero.
     #[doc(alias = "SDL_IOFromConstMem")]
-    pub fn from_bytes(buf: &'a [u8]) -> Result<IOStream<'a>, String> {
+    pub fn from_bytes(buf: &'a [u8]) -> Result<IOStream<'a>, Error> {
         let raw =
             unsafe { sys::iostream::SDL_IOFromConstMem(buf.as_ptr() as *const c_void, buf.len()) };
 
@@ -71,7 +71,7 @@ impl<'a> IOStream<'a> {
     ///
     /// The buffer must be provided to this function and must live as long as the
     /// `IOStream`, but the `IOStream` does not take ownership of it.
-    pub fn from_read<T>(r: &mut T, buffer: &'a mut Vec<u8>) -> Result<IOStream<'a>, String>
+    pub fn from_read<T>(r: &mut T, buffer: &'a mut Vec<u8>) -> Result<IOStream<'a>, Error>
     where
         T: io::Read + Sized,
     {
@@ -79,7 +79,7 @@ impl<'a> IOStream<'a> {
             Ok(_size) => IOStream::from_bytes(buffer),
             Err(ioerror) => {
                 let msg = format!("IO error: {}", ioerror);
-                Err(msg)
+                Err(Error(msg))
             }
         }
     }
@@ -88,7 +88,7 @@ impl<'a> IOStream<'a> {
     ///
     /// This method can only fail if the buffer size is zero.
     #[doc(alias = "SDL_IOFromMem")]
-    pub fn from_bytes_mut(buf: &'a mut [u8]) -> Result<IOStream<'a>, String> {
+    pub fn from_bytes_mut(buf: &'a mut [u8]) -> Result<IOStream<'a>, Error> {
         let raw = unsafe { sys::iostream::SDL_IOFromMem(buf.as_ptr() as *mut c_void, buf.len()) };
 
         if raw.is_null() {
@@ -123,7 +123,7 @@ impl<'a> IOStream<'a> {
     }
 }
 
-impl<'a> Drop for IOStream<'a> {
+impl Drop for IOStream<'_> {
     fn drop(&mut self) {
         let ret = unsafe { sys::iostream::SDL_CloseIO(self.raw) };
         if !ret {
@@ -132,21 +132,21 @@ impl<'a> Drop for IOStream<'a> {
     }
 }
 
-impl<'a> io::Read for IOStream<'a> {
+impl io::Read for IOStream<'_> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let out_len = buf.len();
         let ret =
             unsafe { sys::iostream::SDL_ReadIO(self.raw, buf.as_ptr() as *mut c_void, out_len) };
-        Ok(ret as usize)
+        Ok(ret)
     }
 }
 
-impl<'a> io::Write for IOStream<'a> {
+impl io::Write for IOStream<'_> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let in_len = buf.len();
         let ret =
             unsafe { sys::iostream::SDL_WriteIO(self.raw, buf.as_ptr() as *const c_void, in_len) };
-        Ok(ret as usize)
+        Ok(ret)
     }
 
     fn flush(&mut self) -> io::Result<()> {
@@ -154,14 +154,14 @@ impl<'a> io::Write for IOStream<'a> {
     }
 }
 
-impl<'a> io::Seek for IOStream<'a> {
+impl io::Seek for IOStream<'_> {
     fn seek(&mut self, pos: io::SeekFrom) -> io::Result<u64> {
         let (whence, offset) = match pos {
             io::SeekFrom::Start(pos) => (sys::iostream::SDL_IO_SEEK_SET, pos as i64),
             io::SeekFrom::End(pos) => (sys::iostream::SDL_IO_SEEK_END, pos),
             io::SeekFrom::Current(pos) => (sys::iostream::SDL_IO_SEEK_CUR, pos),
         };
-        let ret = unsafe { sys::iostream::SDL_SeekIO(self.raw, offset, transmute(whence)) };
+        let ret = unsafe { sys::iostream::SDL_SeekIO(self.raw, offset, whence) };
         if ret == -1 {
             Err(io::Error::last_os_error())
         } else {
