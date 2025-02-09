@@ -19,7 +19,10 @@ use sys::properties::{
     SDL_CreateProperties, SDL_DestroyProperties, SDL_SetNumberProperty, SDL_SetStringProperty,
 };
 use sys::stdinc::{SDL_FunctionPointer, SDL_free, Uint64};
-use sys::video::{SDL_DisplayMode, SDL_DisplayModeData, SDL_DisplayOrientation, SDL_GetSystemTheme, SDL_WindowFlags, SDL_SYSTEM_THEME_DARK, SDL_SYSTEM_THEME_LIGHT, SDL_SYSTEM_THEME_UNKNOWN};
+use sys::video::{
+    SDL_DisplayMode, SDL_DisplayModeData, SDL_DisplayOrientation, SDL_GetSystemTheme,
+    SDL_WindowFlags, SDL_SYSTEM_THEME_DARK, SDL_SYSTEM_THEME_LIGHT, SDL_SYSTEM_THEME_UNKNOWN,
+};
 
 use crate::sys;
 
@@ -689,7 +692,6 @@ impl_raw_accessors!((GLContext, sys::video::SDL_GLContext));
 
 /// System theme.
 pub enum SystemTheme {
-
     /// Unknown system theme.
     Unknown,
 
