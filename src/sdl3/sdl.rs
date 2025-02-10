@@ -193,6 +193,7 @@ impl Drop for SdlDrop {
             unsafe {
                 sys::init::SDL_Quit();
             }
+            IS_MAIN_THREAD_DECLARED.store(false, Ordering::SeqCst);
         }
     }
 }
