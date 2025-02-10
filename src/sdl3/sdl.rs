@@ -3,7 +3,8 @@ use std::cell::Cell;
 use std::error;
 use std::ffi::{CStr, CString, NulError};
 use std::fmt;
-use std::os::raw::c_void;
+use std::marker::PhantomData;
+use std::mem;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use sys::init::{
     SDL_INIT_AUDIO, SDL_INIT_CAMERA, SDL_INIT_EVENTS, SDL_INIT_GAMEPAD, SDL_INIT_HAPTIC,
@@ -100,7 +101,7 @@ impl Sdl {
 
         Ok(Sdl {
             sdldrop: SdlDrop {
-                _anticonstructor: std::ptr::null_mut(),
+                marker: PhantomData,
             },
         })
     }
@@ -170,7 +171,23 @@ impl Sdl {
 pub struct SdlDrop {
     // Make it impossible to construct `SdlDrop` without access to this member,
     // and opt out of Send and Sync.
-    _anticonstructor: *mut c_void,
+    marker: PhantomData<*mut ()>,
+}
+
+impl SdlDrop {
+    /// Create an [`SdlDrop`] out of thin air.
+    ///
+    /// This is probably not what you are looking for. To initialize SDL use [`Sdl::new`].
+    ///
+    /// # Safety
+    ///
+    /// For each time this is called, previously an [`SdlDrop`] must have been passed to
+    /// [`mem::forget`].
+    unsafe fn new() -> Self {
+        Self {
+            marker: PhantomData,
+        }
+    }
 }
 
 impl Clone for SdlDrop {
@@ -178,7 +195,7 @@ impl Clone for SdlDrop {
         let prev_count = SDL_COUNT.fetch_add(1, Ordering::Relaxed);
         assert!(prev_count > 0);
         SdlDrop {
-            _anticonstructor: std::ptr::null_mut(),
+            marker: PhantomData,
         }
     }
 }
@@ -207,17 +224,18 @@ macro_rules! subsystem {
     ($name:ident, $flag:expr, $counter:ident, nosync) => {
         static $counter: AtomicU32 = AtomicU32::new(0);
 
-        #[derive(Debug, Clone)]
+        #[derive(Debug)]
         pub struct $name {
-            /// Subsystems cannot be moved or (usually) used on non-main threads.
-            /// Luckily, Rc restricts use to the main thread.
-            _subsystem_drop: SubsystemDrop,
+            // Per subsystem all instances together keep one [`SdlDrop`].
+            // Subsystems cannot be moved or (usually) used on non-main threads.
+            /// This field makes sure [`Send`] and [`Sync`] are not implemented by default.
+            marker: PhantomData<*mut ()>,
         }
 
         impl $name {
             #[inline]
             #[doc(alias = "SDL_InitSubSystem")]
-            fn new(sdl: &Sdl) -> Result<$name, Error> {
+            fn new(sdl: &Sdl) -> Result<Self, Error> {
                 if $counter.fetch_add(1, Ordering::Relaxed) == 0 {
                     let result;
 
@@ -229,14 +247,13 @@ macro_rules! subsystem {
                         $counter.store(0, Ordering::Relaxed);
                         return Err(get_error());
                     }
+
+                    // The first created subsystem instance "stores" an SdlDrop.
+                    mem::forget(sdl.sdldrop.clone());
                 }
 
-                Ok($name {
-                    _subsystem_drop: SubsystemDrop {
-                        _sdldrop: sdl.sdldrop.clone(),
-                        counter: &$counter,
-                        flag: $flag,
-                    },
+                Ok(Self {
+                    marker: PhantomData,
                 })
             }
 
@@ -244,7 +261,39 @@ macro_rules! subsystem {
             #[inline]
             pub fn sdl(&self) -> Sdl {
                 Sdl {
-                    sdldrop: self._subsystem_drop._sdldrop.clone(),
+                    sdldrop: {
+                        let prev_count = SDL_COUNT.fetch_add(1, Ordering::Relaxed);
+                        assert!(prev_count > 0);
+                        SdlDrop {
+                            marker: PhantomData,
+                        }
+                    },
+                }
+            }
+        }
+
+        impl Clone for $name {
+            fn clone(&self) -> Self {
+                let prev_count = $counter.fetch_add(1, Ordering::Relaxed);
+                assert!(prev_count > 0);
+                Self {
+                    marker: PhantomData,
+                }
+            }
+        }
+
+        impl Drop for $name {
+            #[inline]
+            #[doc(alias = "SDL_QuitSubSystem")]
+            fn drop(&mut self) {
+                let prev_count = $counter.fetch_sub(1, Ordering::Relaxed);
+                assert!(prev_count > 0);
+                if prev_count == 1 {
+                    unsafe {
+                        sys::init::SDL_QuitSubSystem($flag);
+                        // The last dropped subsystem instance "retrieves" an SdlDrop and drops it.
+                        let _ = SdlDrop::new();
+                    }
                 }
             }
         }
@@ -253,41 +302,6 @@ macro_rules! subsystem {
         subsystem!($name, $flag, $counter, nosync);
         unsafe impl Sync for $name {}
     };
-}
-
-/// When a subsystem is no longer in use (the refcount in an `Rc<SubsystemDrop>` reaches 0),
-/// the subsystem is quit.
-#[derive(Debug)]
-struct SubsystemDrop {
-    _sdldrop: SdlDrop,
-    counter: &'static AtomicU32,
-    flag: u32,
-}
-
-impl Clone for SubsystemDrop {
-    fn clone(&self) -> SubsystemDrop {
-        let prev_count = self.counter.fetch_add(1, Ordering::Relaxed);
-        assert!(prev_count > 0);
-        SubsystemDrop {
-            _sdldrop: self._sdldrop.clone(),
-            counter: self.counter,
-            flag: self.flag,
-        }
-    }
-}
-
-impl Drop for SubsystemDrop {
-    #[inline]
-    #[doc(alias = "SDL_QuitSubSystem")]
-    fn drop(&mut self) {
-        let prev_count = self.counter.fetch_sub(1, Ordering::Relaxed);
-        assert!(prev_count > 0);
-        if prev_count == 1 {
-            unsafe {
-                sys::init::SDL_QuitSubSystem(self.flag);
-            }
-        }
-    }
 }
 
 subsystem!(AudioSubsystem, SDL_INIT_AUDIO, AUDIO_COUNT, nosync);
