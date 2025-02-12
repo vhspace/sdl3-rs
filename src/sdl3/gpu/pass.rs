@@ -12,8 +12,8 @@ use sys::gpu::{
     SDL_BindGPUVertexBuffers, SDL_DrawGPUIndexedPrimitives, SDL_GPUBufferBinding,
     SDL_GPUColorTargetInfo, SDL_GPUCommandBuffer, SDL_GPUComputePass, SDL_GPUCopyPass,
     SDL_GPUDepthStencilTargetInfo, SDL_GPUIndexElementSize, SDL_GPULoadOp, SDL_GPURenderPass,
-    SDL_GPUStoreOp, SDL_GPUTextureSamplerBinding, SDL_PushGPUVertexUniformData,
-    SDL_PushGPUFragmentUniformData, SDL_UploadToGPUBuffer, SDL_UploadToGPUTexture,
+    SDL_GPUStoreOp, SDL_GPUTextureSamplerBinding, SDL_PushGPUFragmentUniformData,
+    SDL_PushGPUVertexUniformData, SDL_UploadToGPUBuffer, SDL_UploadToGPUTexture,
     SDL_WaitAndAcquireGPUSwapchainTexture,
 };
 
@@ -43,7 +43,7 @@ impl CommandBuffer {
     }
 
     #[doc(alias = "SDL_PushGPUFragmentUniformData")]
-    pub fn push_fragment_uniform_data<T : Sized>(&self, slot_index: u32, data: &T) {
+    pub fn push_fragment_uniform_data<T: Sized>(&self, slot_index: u32, data: &T) {
         unsafe {
             SDL_PushGPUFragmentUniformData(
                 self.raw(),
