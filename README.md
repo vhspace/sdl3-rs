@@ -1,4 +1,4 @@
-# SDL3 ![Crates.io Version](https://img.shields.io/crates/v/sdl3) [![](https://dcbadge.limes.pink/api/server/https://discord.gg/RE93FmF6Um?style=flat)](https://discord.gg/RE93FmF6Um)
+# SDL3 [![Crates.io Version](https://img.shields.io/crates/v/sdl3)](https://crates.io/crates/sdl3) [![](https://dcbadge.limes.pink/api/server/https://discord.gg/RE93FmF6Um?style=flat)](https://discord.gg/RE93FmF6Um)
 
 
 
