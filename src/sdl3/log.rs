@@ -137,9 +137,7 @@ pub fn set_log_priority(category: Category, priority: Priority) {
 #[doc(alias = "SDL_GetLogPriority")]
 pub fn get_log_priority(category: Category) -> Priority {
     let category = category.to_ll();
-    unsafe {
-        Priority::from_ll(crate::sys::log::SDL_GetLogPriority(category as i32))
-    }
+    unsafe { Priority::from_ll(crate::sys::log::SDL_GetLogPriority(category as i32)) }
 }
 
 #[doc(alias = "SDL_ResetLogPriorities")]
@@ -154,7 +152,10 @@ pub fn set_log_priority_prefix(priority: Priority, prefix: &str) {
     let prefix = CString::new(prefix).unwrap();
     let priority = priority.to_ll();
     unsafe {
-        crate::sys::log::SDL_SetLogPriorityPrefix(SDL_LogPriority(priority as i32), prefix.into_raw());
+        crate::sys::log::SDL_SetLogPriorityPrefix(
+            SDL_LogPriority(priority as i32),
+            prefix.into_raw(),
+        );
     }
 }
 
@@ -246,6 +247,10 @@ pub fn log_message(category: Category, priority: Priority, message: &str) {
     let category = category.to_ll();
     let priority = priority.to_ll();
     unsafe {
-        crate::sys::log::SDL_LogMessage(category as i32, SDL_LogPriority(priority as i32), message.into_raw());
+        crate::sys::log::SDL_LogMessage(
+            category as i32,
+            SDL_LogPriority(priority as i32),
+            message.into_raw(),
+        );
     }
 }
