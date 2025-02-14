@@ -2,7 +2,6 @@ extern crate sdl3;
 
 use sdl3::log::*;
 
-//TODO: Improve example
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let _sdl_context = sdl3::init()?;
 
