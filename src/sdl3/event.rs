@@ -26,18 +26,18 @@ use crate::mouse;
 use crate::mouse::{MouseButton, MouseState, MouseWheelDirection};
 use crate::sys;
 use crate::sys::events::SDL_EventFilter;
-use crate::video::Orientation;
+use crate::video::{Display, Orientation};
 use crate::Error;
 use libc::c_int;
 use libc::c_void;
 use sys::events::{
-    SDL_EventType, SDL_GamepadAxisEvent, SDL_GamepadButtonEvent, SDL_GamepadDeviceEvent,
-    SDL_JoyAxisEvent, SDL_JoyButtonEvent, SDL_JoyDeviceEvent, SDL_JoyHatEvent, SDL_KeyboardEvent,
-    SDL_MouseButtonEvent, SDL_MouseMotionEvent, SDL_MouseWheelEvent,
+    SDL_DisplayEvent, SDL_EventType, SDL_GamepadAxisEvent, SDL_GamepadButtonEvent,
+    SDL_GamepadDeviceEvent, SDL_JoyAxisEvent, SDL_JoyButtonEvent, SDL_JoyDeviceEvent,
+    SDL_JoyHatEvent, SDL_KeyboardEvent, SDL_MouseButtonEvent, SDL_MouseMotionEvent,
+    SDL_MouseWheelEvent,
 };
 use sys::everything::SDL_DisplayOrientation;
 use sys::stdinc::Uint16;
-use sys::video::SDL_DisplayID;
 
 struct CustomEventTypeMaps {
     sdl_id_to_type_id: HashMap<u32, ::std::any::TypeId>,
@@ -460,6 +460,7 @@ pub enum DisplayEvent {
     Orientation(Orientation),
     Added,
     Removed,
+    //TODO: Missing: moved, desktop_mode_changed, current_mode_changed, content_scale_changed
 }
 
 impl DisplayEvent {
@@ -954,7 +955,7 @@ pub enum Event {
 
     Display {
         timestamp: u64,
-        display_index: SDL_DisplayID,
+        display: Display,
         display_event: DisplayEvent,
     },
 }
@@ -1499,6 +1500,30 @@ impl Event {
                 }
             }
 
+            Event::Display {
+                timestamp,
+                display,
+                display_event,
+            } => {
+                let display_event = display_event.to_ll();
+                let event = SDL_DisplayEvent {
+                    r#type: SDL_EventType(display_event.0),
+                    displayID: display.id,
+                    data1: display_event.1,
+                    data2: 0,
+                    timestamp,
+                    reserved: 0,
+                };
+                unsafe {
+                    ptr::copy(
+                        &event,
+                        ret.as_mut_ptr() as *mut sys::events::SDL_DisplayEvent,
+                        1,
+                    );
+                    Some(ret.assume_init())
+                }
+            }
+
             Event::FingerDown { .. }
             | Event::FingerUp { .. }
             | Event::FingerMotion { .. }
@@ -1602,7 +1627,7 @@ impl Event {
 
                     Event::Display {
                         timestamp: event.timestamp,
-                        display_index: event.displayID,
+                        display: Display::from_ll(event.displayID),
                         display_event: DisplayEvent::from_ll(event.r#type.into(), event.data1),
                     }
                 }
@@ -2736,6 +2761,8 @@ impl Iterator for EventWaitTimeoutIterator<'_> {
 
 #[cfg(test)]
 mod test {
+    use crate::video::Display;
+
     use super::super::gamepad::{Axis, Button};
     use super::super::joystick::HatState;
     use super::super::keyboard::{Keycode, Mod, Scancode};
@@ -2757,7 +2784,7 @@ mod test {
         {
             let e = Event::Display {
                 timestamp: 0,
-                display_index: 1,
+                display: Display::from_ll(1),
                 display_event: DisplayEvent::Orientation(Orientation::LandscapeFlipped),
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
