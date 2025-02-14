@@ -1376,7 +1376,9 @@ impl<T: RenderTarget> Canvas<T> {
     /// Errors if drawing fails for any reason (e.g. driver failure)
     #[doc(alias = "SDL_RenderRect")]
     pub fn draw_rect(&mut self, rect: FRect) -> Result<(), Error> {
-        let result = unsafe { sys::render::SDL_RenderRect(self.context.raw, &rect.to_ll()) };
+        let rect = rect.to_ll();
+
+        let result = unsafe { sys::render::SDL_RenderRect(self.context.raw, &rect) };
         if !result {
             Err(get_error())
         } else {
@@ -1455,16 +1457,19 @@ impl<T: RenderTarget> Canvas<T> {
         R1: Into<Option<FRect>>,
         R2: Into<Option<FRect>>,
     {
+        let src = src.into().map(|rect| rect.to_ll());
+        let dst = dst.into().map(|rect| rect.to_ll());
+
         let ret = unsafe {
             sys::render::SDL_RenderTexture(
                 self.context.raw,
                 texture.raw,
-                match src.into() {
-                    Some(ref rect) => &rect.to_ll(),
+                match src {
+                    Some(ref rect) => rect,
                     None => ptr::null(),
                 },
-                match dst.into() {
-                    Some(ref rect) => &rect.to_ll(),
+                match dst {
+                    Some(ref rect) => rect,
                     None => ptr::null(),
                 },
             )
@@ -1518,21 +1523,25 @@ impl<T: RenderTarget> Canvas<T> {
             }
         };
 
+        let src = src.into().map(|rect| rect.to_ll());
+        let dst = dst.into().map(|rect| rect.to_ll());
+        let center = center.into().map(|point| point.to_ll());
+
         let ret = unsafe {
             sys::render::SDL_RenderTextureRotated(
                 self.context.raw,
                 texture.raw,
-                match src.into() {
-                    Some(ref rect) => &rect.to_ll(),
+                match src {
+                    Some(ref rect) => rect,
                     None => ptr::null(),
                 },
-                match dst.into() {
-                    Some(ref rect) => &rect.to_ll(),
+                match dst {
+                    Some(ref rect) => rect,
                     None => ptr::null(),
                 },
                 angle as c_double,
-                match center.into() {
-                    Some(ref point) => &point.to_ll(),
+                match center {
+                    Some(ref point) => point,
                     None => ptr::null(),
                 },
                 flip,

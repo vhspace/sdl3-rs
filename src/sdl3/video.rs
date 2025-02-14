@@ -1668,11 +1668,13 @@ impl Window {
     where
         D: Into<Option<DisplayMode>>,
     {
+        let display_mode = display_mode.into().map(|mode| mode.to_ll());
+
         unsafe {
             let result = sys::video::SDL_SetWindowFullscreenMode(
                 self.context.raw,
-                match display_mode.into() {
-                    Some(ref mode) => &mode.to_ll(),
+                match display_mode {
+                    Some(ref mode) => mode,
                     None => ptr::null(),
                 },
             );
