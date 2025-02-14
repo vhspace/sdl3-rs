@@ -284,6 +284,10 @@ pub enum EventType {
     DisplayAdded = sys::events::SDL_EVENT_DISPLAY_ADDED.0,
     DisplayRemoved = sys::events::SDL_EVENT_DISPLAY_REMOVED.0,
     DisplayOrientation = sys::events::SDL_EVENT_DISPLAY_ORIENTATION.0,
+    DisplayMoved = sys::events::SDL_EVENT_DISPLAY_MOVED.0,
+    DisplayDesktopModeChanged = sys::events::SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED.0,
+    DisplayCurrentModeChanged = sys::events::SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED.0,
+    DisplayContentScaleChanged = sys::events::SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED.0,
 
     WindowShown = sys::events::SDL_EVENT_WINDOW_SHOWN.0,
     WindowHidden = sys::events::SDL_EVENT_WINDOW_HIDDEN.0,
@@ -385,6 +389,10 @@ impl TryFrom<u32> for EventType {
             SDL_EVENT_DISPLAY_ADDED => DisplayAdded,
             SDL_EVENT_DISPLAY_REMOVED => DisplayRemoved,
             SDL_EVENT_DISPLAY_ORIENTATION => DisplayOrientation,
+            SDL_EVENT_DISPLAY_MOVED => DisplayMoved,
+            SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED => DisplayDesktopModeChanged,
+            SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED => DisplayCurrentModeChanged,
+            SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED => DisplayContentScaleChanged,
 
             SDL_EVENT_WINDOW_SHOWN => WindowShown,
             SDL_EVENT_WINDOW_HIDDEN => WindowHidden,
@@ -460,7 +468,10 @@ pub enum DisplayEvent {
     Orientation(Orientation),
     Added,
     Removed,
-    //TODO: Missing: moved, desktop_mode_changed, current_mode_changed, content_scale_changed
+    Moved,
+    DesktopModeChanged,
+    CurrentModeChanged,
+    ContentScaleChanged,
 }
 
 impl DisplayEvent {
@@ -478,6 +489,12 @@ impl DisplayEvent {
             }
             sys::events::SDL_EVENT_DISPLAY_ADDED => DisplayEvent::Added,
             sys::events::SDL_EVENT_DISPLAY_REMOVED => DisplayEvent::Removed,
+            sys::events::SDL_EVENT_DISPLAY_MOVED => DisplayEvent::Moved,
+            sys::events::SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED => DisplayEvent::DesktopModeChanged,
+            sys::events::SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED => DisplayEvent::CurrentModeChanged,
+            sys::events::SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED => {
+                DisplayEvent::ContentScaleChanged
+            }
             _ => DisplayEvent::None,
         }
     }
@@ -491,6 +508,19 @@ impl DisplayEvent {
             DisplayEvent::Added => (sys::events::SDL_EVENT_DISPLAY_ADDED.into(), 0),
             DisplayEvent::Removed => (sys::events::SDL_EVENT_DISPLAY_REMOVED.into(), 0),
             DisplayEvent::None => panic!("DisplayEvent::None cannot be converted"),
+            DisplayEvent::Moved => (sys::events::SDL_EVENT_DISPLAY_MOVED.into(), 0),
+            DisplayEvent::DesktopModeChanged => (
+                sys::events::SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED.into(),
+                0,
+            ),
+            DisplayEvent::CurrentModeChanged => (
+                sys::events::SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED.into(),
+                0,
+            ),
+            DisplayEvent::ContentScaleChanged => (
+                sys::events::SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED.into(),
+                0,
+            ),
         }
     }
 
@@ -1622,7 +1652,11 @@ impl Event {
 
                 EventType::DisplayOrientation
                 | EventType::DisplayAdded
-                | EventType::DisplayRemoved => {
+                | EventType::DisplayRemoved
+                | EventType::DisplayMoved
+                | EventType::DisplayDesktopModeChanged
+                | EventType::DisplayCurrentModeChanged
+                | EventType::DisplayContentScaleChanged => {
                     let event = raw.display;
 
                     Event::Display {
