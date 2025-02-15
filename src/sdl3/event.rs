@@ -2574,6 +2574,24 @@ impl Event {
     pub fn is_unknown(&self) -> bool {
         matches!(self, Self::Unknown { .. })
     }
+
+    // Returns `None` if the event cannot be converted to its raw form (should not happen).
+    pub fn get_converted_coords<T: crate::render::RenderTarget>(&self, canvas: crate::render::Canvas<T>) -> Option<Event> {
+        let mut raw = self.to_ll()?;
+        unsafe { sys::render::SDL_ConvertEventToRenderCoordinates(canvas.raw(), &mut raw); }
+        Some(Self::from_ll(raw))
+    }
+
+    // Returns `true` on succes and false if the event cannot be converted to its raw form (should not happen)
+    pub fn convert_coords<T: crate::render::RenderTarget>(&mut self, canvas: crate::render::Canvas<T>) -> bool {
+        if let Some(mut raw) = self.to_ll() {
+            unsafe { sys::render::SDL_ConvertEventToRenderCoordinates(canvas.raw(), &mut raw); }
+            *self = Self::from_ll(raw);
+            true
+        } else {
+            false
+        }
+    }
 }
 
 unsafe fn poll_event() -> Option<Event> {
