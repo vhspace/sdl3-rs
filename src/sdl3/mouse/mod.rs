@@ -429,15 +429,19 @@ impl MouseUtil {
         unsafe { SDL_GetWindowRelativeMouseMode(window.raw()) }
     }
 
-    #[doc(alias = "SDL_ShowCursor")]
+    #[doc(alias = "SDL_CursorVisible")]
     pub fn is_cursor_showing(&self) -> bool {
-        unsafe { sys::mouse::SDL_ShowCursor() }
+        unsafe { sys::mouse::SDL_CursorVisible() }
     }
 
     #[doc(alias = "SDL_ShowCursor")]
-    pub fn show_cursor(&self, _show: bool) {
+    pub fn show_cursor(&self, show: bool) {
         unsafe {
-            sys::mouse::SDL_ShowCursor();
+            if show {
+                sys::mouse::SDL_ShowCursor();
+            } else {
+                sys::mouse::SDL_HideCursor();
+            }
         }
     }
 

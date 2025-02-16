@@ -2,7 +2,7 @@ use crate::sys;
 use libc::c_char;
 use std::ffi::{CStr, CString};
 
-const VIDEO_MINIMIZE_ON_FOCUS_LOSS: &str = "SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS";
+pub mod names;
 
 pub enum Hint {
     Default,
@@ -26,7 +26,10 @@ pub enum Hint {
 /// * `value`: `true` to enable minimizing of the Window if it loses key focus when in fullscreen mode,
 ///            `false` to disable this feature.
 pub fn set_video_minimize_on_focus_loss(value: bool) -> bool {
-    set(VIDEO_MINIMIZE_ON_FOCUS_LOSS, if value { "1" } else { "0" })
+    set(
+        names::VIDEO_MINIMIZE_ON_FOCUS_LOSS,
+        if value { "1" } else { "0" },
+    )
 }
 
 /// A hint that specifies whether a fullscreen [Window](../video/Window.t.html) will be
@@ -46,7 +49,7 @@ pub fn set_video_minimize_on_focus_loss(value: bool) -> bool {
 ///               Environment variables are considered to have override priority.
 pub fn set_video_minimize_on_focus_loss_with_priority(value: bool, priority: &Hint) -> bool {
     set_with_priority(
-        VIDEO_MINIMIZE_ON_FOCUS_LOSS,
+        names::VIDEO_MINIMIZE_ON_FOCUS_LOSS,
         if value { "1" } else { "0" },
         priority,
     )
@@ -68,7 +71,7 @@ pub fn set_video_minimize_on_focus_loss_with_priority(value: bool, priority: &Hi
 /// assert_eq!(sdl3::hint::get_video_minimize_on_focus_loss(), false);
 /// ```
 pub fn get_video_minimize_on_focus_loss() -> bool {
-    let Some(value) = get(VIDEO_MINIMIZE_ON_FOCUS_LOSS) else {
+    let Some(value) = get(names::VIDEO_MINIMIZE_ON_FOCUS_LOSS) else {
         return true;
     };
     &*value == "1"
