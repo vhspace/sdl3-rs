@@ -23,8 +23,9 @@ use sys::properties::{
 };
 use sys::stdinc::{SDL_FunctionPointer, SDL_free, Uint32, Uint64};
 use sys::video::{
-    SDL_DisplayID, SDL_DisplayMode, SDL_DisplayModeData, SDL_DisplayOrientation, SDL_GetSystemTheme,
-    SDL_WindowFlags, SDL_SYSTEM_THEME_DARK, SDL_SYSTEM_THEME_LIGHT, SDL_SYSTEM_THEME_UNKNOWN,
+    SDL_DisplayID, SDL_DisplayMode, SDL_DisplayModeData, SDL_DisplayOrientation,
+    SDL_GetSystemTheme, SDL_WindowFlags, SDL_SYSTEM_THEME_DARK, SDL_SYSTEM_THEME_LIGHT,
+    SDL_SYSTEM_THEME_UNKNOWN,
 };
 
 use crate::sys;
