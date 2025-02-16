@@ -1,6 +1,7 @@
 use crate::common::{validate_int, IntegerOrSdlError};
 use crate::get_error;
 use crate::pixels::PixelFormat;
+use crate::properties::{Properties, PropertiesError};
 use crate::rect::Rect;
 use crate::render::{create_renderer, WindowCanvas};
 use crate::surface::SurfaceRef;
@@ -11,6 +12,8 @@ use libc::{c_char, c_int, c_uint, c_void};
 use std::convert::TryFrom;
 use std::error;
 use std::ffi::{CStr, CString, NulError};
+use std::fmt::Debug;
+use std::hash::Hash;
 use std::ops::{Deref, DerefMut};
 use std::ptr::{null, null_mut};
 use std::sync::Arc;
@@ -18,10 +21,11 @@ use std::{fmt, mem, ptr};
 use sys::properties::{
     SDL_CreateProperties, SDL_DestroyProperties, SDL_SetNumberProperty, SDL_SetStringProperty,
 };
-use sys::stdinc::{SDL_FunctionPointer, SDL_free, Uint64};
+use sys::stdinc::{SDL_FunctionPointer, SDL_free, Uint32, Uint64};
 use sys::video::{
-    SDL_DisplayMode, SDL_DisplayModeData, SDL_DisplayOrientation, SDL_GetSystemTheme,
-    SDL_WindowFlags, SDL_SYSTEM_THEME_DARK, SDL_SYSTEM_THEME_LIGHT, SDL_SYSTEM_THEME_UNKNOWN,
+    SDL_DisplayID, SDL_DisplayMode, SDL_DisplayModeData, SDL_DisplayOrientation,
+    SDL_GetSystemTheme, SDL_WindowFlags, SDL_SYSTEM_THEME_DARK, SDL_SYSTEM_THEME_LIGHT,
+    SDL_SYSTEM_THEME_UNKNOWN,
 };
 
 use crate::sys;
@@ -407,7 +411,7 @@ pub mod gl_attr {
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct DisplayMode {
-    pub display_id: sys::video::SDL_DisplayID,
+    pub display: Display,
     pub format: PixelFormat,
     pub w: i32,
     pub h: i32,
@@ -420,7 +424,7 @@ pub struct DisplayMode {
 
 impl DisplayMode {
     pub fn new(
-        display_id: sys::video::SDL_DisplayID,
+        display: Display,
         format: PixelFormat,
         w: i32,
         h: i32,
@@ -431,7 +435,7 @@ impl DisplayMode {
         internal: *mut SDL_DisplayModeData,
     ) -> DisplayMode {
         DisplayMode {
-            display_id,
+            display,
             format,
             w,
             h,
@@ -445,7 +449,7 @@ impl DisplayMode {
 
     pub unsafe fn from_ll(raw: &SDL_DisplayMode) -> DisplayMode {
         DisplayMode::new(
-            raw.displayID,
+            Display::from_ll(raw.displayID),
             PixelFormat::try_from(raw.format).unwrap_or(PixelFormat::unknown()),
             raw.w,
             raw.h,
@@ -459,7 +463,7 @@ impl DisplayMode {
 
     pub fn to_ll(&self) -> SDL_DisplayMode {
         SDL_DisplayMode {
-            displayID: self.display_id,
+            displayID: self.display.id,
             format: self.format.into(),
             w: self.w,
             h: self.h,
@@ -702,6 +706,160 @@ pub enum SystemTheme {
     Dark,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct Display {
+    pub(crate) id: Uint32,
+}
+
+impl Display {
+    pub(crate) fn from_ll(id: SDL_DisplayID) -> Display {
+        Display { id: id }
+    }
+
+    // There is no good method of determining this directly
+    pub fn is_connected(&self) -> bool {
+        self.get_bounds().is_err()
+    }
+
+    #[doc(alias = "SDL_GetDisplayProperties")]
+    pub fn get_properties(&self) -> Result<Properties, PropertiesError> {
+        let internal = unsafe { sys::video::SDL_GetDisplayProperties(self.id) };
+        if internal == 0 {
+            Err(PropertiesError::SdlError(get_error()))
+        } else {
+            Ok(Properties::from_ll(internal))
+        }
+    }
+
+    /// Get the name of the display at the index `display_name`.
+    ///
+    /// Will return an error if the index is out of bounds or if SDL experienced a failure; inspect
+    /// the returned string for further info.
+    #[doc(alias = "SDL_GetDisplayName")]
+    pub fn get_name(&self) -> Result<String, Error> {
+        unsafe {
+            let display = sys::video::SDL_GetDisplayName(self.id);
+            if display.is_null() {
+                Err(get_error())
+            } else {
+                Ok(CStr::from_ptr(display as *const _)
+                    .to_str()
+                    .unwrap()
+                    .to_owned())
+            }
+        }
+    }
+
+    #[doc(alias = "SDL_GetDisplayBounds")]
+    pub fn get_bounds(&self) -> Result<Rect, Error> {
+        let mut out = mem::MaybeUninit::uninit();
+        let result = unsafe { sys::video::SDL_GetDisplayBounds(self.id, out.as_mut_ptr()) };
+
+        if result {
+            let out = unsafe { out.assume_init() };
+            Ok(Rect::from_ll(out))
+        } else {
+            Err(get_error())
+        }
+    }
+
+    #[doc(alias = "SDL_GetDisplayUsableBounds")]
+    pub fn get_usable_bounds(&self) -> Result<Rect, Error> {
+        let mut out = mem::MaybeUninit::uninit();
+        let result = unsafe { sys::video::SDL_GetDisplayUsableBounds(self.id, out.as_mut_ptr()) };
+        if result {
+            let out = unsafe { out.assume_init() };
+            Ok(Rect::from_ll(out))
+        } else {
+            Err(get_error())
+        }
+    }
+
+    #[doc(alias = "SDL_GetFullscreenDisplayModes")]
+    pub fn get_fullscreen_modes(&self) -> Result<Vec<DisplayMode>, Error> {
+        unsafe {
+            let mut num_modes: c_int = 0;
+            let modes = sys::video::SDL_GetFullscreenDisplayModes(self.id, &mut num_modes);
+            // modes is a pointer to an array of DisplayMode
+            // num_modes is the number of DisplayMode in the array
+            if modes.is_null() {
+                Err(get_error())
+            } else {
+                let mut result = Vec::with_capacity(num_modes as usize);
+                for i in 0..num_modes {
+                    let mode = *modes.offset(i as isize);
+                    result.push(DisplayMode::from_ll(&*mode));
+                }
+                SDL_free(modes as *mut c_void);
+                Ok(result)
+            }
+        }
+    }
+
+    #[doc(alias = "SDL_GetDesktopDisplayMode")]
+    pub fn get_mode(&self) -> Result<DisplayMode, Error> {
+        unsafe {
+            let raw_mode = sys::video::SDL_GetDesktopDisplayMode(self.id);
+            if raw_mode.is_null() {
+                return Err(get_error());
+            }
+            Ok(DisplayMode::from_ll(&*raw_mode))
+        }
+    }
+
+    #[doc(alias = "SDL_GetClosestFullscreenDisplayMode")]
+    pub fn get_closest_display_mode(
+        &self,
+        mode: &DisplayMode,
+        include_high_density_modes: bool,
+    ) -> Result<DisplayMode, Error> {
+        unsafe {
+            // Allocate uninitialized memory for SDL_DisplayMode
+            let mut mode_out = std::mem::MaybeUninit::<sys::video::SDL_DisplayMode>::uninit();
+
+            // Call the SDL function, passing a pointer to the uninitialized memory
+            let ok = sys::video::SDL_GetClosestFullscreenDisplayMode(
+                self.id,
+                mode.w,
+                mode.h,
+                mode.refresh_rate,
+                include_high_density_modes,
+                mode_out.as_mut_ptr(),
+            );
+
+            if !ok {
+                Err(get_error())
+            } else {
+                // Now it's safe to assume the memory is initialized
+                let mode_out = mode_out.assume_init();
+                Ok(DisplayMode::from_ll(&mode_out))
+            }
+        }
+    }
+
+    /// Return orientation of a display or Unknown if orientation could not be determined.
+    #[doc(alias = "SDL_GetCurrentDisplayOrientation")]
+    pub fn get_orientation(&self) -> SDL_DisplayOrientation {
+        unsafe { sys::video::SDL_GetCurrentDisplayOrientation(self.id) }
+    }
+
+    /// Return orientation of a display or Unknown if orientation could not be determined.
+    #[doc(alias = "SDL_GetNaturalDisplayOrientation")]
+    pub fn get_natural_orientation(&self) -> SDL_DisplayOrientation {
+        unsafe { sys::video::SDL_GetNaturalDisplayOrientation(self.id) }
+    }
+
+    #[doc(alias = "SDL_GetDisplayContentScale")]
+    pub fn get_content_scale(&self) -> Result<f32, Error> {
+        let value = unsafe { sys::video::SDL_GetDisplayContentScale(self.id) };
+        if value == 0.0f32 {
+            Err(get_error())
+        } else {
+            Ok(value)
+        }
+    }
+}
+
 impl VideoSubsystem {
     /// Initializes a new `WindowBuilder`; a convenience method that calls `WindowBuilder::new()`.
     pub fn window(&self, title: &str, width: u32, height: u32) -> WindowBuilder {
@@ -770,138 +928,34 @@ impl VideoSubsystem {
         }
     }
 
-    /// Get the name of the display at the index `display_name`.
-    ///
-    /// Will return an error if the index is out of bounds or if SDL experienced a failure; inspect
-    /// the returned string for further info.
-    #[doc(alias = "SDL_GetDisplayName")]
-    pub fn display_name(&self, display_index: u32) -> Result<String, Error> {
+    #[doc(alias = "SDL_GetDisplays")]
+    pub fn displays(&self) -> Result<Vec<Display>, Error> {
         unsafe {
-            let display = sys::video::SDL_GetDisplayName(display_index);
-            if display.is_null() {
-                Err(get_error())
-            } else {
-                Ok(CStr::from_ptr(display as *const _)
-                    .to_str()
-                    .unwrap()
-                    .to_owned())
-            }
-        }
-    }
-
-    #[doc(alias = "SDL_GetDisplayBounds")]
-    pub fn display_bounds(&self, display_index: u32) -> Result<Rect, Error> {
-        let mut out = mem::MaybeUninit::uninit();
-        let result = unsafe { sys::video::SDL_GetDisplayBounds(display_index, out.as_mut_ptr()) };
-
-        if result {
-            let out = unsafe { out.assume_init() };
-            Ok(Rect::from_ll(out))
-        } else {
-            Err(get_error())
-        }
-    }
-
-    #[doc(alias = "SDL_GetDisplayUsableBounds")]
-    pub fn display_usable_bounds(&self, display_index: u32) -> Result<Rect, Error> {
-        let mut out = mem::MaybeUninit::uninit();
-        let result =
-            unsafe { sys::video::SDL_GetDisplayUsableBounds(display_index, out.as_mut_ptr()) };
-        if result {
-            let out = unsafe { out.assume_init() };
-            Ok(Rect::from_ll(out))
-        } else {
-            Err(get_error())
-        }
-    }
-
-    #[doc(alias = "SDL_GetFullscreenDisplayModes")]
-    pub fn display_modes(
-        &self,
-        display_id: sys::video::SDL_DisplayID,
-    ) -> Result<Vec<DisplayMode>, Error> {
-        unsafe {
-            let mut num_modes: c_int = 0;
-            let modes = sys::video::SDL_GetFullscreenDisplayModes(display_id, &mut num_modes);
-            // modes is a pointer to an array of DisplayMode
-            // num_modes is the number of DisplayMode in the array
-            if modes.is_null() {
-                Err(get_error())
-            } else {
-                let mut result = Vec::with_capacity(num_modes as usize);
-                for i in 0..num_modes {
-                    let mode = *modes.offset(i as isize);
-                    result.push(DisplayMode::from_ll(&*mode));
-                }
-                SDL_free(modes as *mut c_void);
-                Ok(result)
-            }
-        }
-    }
-
-    #[doc(alias = "SDL_GetDesktopDisplayMode")]
-    pub fn desktop_display_mode(&self, display_index: u32) -> Result<DisplayMode, Error> {
-        unsafe {
-            let raw_mode = sys::video::SDL_GetDesktopDisplayMode(display_index);
-            if raw_mode.is_null() {
+            let mut count: c_int = 0;
+            let displays_ptr = sys::video::SDL_GetDisplays(&mut count);
+            if displays_ptr.is_null() {
                 return Err(get_error());
             }
-            Ok(DisplayMode::from_ll(&*raw_mode))
+
+            let displays_slice = std::slice::from_raw_parts(displays_ptr, count as usize);
+            let displays_vec = displays_slice.to_vec();
+            SDL_free(displays_ptr as *mut c_void);
+
+            let displays_vec = displays_vec.iter().map(|d| Display::from_ll(*d)).collect();
+
+            Ok(displays_vec)
         }
     }
 
     /// Get primary display ID.
     #[doc(alias = "SDL_GetPrimaryDisplay")]
-    pub fn get_primary_display_id(&self) -> sys::video::SDL_DisplayID {
-        unsafe { sys::video::SDL_GetPrimaryDisplay() }
-    }
-
-    #[doc(alias = "SDL_GetCurrentDisplayMode")]
-    pub fn current_display_mode(&self, display_index: u32) -> Result<DisplayMode, Error> {
-        unsafe {
-            let raw_mode = sys::video::SDL_GetCurrentDisplayMode(display_index);
-            if raw_mode.is_null() {
-                return Err(get_error());
-            }
-            Ok(DisplayMode::from_ll(&*raw_mode))
+    pub fn get_primary_display(&self) -> Result<Display, Error> {
+        let id = unsafe { sys::video::SDL_GetPrimaryDisplay() };
+        if id == 0 {
+            Err(get_error())
+        } else {
+            Ok(Display::from_ll(id))
         }
-    }
-
-    #[doc(alias = "SDL_GetClosestFullscreenDisplayMode")]
-    pub fn closest_display_mode(
-        &self,
-        display_index: u32,
-        mode: &DisplayMode,
-        include_high_density_modes: bool,
-    ) -> Result<DisplayMode, Error> {
-        unsafe {
-            // Allocate uninitialized memory for SDL_DisplayMode
-            let mut mode_out = std::mem::MaybeUninit::<sys::video::SDL_DisplayMode>::uninit();
-
-            // Call the SDL function, passing a pointer to the uninitialized memory
-            let ok = sys::video::SDL_GetClosestFullscreenDisplayMode(
-                display_index,
-                mode.w,
-                mode.h,
-                mode.refresh_rate,
-                include_high_density_modes,
-                mode_out.as_mut_ptr(),
-            );
-
-            if !ok {
-                Err(get_error())
-            } else {
-                // Now it's safe to assume the memory is initialized
-                let mode_out = mode_out.assume_init();
-                Ok(DisplayMode::from_ll(&mode_out))
-            }
-        }
-    }
-
-    /// Return orientation of a display or Unknown if orientation could not be determined.
-    #[doc(alias = "SDL_GetDisplayOrientation")]
-    pub fn display_orientation(&self, display_index: u32) -> SDL_DisplayOrientation {
-        unsafe { sys::video::SDL_GetCurrentDisplayOrientation(display_index) }
     }
 
     #[doc(alias = "SDL_ScreenSaverEnabled")]
@@ -1654,12 +1708,12 @@ impl Window {
     }
 
     #[doc(alias = "SDL_GetDisplayForWindow")]
-    pub fn display_index(&self) -> Result<i32, Error> {
+    pub fn get_display(&self) -> Result<Display, Error> {
         let result = unsafe { sys::video::SDL_GetDisplayForWindow(self.context.raw) };
         if result == 0 {
             Err(get_error())
         } else {
-            Ok(result as i32)
+            Ok(Display::from_ll(result))
         }
     }
 
@@ -1851,11 +1905,6 @@ impl Window {
         let mut h: c_int = 0;
         unsafe { sys::video::SDL_GetWindowSize(self.context.raw, &mut w, &mut h) };
         (w as u32, h as u32)
-    }
-
-    #[doc(alias = "SDL_GetDisplayContentScale")]
-    pub fn display_content_scale(&self, display_id: sys::video::SDL_DisplayID) -> f32 {
-        unsafe { sys::video::SDL_GetDisplayContentScale(display_id) }
     }
 
     #[doc(alias = "SDL_GetWindowPixelDensity")]
