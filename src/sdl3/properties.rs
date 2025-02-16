@@ -78,6 +78,13 @@ impl Properties {
         }
     }
 
+    pub fn from_ll(props: SDL_PropertiesID) -> Self {
+        Self {
+            internal: props,
+            global: false,
+        }
+    }
+
     #[doc(alias = "SDL_GetGlobalProperties")]
     pub fn global() -> Result<Self, PropertiesError> {
         let internal = unsafe { sys::properties::SDL_GetGlobalProperties() };

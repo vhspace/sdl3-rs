@@ -26,18 +26,18 @@ use crate::mouse;
 use crate::mouse::{MouseButton, MouseState, MouseWheelDirection};
 use crate::sys;
 use crate::sys::events::SDL_EventFilter;
-use crate::video::Orientation;
+use crate::video::{Display, Orientation};
 use crate::Error;
 use libc::c_int;
 use libc::c_void;
 use sys::events::{
-    SDL_EventType, SDL_GamepadAxisEvent, SDL_GamepadButtonEvent, SDL_GamepadDeviceEvent,
-    SDL_JoyAxisEvent, SDL_JoyButtonEvent, SDL_JoyDeviceEvent, SDL_JoyHatEvent, SDL_KeyboardEvent,
-    SDL_MouseButtonEvent, SDL_MouseMotionEvent, SDL_MouseWheelEvent,
+    SDL_DisplayEvent, SDL_EventType, SDL_GamepadAxisEvent, SDL_GamepadButtonEvent,
+    SDL_GamepadDeviceEvent, SDL_JoyAxisEvent, SDL_JoyButtonEvent, SDL_JoyDeviceEvent,
+    SDL_JoyHatEvent, SDL_KeyboardEvent, SDL_MouseButtonEvent, SDL_MouseMotionEvent,
+    SDL_MouseWheelEvent,
 };
 use sys::everything::SDL_DisplayOrientation;
 use sys::stdinc::Uint16;
-use sys::video::SDL_DisplayID;
 
 struct CustomEventTypeMaps {
     sdl_id_to_type_id: HashMap<u32, ::std::any::TypeId>,
@@ -284,6 +284,10 @@ pub enum EventType {
     DisplayAdded = sys::events::SDL_EVENT_DISPLAY_ADDED.0,
     DisplayRemoved = sys::events::SDL_EVENT_DISPLAY_REMOVED.0,
     DisplayOrientation = sys::events::SDL_EVENT_DISPLAY_ORIENTATION.0,
+    DisplayMoved = sys::events::SDL_EVENT_DISPLAY_MOVED.0,
+    DisplayDesktopModeChanged = sys::events::SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED.0,
+    DisplayCurrentModeChanged = sys::events::SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED.0,
+    DisplayContentScaleChanged = sys::events::SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED.0,
 
     WindowShown = sys::events::SDL_EVENT_WINDOW_SHOWN.0,
     WindowHidden = sys::events::SDL_EVENT_WINDOW_HIDDEN.0,
@@ -385,6 +389,10 @@ impl TryFrom<u32> for EventType {
             SDL_EVENT_DISPLAY_ADDED => DisplayAdded,
             SDL_EVENT_DISPLAY_REMOVED => DisplayRemoved,
             SDL_EVENT_DISPLAY_ORIENTATION => DisplayOrientation,
+            SDL_EVENT_DISPLAY_MOVED => DisplayMoved,
+            SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED => DisplayDesktopModeChanged,
+            SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED => DisplayCurrentModeChanged,
+            SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED => DisplayContentScaleChanged,
 
             SDL_EVENT_WINDOW_SHOWN => WindowShown,
             SDL_EVENT_WINDOW_HIDDEN => WindowHidden,
@@ -460,6 +468,10 @@ pub enum DisplayEvent {
     Orientation(Orientation),
     Added,
     Removed,
+    Moved,
+    DesktopModeChanged,
+    CurrentModeChanged,
+    ContentScaleChanged,
 }
 
 impl DisplayEvent {
@@ -477,6 +489,12 @@ impl DisplayEvent {
             }
             sys::events::SDL_EVENT_DISPLAY_ADDED => DisplayEvent::Added,
             sys::events::SDL_EVENT_DISPLAY_REMOVED => DisplayEvent::Removed,
+            sys::events::SDL_EVENT_DISPLAY_MOVED => DisplayEvent::Moved,
+            sys::events::SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED => DisplayEvent::DesktopModeChanged,
+            sys::events::SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED => DisplayEvent::CurrentModeChanged,
+            sys::events::SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED => {
+                DisplayEvent::ContentScaleChanged
+            }
             _ => DisplayEvent::None,
         }
     }
@@ -490,6 +508,19 @@ impl DisplayEvent {
             DisplayEvent::Added => (sys::events::SDL_EVENT_DISPLAY_ADDED.into(), 0),
             DisplayEvent::Removed => (sys::events::SDL_EVENT_DISPLAY_REMOVED.into(), 0),
             DisplayEvent::None => panic!("DisplayEvent::None cannot be converted"),
+            DisplayEvent::Moved => (sys::events::SDL_EVENT_DISPLAY_MOVED.into(), 0),
+            DisplayEvent::DesktopModeChanged => (
+                sys::events::SDL_EVENT_DISPLAY_DESKTOP_MODE_CHANGED.into(),
+                0,
+            ),
+            DisplayEvent::CurrentModeChanged => (
+                sys::events::SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED.into(),
+                0,
+            ),
+            DisplayEvent::ContentScaleChanged => (
+                sys::events::SDL_EVENT_DISPLAY_CONTENT_SCALE_CHANGED.into(),
+                0,
+            ),
         }
     }
 
@@ -954,7 +985,7 @@ pub enum Event {
 
     Display {
         timestamp: u64,
-        display_index: SDL_DisplayID,
+        display: Display,
         display_event: DisplayEvent,
     },
 }
@@ -1499,6 +1530,30 @@ impl Event {
                 }
             }
 
+            Event::Display {
+                timestamp,
+                display,
+                display_event,
+            } => {
+                let display_event = display_event.to_ll();
+                let event = SDL_DisplayEvent {
+                    r#type: SDL_EventType(display_event.0),
+                    displayID: display.id,
+                    data1: display_event.1,
+                    data2: 0,
+                    timestamp,
+                    reserved: 0,
+                };
+                unsafe {
+                    ptr::copy(
+                        &event,
+                        ret.as_mut_ptr() as *mut sys::events::SDL_DisplayEvent,
+                        1,
+                    );
+                    Some(ret.assume_init())
+                }
+            }
+
             Event::FingerDown { .. }
             | Event::FingerUp { .. }
             | Event::FingerMotion { .. }
@@ -1597,12 +1652,16 @@ impl Event {
 
                 EventType::DisplayOrientation
                 | EventType::DisplayAdded
-                | EventType::DisplayRemoved => {
+                | EventType::DisplayRemoved
+                | EventType::DisplayMoved
+                | EventType::DisplayDesktopModeChanged
+                | EventType::DisplayCurrentModeChanged
+                | EventType::DisplayContentScaleChanged => {
                     let event = raw.display;
 
                     Event::Display {
                         timestamp: event.timestamp,
-                        display_index: event.displayID,
+                        display: Display::from_ll(event.displayID),
                         display_event: DisplayEvent::from_ll(event.r#type.into(), event.data1),
                     }
                 }
@@ -2736,6 +2795,8 @@ impl Iterator for EventWaitTimeoutIterator<'_> {
 
 #[cfg(test)]
 mod test {
+    use crate::video::Display;
+
     use super::super::gamepad::{Axis, Button};
     use super::super::joystick::HatState;
     use super::super::keyboard::{Keycode, Mod, Scancode};
@@ -2757,7 +2818,7 @@ mod test {
         {
             let e = Event::Display {
                 timestamp: 0,
-                display_index: 1,
+                display: Display::from_ll(1),
                 display_event: DisplayEvent::Orientation(Orientation::LandscapeFlipped),
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
