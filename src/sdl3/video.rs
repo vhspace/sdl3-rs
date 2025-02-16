@@ -2015,9 +2015,9 @@ impl Window {
 
         unsafe {
             if sys::video::SDL_SetWindowMouseRect(self.context.raw, rect_raw_ptr) {
-                Err(get_error())
-            } else {
                 Ok(())
+            } else {
+                Err(get_error())
             }
         }
     }
