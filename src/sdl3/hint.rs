@@ -2,6 +2,8 @@ use crate::sys;
 use libc::c_char;
 use std::ffi::{CStr, CString};
 
+pub mod names;
+
 const VIDEO_MINIMIZE_ON_FOCUS_LOSS: &str = "SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS";
 
 pub enum Hint {
