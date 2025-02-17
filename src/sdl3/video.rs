@@ -727,7 +727,7 @@ impl Display {
         if internal == 0 {
             Err(PropertiesError::SdlError(get_error()))
         } else {
-            Ok(Properties::from_ll(internal))
+            Ok(Properties::const_from_ll(internal))
         }
     }
 
