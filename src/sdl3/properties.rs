@@ -22,7 +22,7 @@ pub enum PropertiesError {
 #[derive(Debug, Clone)]
 pub struct Properties {
     internal: sys::properties::SDL_PropertiesID,
-    global: bool,
+    constant: bool,
 }
 
 macro_rules! cstring {
@@ -73,7 +73,7 @@ impl Properties {
         } else {
             Ok(Self {
                 internal,
-                global: false,
+                constant: false,
             })
         }
     }
@@ -81,7 +81,14 @@ impl Properties {
     pub fn from_ll(props: SDL_PropertiesID) -> Self {
         Self {
             internal: props,
-            global: false,
+            constant: false,
+        }
+    }
+
+    pub fn const_from_ll(props: SDL_PropertiesID) -> Self {
+        Self {
+            internal: props,
+            constant: true,
         }
     }
 
@@ -93,7 +100,7 @@ impl Properties {
         } else {
             Ok(Self {
                 internal,
-                global: true,
+                constant: true,
             })
         }
     }
@@ -394,7 +401,7 @@ impl<T> Getter<*mut T> for Properties {
 
 impl Drop for Properties {
     fn drop(&mut self) {
-        if !self.global {
+        if !self.constant {
             unsafe {
                 sys::properties::SDL_DestroyProperties(self.internal);
             }
