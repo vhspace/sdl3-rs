@@ -256,20 +256,6 @@ macro_rules! subsystem {
                     marker: PhantomData,
                 })
             }
-
-            /// Obtain an SDL context.
-            #[inline]
-            pub fn sdl(&self) -> Sdl {
-                Sdl {
-                    sdldrop: {
-                        let prev_count = SDL_COUNT.fetch_add(1, Ordering::Relaxed);
-                        assert!(prev_count > 0);
-                        SdlDrop {
-                            marker: PhantomData,
-                        }
-                    },
-                }
-            }
         }
 
         impl Clone for $name {
