@@ -686,6 +686,37 @@ impl AudioDevice {
         }
     }
 
+    /// Create an `AudioStream` for this device with the specified spec.
+    /// This device will be closed when the stream is dropped.
+    /// The device begins paused, so you must call `stream.resume()` to start playback.
+    #[doc(alias = "SDL_OpenAudioDeviceStream")]
+    pub fn open_device_stream(self, spec: Option<&AudioSpec>) -> Result<AudioStream, Error> {
+        let sdl_spec = spec.map(|spec| spec.into());
+        let sdl_spec_ptr = crate::util::option_to_ptr(sdl_spec.as_ref());
+
+        let stream = unsafe {
+            sys::audio::SDL_OpenAudioDeviceStream(
+                self.device_id.id(),
+                sdl_spec_ptr,
+                // not using callbacks here
+                None,
+                std::ptr::null_mut(),
+            )
+        };
+        if stream.is_null() {
+            Err(get_error())
+        } else {
+            // SDL will close the device when the stream is closed
+            core::mem::forget(self);
+            let audio_subsystem = unsafe { AudioSubsystem::new_unchecked() };
+
+            Ok(AudioStream {
+                stream,
+                audio_subsystem,
+            })
+        }
+    }
+
     /// Binds an audio stream to this device.
     #[doc(alias = "SDL_BindAudioStream")]
     pub fn bind_stream(&self, stream: &AudioStream) -> Result<(), Error> {
@@ -1084,6 +1115,7 @@ impl AudioStream {
     /// This device will be closed when the stream is dropped.
     /// The device begins paused, so you must call `stream.resume()` to start playback.
     #[doc(alias = "SDL_OpenAudioDeviceStream")]
+    #[deprecated = "use `device.open_device_stream(spec)` (where device is an `AudioDevice`) instead"]
     pub fn open_device_stream(
         device_id: AudioDeviceID,
         spec: Option<&AudioSpec>,
