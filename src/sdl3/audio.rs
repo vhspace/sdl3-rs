@@ -117,11 +117,17 @@ impl AudioSubsystem {
     }
 
     pub fn default_playback_device(&self) -> AudioDevice {
-        AudioDevice::new(AudioDeviceID::Device(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK))
+        AudioDevice::new(
+            AudioDeviceID::Device(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK),
+            self.clone(),
+        )
     }
 
     pub fn default_recording_device(&self) -> AudioDevice {
-        AudioDevice::new(AudioDeviceID::Device(SDL_AUDIO_DEVICE_DEFAULT_RECORDING))
+        AudioDevice::new(
+            AudioDeviceID::Device(SDL_AUDIO_DEVICE_DEFAULT_RECORDING),
+            self.clone(),
+        )
     }
 
     /// General method to open a device by ID.
@@ -135,7 +141,10 @@ impl AudioSubsystem {
         if device == 0 {
             Err(get_error())
         } else {
-            Ok(AudioDevice::new(AudioDeviceID::Device(device)))
+            Ok(AudioDevice::new(
+                AudioDeviceID::Device(device),
+                self.clone(),
+            ))
         }
     }
 
@@ -633,6 +642,8 @@ impl Eq for AudioDeviceID {}
 #[derive(Clone)]
 pub struct AudioDevice {
     device_id: AudioDeviceID,
+    // keep the audio subsystem alive
+    audio_subsystem: AudioSubsystem,
 }
 
 impl PartialEq for AudioDevice {
@@ -656,8 +667,11 @@ impl AudioDevice {
         self.device_id
     }
 
-    pub fn new(device_id: AudioDeviceID) -> Self {
-        AudioDevice { device_id }
+    pub fn new(device_id: AudioDeviceID, audio_subsystem: AudioSubsystem) -> Self {
+        AudioDevice {
+            device_id,
+            audio_subsystem,
+        }
     }
 
     /// Get the name of the audio device.
@@ -704,7 +718,12 @@ impl AudioDevice {
 
     /// Opens a new audio device for playback or recording (given the desired parameters).
     #[doc(alias = "SDL_OpenAudioDevice")]
-    fn open<'a, D>(device: D, spec: &AudioSpec, recording: bool) -> Result<AudioDevice, Error>
+    fn open<'a, D>(
+        device: D,
+        spec: &AudioSpec,
+        recording: bool,
+        audio_subsystem: &AudioSubsystem,
+    ) -> Result<AudioDevice, Error>
     where
         D: Into<Option<&'a AudioDeviceID>>,
     {
@@ -728,7 +747,7 @@ impl AudioDevice {
                 id => {
                     let device_id = AudioDeviceID::Device(id);
 
-                    Ok(AudioDevice::new(device_id))
+                    Ok(AudioDevice::new(device_id, audio_subsystem.clone()))
                 }
             }
         }
@@ -743,7 +762,7 @@ impl AudioDevice {
     where
         D: Into<Option<&'a AudioDeviceID>>,
     {
-        AudioDevice::open(device, spec, false)
+        AudioDevice::open(device, spec, false, _a)
     }
 
     /// Opens a new audio device for recording (given the desired parameters).
@@ -755,7 +774,7 @@ impl AudioDevice {
     where
         D: Into<Option<&'a AudioDeviceID>>,
     {
-        AudioDevice::open(device, spec, true)
+        AudioDevice::open(device, spec, true, _a)
     }
 
     /// Pauses playback of the audio device.
@@ -827,7 +846,10 @@ impl AudioDevice {
                 Err(get_error())
             } else {
                 Ok(AudioStreamWithCallback {
-                    base_stream: AudioStream { stream },
+                    base_stream: AudioStream {
+                        stream,
+                        audio_subsystem: self.audio_subsystem.clone(),
+                    },
                     _marker: PhantomData,
                     c_userdata,
                 })
@@ -873,7 +895,10 @@ impl AudioDevice {
                 Err(get_error())
             } else {
                 Ok(AudioStreamWithCallback {
-                    base_stream: AudioStream { stream },
+                    base_stream: AudioStream {
+                        stream,
+                        audio_subsystem: self.audio_subsystem.clone(),
+                    },
                     _marker: PhantomData,
                     c_userdata,
                 })
@@ -884,6 +909,8 @@ impl AudioDevice {
 
 pub struct AudioStream {
     stream: *mut sys::audio::SDL_AudioStream,
+    #[expect(dead_code, reason = "keep the audio subsystem alive")]
+    audio_subsystem: AudioSubsystem,
 }
 
 impl Drop for AudioStream {
@@ -996,7 +1023,11 @@ impl AudioStream {
     /// # Safety
     ///
     /// This function is safe to call from any thread.
-    pub fn new(src_spec: Option<&AudioSpec>, dst_spec: Option<&AudioSpec>) -> Result<Self, Error> {
+    pub fn new(
+        src_spec: Option<&AudioSpec>,
+        dst_spec: Option<&AudioSpec>,
+        audio_subsystem: &AudioSubsystem,
+    ) -> Result<Self, Error> {
         let sdl_src_spec = src_spec.map(sys::audio::SDL_AudioSpec::from);
         let sdl_dst_spec = dst_spec.map(sys::audio::SDL_AudioSpec::from);
 
@@ -1012,7 +1043,10 @@ impl AudioStream {
         if stream.is_null() {
             Err(get_error())
         } else {
-            Ok(Self { stream })
+            Ok(Self {
+                stream,
+                audio_subsystem: audio_subsystem.clone(),
+            })
         }
     }
 
@@ -1026,8 +1060,9 @@ impl AudioStream {
     pub fn new_playback_stream(
         app_spec: &AudioSpec,
         device_spec: Option<&AudioSpec>,
+        audio_subsystem: &AudioSubsystem,
     ) -> Result<Self, Error> {
-        Self::new(Some(app_spec), device_spec)
+        Self::new(Some(app_spec), device_spec, audio_subsystem)
     }
 
     /// Creates a new audio stream for recording.
@@ -1040,8 +1075,9 @@ impl AudioStream {
     pub fn new_recording_stream(
         device_spec: Option<&AudioSpec>,
         app_spec: &AudioSpec,
+        audio_subsystem: &AudioSubsystem,
     ) -> Result<Self, Error> {
-        Self::new(device_spec, Some(app_spec))
+        Self::new(device_spec, Some(app_spec), audio_subsystem)
     }
 
     /// Create an `AudioStream` for this device with the specified spec.
@@ -1051,6 +1087,7 @@ impl AudioStream {
     pub fn open_device_stream(
         device_id: AudioDeviceID,
         spec: Option<&AudioSpec>,
+        audio_subsystem: &AudioSubsystem,
     ) -> Result<AudioStream, Error> {
         let sdl_spec = spec.map(|spec| spec.into());
         let sdl_spec_ptr = crate::util::option_to_ptr(sdl_spec.as_ref());
@@ -1067,7 +1104,10 @@ impl AudioStream {
         if stream.is_null() {
             Err(get_error())
         } else {
-            Ok(Self { stream })
+            Ok(Self {
+                stream,
+                audio_subsystem: audio_subsystem.clone(),
+            })
         }
     }
 
