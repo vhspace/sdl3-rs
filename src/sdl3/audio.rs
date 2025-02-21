@@ -222,6 +222,78 @@ impl AudioSubsystem {
             }
         }
     }
+
+    /// Creates a new audio stream that converts audio data from the source format (`src_spec`)
+    /// to the destination format (`dst_spec`).
+    ///
+    /// # Arguments
+    ///
+    /// * `src_spec` - The format details of the input audio.
+    /// * `dst_spec` - The format details of the output audio.
+    ///
+    /// # Returns
+    ///
+    /// Returns `Ok(AudioStream)` on success or an error message on failure.
+    ///
+    /// # Safety
+    ///
+    /// This function is safe to call from any thread.
+    pub fn new_stream(
+        &self,
+        src_spec: Option<&AudioSpec>,
+        dst_spec: Option<&AudioSpec>,
+    ) -> Result<AudioStream, Error> {
+        let sdl_src_spec = src_spec.map(sys::audio::SDL_AudioSpec::from);
+        let sdl_dst_spec = dst_spec.map(sys::audio::SDL_AudioSpec::from);
+
+        let sdl_src_spec_ptr = sdl_src_spec
+            .as_ref()
+            .map_or(std::ptr::null(), |spec| spec as *const _);
+        let sdl_dst_spec_ptr = sdl_dst_spec
+            .as_ref()
+            .map_or(std::ptr::null(), |spec| spec as *const _);
+
+        let stream =
+            unsafe { sys::audio::SDL_CreateAudioStream(sdl_src_spec_ptr, sdl_dst_spec_ptr) };
+        if stream.is_null() {
+            Err(get_error())
+        } else {
+            Ok(AudioStream {
+                stream,
+                audio_subsystem: self.clone(),
+            })
+        }
+    }
+
+    /// Creates a new audio stream for playback.
+    ///
+    /// # Arguments
+    ///
+    /// * `app_spec` - The format of audio data the application will provide.
+    /// * `device_spec` - The format of audio data the audio device expects.
+    ///                   If `None`, SDL will choose an appropriate format.
+    pub fn new_playback_stream(
+        &self,
+        app_spec: &AudioSpec,
+        device_spec: Option<&AudioSpec>,
+    ) -> Result<AudioStream, Error> {
+        self.new_stream(Some(app_spec), device_spec)
+    }
+
+    /// Creates a new audio stream for recording.
+    ///
+    /// # Arguments
+    ///
+    /// * `device_spec` - The format of audio data the audio device provides.
+    ///                   If `None`, SDL will choose an appropriate format.
+    /// * `app_spec` - The format of audio data the application wants to receive.
+    pub fn new_recording_stream(
+        &self,
+        device_spec: Option<&AudioSpec>,
+        app_spec: &AudioSpec,
+    ) -> Result<AudioStream, Error> {
+        self.new_stream(device_spec, Some(app_spec))
+    }
 }
 
 #[repr(u32)]
@@ -1054,31 +1126,13 @@ impl AudioStream {
     /// # Safety
     ///
     /// This function is safe to call from any thread.
+    #[deprecated = "use `subsystem.new_stream(...)` (where subsystem is an `AudioSubsystem`) instead"]
     pub fn new(
         src_spec: Option<&AudioSpec>,
         dst_spec: Option<&AudioSpec>,
         audio_subsystem: &AudioSubsystem,
     ) -> Result<Self, Error> {
-        let sdl_src_spec = src_spec.map(sys::audio::SDL_AudioSpec::from);
-        let sdl_dst_spec = dst_spec.map(sys::audio::SDL_AudioSpec::from);
-
-        let sdl_src_spec_ptr = sdl_src_spec
-            .as_ref()
-            .map_or(std::ptr::null(), |spec| spec as *const _);
-        let sdl_dst_spec_ptr = sdl_dst_spec
-            .as_ref()
-            .map_or(std::ptr::null(), |spec| spec as *const _);
-
-        let stream =
-            unsafe { sys::audio::SDL_CreateAudioStream(sdl_src_spec_ptr, sdl_dst_spec_ptr) };
-        if stream.is_null() {
-            Err(get_error())
-        } else {
-            Ok(Self {
-                stream,
-                audio_subsystem: audio_subsystem.clone(),
-            })
-        }
+        audio_subsystem.new_stream(src_spec, dst_spec)
     }
 
     /// Creates a new audio stream for playback.
@@ -1088,12 +1142,13 @@ impl AudioStream {
     /// * `app_spec` - The format of audio data the application will provide.
     /// * `device_spec` - The format of audio data the audio device expects.
     ///                   If `None`, SDL will choose an appropriate format.
+    #[deprecated = "use `subsystem.new_playback_stream(...)` (where subsystem is an `AudioSubsystem`) instead"]
     pub fn new_playback_stream(
         app_spec: &AudioSpec,
         device_spec: Option<&AudioSpec>,
         audio_subsystem: &AudioSubsystem,
     ) -> Result<Self, Error> {
-        Self::new(Some(app_spec), device_spec, audio_subsystem)
+        audio_subsystem.new_playback_stream(app_spec, device_spec)
     }
 
     /// Creates a new audio stream for recording.
@@ -1103,12 +1158,13 @@ impl AudioStream {
     /// * `device_spec` - The format of audio data the audio device provides.
     ///                   If `None`, SDL will choose an appropriate format.
     /// * `app_spec` - The format of audio data the application wants to receive.
+    #[deprecated = "use `subsystem.new_recording_stream(...)` (where subsystem is an `AudioSubsystem`) instead"]
     pub fn new_recording_stream(
         device_spec: Option<&AudioSpec>,
         app_spec: &AudioSpec,
         audio_subsystem: &AudioSubsystem,
     ) -> Result<Self, Error> {
-        Self::new(device_spec, Some(app_spec), audio_subsystem)
+        audio_subsystem.new_recording_stream(device_spec, app_spec)
     }
 
     /// Create an `AudioStream` for this device with the specified spec.
