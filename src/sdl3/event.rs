@@ -2578,7 +2578,7 @@ impl Event {
     // Returns `None` if the event cannot be converted to its raw form (should not happen).
     pub fn get_converted_coords<T: crate::render::RenderTarget>(
         &self,
-        canvas: crate::render::Canvas<T>,
+        canvas: &crate::render::Canvas<T>,
     ) -> Option<Event> {
         let mut raw = self.to_ll()?;
         unsafe {
@@ -2590,7 +2590,7 @@ impl Event {
     // Returns `true` on success and false if the event cannot be converted to its raw form (should not happen)
     pub fn convert_coords<T: crate::render::RenderTarget>(
         &mut self,
-        canvas: crate::render::Canvas<T>,
+        canvas: &crate::render::Canvas<T>,
     ) -> bool {
         if let Some(mut raw) = self.to_ll() {
             unsafe {
