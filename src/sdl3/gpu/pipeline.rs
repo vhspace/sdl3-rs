@@ -531,7 +531,7 @@ struct ComputePipelineContainer {
     device: WeakDevice,
 }
 impl Drop for ComputePipelineContainer {
-    #[doc(alias = "SDL_ReleaseGPUGraphicsPipeline")]
+    #[doc(alias = "SDL_ReleaseGPUComputePipeline")]
     fn drop(&mut self) {
         if let Some(device) = self.device.upgrade() {
             unsafe { SDL_ReleaseGPUComputePipeline(device.raw(), self.raw) }
