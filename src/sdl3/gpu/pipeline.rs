@@ -7,15 +7,12 @@ use crate::{
     },
     sys, Error,
 };
-use std::sync::Arc;
+use std::{ffi::CString, sync::Arc};
 use sys::gpu::{
-    SDL_GPUBlendFactor, SDL_GPUBlendOp, SDL_GPUColorTargetBlendState,
-    SDL_GPUColorTargetDescription, SDL_GPUCompareOp, SDL_GPUCullMode, SDL_GPUDepthStencilState,
-    SDL_GPUFillMode, SDL_GPUFrontFace, SDL_GPUGraphicsPipeline, SDL_GPUGraphicsPipelineCreateInfo,
-    SDL_GPUGraphicsPipelineTargetInfo, SDL_GPUPrimitiveType, SDL_GPURasterizerState,
-    SDL_GPUStencilOp, SDL_GPUStencilOpState, SDL_GPUTextureFormat, SDL_GPUVertexAttribute,
-    SDL_GPUVertexBufferDescription, SDL_GPUVertexInputState, SDL_ReleaseGPUGraphicsPipeline,
+    SDL_GPUBlendFactor, SDL_GPUBlendOp, SDL_GPUColorTargetBlendState, SDL_GPUColorTargetDescription, SDL_GPUCompareOp, SDL_GPUComputePipeline, SDL_GPUComputePipelineCreateInfo, SDL_GPUCullMode, SDL_GPUDepthStencilState, SDL_GPUFillMode, SDL_GPUFrontFace, SDL_GPUGraphicsPipeline, SDL_GPUGraphicsPipelineCreateInfo, SDL_GPUGraphicsPipelineTargetInfo, SDL_GPUPrimitiveType, SDL_GPURasterizerState, SDL_GPUStencilOp, SDL_GPUStencilOpState, SDL_GPUTextureFormat, SDL_GPUVertexAttribute, SDL_GPUVertexBufferDescription, SDL_GPUVertexInputState, SDL_ReleaseGPUComputePipeline, SDL_ReleaseGPUGraphicsPipeline
 };
+
+use super::ShaderFormat;
 
 #[derive(Default)]
 pub struct GraphicsPipelineTargetInfo {
@@ -441,5 +438,106 @@ impl DepthStencilState {
     pub fn with_enable_stencil_test(mut self, value: bool) -> Self {
         self.inner.enable_stencil_test = value;
         self
+    }
+}
+
+#[repr(C)]
+pub struct ComputePipelineBuilder<'a> {
+    device: &'a Device,
+    entrypoint: CString,
+    inner: SDL_GPUComputePipelineCreateInfo,
+}
+impl<'a> ComputePipelineBuilder<'a> {
+    pub(super) fn new(device: &'a Device) -> Self {
+        Self {
+            device,
+            entrypoint: CString::new("main").unwrap(),
+            inner: Default::default(),
+        }
+    }
+
+    pub fn with_code(mut self, fmt: ShaderFormat, code: &'a [u8]) -> Self {
+        self.inner.format = fmt as u32;
+        self.inner.code = code.as_ptr();
+        self.inner.code_size = code.len();
+        self
+    }
+
+    pub fn with_entrypoint(mut self, entry_point: &'a str) -> Self {
+        self.entrypoint = CString::new(entry_point).unwrap(); //need to save
+        self.inner.entrypoint = self.entrypoint.as_c_str().as_ptr();
+        self
+    }
+
+    pub fn with_readonly_storage_textures(mut self, value: u32) -> Self {
+        self.inner.num_readonly_storage_textures = value;
+        self
+    }
+
+    pub fn with_readonly_storage_buffers(mut self, value: u32) -> Self {
+        self.inner.num_readonly_storage_buffers = value;
+        self
+    }
+
+    pub fn with_readwrite_storage_textures(mut self, value: u32) -> Self {
+        self.inner.num_readwrite_storage_textures = value;
+        self
+    }
+
+    pub fn with_readwrite_storage_buffers(mut self, value: u32) -> Self {
+        self.inner.num_readwrite_storage_buffers = value;
+        self
+    }
+
+    pub fn with_uniform_buffers(mut self, value: u32) -> Self {
+        self.inner.num_uniform_buffers = value;
+        self
+    }
+
+    pub fn with_thread_count(mut self, x: u32, y: u32, z: u32) -> Self {
+        self.inner.threadcount_x = x;
+        self.inner.threadcount_y = y;
+        self.inner.threadcount_z = z;
+        self
+    }
+
+    pub fn build(self) -> Result<ComputePipeline, Error> {
+        let raw_pipeline =
+            unsafe { sys::gpu::SDL_CreateGPUComputePipeline(self.device.raw(), &self.inner) };
+        if raw_pipeline.is_null() {
+            Err(get_error())
+        } else {
+            Ok(ComputePipeline {
+                inner: Arc::new(ComputePipelineContainer {
+                    raw: raw_pipeline,
+                    device: self.device.weak(),
+                }),
+            })
+        }
+    }
+}
+
+/// Manages the raw `SDL_GPUComputePipeline` pointer and releases it on drop
+struct ComputePipelineContainer {
+    raw: *mut SDL_GPUComputePipeline,
+    device: WeakDevice,
+}
+impl Drop for ComputePipelineContainer {
+    #[doc(alias = "SDL_ReleaseGPUGraphicsPipeline")]
+    fn drop(&mut self) {
+        if let Some(device) = self.device.upgrade() {
+            unsafe { SDL_ReleaseGPUComputePipeline(device.raw(), self.raw) }
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct ComputePipeline {
+    inner: Arc<ComputePipelineContainer>,
+}
+impl ComputePipeline {
+    #[inline]
+    pub fn raw(&self) -> *mut SDL_GPUComputePipeline {
+        self.inner.raw
     }
 }
