@@ -8,7 +8,12 @@ use crate::{
     Error,
 };
 use sys::gpu::{
-    SDL_AcquireGPUSwapchainTexture, SDL_BindGPUFragmentSamplers, SDL_BindGPUIndexBuffer, SDL_BindGPUVertexBuffers, SDL_DrawGPUIndexedPrimitives, SDL_GPUBufferBinding, SDL_GPUColorTargetInfo, SDL_GPUCommandBuffer, SDL_GPUComputePass, SDL_GPUCopyPass, SDL_GPUDepthStencilTargetInfo, SDL_GPUIndexElementSize, SDL_GPULoadOp, SDL_GPURenderPass, SDL_GPUStoreOp, SDL_GPUTextureSamplerBinding, SDL_PushGPUComputeUniformData, SDL_PushGPUFragmentUniformData, SDL_PushGPUVertexUniformData, SDL_UploadToGPUBuffer, SDL_UploadToGPUTexture, SDL_WaitAndAcquireGPUSwapchainTexture
+    SDL_AcquireGPUSwapchainTexture, SDL_BindGPUFragmentSamplers, SDL_BindGPUIndexBuffer, SDL_BindGPUVertexBuffers,
+    SDL_DrawGPUIndexedPrimitives, SDL_GPUBufferBinding, SDL_GPUColorTargetInfo, SDL_GPUCommandBuffer,
+    SDL_GPUComputePass, SDL_GPUCopyPass, SDL_GPUDepthStencilTargetInfo, SDL_GPUIndexElementSize,
+    SDL_GPULoadOp, SDL_GPURenderPass, SDL_GPUStoreOp, SDL_GPUTextureSamplerBinding,
+    SDL_PushGPUComputeUniformData, SDL_PushGPUFragmentUniformData, SDL_PushGPUVertexUniformData, SDL_UploadToGPUBuffer,
+    SDL_UploadToGPUTexture, SDL_WaitAndAcquireGPUSwapchainTexture
 };
 
 use super::{Buffer, ComputePipeline};

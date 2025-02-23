@@ -9,7 +9,11 @@ use crate::{
 };
 use std::sync::{Arc, Weak};
 use sys::gpu::{
-    SDL_BeginGPUComputePass, SDL_BeginGPUCopyPass, SDL_BeginGPURenderPass, SDL_CreateGPUDevice, SDL_CreateGPUSampler, SDL_CreateGPUTexture, SDL_DestroyGPUDevice, SDL_GPUColorTargetInfo, SDL_GPUDepthStencilTargetInfo, SDL_GPUDevice, SDL_GPUViewport, SDL_GetGPUSwapchainTextureFormat, SDL_SetGPUViewport
+    SDL_BeginGPUComputePass, SDL_BeginGPUCopyPass, SDL_BeginGPURenderPass,
+    SDL_CreateGPUDevice, SDL_CreateGPUSampler, SDL_CreateGPUTexture,
+    SDL_DestroyGPUDevice, SDL_GPUColorTargetInfo, SDL_GPUDepthStencilTargetInfo,
+    SDL_GPUDevice, SDL_GPUViewport, SDL_GetGPUSwapchainTextureFormat,
+    SDL_SetGPUViewport
 };
 
 use super::{pipeline::{StorageBufferReadWriteBinding, StorageTextureReadWriteBinding}, ComputePass, ComputePipelineBuilder};
