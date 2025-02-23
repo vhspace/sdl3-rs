@@ -24,9 +24,9 @@ pub use pass::{
 
 mod pipeline;
 pub use pipeline::{
-    ColorTargetBlendState, ColorTargetDescription, DepthStencilState, GraphicsPipeline,
-    GraphicsPipelineBuilder, GraphicsPipelineTargetInfo, RasterizerState, StencilOpState,
-    VertexAttribute, VertexInputState,
+    ColorTargetBlendState, ColorTargetDescription, ComputePipeline, ComputePipelineBuilder,
+    DepthStencilState, GraphicsPipeline, GraphicsPipelineBuilder, GraphicsPipelineTargetInfo,
+    RasterizerState, StencilOpState, VertexAttribute, VertexInputState,
 };
 
 mod texture;

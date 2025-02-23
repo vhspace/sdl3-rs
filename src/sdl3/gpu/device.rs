@@ -9,10 +9,15 @@ use crate::{
 };
 use std::sync::{Arc, Weak};
 use sys::gpu::{
-    SDL_BeginGPUCopyPass, SDL_BeginGPURenderPass, SDL_CreateGPUDevice, SDL_CreateGPUSampler,
-    SDL_CreateGPUTexture, SDL_DestroyGPUDevice, SDL_GPUColorTargetInfo,
+    SDL_BeginGPUComputePass, SDL_BeginGPUCopyPass, SDL_BeginGPURenderPass, SDL_CreateGPUDevice,
+    SDL_CreateGPUSampler, SDL_CreateGPUTexture, SDL_DestroyGPUDevice, SDL_GPUColorTargetInfo,
     SDL_GPUDepthStencilTargetInfo, SDL_GPUDevice, SDL_GPUViewport,
     SDL_GetGPUSwapchainTextureFormat, SDL_SetGPUViewport,
+};
+
+use super::{
+    pipeline::{StorageBufferReadWriteBinding, StorageTextureReadWriteBinding},
+    ComputePass, ComputePipelineBuilder,
 };
 
 /// Manages the raw `SDL_GPUDevice` pointer and releases it on drop
@@ -171,15 +176,48 @@ impl Device {
             Err(get_error())
         }
     }
-    #[doc(alias = "SDL_EndGPURenderPass")]
+    #[doc(alias = "SDL_EndGPUCopyPass")]
     pub fn end_copy_pass(&self, pass: CopyPass) {
         unsafe {
             sys::gpu::SDL_EndGPUCopyPass(pass.inner);
         }
     }
 
+    #[doc(alias = "SDL_BeginGPUComputePass")]
+    pub fn begin_compute_pass(
+        &self,
+        command_buffer: &CommandBuffer,
+        storage_texture_bindings: &[StorageTextureReadWriteBinding],
+        storage_buffer_bindings: &[StorageBufferReadWriteBinding],
+    ) -> Result<ComputePass, Error> {
+        let p = unsafe {
+            SDL_BeginGPUComputePass(
+                command_buffer.inner,
+                storage_texture_bindings.as_ptr().cast(),
+                storage_buffer_bindings.len() as u32,
+                storage_buffer_bindings.as_ptr().cast(),
+                storage_buffer_bindings.len() as u32,
+            )
+        };
+        if !p.is_null() {
+            Ok(ComputePass { inner: p })
+        } else {
+            Err(get_error())
+        }
+    }
+    #[doc(alias = "SDL_EndGPUComputePass")]
+    pub fn end_compute_pass(&self, pass: ComputePass) {
+        unsafe {
+            sys::gpu::SDL_EndGPUComputePass(pass.inner);
+        }
+    }
+
     pub fn create_graphics_pipeline<'a>(&'a self) -> GraphicsPipelineBuilder<'a> {
         GraphicsPipelineBuilder::new(self)
+    }
+
+    pub fn create_compute_pipeline<'a>(&'a self) -> ComputePipelineBuilder<'a> {
+        ComputePipelineBuilder::new(self)
     }
 
     #[doc(alias = "SDL_GetGPUShaderFormats")]
