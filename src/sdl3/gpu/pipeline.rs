@@ -9,10 +9,10 @@ use crate::{
 };
 use std::{ffi::CString, sync::Arc};
 use sys::gpu::{
-    SDL_GPUBlendFactor, SDL_GPUBlendOp, SDL_GPUColorTargetBlendState, SDL_GPUColorTargetDescription, SDL_GPUCompareOp, SDL_GPUComputePipeline, SDL_GPUComputePipelineCreateInfo, SDL_GPUCullMode, SDL_GPUDepthStencilState, SDL_GPUFillMode, SDL_GPUFrontFace, SDL_GPUGraphicsPipeline, SDL_GPUGraphicsPipelineCreateInfo, SDL_GPUGraphicsPipelineTargetInfo, SDL_GPUPrimitiveType, SDL_GPURasterizerState, SDL_GPUStencilOp, SDL_GPUStencilOpState, SDL_GPUTextureFormat, SDL_GPUVertexAttribute, SDL_GPUVertexBufferDescription, SDL_GPUVertexInputState, SDL_ReleaseGPUComputePipeline, SDL_ReleaseGPUGraphicsPipeline
+    SDL_GPUBlendFactor, SDL_GPUBlendOp, SDL_GPUColorTargetBlendState, SDL_GPUColorTargetDescription, SDL_GPUCompareOp, SDL_GPUComputePipeline, SDL_GPUComputePipelineCreateInfo, SDL_GPUCullMode, SDL_GPUDepthStencilState, SDL_GPUFillMode, SDL_GPUFrontFace, SDL_GPUGraphicsPipeline, SDL_GPUGraphicsPipelineCreateInfo, SDL_GPUGraphicsPipelineTargetInfo, SDL_GPUPrimitiveType, SDL_GPURasterizerState, SDL_GPUStencilOp, SDL_GPUStencilOpState, SDL_GPUStorageBufferReadWriteBinding, SDL_GPUStorageTextureReadWriteBinding, SDL_GPUTextureFormat, SDL_GPUVertexAttribute, SDL_GPUVertexBufferDescription, SDL_GPUVertexInputState, SDL_ReleaseGPUComputePipeline, SDL_ReleaseGPUGraphicsPipeline
 };
 
-use super::ShaderFormat;
+use super::{Buffer, ShaderFormat, Texture};
 
 #[derive(Default)]
 pub struct GraphicsPipelineTargetInfo {
@@ -539,5 +539,57 @@ impl ComputePipeline {
     #[inline]
     pub fn raw(&self) -> *mut SDL_GPUComputePipeline {
         self.inner.raw
+    }
+}
+
+#[repr(C)]
+#[derive(Default)]
+pub struct StorageTextureReadWriteBinding {
+    inner: SDL_GPUStorageTextureReadWriteBinding,
+}
+impl StorageTextureReadWriteBinding {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn with_texture(mut self, texture: &Texture) -> Self {
+        self.inner.texture = texture.raw();
+        self
+    }
+
+    pub fn with_mip_level(mut self, mip_level: u32) -> Self {
+        self.inner.mip_level = mip_level;
+        self
+    }
+
+    pub fn with_layer(mut self, layer: u32) -> Self {
+        self.inner.layer = layer;
+        self
+    }
+
+    pub fn with_cycle(mut self, cycle: bool) -> Self {
+        self.inner.cycle = cycle;
+        self
+    }
+}
+
+#[repr(C)]
+#[derive(Default)]
+pub struct StorageBufferReadWriteBinding {
+    inner: SDL_GPUStorageBufferReadWriteBinding,
+}
+impl StorageBufferReadWriteBinding {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    pub fn with_buffer(mut self, buffer: &Buffer) -> Self {
+        self.inner.buffer = buffer.raw();
+        self
+    }
+
+    pub fn with_cycle(mut self, cycle: bool) -> Self {
+        self.inner.cycle = cycle;
+        self
     }
 }
