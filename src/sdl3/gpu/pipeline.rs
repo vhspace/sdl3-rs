@@ -11,13 +11,13 @@ use std::{ffi::CString, sync::Arc};
 use sys::gpu::{
     SDL_GPUBlendFactor, SDL_GPUBlendOp, SDL_GPUColorTargetBlendState,
     SDL_GPUColorTargetDescription, SDL_GPUCompareOp, SDL_GPUComputePipeline,
-    SDL_GPUComputePipelineCreateInfo, SDL_GPUCullMode, SDL_GPUDepthStencilState,
-    SDL_GPUFillMode, SDL_GPUFrontFace, SDL_GPUGraphicsPipeline,
-    SDL_GPUGraphicsPipelineCreateInfo, SDL_GPUGraphicsPipelineTargetInfo, SDL_GPUPrimitiveType,
-    SDL_GPURasterizerState, SDL_GPUStencilOp, SDL_GPUStencilOpState,
-    SDL_GPUStorageBufferReadWriteBinding, SDL_GPUStorageTextureReadWriteBinding, SDL_GPUTextureFormat,
-    SDL_GPUVertexAttribute, SDL_GPUVertexBufferDescription, SDL_GPUVertexInputState,
-    SDL_ReleaseGPUComputePipeline, SDL_ReleaseGPUGraphicsPipeline
+    SDL_GPUComputePipelineCreateInfo, SDL_GPUCullMode, SDL_GPUDepthStencilState, SDL_GPUFillMode,
+    SDL_GPUFrontFace, SDL_GPUGraphicsPipeline, SDL_GPUGraphicsPipelineCreateInfo,
+    SDL_GPUGraphicsPipelineTargetInfo, SDL_GPUPrimitiveType, SDL_GPURasterizerState,
+    SDL_GPUStencilOp, SDL_GPUStencilOpState, SDL_GPUStorageBufferReadWriteBinding,
+    SDL_GPUStorageTextureReadWriteBinding, SDL_GPUTextureFormat, SDL_GPUVertexAttribute,
+    SDL_GPUVertexBufferDescription, SDL_GPUVertexInputState, SDL_ReleaseGPUComputePipeline,
+    SDL_ReleaseGPUGraphicsPipeline,
 };
 
 use super::{Buffer, ShaderFormat, Texture};

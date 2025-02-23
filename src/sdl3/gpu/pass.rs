@@ -8,12 +8,13 @@ use crate::{
     Error,
 };
 use sys::gpu::{
-    SDL_AcquireGPUSwapchainTexture, SDL_BindGPUFragmentSamplers, SDL_BindGPUIndexBuffer, SDL_BindGPUVertexBuffers,
-    SDL_DrawGPUIndexedPrimitives, SDL_GPUBufferBinding, SDL_GPUColorTargetInfo, SDL_GPUCommandBuffer,
-    SDL_GPUComputePass, SDL_GPUCopyPass, SDL_GPUDepthStencilTargetInfo, SDL_GPUIndexElementSize,
-    SDL_GPULoadOp, SDL_GPURenderPass, SDL_GPUStoreOp, SDL_GPUTextureSamplerBinding,
-    SDL_PushGPUComputeUniformData, SDL_PushGPUFragmentUniformData, SDL_PushGPUVertexUniformData, SDL_UploadToGPUBuffer,
-    SDL_UploadToGPUTexture, SDL_WaitAndAcquireGPUSwapchainTexture
+    SDL_AcquireGPUSwapchainTexture, SDL_BindGPUFragmentSamplers, SDL_BindGPUIndexBuffer,
+    SDL_BindGPUVertexBuffers, SDL_DrawGPUIndexedPrimitives, SDL_GPUBufferBinding,
+    SDL_GPUColorTargetInfo, SDL_GPUCommandBuffer, SDL_GPUComputePass, SDL_GPUCopyPass,
+    SDL_GPUDepthStencilTargetInfo, SDL_GPUIndexElementSize, SDL_GPULoadOp, SDL_GPURenderPass,
+    SDL_GPUStoreOp, SDL_GPUTextureSamplerBinding, SDL_PushGPUComputeUniformData,
+    SDL_PushGPUFragmentUniformData, SDL_PushGPUVertexUniformData, SDL_UploadToGPUBuffer,
+    SDL_UploadToGPUTexture, SDL_WaitAndAcquireGPUSwapchainTexture,
 };
 
 use super::{Buffer, ComputePipeline};
@@ -358,17 +359,33 @@ impl ComputePass {
     #[doc(alias = "SDL_BindGPUComputeStorageBuffers")]
     pub fn bind_compute_storage_buffers(&self, first_slot: u32, storage_buffers: &[Buffer]) {
         let buffer_handles = storage_buffers.iter().map(|x| x.raw()).collect::<Vec<_>>();
-        unsafe { sys::gpu::SDL_BindGPUComputeStorageBuffers(self.inner, first_slot, buffer_handles.as_ptr(), buffer_handles.len() as u32) }
+        unsafe {
+            sys::gpu::SDL_BindGPUComputeStorageBuffers(
+                self.inner,
+                first_slot,
+                buffer_handles.as_ptr(),
+                buffer_handles.len() as u32,
+            )
+        }
     }
 
     #[doc(alias = "SDL_BindGPUComputeStorageTextures")]
     pub fn bind_compute_storage_textures(&self, first_slot: u32, storage_textures: &[Texture]) {
         let texture_handles = storage_textures.iter().map(|x| x.raw()).collect::<Vec<_>>();
-        unsafe { sys::gpu::SDL_BindGPUComputeStorageTextures(self.inner, first_slot, texture_handles.as_ptr(), texture_handles.len() as u32) }
+        unsafe {
+            sys::gpu::SDL_BindGPUComputeStorageTextures(
+                self.inner,
+                first_slot,
+                texture_handles.as_ptr(),
+                texture_handles.len() as u32,
+            )
+        }
     }
 
     #[doc(alias = "SDL_DispatchGPUCompute")]
     pub fn dispatch(&self, groupcount_x: u32, groupcount_y: u32, groupcount_z: u32) {
-        unsafe { sys::gpu::SDL_DispatchGPUCompute(self.inner, groupcount_x, groupcount_y, groupcount_z) }
+        unsafe {
+            sys::gpu::SDL_DispatchGPUCompute(self.inner, groupcount_x, groupcount_y, groupcount_z)
+        }
     }
 }

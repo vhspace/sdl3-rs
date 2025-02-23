@@ -9,14 +9,16 @@ use crate::{
 };
 use std::sync::{Arc, Weak};
 use sys::gpu::{
-    SDL_BeginGPUComputePass, SDL_BeginGPUCopyPass, SDL_BeginGPURenderPass,
-    SDL_CreateGPUDevice, SDL_CreateGPUSampler, SDL_CreateGPUTexture,
-    SDL_DestroyGPUDevice, SDL_GPUColorTargetInfo, SDL_GPUDepthStencilTargetInfo,
-    SDL_GPUDevice, SDL_GPUViewport, SDL_GetGPUSwapchainTextureFormat,
-    SDL_SetGPUViewport
+    SDL_BeginGPUComputePass, SDL_BeginGPUCopyPass, SDL_BeginGPURenderPass, SDL_CreateGPUDevice,
+    SDL_CreateGPUSampler, SDL_CreateGPUTexture, SDL_DestroyGPUDevice, SDL_GPUColorTargetInfo,
+    SDL_GPUDepthStencilTargetInfo, SDL_GPUDevice, SDL_GPUViewport,
+    SDL_GetGPUSwapchainTextureFormat, SDL_SetGPUViewport,
 };
 
-use super::{pipeline::{StorageBufferReadWriteBinding, StorageTextureReadWriteBinding}, ComputePass, ComputePipelineBuilder};
+use super::{
+    pipeline::{StorageBufferReadWriteBinding, StorageTextureReadWriteBinding},
+    ComputePass, ComputePipelineBuilder,
+};
 
 /// Manages the raw `SDL_GPUDevice` pointer and releases it on drop
 pub(super) struct DeviceContainer(*mut SDL_GPUDevice);
@@ -182,10 +184,21 @@ impl Device {
     }
 
     #[doc(alias = "SDL_BeginGPUComputePass")]
-    pub fn begin_compute_pass(&self, command_buffer: &CommandBuffer, storage_texture_bindings: &[StorageTextureReadWriteBinding], storage_buffer_bindings: &[StorageBufferReadWriteBinding]) -> Result<ComputePass, Error> {
-        let p = unsafe { SDL_BeginGPUComputePass(command_buffer.inner,
-            storage_texture_bindings.as_ptr().cast(), storage_buffer_bindings.len() as u32,
-            storage_buffer_bindings.as_ptr().cast(), storage_buffer_bindings.len() as u32) };
+    pub fn begin_compute_pass(
+        &self,
+        command_buffer: &CommandBuffer,
+        storage_texture_bindings: &[StorageTextureReadWriteBinding],
+        storage_buffer_bindings: &[StorageBufferReadWriteBinding],
+    ) -> Result<ComputePass, Error> {
+        let p = unsafe {
+            SDL_BeginGPUComputePass(
+                command_buffer.inner,
+                storage_texture_bindings.as_ptr().cast(),
+                storage_buffer_bindings.len() as u32,
+                storage_buffer_bindings.as_ptr().cast(),
+                storage_buffer_bindings.len() as u32,
+            )
+        };
         if !p.is_null() {
             Ok(ComputePass { inner: p })
         } else {
