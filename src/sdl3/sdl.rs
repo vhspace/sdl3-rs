@@ -256,6 +256,20 @@ macro_rules! subsystem {
                     marker: PhantomData,
                 })
             }
+
+            #[doc = concat!("Create a [`", stringify!($name), "`] out of thin air.")]
+            #[doc = ""]
+            #[doc = concat!("This is probably not what you are looking for. To initialize the subsystem use [`", stringify!($name), "::new`].")]
+            #[doc = ""]
+            #[doc = "# Safety"]
+            #[doc = ""]
+            #[doc = concat!("For each time this is called, previously a [`", stringify!($name), "`] must have been passed to [`mem::forget`].")]
+            #[allow(dead_code, reason = "not all subsystems need this right now")]
+            pub(crate) unsafe fn new_unchecked() -> Self {
+                Self {
+                    marker: PhantomData,
+                }
+            }
         }
 
         impl Clone for $name {
