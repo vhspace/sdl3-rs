@@ -397,7 +397,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .with_offset(0),
                 IndexElementSize::_16Bit,
             );
-            render_pass.bind_fragment_sampler(
+            render_pass.bind_fragment_samplers(
                 0,
                 &[TextureSamplerBinding::new()
                     .with_texture(&cube_texture)
