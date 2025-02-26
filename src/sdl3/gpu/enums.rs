@@ -365,6 +365,10 @@ pub enum BufferUsageFlags {
     #[default]
     Vertex = sys::gpu::SDL_GPU_BUFFERUSAGE_VERTEX as u32,
     Index = sys::gpu::SDL_GPU_BUFFERUSAGE_INDEX as u32,
+    Indirect = sys::gpu::SDL_GPU_BUFFERUSAGE_INDIRECT as u32,
+    GraphicsStorageRead = sys::gpu::SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ as u32,
+    ComputeStorageRead = sys::gpu::SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_READ as u32,
+    ComputeStorageWrite = sys::gpu::SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_WRITE as u32,
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
