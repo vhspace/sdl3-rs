@@ -279,7 +279,7 @@ impl RenderPass {
     }
 
     #[doc(alias = "SDL_BindGPUFragmentSamplers")]
-    pub fn bind_fragment_sampler(&self, first_slot: u32, bindings: &[TextureSamplerBinding]) {
+    pub fn bind_fragment_samplers(&self, first_slot: u32, bindings: &[TextureSamplerBinding]) {
         unsafe {
             SDL_BindGPUFragmentSamplers(
                 self.raw(),
