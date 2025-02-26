@@ -229,7 +229,7 @@ impl RenderPass {
         unsafe { sys::gpu::SDL_BindGPUGraphicsPipeline(self.inner, pipeline.raw()) }
     }
 
-    #[doc(alias = "SDL_BindGPUVertexBuffer")]
+    #[doc(alias = "SDL_BindGPUVertexBuffers")]
     pub fn bind_vertex_buffers(&self, first_slot: u32, bindings: &[BufferBinding]) {
         unsafe {
             SDL_BindGPUVertexBuffers(
@@ -237,6 +237,32 @@ impl RenderPass {
                 first_slot,
                 bindings.as_ptr() as *mut SDL_GPUBufferBinding,
                 bindings.len() as u32,
+            )
+        }
+    }
+
+    #[doc(alias = "SDL_BindGPUVertexStorageBuffers")]
+    pub fn bind_vertex_storage_buffers(&self, first_slot: u32, storage_buffers: &[Buffer]) {
+        let buffer_handles = storage_buffers.iter().map(|x| x.raw()).collect::<Vec<_>>();
+        unsafe {
+            sys::gpu::SDL_BindGPUVertexStorageBuffers(
+                self.inner,
+                first_slot,
+                buffer_handles.as_ptr(),
+                buffer_handles.len() as u32,
+            )
+        }
+    }
+
+    #[doc(alias = "SDL_BindGPUVertexStorageTextures")]
+    pub fn bind_vertex_storage_textures(&self, first_slot: u32, storage_textures: &[Texture]) {
+        let texture_handles = storage_textures.iter().map(|x| x.raw()).collect::<Vec<_>>();
+        unsafe {
+            sys::gpu::SDL_BindGPUVertexStorageTextures(
+                self.inner,
+                first_slot,
+                texture_handles.as_ptr(),
+                texture_handles.len() as u32,
             )
         }
     }
@@ -253,7 +279,7 @@ impl RenderPass {
     }
 
     #[doc(alias = "SDL_BindGPUFragmentSamplers")]
-    pub fn bind_fragment_sampler(&self, first_slot: u32, bindings: &[TextureSamplerBinding]) {
+    pub fn bind_fragment_samplers(&self, first_slot: u32, bindings: &[TextureSamplerBinding]) {
         unsafe {
             SDL_BindGPUFragmentSamplers(
                 self.raw(),
@@ -261,6 +287,32 @@ impl RenderPass {
                 bindings.as_ptr() as *const SDL_GPUTextureSamplerBinding,
                 bindings.len() as u32,
             );
+        }
+    }
+
+    #[doc(alias = "SDL_BindGPUFragmentStorageBuffers")]
+    pub fn bind_fragment_storage_buffers(&self, first_slot: u32, storage_buffers: &[Buffer]) {
+        let buffer_handles = storage_buffers.iter().map(|x| x.raw()).collect::<Vec<_>>();
+        unsafe {
+            sys::gpu::SDL_BindGPUFragmentStorageBuffers(
+                self.inner,
+                first_slot,
+                buffer_handles.as_ptr(),
+                buffer_handles.len() as u32,
+            )
+        }
+    }
+
+    #[doc(alias = "SDL_BindGPUFragmentStorageTextures")]
+    pub fn bind_fragment_storage_textures(&self, first_slot: u32, storage_textures: &[Texture]) {
+        let texture_handles = storage_textures.iter().map(|x| x.raw()).collect::<Vec<_>>();
+        unsafe {
+            sys::gpu::SDL_BindGPUFragmentStorageTextures(
+                self.inner,
+                first_slot,
+                texture_handles.as_ptr(),
+                texture_handles.len() as u32,
+            )
         }
     }
 
