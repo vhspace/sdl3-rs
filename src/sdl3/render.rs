@@ -2394,6 +2394,42 @@ impl InternalTexture {
 
 #[cfg(not(feature = "unsafe_textures"))]
 impl Texture<'_> {
+    /// Gets the texture's internal properties.
+    #[inline]
+    pub fn query(&self) -> TextureQuery {
+        let internal = InternalTexture { raw: self.raw };
+        TextureQuery {
+            format: internal.get_format(),
+            access: internal.get_access(),
+            width: internal.get_width(),
+            height: internal.get_height(),
+        }
+    }
+
+    /// Get the format of the texture.
+    #[inline]
+    pub fn format(&self) -> PixelFormat {
+        InternalTexture { raw: self.raw }.get_format()
+    }
+
+    /// Get the access of the texture.
+    #[inline]
+    pub fn access(&self) -> TextureAccess {
+        InternalTexture { raw: self.raw }.get_access()
+    }
+
+    /// Get the width of the texture.
+    #[inline]
+    pub fn width(&self) -> u32 {
+        InternalTexture { raw: self.raw }.get_width()
+    }
+
+    /// Get the height of the texture.
+    #[inline]
+    pub fn height(&self) -> u32 {
+        InternalTexture { raw: self.raw }.get_height()
+    }
+
     /// Sets an additional color value multiplied into render copy operations.
     #[inline]
     pub fn set_color_mod(&mut self, red: u8, green: u8, blue: u8) {
@@ -2593,6 +2629,18 @@ impl Texture<'_> {
 
 #[cfg(feature = "unsafe_textures")]
 impl Texture {
+    /// Gets the texture's internal properties.
+    #[inline]
+    pub fn query(&self) -> TextureQuery {
+        let internal = InternalTexture { raw: self.raw };
+        TextureQuery {
+            format: internal.get_format(),
+            access: internal.get_access(),
+            width: internal.get_width(),
+            height: internal.get_height(),
+        }
+    }
+
     /// Get the format of the texture.
     #[inline]
     pub fn format(&self) -> PixelFormat {
