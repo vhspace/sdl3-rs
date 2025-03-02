@@ -1,6 +1,5 @@
 use crate::get_error;
 use crate::Error;
-use libc::c_char;
 use libc::c_void;
 use std::ffi::CString;
 use std::io;
@@ -16,7 +15,7 @@ pub struct IOStream<'a> {
 }
 
 impl<'a> IOStream<'a> {
-    pub unsafe fn raw(&self) -> *mut sys::iostream::SDL_IOStream {
+    pub fn raw(&self) -> *mut sys::iostream::SDL_IOStream {
         self.raw
     }
 
@@ -33,10 +32,7 @@ impl<'a> IOStream<'a> {
         let raw = unsafe {
             let path_c = CString::new(path.as_ref().to_str().unwrap()).unwrap();
             let mode_c = CString::new(mode).unwrap();
-            sys::iostream::SDL_IOFromFile(
-                path_c.as_ptr() as *const c_char,
-                mode_c.as_ptr() as *const c_char,
-            )
+            sys::iostream::SDL_IOFromFile(path_c.as_ptr(), mode_c.as_ptr())
         };
 
         if raw.is_null() {
@@ -89,7 +85,8 @@ impl<'a> IOStream<'a> {
     /// This method can only fail if the buffer size is zero.
     #[doc(alias = "SDL_IOFromMem")]
     pub fn from_bytes_mut(buf: &'a mut [u8]) -> Result<IOStream<'a>, Error> {
-        let raw = unsafe { sys::iostream::SDL_IOFromMem(buf.as_ptr() as *mut c_void, buf.len()) };
+        let raw =
+            unsafe { sys::iostream::SDL_IOFromMem(buf.as_mut_ptr() as *mut c_void, buf.len()) };
 
         if raw.is_null() {
             Err(get_error())
@@ -114,12 +111,50 @@ impl<'a> IOStream<'a> {
         }
     }
 
-    // Tells if the stream is empty
-    pub fn is_empty(&self) -> bool {
-        match self.len() {
-            Some(s) => s == 0,
-            None => true,
+    /// Tells if the stream is empty.
+    ///
+    /// Returns `None` if the stream size can't be determined
+    /// (either because it doesn't make sense for the stream type, or there was an error).
+    pub fn is_empty(&self) -> Option<bool> {
+        self.len().map(|len| len == 0)
+    }
+
+    pub fn status(&self) -> IOStatus {
+        match unsafe { sys::iostream::SDL_GetIOStatus(self.raw) }.try_into() {
+            Ok(status) => status,
+            Err(()) => {
+                panic!("SDL_GetIOStatus returned an invalid status");
+            }
         }
+    }
+}
+
+/// See [`SDL_IOStatus`](sys::iostream::SDL_IOStatus)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum IOStatus {
+    Ready,
+    Error,
+    EOF,
+    NotReady,
+    ReadOnly,
+    WriteOnly,
+}
+
+impl TryFrom<sys::iostream::SDL_IOStatus> for IOStatus {
+    type Error = ();
+
+    fn try_from(value: sys::iostream::SDL_IOStatus) -> Result<Self, ()> {
+        use sys::iostream::SDL_IOStatus;
+
+        Ok(match value {
+            SDL_IOStatus::READY => Self::Ready,
+            SDL_IOStatus::ERROR => Self::Error,
+            SDL_IOStatus::EOF => Self::EOF,
+            SDL_IOStatus::NOT_READY => Self::NotReady,
+            SDL_IOStatus::READONLY => Self::ReadOnly,
+            SDL_IOStatus::WRITEONLY => Self::WriteOnly,
+            _ => return Err(()),
+        })
     }
 }
 
@@ -146,11 +181,20 @@ impl io::Write for IOStream<'_> {
         let in_len = buf.len();
         let ret =
             unsafe { sys::iostream::SDL_WriteIO(self.raw, buf.as_ptr() as *const c_void, in_len) };
-        Ok(ret)
+        if ret != in_len && self.status() == IOStatus::Error {
+            Err(io::Error::other(get_error()))
+        } else {
+            Ok(ret)
+        }
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        Ok(())
+        let ret = unsafe { sys::iostream::SDL_FlushIO(self.raw) };
+        if ret {
+            Ok(())
+        } else {
+            Err(io::Error::other(get_error()))
+        }
     }
 }
 
@@ -163,7 +207,7 @@ impl io::Seek for IOStream<'_> {
         };
         let ret = unsafe { sys::iostream::SDL_SeekIO(self.raw, offset, whence) };
         if ret == -1 {
-            Err(io::Error::last_os_error())
+            Err(io::Error::other(get_error()))
         } else {
             Ok(ret as u64)
         }
