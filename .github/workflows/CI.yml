@@ -40,7 +40,7 @@ jobs:
         uses: actions/checkout@v4
       - name: Create Release
         id: create_release
-        uses: comnoco/create-release@v2
+        uses: comnoco/create-release-action@v2.0.5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
         with:
