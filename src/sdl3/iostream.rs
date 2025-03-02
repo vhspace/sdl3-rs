@@ -24,6 +24,13 @@ impl<'a> IOStream<'a> {
         self.raw
     }
 
+    /// Wrap a raw pointer in [`IOStream`] for use with this library.
+    ///
+    /// # Safety
+    ///
+    /// `raw` must be valid and point to an [`SDL_IOStream`](sys::iostream::SDL_IOStream).
+    /// [`IOStream`] will call [`SDL_CloseIO`](sys::iostream::SDL_CloseIO) on drop, so make sure
+    /// that won't cause any UB.
     pub unsafe fn from_ll<'b>(raw: *mut sys::iostream::SDL_IOStream) -> IOStream<'b> {
         IOStream {
             raw: NonNull::new_unchecked(raw),
@@ -31,6 +38,12 @@ impl<'a> IOStream<'a> {
         }
     }
 
+    /// Wrap a raw pointer in [`IOStream`] for use with this library. If the pointer is null,
+    /// `Err(get_error())` is returned.
+    ///
+    /// # Safety
+    ///
+    /// `raw` must be null or safe to pass to [`IOStream::from_ll`] (see its safety comment).
     pub unsafe fn from_ll_or_error<'b>(
         raw: *mut sys::iostream::SDL_IOStream,
     ) -> Result<IOStream<'b>, Error> {
