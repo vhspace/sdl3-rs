@@ -1,51 +1,70 @@
 use crate::get_error;
 use crate::Error;
-use libc::c_char;
 use libc::c_void;
 use std::ffi::CString;
 use std::io;
 use std::marker::PhantomData;
 use std::path::Path;
+use std::ptr::NonNull;
 
 use crate::sys;
 
 /// A structure that provides an abstract interface to stream I/O.
 pub struct IOStream<'a> {
-    raw: *mut sys::iostream::SDL_IOStream,
+    raw: NonNull<sys::iostream::SDL_IOStream>,
     _marker: PhantomData<&'a ()>,
 }
 
 impl<'a> IOStream<'a> {
-    pub unsafe fn raw(&self) -> *mut sys::iostream::SDL_IOStream {
+    pub fn raw(&self) -> *mut sys::iostream::SDL_IOStream {
+        self.raw.as_ptr()
+    }
+
+    pub fn raw_non_null(&self) -> NonNull<sys::iostream::SDL_IOStream> {
         self.raw
     }
 
+    /// Wrap a raw pointer in [`IOStream`] for use with this library.
+    ///
+    /// # Safety
+    ///
+    /// `raw` must be valid and point to an [`SDL_IOStream`](sys::iostream::SDL_IOStream).
+    /// [`IOStream`] will call [`SDL_CloseIO`](sys::iostream::SDL_CloseIO) on drop, so make sure
+    /// that won't cause any UB.
     pub unsafe fn from_ll<'b>(raw: *mut sys::iostream::SDL_IOStream) -> IOStream<'b> {
         IOStream {
-            raw,
+            raw: NonNull::new_unchecked(raw),
             _marker: PhantomData,
+        }
+    }
+
+    /// Wrap a raw pointer in [`IOStream`] for use with this library. If the pointer is null,
+    /// `Err(get_error())` is returned.
+    ///
+    /// # Safety
+    ///
+    /// `raw` must be null or safe to pass to [`IOStream::from_ll`] (see its safety comment).
+    pub unsafe fn from_ll_or_error<'b>(
+        raw: *mut sys::iostream::SDL_IOStream,
+    ) -> Result<IOStream<'b>, Error> {
+        match NonNull::new(raw) {
+            Some(raw) => Ok(IOStream {
+                raw,
+                _marker: PhantomData,
+            }),
+            None => Err(get_error()),
         }
     }
 
     /// Creates an SDL file stream.
     #[doc(alias = "SDL_IOFromFile")]
     pub fn from_file<P: AsRef<Path>>(path: P, mode: &str) -> Result<IOStream<'static>, Error> {
-        let raw = unsafe {
-            let path_c = CString::new(path.as_ref().to_str().unwrap()).unwrap();
-            let mode_c = CString::new(mode).unwrap();
-            sys::iostream::SDL_IOFromFile(
-                path_c.as_ptr() as *const c_char,
-                mode_c.as_ptr() as *const c_char,
-            )
-        };
+        let path_c = CString::new(path.as_ref().to_str().unwrap()).unwrap();
+        let mode_c = CString::new(mode).unwrap();
 
-        if raw.is_null() {
-            Err(get_error())
-        } else {
-            Ok(IOStream {
-                raw,
-                _marker: PhantomData,
-            })
+        unsafe {
+            let raw = sys::iostream::SDL_IOFromFile(path_c.as_ptr(), mode_c.as_ptr());
+            Self::from_ll_or_error(raw)
         }
     }
 
@@ -54,16 +73,9 @@ impl<'a> IOStream<'a> {
     /// This method can only fail if the buffer size is zero.
     #[doc(alias = "SDL_IOFromConstMem")]
     pub fn from_bytes(buf: &'a [u8]) -> Result<IOStream<'a>, Error> {
-        let raw =
-            unsafe { sys::iostream::SDL_IOFromConstMem(buf.as_ptr() as *const c_void, buf.len()) };
-
-        if raw.is_null() {
-            Err(get_error())
-        } else {
-            Ok(IOStream {
-                raw,
-                _marker: PhantomData,
-            })
+        unsafe {
+            let raw = sys::iostream::SDL_IOFromConstMem(buf.as_ptr() as *const c_void, buf.len());
+            Self::from_ll_or_error(raw)
         }
     }
 
@@ -89,15 +101,9 @@ impl<'a> IOStream<'a> {
     /// This method can only fail if the buffer size is zero.
     #[doc(alias = "SDL_IOFromMem")]
     pub fn from_bytes_mut(buf: &'a mut [u8]) -> Result<IOStream<'a>, Error> {
-        let raw = unsafe { sys::iostream::SDL_IOFromMem(buf.as_ptr() as *mut c_void, buf.len()) };
-
-        if raw.is_null() {
-            Err(get_error())
-        } else {
-            Ok(IOStream {
-                raw,
-                _marker: PhantomData,
-            })
+        unsafe {
+            let raw = sys::iostream::SDL_IOFromMem(buf.as_mut_ptr() as *mut c_void, buf.len());
+            Self::from_ll_or_error(raw)
         }
     }
 
@@ -106,7 +112,7 @@ impl<'a> IOStream<'a> {
     /// Returns `None` if the stream size can't be determined
     /// (either because it doesn't make sense for the stream type, or there was an error).
     pub fn len(&self) -> Option<usize> {
-        let result = unsafe { sys::iostream::SDL_GetIOSize(self.raw) };
+        let result = unsafe { sys::iostream::SDL_GetIOSize(self.raw()) };
 
         match result {
             -1 => None,
@@ -114,18 +120,56 @@ impl<'a> IOStream<'a> {
         }
     }
 
-    // Tells if the stream is empty
-    pub fn is_empty(&self) -> bool {
-        match self.len() {
-            Some(s) => s == 0,
-            None => true,
+    /// Tells if the stream is empty.
+    ///
+    /// Returns `None` if the stream size can't be determined
+    /// (either because it doesn't make sense for the stream type, or there was an error).
+    pub fn is_empty(&self) -> Option<bool> {
+        self.len().map(|len| len == 0)
+    }
+
+    pub fn status(&self) -> IOStatus {
+        match unsafe { sys::iostream::SDL_GetIOStatus(self.raw()) }.try_into() {
+            Ok(status) => status,
+            Err(()) => {
+                panic!("SDL_GetIOStatus returned an invalid status");
+            }
         }
+    }
+}
+
+/// See [`SDL_IOStatus`](sys::iostream::SDL_IOStatus)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum IOStatus {
+    Ready,
+    Error,
+    EOF,
+    NotReady,
+    ReadOnly,
+    WriteOnly,
+}
+
+impl TryFrom<sys::iostream::SDL_IOStatus> for IOStatus {
+    type Error = ();
+
+    fn try_from(value: sys::iostream::SDL_IOStatus) -> Result<Self, ()> {
+        use sys::iostream::SDL_IOStatus;
+
+        Ok(match value {
+            SDL_IOStatus::READY => Self::Ready,
+            SDL_IOStatus::ERROR => Self::Error,
+            SDL_IOStatus::EOF => Self::EOF,
+            SDL_IOStatus::NOT_READY => Self::NotReady,
+            SDL_IOStatus::READONLY => Self::ReadOnly,
+            SDL_IOStatus::WRITEONLY => Self::WriteOnly,
+            _ => return Err(()),
+        })
     }
 }
 
 impl Drop for IOStream<'_> {
     fn drop(&mut self) {
-        let ret = unsafe { sys::iostream::SDL_CloseIO(self.raw) };
+        let ret = unsafe { sys::iostream::SDL_CloseIO(self.raw()) };
         if !ret {
             panic!("{}", get_error());
         }
@@ -136,7 +180,7 @@ impl io::Read for IOStream<'_> {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let out_len = buf.len();
         let ret =
-            unsafe { sys::iostream::SDL_ReadIO(self.raw, buf.as_ptr() as *mut c_void, out_len) };
+            unsafe { sys::iostream::SDL_ReadIO(self.raw(), buf.as_ptr() as *mut c_void, out_len) };
         Ok(ret)
     }
 }
@@ -144,13 +188,23 @@ impl io::Read for IOStream<'_> {
 impl io::Write for IOStream<'_> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let in_len = buf.len();
-        let ret =
-            unsafe { sys::iostream::SDL_WriteIO(self.raw, buf.as_ptr() as *const c_void, in_len) };
-        Ok(ret)
+        let ret = unsafe {
+            sys::iostream::SDL_WriteIO(self.raw(), buf.as_ptr() as *const c_void, in_len)
+        };
+        if ret != in_len && self.status() == IOStatus::Error {
+            Err(io::Error::other(get_error()))
+        } else {
+            Ok(ret)
+        }
     }
 
     fn flush(&mut self) -> io::Result<()> {
-        Ok(())
+        let ret = unsafe { sys::iostream::SDL_FlushIO(self.raw()) };
+        if ret {
+            Ok(())
+        } else {
+            Err(io::Error::other(get_error()))
+        }
     }
 }
 
@@ -161,9 +215,9 @@ impl io::Seek for IOStream<'_> {
             io::SeekFrom::End(pos) => (sys::iostream::SDL_IO_SEEK_END, pos),
             io::SeekFrom::Current(pos) => (sys::iostream::SDL_IO_SEEK_CUR, pos),
         };
-        let ret = unsafe { sys::iostream::SDL_SeekIO(self.raw, offset, whence) };
+        let ret = unsafe { sys::iostream::SDL_SeekIO(self.raw(), offset, whence) };
         if ret == -1 {
-            Err(io::Error::last_os_error())
+            Err(io::Error::other(get_error()))
         } else {
             Ok(ret as u64)
         }
