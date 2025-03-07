@@ -1,6 +1,5 @@
-use sdl3::{rect::Rect, render::ClippingRect, render::create_renderer};
-
 extern crate sdl3;
+use sdl3::{rect::Rect, render::create_renderer, render::ClippingRect};
 
 #[test]
 fn clipping_rect_intersection() {
@@ -84,14 +83,16 @@ fn clipping_rect_intersect_rect() {
 #[test]
 fn creating_a_named_renderer() {
     // hidden window
-    let window = sdl3::init().unwrap().video().unwrap()
+    let window = sdl3::init()
+        .unwrap()
+        .video()
+        .unwrap()
         .window("Hello, World!", 800, 600)
         .hidden()
         .metal_view()
         .build()
         .unwrap();
-    
+
     // the software renderer should always be available
     create_renderer(window, Some(c"software")).unwrap();
 }
-
