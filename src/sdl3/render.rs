@@ -788,14 +788,14 @@ pub struct TextureCreator<T> {
 #[doc(alias = "SDL_CreateRenderer")]
 pub fn create_renderer(
     window: Window,
-    renderer_name: Option<&str>,
+    renderer_name: Option<&CStr>,
 ) -> Result<WindowCanvas, IntegerOrSdlError> {
     use crate::common::IntegerOrSdlError::*;
     let raw = unsafe {
         sys::render::SDL_CreateRenderer(
             window.raw(),
             if let Some(renderer_name) = renderer_name {
-                renderer_name.as_ptr() as *const _
+                renderer_name.as_ptr()
             } else {
                 std::ptr::null()
             },
