@@ -3,9 +3,7 @@
 //! # Example
 //! ```no_run
 //! use sdl3::audio::{AudioCallback, AudioFormat, AudioSpec};
-//! use std::time::Duration;//!
-//!
-//! use sdl3::sys;
+//! use std::time::Duration;
 //!
 //! struct SquareWave {
 //!     phase_inc: f32,
@@ -30,19 +28,18 @@
 //! let sdl_context = sdl3::init().unwrap();
 //! let audio_subsystem = sdl_context.audio().unwrap();
 //!
-//! let desired_spec = AudioSpec {
-//!     freq: Some(44100),
-//!     channels: Some(1),  // mono
-//!     format: Some(AudioFormat::S16BE) // signed 16 bit samples
+//! let source_freq = 44100;
+//! let source_spec = AudioSpec {
+//!     freq: Some(source_freq),
+//!     channels: Some(1),                      // mono
+//!     format: Some(AudioFormat::f32_sys())    // floating 32 bit samples
 //! };
 //!
-//! let device = audio_subsystem.open_playback_stream(&desired_spec, |spec| {
-//!     // initialize the audio callback
-//!     SquareWave {
-//!         phase_inc: 440.0 / spec.freq as f32,
-//!         phase: 0.0,
-//!         volume: 0.25
-//!     }
+//! // Initialize the audio callback
+//! let device = audio_subsystem.open_playback_stream(&source_spec, SquareWave {
+//!     phase_inc: 440.0 / source_freq as f32,
+//!     phase: 0.0,
+//!     volume: 0.25
 //! }).unwrap();
 //!
 //! // Start playback
