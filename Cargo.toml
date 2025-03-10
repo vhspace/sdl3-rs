@@ -33,6 +33,10 @@ version = "0.4"
 version = "0.1"
 optional = true
 
+[dependencies.sdl3-ttf-sys]
+version = "0.1"
+optional = true
+
 [dependencies.c_vec]
 # allow both 1.* and 2.0 versions
 version = ">= 1.0"
@@ -70,7 +74,7 @@ unsafe_textures = []
 gfx = ["c_vec"]      #, "sdl3-sys/gfx"]
 #mixer = ["sdl3-sys/mixer"]
 image = ["dep:sdl3-image-sys"]
-#ttf = ["sdl3-sys/ttf"]
+ttf = ["dep:sdl3-ttf-sys"]
 # Use hidapi support in SDL. Only 2.0.12 and after
 hidapi = []
 # test_mode allows SDL to be initialised from a thread that is not the main thread

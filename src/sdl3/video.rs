@@ -1330,6 +1330,12 @@ impl WindowBuilder {
         self
     }
 
+    /// Window uses high pixel density back buffer if possible.
+    pub fn high_pixel_density(&mut self) -> &mut WindowBuilder {
+        self.window_flags |= sys::video::SDL_WINDOW_HIGH_PIXEL_DENSITY as u32;
+        self
+    }
+
     /// Sets the window to be usable with an OpenGL context
     pub fn opengl(&mut self) -> &mut WindowBuilder {
         self.window_flags |= sys::video::SDL_WINDOW_OPENGL as u32;
