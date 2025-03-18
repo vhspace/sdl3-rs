@@ -61,6 +61,8 @@ use std::fmt;
 use std::fmt::{Debug, Display};
 use std::io::{self, Read};
 use std::marker::PhantomData;
+use std::ops::Deref;
+use std::ops::DerefMut;
 use std::path::Path;
 use sys::audio::{SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, SDL_AUDIO_DEVICE_DEFAULT_RECORDING};
 use sys::stdinc::SDL_free;
@@ -177,11 +179,11 @@ impl AudioSubsystem {
         callback: CB,
     ) -> Result<AudioStreamWithCallback<CB>, Error>
     where
-        CB: AudioCallback<Channel>,
+        CB: AudioRecordingCallback<Channel>,
         Channel: AudioFormatNum + 'static,
     {
         let device = AudioDevice::open_recording(self, None, spec)?;
-        device.open_playback_stream_with_callback(spec, callback)
+        device.open_recording_stream_with_callback(spec, callback)
     }
 
     #[doc(alias = "SDL_GetCurrentAudioDriver")]
@@ -1431,6 +1433,22 @@ impl<CB> AudioStreamWithCallback<CB> {
     pub fn resume(&self) -> Result<(), Error> {
         self.base_stream.resume()
     }
+
+    pub fn lock(&mut self) -> Option<AudioStreamLockGuard<CB>> {
+        let raw_stream = self.base_stream.stream;
+        let result = unsafe { 
+            sys::audio::SDL_LockAudioStream(raw_stream) 
+        };
+
+        if result {
+            Some (AudioStreamLockGuard { 
+                stream: self,
+                _nosend: PhantomData
+            })
+        } else {
+            None
+        }
+    }
 }
 
 pub trait AudioRecordingCallback<Channel>: Send + 'static
@@ -1468,38 +1486,41 @@ unsafe extern "C" fn audio_recording_stream_callback<CB, Channel>(
     callback.callback(&buffer);
 }
 
-// TODO:
-//
-// /// Similar to `std::sync::MutexGuard`, but for use with `AudioStream::lock()`.
-// pub struct AudioStreamLockGuard<'a>
-// where
-//     CB: AudioCallback<F>,
-//     CB: 'a,
-//     F: AudioFormatNum + 'static,
-// {
-//     stream: &'a mut AudioStream<CB>,
-//     _nosend: PhantomData<*mut ()>,
-// }
-//
-// impl<'a, CB: AudioCallback> Deref for AudioStreamLockGuard<'a, CB> {
-//     type Target = CB;
-//     #[doc(alias = "SDL_UnlockAudioStream")]
-//     fn deref(&self) -> &CB {
-//         (*self.device.userdata).as_ref().expect("Missing callback")
-//     }
-// }
-//
-// impl<'a, CB: AudioCallback> DerefMut for AudioStreamLockGuard<'a, CB> {
-//     fn deref_mut(&mut self) -> &mut CB {
-//         (*self.device.userdata).as_mut().expect("Missing callback")
-//     }
-// }
-//
-// impl<'a, CB: AudioCallback> Drop for AudioStreamLockGuard<'a, CB> {
-//     fn drop(&mut self) {
-//         unsafe { sys::SDL_UnlockAudioStream(self._audio_stream) }
-//     }
-// }
+/// Similar to `std::sync::MutexGuard`, but for use with `AudioStream::lock()`.
+pub struct AudioStreamLockGuard<'a, CB>
+where
+    CB: 'a,
+{
+    stream: &'a mut AudioStreamWithCallback<CB>,
+    _nosend: PhantomData<*mut ()>,
+}
+
+impl<'a, CB,> Deref for AudioStreamLockGuard<'a, CB> 
+where
+    CB: 'a
+{
+    type Target = CB;
+    #[doc(alias = "SDL_UnlockAudioStream")]
+    fn deref(&self) -> &CB {
+        unsafe {
+            (self.stream.c_userdata as *const CB).as_ref().expect("Missing callback")
+        }
+    }
+}
+
+impl<'a, CB> DerefMut for AudioStreamLockGuard<'a, CB> {
+    fn deref_mut(&mut self) -> &mut CB {
+        unsafe { 
+            (self.stream.c_userdata as *mut CB).as_mut().expect("Missing callback")
+        }
+    }
+}
+
+impl<'a, CB> Drop for AudioStreamLockGuard<'a, CB> {
+    fn drop(&mut self) {
+        unsafe { sys::audio::SDL_UnlockAudioStream(self.stream.base_stream.stream); }
+    }
+}
 
 #[cfg(test)]
 mod test {}
