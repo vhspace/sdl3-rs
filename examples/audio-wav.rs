@@ -1,6 +1,6 @@
 extern crate sdl3;
 
-use sdl3::audio::{AudioCallback, AudioSpec, AudioSpecWAV};
+use sdl3::audio::{AudioCallback, AudioSpec, AudioSpecWAV, AudioStreamInner};
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -14,8 +14,10 @@ struct Sound {
     pos: usize,
 }
 
+// FIXME: Adapt to new playback api.
+#[cfg(feature = "")]
 impl AudioCallback<u8> for Sound {
-    fn callback(&mut self, out: &mut [u8]) {
+    fn callback(&mut self, out: &[u8]) {
         for dst in out.iter_mut() {
             // With channel type u8 the "silence" value is 128 (middle of the 0-2^8 range) so we need
             // to both fill in the silence and scale the wav data accordingly. Filling the silence

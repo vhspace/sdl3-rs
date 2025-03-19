@@ -512,7 +512,7 @@ pub trait AudioCallback<Channel>: Send + 'static
 where
     Channel: AudioFormatNum + 'static,
 {
-    fn callback(&mut self, out: &mut [Channel]);
+    fn callback(&mut self, stream: &mut AudioStreamInner, requested: i32);
 }
 
 /// A phantom type for retrieving the `SDL_AudioFormat` of a given generic type.
@@ -924,14 +924,12 @@ impl AudioDevice {
             Channel: AudioFormatNum + 'static,
         {
             let callback = &mut *(userdata as *mut CB);
-            let sample_count = len as usize / size_of::<Channel>();
-            let mut buffer = vec![Channel::SILENCE; sample_count];
-            callback.callback(&mut buffer);
-            let buffer_ptr = buffer.as_ptr() as *const c_void;
-            let ret = sys::audio::SDL_PutAudioStreamData(sdl_stream, buffer_ptr, len);
-            if !ret {
-                eprintln!("Error pushing audio data into stream: {}", get_error());
-            }
+
+            let mut stream = AudioStreamInner {
+                stream: sdl_stream
+            };
+
+            callback.callback(&mut stream, len / size_of::<Channel>() as i32);
         }
 
         unsafe {
@@ -1303,6 +1301,30 @@ impl AudioStreamInner {
     pub fn put_data(&self, buf: &[u8]) -> Result<(), Error> {
         let result = unsafe {
             sys::audio::SDL_PutAudioStreamData(self.stream, buf.as_ptr().cast(), buf.len() as i32)
+        };
+        if result {
+            Ok(())
+        } else {
+            Err(get_error())
+        }
+    }
+
+    /// Adds data to the stream (16-bit signed).
+    pub fn put_data_i16(&self, buf: &[i16]) -> Result<(), Error> {
+        let result = unsafe {
+            sys::audio::SDL_PutAudioStreamData(self.stream, buf.as_ptr().cast(), buf.len() as i32 * size_of::<i16>() as i32)
+        };
+        if result {
+            Ok(())
+        } else {
+            Err(get_error())
+        }
+    }
+
+    /// Adds data to the stream (32-bit float).
+    pub fn put_data_f32(&self, buf: &[f32]) -> Result<(), Error> {
+        let result = unsafe {
+            sys::audio::SDL_PutAudioStreamData(self.stream, buf.as_ptr().cast(), buf.len() as i32 * size_of::<f32>() as i32)
         };
         if result {
             Ok(())

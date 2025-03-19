@@ -92,16 +92,12 @@ fn calculate_max_volume(recorded_vec: &[i16]) -> f32 {
 }
 
 struct SoundPlayback {
-    data: Vec<i16>,
-    pos: usize,
+    data: Vec<i16>
 }
 
 impl AudioCallback<i16> for SoundPlayback {
-    fn callback(&mut self, out: &mut [i16]) {
-        for dst in out.iter_mut() {
-            *dst = *self.data.get(self.pos).unwrap_or(&0);
-            self.pos += 1;
-        }
+    fn callback(&mut self, stream: &mut AudioStreamInner, requested: i32) {
+        stream.put_data_i16(&self.data).unwrap();
     }
 }
 
@@ -115,8 +111,7 @@ fn replay_recorded_vec(
     let playback_device = audio_subsystem.open_playback_stream(
         desired_spec,
         SoundPlayback {
-            data: recorded_vec,
-            pos: 0,
+            data: recorded_vec
         },
     )?;
 
