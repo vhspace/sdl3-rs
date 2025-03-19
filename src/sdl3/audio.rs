@@ -258,8 +258,8 @@ impl AudioSubsystem {
             Err(get_error())
         } else {
             Ok(AudioStream {
-                stream,
-                audio_subsystem: self.clone(),
+                inner: AudioStreamInner { stream },
+                audio_subsystem: self.clone().into(),
             })
         }
     }
@@ -782,15 +782,15 @@ impl AudioDevice {
             let audio_subsystem = unsafe { AudioSubsystem::new_unchecked() };
 
             Ok(AudioStream {
-                stream,
-                audio_subsystem,
+                inner: AudioStreamInner { stream },
+                audio_subsystem: audio_subsystem.into(),
             })
         }
     }
 
     /// Binds an audio stream to this device.
     #[doc(alias = "SDL_BindAudioStream")]
-    pub fn bind_stream(&self, stream: &AudioStream) -> Result<(), Error> {
+    pub fn bind_stream(&self, stream: &AudioStreamInner) -> Result<(), Error> {
         let result = unsafe { sys::audio::SDL_BindAudioStream(self.device_id.id(), stream.stream) };
         if result {
             Ok(())
@@ -801,7 +801,7 @@ impl AudioDevice {
 
     /// Binds multiple audio streams to this device.
     #[doc(alias = "SDL_BindAudioStreams")]
-    pub fn bind_streams(&self, streams: &[&AudioStream]) -> Result<(), Error> {
+    pub fn bind_streams(&self, streams: &[&AudioStreamInner]) -> Result<(), Error> {
         let streams_ptrs: Vec<*mut sys::audio::SDL_AudioStream> =
             streams.iter().map(|s| s.stream).collect();
         let result = unsafe {
@@ -949,8 +949,8 @@ impl AudioDevice {
             } else {
                 Ok(AudioStreamWithCallback {
                     base_stream: AudioStream {
-                        stream,
-                        audio_subsystem: self.audio_subsystem.clone(),
+                        inner: AudioStreamInner { stream },
+                        audio_subsystem: self.audio_subsystem.clone().into(),
                     },
                     _marker: PhantomData,
                     c_userdata,
@@ -998,8 +998,8 @@ impl AudioDevice {
             } else {
                 Ok(AudioStreamWithCallback {
                     base_stream: AudioStream {
-                        stream,
-                        audio_subsystem: self.audio_subsystem.clone(),
+                        inner: AudioStreamInner { stream },
+                        audio_subsystem: self.audio_subsystem.clone().into(),
                     },
                     _marker: PhantomData,
                     c_userdata,
@@ -1010,25 +1010,43 @@ impl AudioDevice {
 }
 
 pub struct AudioStream {
-    stream: *mut sys::audio::SDL_AudioStream,
+    inner: AudioStreamInner,
     #[expect(dead_code, reason = "keep the audio subsystem alive")]
-    audio_subsystem: AudioSubsystem,
+    audio_subsystem: Option<AudioSubsystem>,
+}
+
+pub struct AudioStreamInner {
+    stream: *mut sys::audio::SDL_AudioStream,
+}
+
+impl Deref for AudioStream {
+    type Target = AudioStreamInner;
+    
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl DerefMut for AudioStream {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
+    }
 }
 
 impl Drop for AudioStream {
     /// Destroys the audio stream, unbinding it automatically from the device.
     /// If this stream was created with SDL_OpenAudioDeviceStream, the audio device that was opened alongside this stream’s creation will be closed, too.
     fn drop(&mut self) {
-        if !self.stream.is_null() {
+        if !self.inner.stream.is_null() {
             unsafe {
-                sys::audio::SDL_DestroyAudioStream(self.stream);
+                sys::audio::SDL_DestroyAudioStream(self.inner.stream);
             }
-            self.stream = std::ptr::null_mut();
+            self.inner.stream = std::ptr::null_mut();
         }
     }
 }
 
-impl Debug for AudioStream {
+impl Debug for AudioStreamInner {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // Get the device "name [ID]"
         let device_name = self
@@ -1076,7 +1094,7 @@ impl Debug for AudioStream {
         ds.finish()
     }
 }
-impl Display for AudioStream {
+impl Display for AudioStreamInner {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(name) = self.device_id().and_then(|id| id.name().ok()) {
             write!(f, "AudioStream({})", name)
@@ -1086,7 +1104,7 @@ impl Display for AudioStream {
     }
 }
 
-impl AudioStream {
+impl AudioStreamInner {
     /// Get the SDL_AudioStream pointer.
     #[doc(alias = "SDL_AudioStream")]
     pub fn stream(&mut self) -> *mut sys::audio::SDL_AudioStream {
@@ -1108,94 +1126,6 @@ impl AudioStream {
 
     pub fn device_name(&self) -> Option<String> {
         self.device_id().and_then(|id| id.name().ok())
-    }
-
-    /// Creates a new audio stream that converts audio data from the source format (`src_spec`)
-    /// to the destination format (`dst_spec`).
-    ///
-    /// # Arguments
-    ///
-    /// * `src_spec` - The format details of the input audio.
-    /// * `dst_spec` - The format details of the output audio.
-    ///
-    /// # Returns
-    ///
-    /// Returns `Ok(AudioStream)` on success or an error message on failure.
-    ///
-    /// # Safety
-    ///
-    /// This function is safe to call from any thread.
-    #[deprecated = "use `subsystem.new_stream(...)` (where subsystem is an `AudioSubsystem`) instead"]
-    pub fn new(
-        src_spec: Option<&AudioSpec>,
-        dst_spec: Option<&AudioSpec>,
-        audio_subsystem: &AudioSubsystem,
-    ) -> Result<Self, Error> {
-        audio_subsystem.new_stream(src_spec, dst_spec)
-    }
-
-    /// Creates a new audio stream for playback.
-    ///
-    /// # Arguments
-    ///
-    /// * `app_spec` - The format of audio data the application will provide.
-    /// * `device_spec` - The format of audio data the audio device expects.
-    ///                   If `None`, SDL will choose an appropriate format.
-    #[deprecated = "use `subsystem.new_playback_stream(...)` (where subsystem is an `AudioSubsystem`) instead"]
-    pub fn new_playback_stream(
-        app_spec: &AudioSpec,
-        device_spec: Option<&AudioSpec>,
-        audio_subsystem: &AudioSubsystem,
-    ) -> Result<Self, Error> {
-        audio_subsystem.new_playback_stream(app_spec, device_spec)
-    }
-
-    /// Creates a new audio stream for recording.
-    ///
-    /// # Arguments
-    ///
-    /// * `device_spec` - The format of audio data the audio device provides.
-    ///                   If `None`, SDL will choose an appropriate format.
-    /// * `app_spec` - The format of audio data the application wants to receive.
-    #[deprecated = "use `subsystem.new_recording_stream(...)` (where subsystem is an `AudioSubsystem`) instead"]
-    pub fn new_recording_stream(
-        device_spec: Option<&AudioSpec>,
-        app_spec: &AudioSpec,
-        audio_subsystem: &AudioSubsystem,
-    ) -> Result<Self, Error> {
-        audio_subsystem.new_recording_stream(device_spec, app_spec)
-    }
-
-    /// Create an `AudioStream` for this device with the specified spec.
-    /// This device will be closed when the stream is dropped.
-    /// The device begins paused, so you must call `stream.resume()` to start playback.
-    #[doc(alias = "SDL_OpenAudioDeviceStream")]
-    #[deprecated = "use `device.open_device_stream(spec)` (where device is an `AudioDevice`) instead"]
-    pub fn open_device_stream(
-        device_id: AudioDeviceID,
-        spec: Option<&AudioSpec>,
-        audio_subsystem: &AudioSubsystem,
-    ) -> Result<AudioStream, Error> {
-        let sdl_spec = spec.map(|spec| spec.into());
-        let sdl_spec_ptr = crate::util::option_to_ptr(sdl_spec.as_ref());
-
-        let stream = unsafe {
-            sys::audio::SDL_OpenAudioDeviceStream(
-                device_id.id(),
-                sdl_spec_ptr,
-                // not using callbacks here
-                None,
-                std::ptr::null_mut(),
-            )
-        };
-        if stream.is_null() {
-            Err(get_error())
-        } else {
-            Ok(Self {
-                stream,
-                audio_subsystem: audio_subsystem.clone(),
-            })
-        }
     }
 
     /// Retrieves the source and destination formats of the audio stream.
@@ -1382,7 +1312,7 @@ impl AudioStream {
     }
 }
 
-impl Read for AudioStream {
+impl Read for AudioStreamInner {
     /// Reads audio data from the stream.
     /// Note that this reads bytes from the stream, not samples.
     /// You must convert the bytes to samples based on the format of the stream.
@@ -1455,7 +1385,7 @@ pub trait AudioRecordingCallback<Channel>: Send + 'static
 where
     Channel: AudioFormatNum + 'static,
 {
-    fn callback(&mut self, input: &[Channel]);
+    fn callback(&mut self, stream: &mut AudioStreamInner, available: i32);
 }
 
 unsafe extern "C" fn audio_recording_stream_callback<CB, Channel>(
@@ -1469,21 +1399,12 @@ unsafe extern "C" fn audio_recording_stream_callback<CB, Channel>(
 {
     let callback = &mut *(userdata as *mut CB);
 
-    // Allocate a buffer to receive the recorded data
-    let sample_count = len as usize / size_of::<Channel>();
-    let mut buffer = vec![Channel::SILENCE; sample_count];
-
-    // Pull data from the stream
-    let buffer_ptr = buffer.as_mut_ptr() as *mut c_void;
-    let ret = sys::audio::SDL_GetAudioStreamData(sdl_stream, buffer_ptr, len);
-
-    if ret != len {
-        eprintln!("Error getting audio data from stream: {}", get_error());
-        return;
-    }
+    let mut stream = AudioStreamInner {
+        stream: sdl_stream
+    };
 
     // Call the user's callback with the captured audio data
-    callback.callback(&buffer);
+    callback.callback(&mut stream, len / size_of::<Channel>() as c_int);
 }
 
 /// Similar to `std::sync::MutexGuard`, but for use with `AudioStream::lock()`.

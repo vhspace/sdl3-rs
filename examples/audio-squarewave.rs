@@ -1,6 +1,6 @@
 extern crate sdl3;
 
-use sdl3::audio::{AudioCallback, AudioSpec};
+use sdl3::audio::{AudioCallback, AudioFormat, AudioSpec};
 use std::time::Duration;
 
 struct SquareWave {
@@ -28,9 +28,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let audio_subsystem = sdl_context.audio()?;
 
     let desired_spec = AudioSpec {
-        freq: Some(44_100),
+        freq: Some(48000),
         channels: Some(1), // mono
-        format: None,
+        format: Some(AudioFormat::f32_sys()),
     };
 
     let device = audio_subsystem.open_playback_stream(
