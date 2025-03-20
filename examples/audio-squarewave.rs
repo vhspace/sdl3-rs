@@ -1,17 +1,17 @@
 extern crate sdl3;
 
-use sdl3::audio::{AudioCallback, AudioFormat, AudioSpec, AudioStreamInner};
+use sdl3::audio::{AudioCallback, AudioFormat, AudioSpec, AudioStream};
 use std::time::Duration;
 
 struct SquareWave {
     phase_inc: f32,
     phase: f32,
     volume: f32,
-    buffer: Vec<f32>
+    buffer: Vec<f32>,
 }
 
 impl AudioCallback<f32> for SquareWave {
-    fn callback(&mut self, stream: &mut AudioStreamInner, requested: i32) {
+    fn callback(&mut self, stream: &mut AudioStream, requested: i32) {
         self.buffer.resize(requested as usize, 0.0);
 
         // Generate a square wave
@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             phase_inc: 440.0 / desired_spec.freq.unwrap() as f32,
             phase: 0.0,
             volume: 0.25,
-            buffer: Vec::new()
+            buffer: Vec::new(),
         },
     )?;
 

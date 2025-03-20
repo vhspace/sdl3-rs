@@ -1,6 +1,6 @@
 extern crate sdl3;
 
-use sdl3::audio::{AudioCallback, AudioSpec, AudioSpecWAV, AudioStreamInner};
+use sdl3::audio::{AudioCallback, AudioSpec, AudioSpecWAV, AudioStream};
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
