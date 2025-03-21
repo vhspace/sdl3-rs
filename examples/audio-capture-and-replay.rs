@@ -1,6 +1,6 @@
 extern crate sdl3;
 
-use sdl3::audio::{AudioCallback, AudioSpec};
+use sdl3::audio::{AudioCallback, AudioFormat, AudioRecordingCallback, AudioSpec, AudioStream};
 use sdl3::AudioSubsystem;
 use std::i16;
 use std::sync::mpsc;
@@ -17,22 +17,21 @@ struct Recording {
 
 // Append the input of the callback to the record_buffer.
 // When the record_buffer is full, send it to the main thread via done_sender.
-impl AudioCallback<i16> for Recording {
-    fn callback(&mut self, input: &mut [i16]) {
+impl AudioRecordingCallback<i16> for Recording {
+    fn callback(&mut self, stream: &mut AudioStream, _available: i32) {
         if self.done {
             return;
         }
 
-        for x in input {
-            self.record_buffer[self.pos] = *x;
-            self.pos += 1;
-            if self.pos >= self.record_buffer.len() {
-                self.done = true;
-                self.done_sender
-                    .send(self.record_buffer.clone())
-                    .expect("could not send record buffer");
-                break;
-            }
+        self.pos += stream
+            .read_i16_samples(&mut self.record_buffer[self.pos..])
+            .unwrap();
+
+        if self.pos >= self.record_buffer.len() {
+            self.done = true;
+            self.done_sender
+                .send(self.record_buffer.clone())
+                .expect("could not send record buffer");
         }
     }
 }
@@ -96,15 +95,11 @@ fn calculate_max_volume(recorded_vec: &[i16]) -> f32 {
 
 struct SoundPlayback {
     data: Vec<i16>,
-    pos: usize,
 }
 
 impl AudioCallback<i16> for SoundPlayback {
-    fn callback(&mut self, out: &mut [i16]) {
-        for dst in out.iter_mut() {
-            *dst = *self.data.get(self.pos).unwrap_or(&0);
-            self.pos += 1;
-        }
+    fn callback(&mut self, stream: &mut AudioStream, _requested: i32) {
+        stream.put_data_i16(&self.data).unwrap();
     }
 }
 
@@ -115,13 +110,8 @@ fn replay_recorded_vec(
 ) -> Result<(), Box<dyn std::error::Error>> {
     println!("Playing...");
 
-    let playback_device = audio_subsystem.open_playback_stream(
-        desired_spec,
-        SoundPlayback {
-            data: recorded_vec,
-            pos: 0,
-        },
-    )?;
+    let playback_device =
+        audio_subsystem.open_playback_stream(desired_spec, SoundPlayback { data: recorded_vec })?;
 
     // Start playback
     playback_device.resume()?;
@@ -137,9 +127,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let audio_subsystem = sdl_context.audio()?;
 
     let desired_spec = AudioSpec {
-        freq: None,
-        channels: None,
-        format: None,
+        freq: Some(48000),
+        channels: Some(2),
+        format: Some(AudioFormat::s16_sys()),
     };
 
     let recorded_vec = record(&audio_subsystem, &desired_spec)?;
