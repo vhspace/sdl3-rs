@@ -12,19 +12,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("{} joysticks available", joysticks.len());
 
     // Iterate over all available joysticks and stop once we manage to open one.
-    let (_joystick, joystick_id) = joysticks
+    let joystick_id = joysticks
         .into_iter()
-        .find_map(|joystick| {
-            let id = joystick.id;
-            match joystick_subsystem.open(joystick) {
-                Ok(c) => {
-                    println!("Success: opened \"{}\"", c.name());
-                    Some((c, id))
-                }
-                Err(e) => {
-                    println!("failed: {:?}", e);
-                    None
-                }
+        .find_map(|id| match joystick_subsystem.open(id) {
+            Ok(c) => {
+                println!("Success: opened \"{}\"", c.name());
+                Some(id)
+            }
+            Err(e) => {
+                println!("failed: {:?}", e);
+                None
             }
         })
         .expect("Couldn't open any joystick");
