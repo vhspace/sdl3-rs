@@ -14,12 +14,12 @@ use sys::joystick::SDL_JoystickID;
 use sys::power::{SDL_PowerState, SDL_POWERSTATE_UNKNOWN};
 use sys::stdinc::SDL_free;
 
-pub type JoystickInstance = SDL_JoystickID;
+pub type JoystickId = SDL_JoystickID;
 
 impl JoystickSubsystem {
     /// Get joystick instance IDs and names.
     #[doc(alias = "SDL_GetJoysticks")]
-    pub fn joysticks(&self) -> Result<Vec<JoystickInstance>, Error> {
+    pub fn joysticks(&self) -> Result<Vec<JoystickId>, Error> {
         let mut num_joysticks: i32 = 0;
         unsafe {
             let joystick_ids = sys::joystick::SDL_GetJoysticks(&mut num_joysticks);
@@ -39,7 +39,7 @@ impl JoystickSubsystem {
 
     /// Attempt to open the joystick at index `joystick_index` and return it.
     #[doc(alias = "SDL_OpenJoystick")]
-    pub fn open(&self, joystick_id: JoystickInstance) -> Result<Joystick, IntegerOrSdlError> {
+    pub fn open(&self, joystick_id: JoystickId) -> Result<Joystick, IntegerOrSdlError> {
         use crate::common::IntegerOrSdlError::*;
         let joystick = unsafe { sys::joystick::SDL_OpenJoystick(joystick_id) };
 

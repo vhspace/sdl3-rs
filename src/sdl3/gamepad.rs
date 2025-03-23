@@ -15,7 +15,7 @@ use std::convert::TryInto;
 use crate::common::IntegerOrSdlError;
 use crate::get_error;
 use crate::guid::Guid;
-use crate::joystick::JoystickInstance;
+use crate::joystick::JoystickId;
 use crate::sys;
 use crate::Error;
 use crate::GamepadSubsystem;
@@ -59,7 +59,7 @@ impl error::Error for AddMappingError {
 impl GamepadSubsystem {
     /// Retrieve the total number of attached gamepads identified by SDL.
     #[doc(alias = "SDL_GetGamepads")]
-    pub fn gamepads(&self) -> Result<Vec<JoystickInstance>, Error> {
+    pub fn gamepads(&self) -> Result<Vec<JoystickId>, Error> {
         let mut num_gamepads: i32 = 0;
         unsafe {
             // see: https://github.com/libsdl-org/SDL/blob/main/docs/README-migration.md#sdl_joystickh
@@ -81,7 +81,7 @@ impl GamepadSubsystem {
     /// Return true if the joystick at index `joystick_id` is a game controller.
     #[inline]
     #[doc(alias = "SDL_IsGamepad")]
-    pub fn is_game_controller(&self, joystick_id: JoystickInstance) -> bool {
+    pub fn is_game_controller(&self, joystick_id: JoystickId) -> bool {
         unsafe { sys::gamepad::SDL_IsGamepad(joystick_id) }
     }
 
@@ -89,7 +89,7 @@ impl GamepadSubsystem {
     /// Controller IDs are the same as joystick IDs and the maximum number can
     /// be retrieved using the `SDL_GetJoysticks` function.
     #[doc(alias = "SDL_OpenGamepad")]
-    pub fn open(&self, joystick_id: JoystickInstance) -> Result<Gamepad, IntegerOrSdlError> {
+    pub fn open(&self, joystick_id: JoystickId) -> Result<Gamepad, IntegerOrSdlError> {
         use crate::common::IntegerOrSdlError::*;
         let controller = unsafe { sys::gamepad::SDL_OpenGamepad(joystick_id) };
 
@@ -105,10 +105,7 @@ impl GamepadSubsystem {
 
     /// Return the name of the controller at index `joystick_id`.
     #[doc(alias = "SDL_GetGamepadNameForID")]
-    pub fn name_for_index(
-        &self,
-        joystick_id: JoystickInstance,
-    ) -> Result<String, IntegerOrSdlError> {
+    pub fn name_for_index(&self, joystick_id: JoystickId) -> Result<String, IntegerOrSdlError> {
         use crate::common::IntegerOrSdlError::*;
         let c_str = unsafe { sys::gamepad::SDL_GetGamepadNameForID(joystick_id) };
 
