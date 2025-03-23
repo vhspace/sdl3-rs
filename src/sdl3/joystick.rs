@@ -14,11 +14,7 @@ use sys::joystick::SDL_JoystickID;
 use sys::power::{SDL_PowerState, SDL_POWERSTATE_UNKNOWN};
 use sys::stdinc::SDL_free;
 
-pub struct JoystickInstance {
-    pub id: SDL_JoystickID,
-    name: String,
-    path: String,
-}
+pub type JoystickInstance = SDL_JoystickID;
 
 impl JoystickSubsystem {
     /// Get joystick instance IDs and names.
@@ -33,10 +29,7 @@ impl JoystickSubsystem {
                 let mut instances = Vec::new();
                 for i in 0..num_joysticks {
                     let id = *joystick_ids.offset(i as isize);
-
-                    let name = c_str_to_string(sys::joystick::SDL_GetJoystickNameForID(id));
-                    let path = c_str_to_string(sys::joystick::SDL_GetJoystickPathForID(id));
-                    instances.push(JoystickInstance { id, name, path });
+                    instances.push(id);
                 }
                 SDL_free(joystick_ids as *mut c_void);
                 Ok(instances)
@@ -46,9 +39,9 @@ impl JoystickSubsystem {
 
     /// Attempt to open the joystick at index `joystick_index` and return it.
     #[doc(alias = "SDL_OpenJoystick")]
-    pub fn open(&self, joystick_instance: JoystickInstance) -> Result<Joystick, IntegerOrSdlError> {
+    pub fn open(&self, joystick_id: JoystickInstance) -> Result<Joystick, IntegerOrSdlError> {
         use crate::common::IntegerOrSdlError::*;
-        let joystick = unsafe { sys::joystick::SDL_OpenJoystick(joystick_instance.id) };
+        let joystick = unsafe { sys::joystick::SDL_OpenJoystick(joystick_id) };
 
         if joystick.is_null() {
             Err(SdlError(get_error()))
