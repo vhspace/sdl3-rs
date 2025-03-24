@@ -10,6 +10,7 @@ use crate::JoystickSubsystem;
 use libc::{c_char, c_void};
 use std::ffi::CStr;
 use std::fmt;
+use sys::joystick::SDL_JoystickConnectionState;
 use sys::joystick::SDL_JoystickID;
 use sys::power::{SDL_PowerState, SDL_POWERSTATE_UNKNOWN};
 use sys::stdinc::SDL_free;
@@ -150,12 +151,12 @@ impl Joystick {
     /// Return true if the joystick has been opened and currently
     /// connected.
     #[doc(alias = "SDL_JoystickConnected")]
-    pub fn attached(&self) -> bool {
+    pub fn connected(&self) -> bool {
         unsafe { sys::joystick::SDL_JoystickConnected(self.raw) }
     }
 
     #[doc(alias = "SDL_GetJoystickID")]
-    pub fn instance_id(&self) -> u32 {
+    pub fn id(&self) -> u32 {
         let result = unsafe { sys::joystick::SDL_GetJoystickID(self.raw) };
 
         if result == 0 {
@@ -182,8 +183,10 @@ impl Joystick {
     }
 
     /// Retrieve the battery level of this joystick
+    /// This method doesn't match the name of the SDL API since we have PowerLevel + percentage in
+    /// a PowerInfo struct.
     #[doc(alias = "SDL_GetJoystickPowerLevel")]
-    pub fn power_level(&self) -> Result<PowerInfo, IntegerOrSdlError> {
+    pub fn power_info(&self) -> Result<PowerInfo, IntegerOrSdlError> {
         use crate::common::IntegerOrSdlError::*;
         clear_error();
 
@@ -454,7 +457,7 @@ impl Joystick {
 impl Drop for Joystick {
     #[doc(alias = "SDL_CloseJoystick")]
     fn drop(&mut self) {
-        if self.attached() {
+        if self.connected() {
             unsafe { sys::joystick::SDL_CloseJoystick(self.raw) }
         }
     }
@@ -508,6 +511,35 @@ impl HatState {
             HatState::RightDown => 6,
             HatState::LeftUp => 9,
             HatState::LeftDown => 12,
+        }
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(i32)]
+pub enum ConnectionState {
+    Invalid = sys::joystick::SDL_JoystickConnectionState::INVALID.0,
+    Unknown = sys::joystick::SDL_JoystickConnectionState::UNKNOWN.0,
+    Wired = sys::joystick::SDL_JoystickConnectionState::WIRED.0,
+    Wireless = sys::joystick::SDL_JoystickConnectionState::WIRELESS.0,
+}
+
+impl ConnectionState {
+    pub fn from_ll(bitflags: sys::joystick::SDL_JoystickConnectionState) -> ConnectionState {
+        match bitflags {
+            sys::joystick::SDL_JoystickConnectionState::UNKNOWN => ConnectionState::Unknown,
+            sys::joystick::SDL_JoystickConnectionState::WIRED => ConnectionState::Wired,
+            sys::joystick::SDL_JoystickConnectionState::WIRELESS => ConnectionState::Wireless,
+            _ => ConnectionState::Invalid,
+        }
+    }
+
+    pub fn to_ll(self) -> sys::joystick::SDL_JoystickConnectionState {
+        match self {
+            ConnectionState::Invalid => sys::joystick::SDL_JoystickConnectionState::INVALID,
+            ConnectionState::Unknown => sys::joystick::SDL_JoystickConnectionState::UNKNOWN,
+            ConnectionState::Wired => sys::joystick::SDL_JoystickConnectionState::WIRED,
+            ConnectionState::Wireless => sys::joystick::SDL_JoystickConnectionState::WIRELESS,
         }
     }
 }

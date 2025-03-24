@@ -24,7 +24,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Ok(c) => {
                     // We managed to find and open a game controller,
                     // exit the loop
-                    println!("Success: opened \"{}\"", c.name());
+                    println!(
+                        "Success: opened \"{}\"",
+                        c.name().unwrap_or_else(|| "(unnamed)".to_owned())
+                    );
                     Some(c)
                 }
                 Err(e) => {
@@ -35,7 +38,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         })
         .expect("Couldn't open any gamepad");
 
-    println!("Controller mapping: {}", controller.mapping());
+    println!(
+        "Controller mapping: {}",
+        controller.mapping().unwrap_or("".to_owned())
+    );
 
     let (mut lo_freq, mut hi_freq) = (0, 0);
 

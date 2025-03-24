@@ -125,7 +125,7 @@ name = "draw_triangle"
 name = "demo"
 
 [[example]]
-name = "game-controller"
+name = "gamepad"
 
 [[example]]
 required-features = ["unsafe_textures"]
