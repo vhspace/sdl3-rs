@@ -8,14 +8,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let gamepad_subsystem = sdl_context.gamepad()?;
 
-    let available = gamepad_subsystem
-        .num_gamepads()
+    let gamepad_joysticks_ids = gamepad_subsystem
+        .gamepads()
         .map_err(|e| format!("can't enumerate gamepads: {}", e))?;
 
-    println!("{} gamepads available", available);
+    println!("{} gamepads available", gamepad_joysticks_ids.len());
 
     // Iterate over all available joysticks and look for game controllers.
-    let mut controller = (0..available)
+    let mut controller = gamepad_joysticks_ids
+        .into_iter()
         .find_map(|id| {
             println!("Attempting to open gamepad {}", id);
 
