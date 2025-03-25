@@ -10,12 +10,10 @@ use crate::JoystickSubsystem;
 use libc::{c_char, c_void};
 use std::ffi::CStr;
 use std::fmt;
-use sys::joystick::SDL_JoystickConnectionState;
-use sys::joystick::SDL_JoystickID;
 use sys::power::{SDL_PowerState, SDL_POWERSTATE_UNKNOWN};
 use sys::stdinc::SDL_free;
 
-pub type JoystickId = SDL_JoystickID;
+pub type JoystickId = sys::joystick::SDL_JoystickID;
 
 impl JoystickSubsystem {
     /// Get joystick instance IDs and names.

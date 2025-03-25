@@ -21,8 +21,6 @@ use crate::sys;
 use crate::Error;
 use crate::GamepadSubsystem;
 
-use sys::joystick::SDL_GetJoystickID;
-
 #[derive(Debug, Clone)]
 pub enum AddMappingError {
     InvalidMapping(NulError),
