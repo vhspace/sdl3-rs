@@ -9,6 +9,7 @@
 *.dll
 *.dummy
 *.exe
+*.lib
 .rust/
 build/
 bin/
