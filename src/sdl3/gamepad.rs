@@ -163,20 +163,9 @@ impl GamepadSubsystem {
     /// Return the implementation-dependent path of a gamepad.
     /// This can be called before any gamepads are opened.
     #[doc(alias = "SDL_GetGamepadPathForID")]
-    pub fn path_for_id(&self, joystick_id: JoystickId) -> Result<String, IntegerOrSdlError> {
-        use crate::common::IntegerOrSdlError::*;
+    pub fn path_for_id(&self, joystick_id: JoystickId) -> Result<String, Error> {
         let c_str = unsafe { sys::gamepad::SDL_GetGamepadPathForID(joystick_id) };
-
-        if c_str.is_null() {
-            Err(SdlError(get_error()))
-        } else {
-            Ok(unsafe {
-                CStr::from_ptr(c_str as *const _)
-                    .to_str()
-                    .unwrap()
-                    .to_owned()
-            })
-        }
+        c_str_to_string_or_err(c_str)
     }
 
     /// Return the player index of a gamepad.
