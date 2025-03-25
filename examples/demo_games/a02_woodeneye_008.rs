@@ -40,12 +40,12 @@ struct AppState {
 }
 
 // Function to find a player by their mouse ID
-fn whose_mouse(mouse: u32, players: &[Player], players_len: usize) -> Option<usize> {
+fn whose_mouse(mouse: u32, players: &[Player], _players_len: usize) -> Option<usize> {
     players.iter().position(|p| p.mouse == mouse)
 }
 
 // Function to find a player by their keyboard ID
-fn whose_keyboard(keyboard: u32, players: &[Player], players_len: usize) -> Option<usize> {
+fn whose_keyboard(keyboard: u32, players: &[Player], _players_len: usize) -> Option<usize> {
     players.iter().position(|p| p.keyboard == keyboard)
 }
 
@@ -256,7 +256,7 @@ fn draw_clipped_segment(
     let dy = ay - by;
 
     // Clip the first point (A) if it's behind the clipping plane
-    let (mut ax, mut ay, mut az) = if az > -w {
+    let (mut ax, mut ay, az) = if az > -w {
         let t = (-w - bz) / (az - bz); // Calculate intersection parameter
         (bx + dx * t, by + dy * t, -w) // Interpolate to the clipping plane
     } else {
@@ -264,7 +264,7 @@ fn draw_clipped_segment(
     };
 
     // Clip the second point (B) if it's behind the clipping plane
-    let (mut bx, mut by, mut bz) = if bz > -w {
+    let (mut bx, mut by, bz) = if bz > -w {
         let t = (-w - az) / (bz - az); // Calculate intersection parameter
         (ax - dx * t, ay - dy * t, -w) // Interpolate to the clipping plane
     } else {
@@ -584,8 +584,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         edges,
     };
 
-    let mut last_time = Instant::now();
+    // XXX: currently not in use, when we start using it delete the directive below
+    #[allow(unused_variables)]
     let mut accumulator = 0u64;
+
+    let mut last_time = Instant::now();
     let mut past_time = Instant::now();
 
     'running: loop {

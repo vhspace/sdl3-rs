@@ -38,13 +38,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
         angle = (angle + 0.5) % 360.;
-        canvas.with_texture_canvas(&mut texture, |texture_canvas| {
-            texture_canvas.clear();
-            texture_canvas.set_draw_color(Color::RGBA(255, 0, 0, 255));
-            texture_canvas
-                .fill_rect(FRect::new(0.0, 0.0, 400.0, 300.0))
-                .expect("could not fill rect");
-        });
+        canvas
+            .with_texture_canvas(&mut texture, |texture_canvas| {
+                texture_canvas.clear();
+                texture_canvas.set_draw_color(Color::RGBA(255, 0, 0, 255));
+                texture_canvas
+                    .fill_rect(FRect::new(0.0, 0.0, 400.0, 300.0))
+                    .expect("could not fill rect");
+            })
+            .unwrap();
         canvas.set_draw_color(Color::RGBA(0, 0, 0, 255));
         let dst = Some(FRect::new(0.0, 0.0, 400.0, 300.0));
         canvas.clear();

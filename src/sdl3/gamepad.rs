@@ -1,6 +1,5 @@
 use libc::{c_char, c_void};
 
-use std::convert::Into;
 use std::error;
 use std::ffi::{CStr, CString, NulError};
 use std::fmt;
