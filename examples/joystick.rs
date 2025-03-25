@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!(
         "\"{}\" power level: {:?}",
         joystick.name(),
-        joystick.power_level().map_err(|e| e.to_string())?
+        joystick.power_info().map_err(|e| e.to_string())?
     );
 
     let (mut lo_freq, mut hi_freq) = (0, 0);

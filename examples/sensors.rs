@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Iterate over all available joysticks and look for game controllers.
     let controller = (0..available)
         .find_map(|id| {
-            if !game_controller_subsystem.is_game_controller(id) {
+            if !game_controller_subsystem.is_gamepad(id) {
                 println!("{} is not a game controller", id);
                 return None;
             }
