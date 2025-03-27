@@ -1913,6 +1913,21 @@ impl Window {
         (w as u32, h as u32)
     }
 
+    /// This is a combination of the window pixel density and the display content
+    /// scale, and is the expected scale for displaying content in this window.
+    /// For example, if a 3840x2160 window had a display scale of 2.0, the user
+    /// expects the content to take twice as many pixels and be the same physical
+    /// size as if it were being displayed in a 1920x1080 window with a display
+    /// scale of 1.0.
+    ///
+    /// Conceptually this value corresponds to the scale display setting, and
+    /// is updated when that setting is changed, or the window moves to a display
+    /// with a different scale setting.
+    #[doc(alias = "SDL_GetWindowDisplayScale")]
+    pub fn display_scale(&self) -> f32 {
+        unsafe { sys::video::SDL_GetWindowDisplayScale(self.context.raw) }
+    }
+
     #[doc(alias = "SDL_GetWindowPixelDensity")]
     pub fn pixel_density(&self) -> f32 {
         unsafe { sys::video::SDL_GetWindowPixelDensity(self.context.raw) }
