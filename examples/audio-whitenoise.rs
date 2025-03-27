@@ -20,7 +20,10 @@ impl AudioCallback<f32> for MyCallback {
             *x = (rng.gen_range(0.0..=2.0) - 1.0) * self.volume;
         }
 
-        stream.put_data_f32(&self.buffer);
+        match stream.put_data_f32(&self.buffer) {
+            Ok(()) => {}
+            Err(err) => println!("Failed to put data: {err}"),
+        }
     }
 }
 

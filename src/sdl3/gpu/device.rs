@@ -225,7 +225,8 @@ impl Device {
         unsafe { std::mem::transmute(sys::gpu::SDL_GetGPUShaderFormats(self.raw())) }
     }
 
-    #[cfg(target_os = "xbox")]
+    // NOTE: for Xbox builds, the target is a UWP, e.g.: x86_64-uwp-windows-msvc
+    #[cfg(target_vendor = "uwp")]
     #[doc(alias = "SDL_GDKSuspendGPU")]
     pub fn gdk_suspend(&self) {
         unsafe {
@@ -233,7 +234,7 @@ impl Device {
         }
     }
 
-    #[cfg(target_os = "xbox")]
+    #[cfg(target_vendor = "uwp")]
     #[doc(alias = "SDL_GDKResumeGPU")]
     pub fn gdk_resume(&self) {
         unsafe {

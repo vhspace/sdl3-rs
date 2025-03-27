@@ -13,13 +13,7 @@ const WINDOW_HEIGHT: u32 = 600;
 
 // Function to fill a triangle
 
-fn fill_triangle(
-    canvas: &mut Canvas<Window>,
-    p1: (i32, i32),
-    p2: (i32, i32),
-    p3: (i32, i32),
-    color: Color,
-) {
+fn fill_triangle(canvas: &mut Canvas<Window>, p1: (i32, i32), p2: (i32, i32), p3: (i32, i32)) {
     let (x1, y1) = p1;
     let (x2, y2) = p2;
     let (x3, y3) = p3;
@@ -95,13 +89,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     canvas.clear();
 
     canvas.set_draw_color(Color::RGB(255, 0, 0));
-    fill_triangle(
-        &mut canvas,
-        (100, 100),
-        (200, 200),
-        (300, 100),
-        Color::RGB(255, 0, 0),
-    );
+    fill_triangle(&mut canvas, (100, 100), (200, 200), (300, 100));
 
     canvas.present();
 

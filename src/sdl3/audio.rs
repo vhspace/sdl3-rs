@@ -91,7 +91,7 @@ impl AudioSubsystem {
         F: FnOnce(&mut i32) -> *mut sys::audio::SDL_AudioDeviceID,
     {
         let mut num_devices: i32 = 0;
-        let devices = unsafe { get_devices(&mut num_devices) };
+        let devices = get_devices(&mut num_devices);
         if devices.is_null() {
             return Err(get_error());
         }

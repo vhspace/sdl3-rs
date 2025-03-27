@@ -4,6 +4,7 @@ use std::ptr;
 use sdl3::properties::*;
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 struct TestData<'a> {
     pub hello: &'a str,
     pub goodbye: &'a str,
