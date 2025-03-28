@@ -52,7 +52,7 @@ impl Device {
 
     #[doc(alias = "SDL_CreateGPUDevice")]
     pub fn new(flags: ShaderFormat, debug_mode: bool) -> Result<Self, Error> {
-        let raw_device = unsafe { SDL_CreateGPUDevice(flags as u32, debug_mode, std::ptr::null()) };
+        let raw_device = unsafe { SDL_CreateGPUDevice(flags.0, debug_mode, std::ptr::null()) };
         if raw_device.is_null() {
             Err(get_error())
         } else {

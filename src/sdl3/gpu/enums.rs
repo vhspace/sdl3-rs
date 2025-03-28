@@ -1,47 +1,26 @@
 use crate::sys;
 use std::ops::{BitAnd, BitOr};
-use sys::gpu::{
-    SDL_GPUBlendFactor, SDL_GPUBlendOp, SDL_GPU_COLORCOMPONENT_A, SDL_GPU_COLORCOMPONENT_B,
-    SDL_GPU_COLORCOMPONENT_G, SDL_GPU_COLORCOMPONENT_R,
-};
+use sys::gpu::{SDL_GPUBlendFactor, SDL_GPUBlendOp};
 
 macro_rules! impl_with {
     (bitwise_and_or $x:ident $prim:ident) => {
         impl BitOr<$x> for $x {
             type Output = $x;
             fn bitor(self, rhs: $x) -> Self::Output {
-                unsafe { std::mem::transmute((self as $prim) | (rhs as $prim)) }
+                $x (self.0 | rhs.0)
             }
         }
         impl BitAnd<$x> for $x {
             type Output = $x;
             fn bitand(self, rhs: $x) -> Self::Output {
-                unsafe { std::mem::transmute((self as $prim) & (rhs as $prim)) }
+                $x (self.0 & rhs.0)
             }
         }
     };
 }
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-#[repr(u32)]
-pub enum LoadOp {
-    #[default]
-    Load = sys::gpu::SDL_GPU_LOADOP_LOAD.0 as u32,
-    DontCare = sys::gpu::SDL_GPU_LOADOP_DONT_CARE.0 as u32,
-    Clear = sys::gpu::SDL_GPU_LOADOP_CLEAR.0 as u32,
-}
-impl_with!(bitwise_and_or LoadOp u32);
-
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-#[repr(u32)]
-pub enum StoreOp {
-    #[default]
-    Store = sys::gpu::SDL_GPU_STOREOP_STORE.0 as u32,
-    DontCare = sys::gpu::SDL_GPU_STOREOP_DONT_CARE.0 as u32,
-    Resolve = sys::gpu::SDL_GPU_STOREOP_RESOLVE.0 as u32,
-    ResolveAndStore = sys::gpu::SDL_GPU_STOREOP_RESOLVE_AND_STORE.0 as u32,
-}
-impl_with!(bitwise_and_or StoreOp u32);
+pub type LoadOp = sys::gpu::SDL_GPULoadOp;
+pub type StoreOp = sys::gpu::SDL_GPUStoreOp;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -153,35 +132,38 @@ pub enum TextureFormat {
     Astc12x10Float = sys::gpu::SDL_GPU_TEXTUREFORMAT_ASTC_12x10_FLOAT.0 as u32,
     Astc12x12Float = sys::gpu::SDL_GPU_TEXTUREFORMAT_ASTC_12x12_FLOAT.0 as u32,
 }
-impl_with!(bitwise_and_or TextureFormat u32);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-#[repr(u32)]
-pub enum ShaderFormat {
-    #[default]
-    Invalid = sys::gpu::SDL_GPU_SHADERFORMAT_INVALID as u32,
-    Dxbc = sys::gpu::SDL_GPU_SHADERFORMAT_DXBC as u32,
-    Dxil = sys::gpu::SDL_GPU_SHADERFORMAT_DXIL as u32,
-    MetalLib = sys::gpu::SDL_GPU_SHADERFORMAT_METALLIB as u32,
-    Msl = sys::gpu::SDL_GPU_SHADERFORMAT_MSL as u32,
-    Private = sys::gpu::SDL_GPU_SHADERFORMAT_PRIVATE as u32,
-    SpirV = sys::gpu::SDL_GPU_SHADERFORMAT_SPIRV as u32,
+pub struct ShaderFormat(pub sys::gpu::SDL_GPUShaderFormat);
+impl ShaderFormat {
+    pub const INVALID: Self = Self(sys::gpu::SDL_GPU_SHADERFORMAT_INVALID);
+    pub const DXBC: Self = Self(sys::gpu::SDL_GPU_SHADERFORMAT_DXBC);
+    pub const DXIL: Self = Self(sys::gpu::SDL_GPU_SHADERFORMAT_DXIL);
+    pub const METALLIB: Self = Self(sys::gpu::SDL_GPU_SHADERFORMAT_METALLIB);
+    pub const MSL: Self = Self(sys::gpu::SDL_GPU_SHADERFORMAT_MSL);
+    pub const PRIVATE: Self = Self(sys::gpu::SDL_GPU_SHADERFORMAT_PRIVATE);
+    pub const SPIRV: Self = Self(sys::gpu::SDL_GPU_SHADERFORMAT_SPIRV);
 }
 impl_with!(bitwise_and_or ShaderFormat u32);
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-#[repr(u32)]
-pub enum TextureUsage {
-    #[default]
-    Invalid = 0,
-    ComputeStorageWrite = sys::gpu::SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_WRITE,
-    ComputeStorageRead = sys::gpu::SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_READ,
-    ComputeSimultaneousReadWrite =
-        sys::gpu::SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_SIMULTANEOUS_READ_WRITE,
-    DepthStencilTarget = sys::gpu::SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET,
-    GraphicsStorageRead = sys::gpu::SDL_GPU_TEXTUREUSAGE_GRAPHICS_STORAGE_READ,
-    Sampler = sys::gpu::SDL_GPU_TEXTUREUSAGE_SAMPLER,
-    ColorTarget = sys::gpu::SDL_GPU_TEXTUREUSAGE_COLOR_TARGET,
+pub struct TextureUsage(pub sys::gpu::SDL_GPUTextureUsageFlags);
+impl TextureUsage {
+    pub const INVALID: Self =
+        Self(0);
+    pub const COMPUTE_STORAGE_WRITE: Self =
+        Self(sys::gpu::SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_WRITE);
+    pub const COMPUTE_STORAGE_READ: Self =
+        Self(sys::gpu::SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_READ);
+    pub const COMPUTE_STORAGE_SIMULTANEOUS_READ_WRITE: Self =
+        Self(sys::gpu::SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_SIMULTANEOUS_READ_WRITE);
+    pub const DEPTH_STENCIL_TARGET: Self =
+        Self(sys::gpu::SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET);
+    pub const GRAPHICS_STORAGE_READ: Self =
+        Self(sys::gpu::SDL_GPU_TEXTUREUSAGE_GRAPHICS_STORAGE_READ);
+    pub const SAMPLER: Self =
+        Self(sys::gpu::SDL_GPU_TEXTUREUSAGE_SAMPLER);
+    pub const COLOR_TARGET: Self =
+        Self(sys::gpu::SDL_GPU_TEXTUREUSAGE_COLOR_TARGET);
 }
 impl_with!(bitwise_and_or TextureUsage u32);
 
@@ -342,14 +324,7 @@ pub enum SamplerAddressMode {
     ClampToEdge = sys::gpu::SDL_GPUSamplerAddressMode::CLAMP_TO_EDGE.0 as u32,
 }
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-#[repr(u32)]
-pub enum IndexElementSize {
-    #[default]
-    _16Bit = sys::gpu::SDL_GPUIndexElementSize::_16BIT.0 as u32,
-    _32Bit = sys::gpu::SDL_GPUIndexElementSize::_32BIT.0 as u32,
-}
-impl_with!(bitwise_and_or IndexElementSize u32);
+pub type IndexElementSize = sys::gpu::SDL_GPUIndexElementSize;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -360,25 +335,17 @@ pub enum VertexInputRate {
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-#[repr(u32)]
-pub enum BufferUsageFlags {
-    #[default]
-    Vertex = sys::gpu::SDL_GPU_BUFFERUSAGE_VERTEX as u32,
-    Index = sys::gpu::SDL_GPU_BUFFERUSAGE_INDEX as u32,
-    Indirect = sys::gpu::SDL_GPU_BUFFERUSAGE_INDIRECT as u32,
-    GraphicsStorageRead = sys::gpu::SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ as u32,
-    ComputeStorageRead = sys::gpu::SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_READ as u32,
-    ComputeStorageWrite = sys::gpu::SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_WRITE as u32,
+pub struct BufferUsageFlags(pub sys::gpu::SDL_GPUBufferUsageFlags);
+impl BufferUsageFlags {
+    pub const VERTEX                : Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_VERTEX);
+    pub const INDEX                 : Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_INDEX);
+    pub const INDIRECT              : Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_INDIRECT);
+    pub const GRAPHICS_STORAGE_READ : Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ);
+    pub const COMPUTE_STORAGE_READ  : Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_READ);
+    pub const COMPUTE_STORAGE_WRITE : Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_WRITE);
 }
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-#[repr(u32)]
-pub enum TransferBufferUsage {
-    #[default]
-    Upload = sys::gpu::SDL_GPUTransferBufferUsage::UPLOAD.0 as u32,
-    Download = sys::gpu::SDL_GPUTransferBufferUsage::DOWNLOAD.0 as u32,
-}
-impl_with!(bitwise_and_or TransferBufferUsage u32);
+pub type TransferBufferUsage = sys::gpu::SDL_GPUTransferBufferUsage;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -413,12 +380,12 @@ pub enum BlendOp {
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-#[repr(u8)]
-pub enum ColorComponentFlags {
-    #[default]
-    RBit = SDL_GPU_COLORCOMPONENT_R,
-    GBit = SDL_GPU_COLORCOMPONENT_G,
-    BBit = SDL_GPU_COLORCOMPONENT_B,
-    ABit = SDL_GPU_COLORCOMPONENT_A,
+pub struct ColorComponentFlags(pub sys::gpu::SDL_GPUColorComponentFlags);
+
+impl ColorComponentFlags {
+    pub const R: Self = Self(sys::gpu::SDL_GPU_COLORCOMPONENT_R);
+    pub const G: Self = Self(sys::gpu::SDL_GPU_COLORCOMPONENT_G);
+    pub const B: Self = Self(sys::gpu::SDL_GPU_COLORCOMPONENT_B);
+    pub const A: Self = Self(sys::gpu::SDL_GPU_COLORCOMPONENT_A);
 }
 impl_with!(bitwise_and_or ColorComponentFlags u8);
