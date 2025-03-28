@@ -256,7 +256,7 @@ impl ColorTargetBlendState {
 
     /// A bitmask specifying which of the RGBA components are enabled for writing. Writes to all channels if enable_color_write_mask is false.
     pub fn with_color_write_mask(mut self, flags: ColorComponentFlags) -> Self {
-        self.inner.color_write_mask = flags as u8;
+        self.inner.color_write_mask = flags.0;
         self
     }
 
@@ -463,7 +463,7 @@ impl<'a> ComputePipelineBuilder<'a> {
     }
 
     pub fn with_code(mut self, fmt: ShaderFormat, code: &'a [u8]) -> Self {
-        self.inner.format = fmt as u32;
+        self.inner.format = fmt.0;
         self.inner.code = code.as_ptr();
         self.inner.code_size = code.len();
         self

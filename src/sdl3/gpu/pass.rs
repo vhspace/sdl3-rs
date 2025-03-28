@@ -11,10 +11,9 @@ use sys::gpu::{
     SDL_AcquireGPUSwapchainTexture, SDL_BindGPUFragmentSamplers, SDL_BindGPUIndexBuffer,
     SDL_BindGPUVertexBuffers, SDL_DrawGPUIndexedPrimitives, SDL_GPUBufferBinding,
     SDL_GPUColorTargetInfo, SDL_GPUCommandBuffer, SDL_GPUComputePass, SDL_GPUCopyPass,
-    SDL_GPUDepthStencilTargetInfo, SDL_GPUIndexElementSize, SDL_GPULoadOp, SDL_GPURenderPass,
-    SDL_GPUStoreOp, SDL_GPUTextureSamplerBinding, SDL_PushGPUComputeUniformData,
-    SDL_PushGPUFragmentUniformData, SDL_PushGPUVertexUniformData, SDL_UploadToGPUBuffer,
-    SDL_UploadToGPUTexture, SDL_WaitAndAcquireGPUSwapchainTexture,
+    SDL_GPUDepthStencilTargetInfo, SDL_GPURenderPass, SDL_GPUTextureSamplerBinding,
+    SDL_PushGPUComputeUniformData, SDL_PushGPUFragmentUniformData, SDL_PushGPUVertexUniformData,
+    SDL_UploadToGPUBuffer, SDL_UploadToGPUTexture, SDL_WaitAndAcquireGPUSwapchainTexture,
 };
 
 use super::{Buffer, ComputePipeline};
@@ -154,24 +153,22 @@ impl DepthStencilTargetInfo {
     }
 
     pub fn with_load_op(mut self, value: LoadOp) -> Self {
-        self.inner.load_op = SDL_GPULoadOp(value as i32);
+        self.inner.load_op = value;
         self
     }
 
     pub fn with_store_op(mut self, value: StoreOp) -> Self {
-        self.inner.store_op = SDL_GPUStoreOp(value as i32);
+        self.inner.store_op = value;
         self
     }
 
     pub fn with_stencil_load_op(mut self, value: LoadOp) -> Self {
-        self.inner.stencil_load_op =
-            unsafe { std::mem::transmute::<_, sys::gpu::SDL_GPULoadOp>(value as u32) };
+        self.inner.stencil_load_op = value;
         self
     }
 
     pub fn with_stencil_store_op(mut self, value: StoreOp) -> Self {
-        self.inner.stencil_store_op =
-            unsafe { std::mem::transmute::<_, sys::gpu::SDL_GPUStoreOp>(value as u32) };
+        self.inner.stencil_store_op = value;
         self
     }
 
@@ -197,13 +194,11 @@ impl ColorTargetInfo {
         self
     }
     pub fn with_load_op(mut self, value: LoadOp) -> Self {
-        self.inner.load_op =
-            unsafe { std::mem::transmute::<_, sys::gpu::SDL_GPULoadOp>(value as u32) };
+        self.inner.load_op = value;
         self
     }
     pub fn with_store_op(mut self, value: StoreOp) -> Self {
-        self.inner.store_op =
-            unsafe { std::mem::transmute::<_, sys::gpu::SDL_GPUStoreOp>(value as u32) };
+        self.inner.store_op = value;
         self
     }
     pub fn with_clear_color(mut self, value: Color) -> Self {
@@ -269,13 +264,7 @@ impl RenderPass {
 
     #[doc(alias = "SDL_BindGPUIndexBuffer")]
     pub fn bind_index_buffer(&self, binding: &BufferBinding, index_element_size: IndexElementSize) {
-        unsafe {
-            SDL_BindGPUIndexBuffer(
-                self.raw(),
-                &binding.inner,
-                SDL_GPUIndexElementSize(index_element_size as i32),
-            )
-        }
+        unsafe { SDL_BindGPUIndexBuffer(self.raw(), &binding.inner, index_element_size) }
     }
 
     #[doc(alias = "SDL_BindGPUFragmentSamplers")]
