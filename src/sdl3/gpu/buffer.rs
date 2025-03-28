@@ -7,7 +7,7 @@ use std::sync::Arc;
 use sys::gpu::{
     SDL_CreateGPUBuffer, SDL_CreateGPUTransferBuffer, SDL_GPUBuffer, SDL_GPUBufferBinding,
     SDL_GPUBufferCreateInfo, SDL_GPUBufferRegion, SDL_GPUTransferBuffer,
-    SDL_GPUTransferBufferCreateInfo, SDL_GPUTransferBufferLocation, SDL_GPUTransferBufferUsage,
+    SDL_GPUTransferBufferCreateInfo, SDL_GPUTransferBufferLocation,
     SDL_GPUVertexBufferDescription, SDL_GPUVertexInputRate, SDL_MapGPUTransferBuffer,
     SDL_ReleaseGPUBuffer, SDL_ReleaseGPUTransferBuffer, SDL_UnmapGPUTransferBuffer,
 };
@@ -157,7 +157,7 @@ impl<'a> BufferBuilder<'a> {
     }
 
     pub fn with_usage(mut self, value: BufferUsageFlags) -> Self {
-        self.inner.usage = value as u32;
+        self.inner.usage = value.0;
         self
     }
 
@@ -267,7 +267,7 @@ impl<'a> TransferBufferBuilder<'a> {
 
     /// How the buffer will be used.
     pub fn with_usage(mut self, value: TransferBufferUsage) -> Self {
-        self.inner.usage = SDL_GPUTransferBufferUsage(value as i32);
+        self.inner.usage = value;
         self
     }
 

@@ -89,7 +89,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map_err(|e| e.to_string())?;
 
     let gpu = Device::new(
-        ShaderFormat::SpirV | ShaderFormat::Dxil | ShaderFormat::Dxbc | ShaderFormat::MetalLib,
+        ShaderFormat::SPIRV | ShaderFormat::DXIL | ShaderFormat::DXBC | ShaderFormat::METALLIB,
         true,
     )?
     .with_window(&window)?;
@@ -98,7 +98,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let vert_shader = gpu
         .create_shader()
         .with_code(
-            ShaderFormat::SpirV,
+            ShaderFormat::SPIRV,
             include_bytes!("shaders/cube.vert.spv"),
             ShaderStage::Vertex,
         )
@@ -108,7 +108,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let frag_shader = gpu
         .create_shader()
         .with_code(
-            ShaderFormat::SpirV,
+            ShaderFormat::SPIRV,
             include_bytes!("shaders/cube.frag.spv"),
             ShaderStage::Fragment,
         )
@@ -171,7 +171,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let transfer_buffer = gpu
         .create_transfer_buffer()
         .with_size(vertices_len_bytes.max(indices_len_bytes) as u32)
-        .with_usage(TransferBufferUsage::Upload)
+        .with_usage(TransferBufferUsage::UPLOAD)
         .build()?;
 
     // We need to start a copy pass in order to transfer data to the GPU
@@ -183,14 +183,14 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         &gpu,
         &transfer_buffer,
         &copy_pass,
-        BufferUsageFlags::Vertex,
+        BufferUsageFlags::VERTEX,
         &CUBE_VERTICES,
     )?;
     let index_buffer = create_buffer_with_data(
         &gpu,
         &transfer_buffer,
         &copy_pass,
-        BufferUsageFlags::Index,
+        BufferUsageFlags::INDEX,
         &CUBE_INDICES,
     )?;
 
@@ -211,7 +211,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_num_levels(1)
             .with_sample_count(SampleCount::NoMultiSampling)
             .with_format(TextureFormat::D16Unorm)
-            .with_usage(TextureUsage::Sampler | TextureUsage::DepthStencilTarget),
+            .with_usage(TextureUsage::SAMPLER | TextureUsage::DEPTH_STENCIL_TARGET),
     )?;
 
     let mut rotation = 45.0f32;
@@ -238,8 +238,8 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             // Again, like in gpu-clear.rs, we'd want to define basic operations for our cube
             let color_targets = [ColorTargetInfo::default()
                 .with_texture(&swapchain)
-                .with_load_op(LoadOp::Clear)
-                .with_store_op(StoreOp::Store)
+                .with_load_op(LoadOp::CLEAR)
+                .with_store_op(StoreOp::STORE)
                 .with_clear_color(Color::RGB(128, 128, 128))];
             // This time, however, we want depth testing, so we need to also target a depth texture buffer
             let depth_target = DepthStencilTargetInfo::new()
@@ -247,10 +247,10 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .with_cycle(true)
                 .with_clear_depth(1.0)
                 .with_clear_stencil(0)
-                .with_load_op(LoadOp::Clear)
-                .with_store_op(StoreOp::Store)
-                .with_stencil_load_op(LoadOp::Clear)
-                .with_stencil_store_op(StoreOp::Store);
+                .with_load_op(LoadOp::CLEAR)
+                .with_store_op(StoreOp::STORE)
+                .with_stencil_load_op(LoadOp::CLEAR)
+                .with_stencil_store_op(StoreOp::STORE);
             let render_pass =
                 gpu.begin_render_pass(&command_buffer, &color_targets, Some(&depth_target))?;
 
@@ -268,7 +268,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 &BufferBinding::new()
                     .with_buffer(&index_buffer)
                     .with_offset(0),
-                IndexElementSize::_16Bit,
+                IndexElementSize::_16BIT,
             );
 
             // Set the rotation uniform for our cube vert shader

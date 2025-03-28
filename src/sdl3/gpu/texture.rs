@@ -361,7 +361,7 @@ impl TextureCreateInfo {
 
     /// How the texture is intended to be used by the client.
     pub fn with_usage(mut self, value: TextureUsage) -> Self {
-        self.inner.usage = value as u32;
+        self.inner.usage = value.0;
         self
     }
 
