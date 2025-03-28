@@ -7,7 +7,7 @@ use crate::{
     },
     sys, Error,
 };
-use std::{ffi::CString, sync::Arc};
+use std::{ffi::CStr, sync::Arc};
 use sys::gpu::{
     SDL_GPUBlendFactor, SDL_GPUBlendOp, SDL_GPUColorTargetBlendState,
     SDL_GPUColorTargetDescription, SDL_GPUCompareOp, SDL_GPUComputePipeline,
@@ -452,14 +452,12 @@ impl DepthStencilState {
 #[repr(C)]
 pub struct ComputePipelineBuilder<'a> {
     device: &'a Device,
-    entrypoint: CString,
     inner: SDL_GPUComputePipelineCreateInfo,
 }
 impl<'a> ComputePipelineBuilder<'a> {
     pub(super) fn new(device: &'a Device) -> Self {
         Self {
             device,
-            entrypoint: CString::new("main").unwrap(),
             inner: Default::default(),
         }
     }
@@ -471,9 +469,8 @@ impl<'a> ComputePipelineBuilder<'a> {
         self
     }
 
-    pub fn with_entrypoint(mut self, entry_point: &'a str) -> Self {
-        self.entrypoint = CString::new(entry_point).unwrap(); //need to save
-        self.inner.entrypoint = self.entrypoint.as_c_str().as_ptr();
+    pub fn with_entrypoint(mut self, entry_point: &'a CStr) -> Self {
+        self.inner.entrypoint = entry_point.as_ptr();
         self
     }
 

@@ -208,7 +208,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             ShaderStage::Vertex,
         )
         .with_uniform_buffers(1)
-        .with_entrypoint("main")
+        .with_entrypoint(c"main")
         .build()?;
     let frag_shader = gpu
         .create_shader()
@@ -218,7 +218,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             ShaderStage::Fragment,
         )
         .with_samplers(1)
-        .with_entrypoint("main")
+        .with_entrypoint(c"main")
         .build()?;
 
     // Create a pipeline, we specify that we want our target format in the swapchain

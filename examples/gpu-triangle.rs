@@ -37,13 +37,13 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let vs_shader = gpu
         .create_shader()
         .with_code(ShaderFormat::SpirV, vs_source, ShaderStage::Vertex)
-        .with_entrypoint("main")
+        .with_entrypoint(c"main")
         .build()?;
 
     let fs_shader = gpu
         .create_shader()
         .with_code(ShaderFormat::SpirV, fs_source, ShaderStage::Fragment)
-        .with_entrypoint("main")
+        .with_entrypoint(c"main")
         .build()?;
 
     let swapchain_format = gpu.get_swapchain_texture_format(&window);
