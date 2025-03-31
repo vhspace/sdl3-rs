@@ -3,7 +3,7 @@ use crate::{
     gpu::{Device, ShaderFormat, ShaderStage, WeakDevice},
     Error,
 };
-use std::{ffi::CString, sync::Arc};
+use std::{ffi::CStr, sync::Arc};
 use sys::gpu::{SDL_GPUShader, SDL_GPUShaderCreateInfo};
 
 /// Manages the raw `SDL_GPUShader` pointer and releases it on drop
@@ -32,14 +32,12 @@ impl Shader {
 
 pub struct ShaderBuilder<'a> {
     device: &'a Device,
-    entrypoint: CString,
     inner: SDL_GPUShaderCreateInfo,
 }
 impl<'a> ShaderBuilder<'a> {
     pub(super) fn new(device: &'a Device) -> Self {
         Self {
             device,
-            entrypoint: CString::new("main").unwrap(),
             inner: Default::default(),
         }
     }
@@ -71,9 +69,8 @@ impl<'a> ShaderBuilder<'a> {
         self.inner.stage = unsafe { std::mem::transmute(stage as u32) };
         self
     }
-    pub fn with_entrypoint(mut self, entry_point: &'a str) -> Self {
-        self.entrypoint = CString::new(entry_point).unwrap(); //need to save
-        self.inner.entrypoint = self.entrypoint.as_c_str().as_ptr();
+    pub fn with_entrypoint(mut self, entry_point: &'a CStr) -> Self {
+        self.inner.entrypoint = entry_point.as_ptr();
         self
     }
     pub fn build(self) -> Result<Shader, Error> {
