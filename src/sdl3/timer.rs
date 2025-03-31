@@ -95,7 +95,7 @@ impl Drop for Timer {
 
 extern "C" fn c_timer_callback(
     userdata: *mut c_void,
-    _timerID: sys::timer::SDL_TimerID,
+    _timer_id: sys::timer::SDL_TimerID,
     _interval: u32,
 ) -> u32 {
     let callback_ptr = userdata as *mut TimerCallback;

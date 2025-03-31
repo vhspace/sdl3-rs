@@ -15,7 +15,7 @@ struct Sound {
 }
 
 // FIXME: Adapt to new playback api.
-#[cfg(feature = "")]
+#[cfg(any())]
 impl AudioCallback<u8> for Sound {
     fn callback(&mut self, out: &[u8]) {
         for dst in out.iter_mut() {
@@ -40,7 +40,7 @@ impl AudioCallback<u8> for Sound {
 
 // FIXME: Convert to AudioStream library
 fn main() -> () {}
-#[cfg(feature = "")]
+#[cfg(any())]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let wav_file: Cow<'static, Path> = match std::env::args().nth(1) {
         None => Cow::from(Path::new("./assets/sine.wav")),

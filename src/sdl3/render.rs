@@ -658,17 +658,22 @@ impl<T: RenderTarget> Canvas<T> {
     ///     texture_canvas.clear();
     ///     texture_canvas.set_draw_color(Color::RGBA(255, 0, 0, 255));
     ///     texture_canvas.fill_rect(Rect::new(50, 50, 50, 50)).unwrap();
-    /// });
+    /// }).unwrap();
     /// ```
     ///
-    pub fn with_texture_canvas<F>(&mut self, texture: &mut Texture, f: F)
+    pub fn with_texture_canvas<F>(
+        &mut self,
+        texture: &mut Texture,
+        f: F,
+    ) -> Result<(), TargetRenderError>
     where
         for<'r> F: FnOnce(&'r mut Canvas<T>),
     {
         let target = unsafe { self.get_raw_target() };
-        unsafe { self.set_raw_target(texture.raw) };
+        unsafe { self.set_raw_target(texture.raw) }.map_err(|e| TargetRenderError::SdlError(e))?;
         f(self);
-        unsafe { self.set_raw_target(target) };
+        unsafe { self.set_raw_target(target) }.map_err(|e| TargetRenderError::SdlError(e))?;
+        Ok(())
     }
 
     /// Same as `with_texture_canvas`, but allows to change multiple `Texture`s at once with the
@@ -732,17 +737,20 @@ impl<T: RenderTarget> Canvas<T> {
         &mut self,
         textures: I,
         mut f: F,
-    ) where
+    ) -> Result<(), TargetRenderError>
+    where
         for<'r> F: FnMut(&'r mut Canvas<T>, &U),
         I: Iterator<Item = &'s (&'a mut Texture<'t>, U)>,
     {
         let target = unsafe { self.get_raw_target() };
         for (texture, user_context) in textures {
-            unsafe { self.set_raw_target(texture.raw) };
+            unsafe { self.set_raw_target(texture.raw) }
+                .map_err(|e| TargetRenderError::SdlError(e))?;
             f(self, user_context);
         }
         // reset the target to its source
-        unsafe { self.set_raw_target(target) };
+        unsafe { self.set_raw_target(target) }.map_err(|e| TargetRenderError::SdlError(e))?;
+        Ok(())
     }
 
     #[cfg(feature = "unsafe_textures")]

@@ -1,6 +1,5 @@
 use libc::{c_char, c_void};
 
-use std::convert::Into;
 use std::error;
 use std::ffi::{CStr, CString, NulError};
 use std::fmt;
@@ -21,8 +20,6 @@ use crate::joystick::{ConnectionState, JoystickId, PowerInfo, PowerLevel};
 use crate::sys;
 use crate::Error;
 use crate::GamepadSubsystem;
-
-use sys::joystick::SDL_GetJoystickID;
 
 #[derive(Debug, Clone)]
 pub enum AddMappingError {
