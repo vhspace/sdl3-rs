@@ -140,6 +140,24 @@ impl From<Point> for FPoint {
     }
 }
 
+impl From<(f32, f32)> for FPoint {
+    fn from(point: (f32, f32)) -> Self {
+        FPoint::new(point.0, point.1)
+    }
+}
+
+impl From<(i32, i32)> for FPoint {
+    fn from(point: (i32, i32)) -> Self {
+        FPoint::new(point.0 as f32, point.1 as f32)
+    }
+}
+
+impl From<(u32, u32)> for FPoint {
+    fn from(point: (u32, u32)) -> Self {
+        FPoint::new(point.0 as f32, point.1 as f32)
+    }
+}
+
 // floating-point rectangle
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct FRect {
@@ -181,6 +199,12 @@ impl FRect {
 impl From<Rect> for FRect {
     fn from(rect: Rect) -> Self {
         FRect::new(rect.x as f32, rect.y as f32, rect.w as f32, rect.h as f32)
+    }
+}
+
+impl From<(i32, i32, u32, u32)> for FRect {
+    fn from(rect: (i32, i32, u32, u32)) -> Self {
+        FRect::new(rect.0 as f32, rect.1 as f32, rect.2 as f32, rect.3 as f32)
     }
 }
 
