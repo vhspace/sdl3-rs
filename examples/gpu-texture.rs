@@ -196,8 +196,8 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let gpu = sdl3::gpu::Device::new(
         ShaderFormat::SPIRV | ShaderFormat::DXIL | ShaderFormat::DXBC | ShaderFormat::METALLIB,
         true,
-    )?
-    .with_window(&window)?;
+    )?;
+    gpu.claim_window(&window)?;
 
     // Our shaders, require to be precompiled by a SPIR-V compiler beforehand
     let vert_shader = gpu
@@ -269,7 +269,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     ColorTargetDescription::new().with_format(swapchain_format)
                 ])
                 .with_has_depth_stencil_target(true)
-                .with_depth_stencil_format(TextureFormat::D16Unorm),
+                .with_depth_stencil_format(TextureFormat::D16_UNORM),
         )
         .build()?;
 
@@ -281,63 +281,65 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     // our vertices or indices since we will be transferring both with it.
     let vertices_len_bytes = CUBE_VERTICES.len() * size_of::<Vertex>();
     let indices_len_bytes = CUBE_INDICES.len() * size_of::<u16>();
-    let transfer_buffer = gpu
+    let mut transfer_buffer = gpu
         .create_transfer_buffer()
         .with_size(vertices_len_bytes.max(indices_len_bytes) as u32)
         .with_usage(TransferBufferUsage::UPLOAD)
         .build()?;
 
     // We need to start a copy pass in order to transfer data to the GPU
-    let copy_commands = gpu.acquire_command_buffer()?;
-    let copy_pass = gpu.begin_copy_pass(&copy_commands)?;
+    let mut copy_commands = gpu.acquire_command_buffer()?;
+    let (vertex_buffer, index_buffer, cube_texture, cube_texture_sampler)
+        = copy_commands.copy_pass(|_cmd, copy_pass| {
+        // Create GPU buffers to hold our vertices and indices and transfer data to them
+        let vertex_buffer = create_buffer_with_data(
+            &gpu,
+            &mut transfer_buffer,
+            &copy_pass,
+            BufferUsageFlags::VERTEX,
+            &CUBE_VERTICES,
+        ).unwrap();
+        let index_buffer = create_buffer_with_data(
+            &gpu,
+            &mut transfer_buffer,
+            &copy_pass,
+            BufferUsageFlags::INDEX,
+            &CUBE_INDICES,
+        ).unwrap();
 
-    // Create GPU buffers to hold our vertices and indices and transfer data to them
-    let vertex_buffer = create_buffer_with_data(
-        &gpu,
-        &transfer_buffer,
-        &copy_pass,
-        BufferUsageFlags::VERTEX,
-        &CUBE_VERTICES,
-    )?;
-    let index_buffer = create_buffer_with_data(
-        &gpu,
-        &transfer_buffer,
-        &copy_pass,
-        BufferUsageFlags::INDEX,
-        &CUBE_INDICES,
-    )?;
+        // We're done with the transfer buffer now, so release it.
+        drop(transfer_buffer);
+    
+        // Load up a texture to put on the cube
+        let cube_texture = create_texture_from_image(&gpu, "./assets/texture.bmp", &copy_pass).unwrap();
+    
+        // And configure a sampler for pulling pixels from that texture in the frag shader
+        let cube_texture_sampler = gpu.create_sampler(
+            SamplerCreateInfo::new()
+                .with_min_filter(Filter::Nearest)
+                .with_mag_filter(Filter::Nearest)
+                .with_mipmap_mode(SamplerMipmapMode::Nearest)
+                .with_address_mode_u(SamplerAddressMode::Repeat)
+                .with_address_mode_v(SamplerAddressMode::Repeat)
+                .with_address_mode_w(SamplerAddressMode::Repeat),
+        ).unwrap();
 
-    // We're done with the transfer buffer now, so release it.
-    drop(transfer_buffer);
-
-    // Load up a texture to put on the cube
-    let cube_texture = create_texture_from_image(&gpu, "./assets/texture.bmp", &copy_pass)?;
-
-    // And configure a sampler for pulling pixels from that texture in the frag shader
-    let cube_texture_sampler = gpu.create_sampler(
-        SamplerCreateInfo::new()
-            .with_min_filter(Filter::Nearest)
-            .with_mag_filter(Filter::Nearest)
-            .with_mipmap_mode(SamplerMipmapMode::Nearest)
-            .with_address_mode_u(SamplerAddressMode::Repeat)
-            .with_address_mode_v(SamplerAddressMode::Repeat)
-            .with_address_mode_w(SamplerAddressMode::Repeat),
-    )?;
+        (vertex_buffer, index_buffer, cube_texture, cube_texture_sampler)
+    })?;
 
     // Now complete and submit the copy pass commands to actually do the transfer work
-    gpu.end_copy_pass(copy_pass);
     copy_commands.submit()?;
 
     // We'll need to allocate a texture buffer for our depth buffer for depth testing to work
     let mut depth_texture = gpu.create_texture(
-        TextureCreateInfo::new()
+        &TextureCreateInfo::new()
             .with_type(TextureType::_2D)
             .with_width(WINDOW_SIZE)
             .with_height(WINDOW_SIZE)
             .with_layer_count_or_depth(1)
             .with_num_levels(1)
             .with_sample_count(SampleCount::NoMultiSampling)
-            .with_format(TextureFormat::D16Unorm)
+            .with_format(TextureFormat::D16_UNORM)
             .with_usage(TextureUsage::SAMPLER | TextureUsage::DEPTH_STENCIL_TARGET)
     )?;
 
@@ -378,40 +380,43 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .with_store_op(StoreOp::STORE)
                 .with_stencil_load_op(LoadOp::CLEAR)
                 .with_stencil_store_op(StoreOp::STORE);
-            let render_pass =
-                gpu.begin_render_pass(&command_buffer, &color_targets, Some(&depth_target))?;
+            
+            command_buffer.render_pass(
+                &color_targets,
+                Some(&depth_target),
+                |command_buffer, render_pass| {
+                    // Screen is cleared below due to the color target info
+                    render_pass.bind_graphics_pipeline(&pipeline);
 
-            // Screen is cleared below due to the color target info
-            render_pass.bind_graphics_pipeline(&pipeline);
+                    // Now we'll bind our buffers/sampler and draw the cube
+                    render_pass.bind_vertex_buffers(
+                        0,
+                        &[BufferBinding::new()
+                            .with_buffer(&vertex_buffer)
+                            .with_offset(0)],
+                    );
+                    render_pass.bind_index_buffer(
+                        &BufferBinding::new()
+                            .with_buffer(&index_buffer)
+                            .with_offset(0),
+                        IndexElementSize::_16BIT,
+                    );
+                    render_pass.bind_fragment_samplers(
+                        0,
+                        &[TextureSamplerBinding::new()
+                            .with_texture(&cube_texture)
+                            .with_sampler(&cube_texture_sampler)],
+                    );
 
-            // Now we'll bind our buffers/sampler and draw the cube
-            render_pass.bind_vertex_buffers(
-                0,
-                &[BufferBinding::new()
-                    .with_buffer(&vertex_buffer)
-                    .with_offset(0)],
-            );
-            render_pass.bind_index_buffer(
-                &BufferBinding::new()
-                    .with_buffer(&index_buffer)
-                    .with_offset(0),
-                IndexElementSize::_16BIT,
-            );
-            render_pass.bind_fragment_samplers(
-                0,
-                &[TextureSamplerBinding::new()
-                    .with_texture(&cube_texture)
-                    .with_sampler(&cube_texture_sampler)],
-            );
+                    // Set the rotation uniform for our cube vert shader
+                    command_buffer.push_vertex_uniform_data(0, &rotation);
+                    rotation += 0.1f32;
 
-            // Set the rotation uniform for our cube vert shader
-            command_buffer.push_vertex_uniform_data(0, &rotation);
-            rotation += 0.1f32;
+                    // Finally, draw the cube
+                    render_pass.draw_indexed_primitives(CUBE_INDICES.len() as u32, 1, 0, 0, 0);
+                }
+            )?;
 
-            // Finally, draw the cube
-            render_pass.draw_indexed_primitives(CUBE_INDICES.len() as u32, 1, 0, 0, 0);
-
-            gpu.end_render_pass(render_pass);
             command_buffer.submit()?;
         } else {
             // Swapchain unavailable, cancel work
@@ -422,19 +427,19 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn create_texture_from_image(
-    gpu: &Device,
+fn create_texture_from_image<'gpu>(
+    gpu: &'gpu Device,
     image_path: impl AsRef<Path>,
     copy_pass: &CopyPass,
-) -> Result<Texture<'static>, Error> {
+) -> Result<Texture<'gpu>, Error> {
     let image = Surface::load_bmp(image_path.as_ref())?;
     let image_size = image.size();
     let size_bytes =
         image.pixel_format().byte_size_per_pixel() as u32 * image_size.0 * image_size.1;
 
     let texture = gpu.create_texture(
-        TextureCreateInfo::new()
-            .with_format(TextureFormat::R8g8b8a8Unorm)
+        &TextureCreateInfo::new()
+            .with_format(TextureFormat::R8G8B8A8_UNORM)
             .with_type(TextureType::_2D)
             .with_width(image_size.0)
             .with_height(image_size.1)
@@ -443,17 +448,22 @@ fn create_texture_from_image(
             .with_usage(TextureUsage::SAMPLER),
     )?;
 
-    let transfer_buffer = gpu
+    let mut transfer_buffer = gpu
         .create_transfer_buffer()
         .with_size(size_bytes)
         .with_usage(TransferBufferUsage::UPLOAD)
         .build()?;
 
-    let mut buffer_mem = transfer_buffer.map::<u8>(gpu, false);
-    image.with_lock(|image_bytes| {
-        buffer_mem.mem_mut().copy_from_slice(image_bytes);
-    });
-    buffer_mem.unmap();
+    transfer_buffer.mapped_mut(
+        false,
+        |bytes| image.with_lock(|image_bytes| unsafe {
+            std::ptr::copy_nonoverlapping::<u8>(
+                image_bytes.as_ptr(),
+                bytes.as_mut_ptr(),
+                image_bytes.len()
+            );
+        })
+    )?;
 
     copy_pass.upload_to_gpu_texture(
         TextureTransferInfo::new()
@@ -472,13 +482,13 @@ fn create_texture_from_image(
 }
 
 /// Creates a GPU buffer and uploads data to it using the given `copy_pass` and `transfer_buffer`.
-fn create_buffer_with_data<T: Copy>(
-    gpu: &Device,
-    transfer_buffer: &TransferBuffer,
+fn create_buffer_with_data<'gpu, T: Copy>(
+    gpu: &'gpu Device,
+    transfer_buffer: &mut TransferBuffer,
     copy_pass: &CopyPass,
     usage: BufferUsageFlags,
     data: &[T],
-) -> Result<Buffer, Error> {
+) -> Result<Buffer<'gpu>, Error> {
     // Figure out the length of the data in bytes
     let len_bytes = data.len() * std::mem::size_of::<T>();
 
@@ -494,14 +504,16 @@ fn create_buffer_with_data<T: Copy>(
     // Note: We set `cycle` to true since we're reusing the same transfer buffer to
     // initialize both the vertex and index buffer. This makes SDL synchronize the transfers
     // so that one doesn't interfere with the other.
-    let mut map = transfer_buffer.map::<T>(gpu, true);
-    let mem = map.mem_mut();
-    for (index, &value) in data.iter().enumerate() {
-        mem[index] = value;
-    }
-
-    // Now unmap the memory since we're done copying
-    map.unmap();
+    transfer_buffer.mapped_mut(
+        true,
+        |bytes| unsafe {
+            std::ptr::copy_nonoverlapping::<u8>(
+                data.as_ptr() as *const u8,
+                bytes.as_mut_ptr(),
+                len_bytes
+            );
+        }
+    )?;
 
     // Finally, add a command to the copy pass to upload this data to the GPU
     //

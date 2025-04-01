@@ -17,7 +17,8 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     // by default, and we specify that our shaders will be SPIR-V ones (even through we
     // aren't using any shaders)
     // We'll also turn on debug mode to true, so we get debug stuff
-    let gpu = sdl3::gpu::Device::new(sdl3::gpu::ShaderFormat::SPIRV, true)?.with_window(&window)?;
+    let gpu = sdl3::gpu::Device::new(sdl3::gpu::ShaderFormat::SPIRV, true)?;
+    gpu.claim_window(&window)?;
 
     let mut event_pump = sdl_context.event_pump()?;
     println!(
@@ -50,10 +51,14 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .with_clear_color(sdl3::pixels::Color::RGB(5, 3, 255)), //blue with small RG bias
             ];
             // Here we do all (none) of our drawing (clearing the screen)
-            let render_pass = gpu.begin_render_pass(&command_buffer, &color_targets, None)?;
-            // Do absolutely nothing -- this clears the screen because of the defined operations above
-            // which are ALWAYS done even through we just created and ended a render pass
-            gpu.end_render_pass(render_pass);
+            command_buffer.render_pass(
+                &color_targets,
+                None,
+                |_cmd, _pass| {
+                    // Do absolutely nothing -- this clears the screen because of the defined operations above
+                    // which are ALWAYS done even through we just created and ended a render pass
+                }
+            )?;
             command_buffer.submit()?;
         } else {
             // Swapchain unavailable, cancel work
