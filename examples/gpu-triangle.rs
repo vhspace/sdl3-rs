@@ -27,8 +27,8 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let gpu = Device::new(
         ShaderFormat::SPIRV | ShaderFormat::DXIL | ShaderFormat::DXBC | ShaderFormat::METALLIB,
         true,
-    )?
-    .with_window(&window)?;
+    )?;
+    gpu.claim_window(&window)?;
 
     let fs_source = include_bytes!("shaders/triangle.frag.spv");
     let vs_source = include_bytes!("shaders/triangle.vert.spv");
@@ -99,12 +99,14 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .with_store_op(StoreOp::STORE)
                     .with_clear_color(Color::RGB(5, 3, 255)), //blue with small RG bias
             ];
-            let render_pass = gpu.begin_render_pass(&command_buffer, &color_targets, None)?;
-            render_pass.bind_graphics_pipeline(&pipeline);
-            // Screen is cleared here due to the color target info
-            // Now we'll draw the triangle primitives
-            render_pass.draw_primitives(3, 1, 0, 0);
-            gpu.end_render_pass(render_pass);
+            
+            command_buffer.render_pass(&color_targets, None, |_cmd, render_pass| {
+                render_pass.bind_graphics_pipeline(&pipeline);
+                // Screen is cleared here due to the color target info
+                // Now we'll draw the triangle primitives
+                render_pass.draw_primitives(3, 1, 0, 0);
+            })?;
+
             command_buffer.submit()?;
         } else {
             // Swapchain unavailable, cancel work
