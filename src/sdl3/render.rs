@@ -2332,6 +2332,8 @@ impl InternalTexture {
         F: FnOnce(&mut [u8], usize) -> R,
         R2: Into<Option<Rect>>,
     {
+        let rect = rect.into();
+
         // Call to SDL to populate pixel data
         let loaded = unsafe {
             let mut pixels = ptr::null_mut();
@@ -2339,7 +2341,7 @@ impl InternalTexture {
             let height = self.get_height();
             let format = self.get_format();
 
-            let (rect_raw_ptr, height) = match rect.into() {
+            let (rect_raw_ptr, height) = match rect {
                 Some(ref rect) => (rect.raw(), rect.height() as usize),
                 None => (ptr::null(), height as usize),
             };
