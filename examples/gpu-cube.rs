@@ -1,13 +1,7 @@
 use sdl3::{
     event::Event,
     gpu::{
-        Buffer, BufferBinding, BufferRegion, BufferUsageFlags, ColorTargetDescription,
-        ColorTargetInfo, CompareOp, CopyPass, CullMode, DepthStencilState, DepthStencilTargetInfo,
-        Device, FillMode, GraphicsPipelineTargetInfo, IndexElementSize, LoadOp, PrimitiveType,
-        RasterizerState, SampleCount, ShaderFormat, ShaderStage, StoreOp, TextureCreateInfo,
-        TextureFormat, TextureType, TextureUsage, TransferBuffer, TransferBufferLocation,
-        TransferBufferUsage, VertexAttribute, VertexBufferDescription, VertexElementFormat,
-        VertexInputRate, VertexInputState,
+        Buffer, BufferBinding, BufferRegion, BufferUsageFlags, ColorTargetDescription, ColorTargetInfo, CompareOp, CopyPass, CullMode, DepthStencilState, DepthStencilTargetInfo, FillMode, GraphicsPipelineTargetInfo, IndexElementSize, LoadOp, Owned, OwnedDevice, PrimitiveType, RasterizerState, SampleCount, ShaderFormat, ShaderStage, StoreOp, TextureCreateInfo, TextureFormat, TextureType, TextureUsage, TransferBuffer, TransferBufferLocation, TransferBufferUsage, VertexAttribute, VertexBufferDescription, VertexElementFormat, VertexInputRate, VertexInputState
     },
     keyboard::Keycode,
     pixels::Color,
@@ -88,7 +82,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    let gpu = Device::new(
+    let gpu = OwnedDevice::new(
         ShaderFormat::SPIRV | ShaderFormat::DXIL | ShaderFormat::DXBC | ShaderFormat::METALLIB,
         true,
     )?;
@@ -261,18 +255,12 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     render_pass.bind_graphics_pipeline(&pipeline);
 
                     // Now we'll bind our buffers and draw the cube
-                    render_pass.bind_vertex_buffers(
-                        0,
-                        &[BufferBinding::new()
-                            .with_buffer(&vertex_buffer)
-                            .with_offset(0)],
-                    );
+                    render_pass.bind_vertex_buffers( 0, &[
+                        BufferBinding::new().with_buffer(&vertex_buffer)
+                        ]);
                     render_pass.bind_index_buffer(
-                        &BufferBinding::new()
-                            .with_buffer(&index_buffer)
-                            .with_offset(0),
-                        IndexElementSize::_16BIT,
-                    );
+                        &BufferBinding::new().with_buffer(&index_buffer),
+                        IndexElementSize::_16BIT);
 
                     // Set the rotation uniform for our cube vert shader
                     command_buffer.push_vertex_uniform_data(0, &rotation);
@@ -294,12 +282,12 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 /// Creates a GPU buffer and uploads data to it using the given `copy_pass` and `transfer_buffer`.
 fn create_buffer_with_data<'gpu, T: Copy>(
-    gpu: &'gpu Device,
-    transfer_buffer: &mut TransferBuffer,
+    gpu: &'gpu OwnedDevice,
+    transfer_buffer: &mut Owned<'_, TransferBuffer>,
     copy_pass: &CopyPass,
     usage: BufferUsageFlags,
     data: &[T],
-) -> Result<Buffer<'gpu>, Error> {
+) -> Result<Owned<'gpu, Buffer>, Error> {
     // Figure out the length of the data in bytes
     let len_bytes = data.len() * std::mem::size_of::<T>();
 
@@ -330,13 +318,8 @@ fn create_buffer_with_data<'gpu, T: Copy>(
     //
     // Note: We also set `cycle` to true here for the same reason.
     copy_pass.upload_to_gpu_buffer(
-        TransferBufferLocation::new()
-            .with_offset(0)
-            .with_transfer_buffer(transfer_buffer),
-        BufferRegion::new()
-            .with_offset(0)
-            .with_size(len_bytes as u32)
-            .with_buffer(&buffer),
+        transfer_buffer.get(0..),
+        buffer.get(0..len_bytes as u32),
         true,
     );
 

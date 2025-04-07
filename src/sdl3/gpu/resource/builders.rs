@@ -5,23 +5,69 @@
 use std::{ffi::CStr, marker::PhantomData};
 
 use sys::gpu::{
-    SDL_GPUBufferCreateInfo, SDL_GPUComputePipelineCreateInfo, SDL_GPUFillMode, SDL_GPUGraphicsPipelineCreateInfo, SDL_GPUPrimitiveType, SDL_GPUShaderCreateInfo, SDL_GPUTransferBufferCreateInfo
+    SDL_GPUBufferCreateInfo, SDL_GPUComputePipelineCreateInfo,
+    SDL_GPUFillMode, SDL_GPUGraphicsPipelineCreateInfo,
+    SDL_GPUPrimitiveType, SDL_GPUShaderCreateInfo, SDL_GPUTransferBufferCreateInfo
 };
 
+use crate::gpu::{SamplerCreateInfo, TextureCreateInfo};
 use crate::Error;
 
 use super::super::{
-    Buffer, BufferUsageFlags, ComputePipeline, DepthStencilState, FillMode, GraphicsPipeline, GraphicsPipelineTargetInfo, PrimitiveType, RasterizerState, Shader, ShaderFormat, ShaderStage, TransferBuffer, TransferBufferUsage, VertexInputState
+    BufferUsageFlags, ComputePipeline, DepthStencilState, FillMode, GraphicsPipeline, GraphicsPipelineTargetInfo, PrimitiveType, RasterizerState, Shader, ShaderFormat, ShaderStage, TransferBuffer, TransferBufferUsage, VertexInputState
 };
-use super::util::ExternDevice;
+
+impl Device {
+    #[doc(alias = "SDL_CreateGPUShader")]
+    pub fn create_shader(&self) -> ShaderBuilder {
+        ShaderBuilder::new(self)
+    }
+
+    #[doc(alias = "SDL_CreateGPUBuffer")]
+    pub fn create_buffer(&self) -> BufferBuilder {
+        BufferBuilder::new(self)
+    }
+
+    #[doc(alias = "SDL_CreateGPUTransferBuffer")]
+    pub fn create_transfer_buffer(&self) -> TransferBufferBuilder {
+        TransferBufferBuilder::new(self)
+    }
+
+    #[doc(alias = "SDL_CreateGPUSampler")]
+    pub fn create_sampler<'gpu>(&'gpu self, create_info: SamplerCreateInfo) -> Result<Owned<'gpu, Sampler>, Error> {
+        Owned::new(self, &create_info.inner, ())
+    }
+
+    #[doc(alias = "SDL_CreateGPUGraphicsPipeline")]
+    pub fn create_graphics_pipeline<'gpu,'a>(&'gpu self) -> GraphicsPipelineBuilder<'gpu, 'a> {
+        GraphicsPipelineBuilder::new(self)
+    }
+
+    #[doc(alias = "SDL_CreateGPUComputePipeline")]
+    pub fn create_compute_pipeline<'gpu,'a>(&'gpu self) -> ComputePipelineBuilder<'gpu, 'a> {
+        ComputePipelineBuilder::new(self)
+    }
+
+    #[doc(alias = "SDL_CreateGPUTexture")]
+    pub fn create_texture<'gpu>(
+        &'gpu self,
+        create_info: &TextureCreateInfo,
+    ) -> Result<Owned<'gpu, Texture>, Error> {
+        Owned::new(self, &create_info.inner, (create_info.inner.width, create_info.inner.height))
+    }
+
+}
+
+
+use super::{Buffer, Device, Owned, Sampler, Texture};
 #[repr(C)]
 pub struct ComputePipelineBuilder<'gpu, 'builder> {
-    device: &'gpu ExternDevice,
+    device: &'gpu Device,
     inner: SDL_GPUComputePipelineCreateInfo,
-    _marker: PhantomData<&'builder Shader<'gpu>>,
+    _marker: PhantomData<&'builder Shader>,
 }
 impl<'gpu, 'builder> ComputePipelineBuilder<'gpu, 'builder> {
-    pub(in crate::gpu) fn new(device: &'gpu ExternDevice) -> Self {
+    pub(in crate::gpu) fn new(device: &'gpu Device) -> Self {
         Self {
             device,
             inner: Default::default(),
@@ -73,21 +119,23 @@ impl<'gpu, 'builder> ComputePipelineBuilder<'gpu, 'builder> {
         self
     }
 
-    pub fn build(self) -> Result<ComputePipeline<'gpu>, Error> {
-        ComputePipeline::new(self.device, &self.inner)
+    pub fn build(self) -> Result<Owned<'gpu, ComputePipeline>, Error> {
+        Owned::new(self.device, &self.inner, ())
     }
 }
 
-pub struct ShaderBuilder<'gpu> {
-    device: &'gpu ExternDevice,
+pub struct ShaderBuilder<'builder, 'gpu> {
+    device: &'gpu Device,
     inner: SDL_GPUShaderCreateInfo,
+    _marker: PhantomData<&'builder [u8]>,
 }
 
-impl<'gpu> ShaderBuilder<'gpu> {
-    pub(in crate::gpu) fn new(device: &'gpu ExternDevice) -> Self {
+impl<'gpu, 'builder> ShaderBuilder<'builder, 'gpu> {
+    pub(in crate::gpu) fn new(device: &'gpu Device) -> Self {
         Self {
             device,
             inner: Default::default(),
+            _marker: PhantomData,
         }
     }
 
@@ -111,7 +159,7 @@ impl<'gpu> ShaderBuilder<'gpu> {
         self
     }
 
-    pub fn with_code(mut self, fmt: ShaderFormat, code: &'gpu [u8], stage: ShaderStage) -> Self {
+    pub fn with_code(mut self, fmt: ShaderFormat, code: &'builder [u8], stage: ShaderStage) -> Self {
         self.inner.format = fmt.0;
         self.inner.code = code.as_ptr();
         self.inner.code_size = code.len() as usize;
@@ -122,18 +170,18 @@ impl<'gpu> ShaderBuilder<'gpu> {
         self.inner.entrypoint = entry_point.as_ptr();
         self
     }
-    pub fn build(self) -> Result<Shader<'gpu>, Error> {
-        Shader::new(self.device, &self.inner)
+    pub fn build(self) -> Result<Owned<'gpu, Shader>, Error> {
+        Owned::new(self.device, &self.inner, ())
     }
 }
 
 
 pub struct TransferBufferBuilder<'gpu> {
-    device: &'gpu ExternDevice,
+    device: &'gpu Device,
     inner: SDL_GPUTransferBufferCreateInfo,
 }
 impl<'gpu> TransferBufferBuilder<'gpu> {
-    pub(in crate::gpu) fn new(device: &'gpu ExternDevice) -> Self {
+    pub(in crate::gpu) fn new(device: &'gpu Device) -> Self {
         Self {
             device,
             inner: Default::default(),
@@ -152,18 +200,18 @@ impl<'gpu> TransferBufferBuilder<'gpu> {
         self
     }
 
-    pub fn build(self) -> Result<TransferBuffer<'gpu>, Error> {
-        TransferBuffer::new(self.device, &self.inner)
+    pub fn build(self) -> Result<Owned<'gpu, TransferBuffer>, Error> {
+        Owned::new(self.device, &self.inner, self.inner.size)
     }
 }
 
 
 pub struct BufferBuilder<'gpu> {
-    device: &'gpu ExternDevice,
+    device: &'gpu Device,
     inner: SDL_GPUBufferCreateInfo,
 }
 impl<'gpu> BufferBuilder<'gpu> {
-    pub(in crate::gpu) fn new(device: &'gpu ExternDevice) -> Self {
+    pub(in crate::gpu) fn new(device: &'gpu Device) -> Self {
         Self {
             device,
             inner: Default::default(),
@@ -180,20 +228,23 @@ impl<'gpu> BufferBuilder<'gpu> {
         self
     }
 
-    pub fn build(self) -> Result<Buffer<'gpu>, Error> {
-        Buffer::new(self.device, &self.inner)
+    pub fn build(self) -> Result<Owned<'gpu, Buffer>, Error> {
+        Owned::new(self.device, &self.inner, self.inner.size)
     }
 }
 
 #[repr(C)]
 pub struct GraphicsPipelineBuilder<'gpu, 'builder> {
-    device: &'gpu ExternDevice,
+    device: &'gpu Device,
     inner: SDL_GPUGraphicsPipelineCreateInfo,
-    _marker: PhantomData<&'builder Shader<'gpu>>,
+    _marker: PhantomData<(
+        &'builder Shader,
+        GraphicsPipelineTargetInfo<'builder>,
+    )>,
 }
 
 impl<'gpu, 'builder> GraphicsPipelineBuilder<'gpu, 'builder> {
-    pub(in crate::gpu) fn new(device: &'gpu ExternDevice) -> Self {
+    pub(in crate::gpu) fn new(device: &'gpu Device) -> Self {
         Self {
             device,
             inner: Default::default(),
@@ -201,12 +252,12 @@ impl<'gpu, 'builder> GraphicsPipelineBuilder<'gpu, 'builder> {
         }
     }
 
-    pub fn with_fragment_shader(mut self, value: &'builder Shader<'gpu>) -> Self {
-        self.inner.fragment_shader = value.raw();
+    pub fn with_fragment_shader(mut self, value: &'builder Shader) -> Self {
+        self.inner.fragment_shader = value.ll();
         self
     }
-    pub fn with_vertex_shader(mut self, value: &'builder Shader<'gpu>) -> Self {
-        self.inner.vertex_shader = value.raw();
+    pub fn with_vertex_shader(mut self, value: &'builder Shader) -> Self {
+        self.inner.vertex_shader = value.ll();
         self
     }
     pub fn with_primitive_type(mut self, value: PrimitiveType) -> Self {
@@ -235,17 +286,17 @@ impl<'gpu, 'builder> GraphicsPipelineBuilder<'gpu, 'builder> {
         self
     }
 
-    pub fn with_vertex_input_state(mut self, value: VertexInputState) -> Self {
+    pub fn with_vertex_input_state(mut self, value: VertexInputState<'builder>) -> Self {
         self.inner.vertex_input_state = value.inner;
         self
     }
 
-    pub fn with_target_info(mut self, value: GraphicsPipelineTargetInfo) -> Self {
+    pub fn with_target_info(mut self, value: GraphicsPipelineTargetInfo<'builder>) -> Self {
         self.inner.target_info = value.inner;
         self
     }
 
-    pub fn build(self) -> Result<GraphicsPipeline<'gpu>, Error> {
-        GraphicsPipeline::new(self.device, &self.inner)
+    pub fn build(self) -> Result<Owned<'gpu, GraphicsPipeline>, Error> {
+        Owned::new(self.device, &self.inner, ())
     }
 }

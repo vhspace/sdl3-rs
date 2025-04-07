@@ -3,7 +3,7 @@ use std::ops::{BitAnd, BitOr};
 use sys::gpu::{SDL_GPUBlendFactor, SDL_GPUBlendOp};
 
 macro_rules! impl_with {
-    (bitwise_and_or $x:ident $prim:ident) => {
+    (bitwise_and_or $x:ident) => {
         impl BitOr<$x> for $x {
             type Output = $x;
             fn bitor(self, rhs: $x) -> Self::Output {
@@ -34,7 +34,7 @@ impl ShaderFormat {
     pub const PRIVATE: Self = Self(sys::gpu::SDL_GPU_SHADERFORMAT_PRIVATE);
     pub const SPIRV: Self = Self(sys::gpu::SDL_GPU_SHADERFORMAT_SPIRV);
 }
-impl_with!(bitwise_and_or ShaderFormat u32);
+impl_with!(bitwise_and_or ShaderFormat);
 
 pub struct TextureUsage(pub sys::gpu::SDL_GPUTextureUsageFlags);
 impl TextureUsage {
@@ -55,7 +55,7 @@ impl TextureUsage {
     pub const COLOR_TARGET: Self =
         Self(sys::gpu::SDL_GPU_TEXTUREUSAGE_COLOR_TARGET);
 }
-impl_with!(bitwise_and_or TextureUsage u32);
+impl_with!(bitwise_and_or TextureUsage);
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -234,6 +234,7 @@ impl BufferUsageFlags {
     pub const COMPUTE_STORAGE_READ  : Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_READ);
     pub const COMPUTE_STORAGE_WRITE : Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_WRITE);
 }
+impl_with!(bitwise_and_or BufferUsageFlags);
 
 pub type TransferBufferUsage = sys::gpu::SDL_GPUTransferBufferUsage;
 
@@ -278,4 +279,4 @@ impl ColorComponentFlags {
     pub const B: Self = Self(sys::gpu::SDL_GPU_COLORCOMPONENT_B);
     pub const A: Self = Self(sys::gpu::SDL_GPU_COLORCOMPONENT_A);
 }
-impl_with!(bitwise_and_or ColorComponentFlags u8);
+impl_with!(bitwise_and_or ColorComponentFlags);

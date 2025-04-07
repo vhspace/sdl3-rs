@@ -1,28 +1,10 @@
-
-use std::{ops::Deref, ptr::NonNull};
-
 use crate::gpu::{
-    BufferRegion, TextureTransferInfo, TransferBufferLocation,
-};
-use sys::gpu::{
-    SDL_GPUCopyPass,
-    SDL_UploadToGPUBuffer,
-    SDL_UploadToGPUTexture,
+    BufferRegion, Extern, TextureRegion, TextureTransferInfo, TransferBufferLocation,
 };
 
-use super::{Extern, TextureRegion};
+use sys::gpu::{SDL_GPUCopyPass, SDL_UploadToGPUBuffer, SDL_UploadToGPUTexture};
 
-pub struct CopyPass {
-    pub(super) raw: NonNull<Extern<SDL_GPUCopyPass>>,
-}
-
-impl<'gpu> Deref for CopyPass {
-    type Target = Extern<SDL_GPUCopyPass>;
-
-    fn deref(&self) -> &Self::Target {
-        unsafe { self.raw.as_ref() }
-    }
-}
+pub type CopyPass = Extern<SDL_GPUCopyPass>;
 
 impl CopyPass {
     #[doc(alias = "SDL_UploadToGPUBuffer")]
@@ -34,7 +16,7 @@ impl CopyPass {
     ) {
         unsafe {
             SDL_UploadToGPUBuffer(
-                self.raw(),
+                self.ll(),
                 &transfer_buf_location.inner,
                 &buffer_region.inner,
                 cycle,
@@ -49,6 +31,6 @@ impl CopyPass {
         destination: TextureRegion,
         cycle: bool,
     ) {
-        unsafe { SDL_UploadToGPUTexture(self.raw(), &source.inner, &destination.inner, cycle) }
+        unsafe { SDL_UploadToGPUTexture(self.ll(), &source.inner, &destination.inner, cycle) }
     }
 }

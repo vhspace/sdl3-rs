@@ -5,42 +5,39 @@
 use std::marker::PhantomData;
 
 use sys::gpu::{
-    SDL_GPUBlendFactor, SDL_GPUBlendOp, SDL_GPUBuffer, SDL_GPUBufferBinding,
+    SDL_GPUBlendFactor, SDL_GPUBlendOp, SDL_GPUBufferBinding,
     SDL_GPUBufferRegion, SDL_GPUColorTargetBlendState, SDL_GPUColorTargetDescription,
     SDL_GPUColorTargetInfo, SDL_GPUCompareOp, SDL_GPUCullMode, SDL_GPUDepthStencilState,
     SDL_GPUDepthStencilTargetInfo, SDL_GPUFillMode, SDL_GPUFilter, SDL_GPUFrontFace,
     SDL_GPUGraphicsPipelineTargetInfo, SDL_GPURasterizerState, SDL_GPUSampleCount,
-    SDL_GPUSampler, SDL_GPUSamplerAddressMode, SDL_GPUSamplerCreateInfo,
+    SDL_GPUSamplerAddressMode, SDL_GPUSamplerCreateInfo,
     SDL_GPUSamplerMipmapMode, SDL_GPUStencilOp, SDL_GPUStencilOpState,
     SDL_GPUStorageBufferReadWriteBinding, SDL_GPUStorageTextureReadWriteBinding,
-    SDL_GPUTexture, SDL_GPUTextureCreateInfo, SDL_GPUTextureRegion,
+    SDL_GPUTextureCreateInfo, SDL_GPUTextureRegion,
     SDL_GPUTextureSamplerBinding, SDL_GPUTextureTransferInfo, SDL_GPUTextureType,
-    SDL_GPUTransferBuffer, SDL_GPUTransferBufferLocation, SDL_GPUVertexAttribute,
+    SDL_GPUTransferBufferLocation, SDL_GPUVertexAttribute,
     SDL_GPUVertexBufferDescription, SDL_GPUVertexInputRate, SDL_GPUVertexInputState,
 };
 
 use crate::pixels::Color;
 
 use super::{
-    BlendFactor, BlendOp, ColorComponentFlags, CompareOp, CullMode, Extern,
-    FillMode, Filter, FrontFace, LoadOp, SampleCount, Sampler, SamplerAddressMode,
-    SamplerMipmapMode, StencilOp, StoreOp, Texture, TextureFormat, TextureType,
-    TextureUsage, VertexElementFormat, VertexInputRate
+    BlendFactor, BlendOp, Buffer, ColorComponentFlags, CompareOp, CullMode, FillMode, Filter, FrontFace, LoadOp, SampleCount, Sampler, SamplerAddressMode, SamplerMipmapMode, StencilOp, StoreOp, Texture, TextureFormat, TextureType, TextureUsage, TransferBuffer, VertexElementFormat, VertexInputRate
 };
 
-#[repr(C)]
+#[repr(transparent)]
 #[derive(Default)]
 pub struct DepthStencilTargetInfo<'a> {
     inner: SDL_GPUDepthStencilTargetInfo,
-    _marker: PhantomData<&'a Extern<SDL_GPUTexture>>,
+    _marker: PhantomData<&'a Texture>,
 }
 impl<'a> DepthStencilTargetInfo<'a> {
     pub fn new() -> Self {
         Default::default()
     }
 
-    pub fn with_texture(mut self, texture: &'a Extern<SDL_GPUTexture>) -> Self {
-        self.inner.texture = texture.raw();
+    pub fn with_texture(mut self, texture: &'a Texture) -> Self {
+        self.inner.texture = texture.ll();
         self
     }
 
@@ -84,15 +81,15 @@ impl<'a> DepthStencilTargetInfo<'a> {
 #[derive(Default)]
 pub struct ColorTargetInfo<'a> {
     inner: SDL_GPUColorTargetInfo,
-    _marker: PhantomData<&'a Extern<SDL_GPUTexture>>,
+    _marker: PhantomData<&'a Texture>,
 }
 impl<'a> ColorTargetInfo<'a> {
     pub fn new() -> Self {
         Default::default()
     }
 
-    pub fn with_texture(mut self, texture: &'a Extern<SDL_GPUTexture>) -> Self {
-        self.inner.texture = texture.raw();
+    pub fn with_texture(mut self, texture: &'a Texture) -> Self {
+        self.inner.texture = texture.ll();
         self
     }
 
@@ -116,6 +113,7 @@ impl<'a> ColorTargetInfo<'a> {
 }
 
 
+#[repr(C)]
 #[derive(Default)]
 pub struct TextureCreateInfo {
     pub(super) inner: SDL_GPUTextureCreateInfo,
@@ -175,6 +173,7 @@ impl TextureCreateInfo {
 }
 
 
+#[repr(C)]
 #[derive(Default)]
 pub struct SamplerCreateInfo {
     pub(super) inner: SDL_GPUSamplerCreateInfo,
@@ -263,10 +262,11 @@ impl SamplerCreateInfo {
     }
 }
 
+#[repr(C)]
 #[derive(Default)]
 pub struct TextureRegion<'a> {
     pub(super) inner: SDL_GPUTextureRegion,
-    _marker: PhantomData<&'a Extern<SDL_GPUTexture>>,
+    _marker: PhantomData<&'a Texture>,
 }
 impl<'a> TextureRegion<'a> {
     pub fn new() -> Self {
@@ -274,8 +274,8 @@ impl<'a> TextureRegion<'a> {
     }
 
     /// The texture used in the copy operation.
-    pub fn with_texture(mut self, texture: &'a Extern<SDL_GPUTexture>) -> Self {
-        self.inner.texture = texture.raw();
+    pub fn with_texture(mut self, texture: &'a Texture) -> Self {
+        self.inner.texture = texture.ll();
         self
     }
 
@@ -328,10 +328,11 @@ impl<'a> TextureRegion<'a> {
     }
 }
 
+#[repr(C)]
 #[derive(Default)]
 pub struct TextureTransferInfo<'a> {
     pub(super) inner: SDL_GPUTextureTransferInfo,
-    _marker: PhantomData<&'a Extern<SDL_GPUTransferBuffer>>,
+    _marker: PhantomData<&'a TransferBuffer>,
 }
 impl<'a> TextureTransferInfo<'a> {
     pub fn new() -> Self {
@@ -339,8 +340,8 @@ impl<'a> TextureTransferInfo<'a> {
     }
 
     /// The transfer buffer used in the transfer operation.
-    pub fn with_transfer_buffer(mut self, buffer: &'a Extern<SDL_GPUTransferBuffer>) -> Self {
-        self.inner.transfer_buffer = buffer.raw();
+    pub fn with_transfer_buffer(mut self, buffer: &'a TransferBuffer) -> Self {
+        self.inner.transfer_buffer = buffer.ll();
         self
     }
 
@@ -368,15 +369,15 @@ impl<'a> TextureTransferInfo<'a> {
 #[derive(Default)]
 pub struct BufferBinding<'a> {
     pub(super) inner: SDL_GPUBufferBinding,
-    _marker: PhantomData<&'a Extern<SDL_GPUBuffer>>,
+    _marker: PhantomData<&'a Buffer>,
 }
 impl<'a> BufferBinding<'a> {
     pub fn new() -> Self {
         Default::default()
     }
 
-    pub fn with_buffer(mut self, buffer: &'a Extern<SDL_GPUBuffer>) -> Self {
-        self.inner.buffer = buffer.raw();
+    pub fn with_buffer(mut self, buffer: &'a Buffer) -> Self {
+        self.inner.buffer = buffer.ll();
         self
     }
 
@@ -386,51 +387,18 @@ impl<'a> BufferBinding<'a> {
     }
 }
 
+#[repr(C)]
 #[derive(Default)]
 pub struct TransferBufferLocation<'a> {
     pub(super) inner: SDL_GPUTransferBufferLocation,
-    _marker: PhantomData<&'a Extern<SDL_GPUTransferBuffer>>,
-}
-impl<'a> TransferBufferLocation<'a> {
-    pub fn new() -> Self {
-        Default::default()
-    }
-
-    pub fn with_transfer_buffer(mut self, transfer_buffer: &'a Extern<SDL_GPUTransferBuffer>) -> Self {
-        self.inner.transfer_buffer = transfer_buffer.raw();
-        self
-    }
-
-    pub fn with_offset(mut self, offset: u32) -> Self {
-        self.inner.offset = offset;
-        self
-    }
+    pub(super) _marker: PhantomData<&'a TransferBuffer>,
 }
 
+#[repr(C)]
 #[derive(Default)]
 pub struct BufferRegion<'a> {
     pub(super) inner: SDL_GPUBufferRegion,
-    _marker: PhantomData<&'a Extern<SDL_GPUBuffer>>,
-}
-impl<'a> BufferRegion<'a> {
-    pub fn new() -> Self {
-        Default::default()
-    }
-
-    pub fn with_buffer(mut self, buffer: &'a Extern<SDL_GPUBuffer>) -> Self {
-        self.inner.buffer = buffer.raw();
-        self
-    }
-
-    pub fn with_offset(mut self, offset: u32) -> Self {
-        self.inner.offset = offset;
-        self
-    }
-
-    pub fn with_size(mut self, size: u32) -> Self {
-        self.inner.size = size;
-        self
-    }
+    pub(super) _marker: PhantomData<&'a Buffer>,
 }
 
 #[repr(C)]
@@ -470,7 +438,7 @@ impl VertexBufferDescription {
 #[derive(Default)]
 pub struct VertexInputState<'a> {
     pub(super) inner: SDL_GPUVertexInputState,
-    _marker: PhantomData<&'a [VertexBufferDescription]>,
+    _marker: PhantomData<(&'a [VertexBufferDescription],&'a [VertexAttribute])>,
 }
 impl<'a> VertexInputState<'a> {
     pub fn new() -> Self {
@@ -484,7 +452,7 @@ impl<'a> VertexInputState<'a> {
         self
     }
 
-    pub fn with_vertex_attributes(mut self, value: &[VertexAttribute]) -> Self {
+    pub fn with_vertex_attributes(mut self, value: &'a [VertexAttribute]) -> Self {
         self.inner.vertex_attributes = value.as_ptr() as *const SDL_GPUVertexAttribute;
         self.inner.num_vertex_attributes = value.len() as u32;
         self
@@ -561,6 +529,12 @@ impl StencilOpState {
         Default::default()
     }
 
+    /// The comparison operator used in the stencil test.
+    pub fn with_compare_op(mut self, value: CompareOp) -> Self {
+        self.inner.compare_op = SDL_GPUCompareOp(value as i32);
+        self
+    }
+
     /// The action performed on samples that fail the stencil test.
     pub fn with_fail_op(mut self, value: StencilOp) -> Self {
         self.inner.fail_op = SDL_GPUStencilOp(value as i32);
@@ -576,12 +550,6 @@ impl StencilOpState {
     /// The action performed on samples that pass the stencil test and fail the depth test.
     pub fn with_depth_fail_op(mut self, value: StencilOp) -> Self {
         self.inner.depth_fail_op = SDL_GPUStencilOp(value as i32);
-        self
-    }
-
-    /// The comparison operator used in the stencil test.
-    pub fn compare_op(mut self, value: CompareOp) -> Self {
-        self.inner.compare_op = SDL_GPUCompareOp(value as i32);
         self
     }
 }
@@ -646,6 +614,7 @@ impl DepthStencilState {
 }
 
 
+#[repr(C)]
 #[derive(Default)]
 pub struct GraphicsPipelineTargetInfo<'a> {
     pub(super) inner: SDL_GPUGraphicsPipelineTargetInfo,
@@ -714,6 +683,7 @@ impl VertexAttribute {
 }
 
 
+#[repr(C)]
 #[derive(Default)]
 pub struct ColorTargetBlendState {
     inner: SDL_GPUColorTargetBlendState,
@@ -805,43 +775,43 @@ impl ColorTargetDescription {
 #[repr(C)]
 #[derive(Default)]
 pub struct TextureSamplerBinding<'a> {
-    inner: SDL_GPUTextureSamplerBinding,
-    _marker: PhantomData<&'a Extern<(SDL_GPUTexture, SDL_GPUSampler)>>,
+    pub(crate) inner: SDL_GPUTextureSamplerBinding,
+    _marker: PhantomData<(&'a Texture, &'a Sampler)>,
 }
 impl<'a> TextureSamplerBinding<'a> {
-    pub fn new() -> Self {
-        Default::default()
-    }
+    // pub fn new() -> Self {
+    //     Default::default()
+    // }
 
-    /// The texture to bind. Must have been created with [`SDL_GPU_TEXTUREUSAGE_SAMPLER`].
-    pub fn with_texture(mut self, texture: &'a Texture) -> Self {
-        self.inner.texture = texture.raw();
-        self
-    }
+    // /// The texture to bind. Must have been created with [`SDL_GPU_TEXTUREUSAGE_SAMPLER`].
+    // pub fn with_texture(mut self, texture: &'a Texture) -> Self {
+    //     self.inner.texture = texture.ll();
+    //     self
+    // }
 
-    /// The sampler to bind.
-    pub fn with_sampler(mut self, sampler: &'a Sampler) -> Self {
-        self.inner.sampler = sampler.raw();
-        self
-    }
+    // /// The sampler to bind.
+    // pub fn with_sampler(mut self, sampler: &'a Sampler) -> Self {
+    //     self.inner.sampler = sampler.ll();
+    //     self
+    // }
 }
 
 
 #[repr(C)]
 #[derive(Default)]
 pub struct StorageTextureReadWriteBinding<'a> {
-    inner: SDL_GPUStorageTextureReadWriteBinding,
-    _marker: PhantomData<&'a Extern<SDL_GPUTexture>>,
+    pub(crate) inner: SDL_GPUStorageTextureReadWriteBinding,
+    pub(crate) _marker: PhantomData<&'a Texture>,
 }
 impl<'a> StorageTextureReadWriteBinding<'a> {
-    pub fn new() -> Self {
-        Default::default()
-    }
+    // pub fn new() -> Self {
+    //     Default::default()
+    // }
 
-    pub fn with_texture(mut self, texture: &'a Extern<SDL_GPUTexture>) -> Self {
-        self.inner.texture = texture.raw();
-        self
-    }
+    // pub fn with_texture(mut self, texture: &'a Texture) -> Self {
+    //     self.inner.texture = texture.ll();
+    //     self
+    // }
 
     pub fn with_mip_level(mut self, mip_level: u32) -> Self {
         self.inner.mip_level = mip_level;
@@ -853,30 +823,30 @@ impl<'a> StorageTextureReadWriteBinding<'a> {
         self
     }
 
-    pub fn with_cycle(mut self, cycle: bool) -> Self {
-        self.inner.cycle = cycle;
-        self
-    }
+    // pub fn with_cycle(mut self, cycle: bool) -> Self {
+    //     self.inner.cycle = cycle;
+    //     self
+    // }
 }
 
 #[repr(C)]
 #[derive(Default)]
 pub struct StorageBufferReadWriteBinding<'a> {
-    inner: SDL_GPUStorageBufferReadWriteBinding,
-    _marker: PhantomData<&'a Extern<SDL_GPUBuffer>>,
+    pub(crate) inner: SDL_GPUStorageBufferReadWriteBinding,
+    pub(crate) _marker: PhantomData<&'a Buffer>,
 }
 impl<'a> StorageBufferReadWriteBinding<'a> {
-    pub fn new() -> Self {
-        Default::default()
-    }
+    // pub fn new() -> Self {
+    //     Default::default()
+    // }
 
-    pub fn with_buffer(mut self, buffer: &'a Extern<SDL_GPUBuffer>) -> Self {
-        self.inner.buffer = buffer.raw();
-        self
-    }
+    // pub fn with_buffer(mut self, buffer: &'a Buffer) -> Self {
+    //     self.inner.buffer = buffer.ll();
+    //     self
+    // }
 
-    pub fn with_cycle(mut self, cycle: bool) -> Self {
-        self.inner.cycle = cycle;
-        self
-    }
+    // pub fn with_cycle(mut self, cycle: bool) -> Self {
+    //     self.inner.cycle = cycle;
+    //     self
+    // }
 }
