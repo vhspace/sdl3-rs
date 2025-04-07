@@ -1005,7 +1005,7 @@ unsafe impl Sync for Event {}
 // This would honestly be nice if it took &self instead of self,
 // but Event::User's raw pointers kind of removes that possibility.
 impl Event {
-    fn to_ll(&self) -> Option<sys::events::SDL_Event> {
+    pub fn to_ll(&self) -> Option<sys::events::SDL_Event> {
         let mut ret = mem::MaybeUninit::uninit();
         match *self {
             Event::User {
