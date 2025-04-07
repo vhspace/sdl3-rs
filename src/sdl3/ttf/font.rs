@@ -347,7 +347,7 @@ impl<'ttf, 'r> Font<'ttf, 'r> {
             let ret = ttf::TTF_GetStringSize(self.raw, c_string.as_ptr(), 0, &mut w, &mut h);
             (ret, (w as u32, h as u32))
         };
-        if res == false {
+        if res == true {
             Ok(size)
         } else {
             Err(FontError::SdlError(get_error()))
