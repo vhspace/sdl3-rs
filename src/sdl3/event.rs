@@ -2866,7 +2866,7 @@ mod test {
             let e = Event::KeyDown {
                 timestamp: 0,
                 window_id: 1,
-                keycode: None,
+                keycode: Some(Keycode::Q),
                 scancode: Some(Scancode::Q),
                 keymod: Mod::all(),
                 repeat: false,
@@ -3057,7 +3057,7 @@ mod test {
         let mut raw_event = Event::KeyDown {
             timestamp: 0,
             window_id: 1,
-            keycode: None,
+            keycode: Some(Keycode::Q),
             scancode: Some(Scancode::Q),
             keymod: Mod::empty(),
             repeat: false,
@@ -3084,7 +3084,7 @@ mod test {
         let mut raw_event = Event::KeyUp {
             timestamp: 0,
             window_id: 1,
-            keycode: None,
+            keycode: Some(Keycode::Q),
             scancode: Some(Scancode::Q),
             keymod: Mod::empty(),
             repeat: false,
