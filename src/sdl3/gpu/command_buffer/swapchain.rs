@@ -1,8 +1,7 @@
 use std::{marker::PhantomData, ops::Deref, ptr::NonNull};
 
-use sys::gpu::SDL_GPUTexture;
+use crate::gpu::Texture;
 
-use super::Extern;
 
 
 type Invariant<'a> = PhantomData<fn(&'a ()) -> &'a ()>;
@@ -10,14 +9,14 @@ type Invariant<'a> = PhantomData<fn(&'a ()) -> &'a ()>;
 
 #[doc(alias = "SDL_Texture")]
 pub struct SwapchainTexture<'cmd_buf> {
-    pub(super) raw: NonNull<Extern<SDL_GPUTexture>>,
+    pub(super) raw: NonNull<Texture>,
     pub(super) width: u32,
     pub(super) height: u32,
     pub(super) _marker: Invariant<'cmd_buf>,
 }
 
 impl<'cmd_buf> Deref for SwapchainTexture<'cmd_buf> {
-    type Target = Extern<SDL_GPUTexture>;
+    type Target = Texture;
 
     fn deref(&self) -> &Self::Target {
         unsafe { self.raw.as_ref() }

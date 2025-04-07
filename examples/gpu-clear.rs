@@ -17,7 +17,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     // by default, and we specify that our shaders will be SPIR-V ones (even through we
     // aren't using any shaders)
     // We'll also turn on debug mode to true, so we get debug stuff
-    let gpu = sdl3::gpu::Device::new(sdl3::gpu::ShaderFormat::SPIRV, true)?;
+    let gpu = sdl3::gpu::OwnedDevice::new(sdl3::gpu::ShaderFormat::SPIRV, true)?;
     gpu.claim_window(&window)?;
 
     let mut event_pump = sdl_context.event_pump()?;

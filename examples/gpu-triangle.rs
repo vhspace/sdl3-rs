@@ -3,7 +3,7 @@ extern crate sdl3;
 use sdl3::{
     event::Event,
     gpu::{
-        ColorTargetDescription, ColorTargetInfo, Device, FillMode, GraphicsPipelineTargetInfo,
+        ColorTargetDescription, ColorTargetInfo, OwnedDevice, FillMode, GraphicsPipelineTargetInfo,
         LoadOp, PrimitiveType, ShaderFormat, ShaderStage, StoreOp,
     },
     keyboard::Keycode,
@@ -24,7 +24,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     // by default, and we specify that our shaders will be SPIR-V ones (even through we
     // aren't using any shaders)
     // We'll also turn on debug mode to true, so we get debug stuff
-    let gpu = Device::new(
+    let gpu = OwnedDevice::new(
         ShaderFormat::SPIRV | ShaderFormat::DXIL | ShaderFormat::DXBC | ShaderFormat::METALLIB,
         true,
     )?;
