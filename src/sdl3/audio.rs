@@ -1007,7 +1007,7 @@ impl AudioDevice {
 
 pub struct AudioStreamOwner {
     inner: AudioStream,
-    #[expect(dead_code, reason = "keep the audio subsystem alive")]
+    #[expect(dead_code)]
     audio_subsystem: Option<AudioSubsystem>,
 }
 

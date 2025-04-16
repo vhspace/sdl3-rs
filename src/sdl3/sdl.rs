@@ -264,7 +264,7 @@ macro_rules! subsystem {
             #[doc = "# Safety"]
             #[doc = ""]
             #[doc = concat!("For each time this is called, previously a [`", stringify!($name), "`] must have been passed to [`mem::forget`].")]
-            #[allow(dead_code, reason = "not all subsystems need this right now")]
+            #[allow(dead_code)]
             pub(crate) unsafe fn new_unchecked() -> Self {
                 Self {
                     marker: PhantomData,
