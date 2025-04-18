@@ -133,6 +133,17 @@ fn pixel_format_enum_supports_alpha() {
     assert!(PixelFormatEnum::ARGB2101010.as_pixel_format().supports_alpha());
     assert!(!PixelFormatEnum::RGB24.as_pixel_format().supports_alpha());
 }
+// Test retrieving pixel format details for a known format
+#[test]
+fn pixel_format_details_basic() {
+    let fmt = PixelFormatEnum::RGB24.as_pixel_format();
+    let det = fmt.details();
+    // format should round-trip
+    assert_eq!(det.format, fmt);
+    // bits and bytes per pixel are correct for RGB24
+    assert_eq!(det.bits_per_pixel, 24);
+    assert_eq!(det.bytes_per_pixel, 3);
+}
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Color {
@@ -260,6 +271,43 @@ pub struct PixelMasks {
     /// The alpha mask
     pub amask: u32,
 }
+/// Details about a pixel format, as returned by SDL_GetPixelFormatDetails.
+///
+/// This includes the format code, bits/bytes per pixel, channel masks,
+/// bit counts, and shift values for red, green, blue, and alpha.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
+pub struct PixelFormatDetails {
+    /// The pixel format code
+    pub format: PixelFormat,
+    /// Bits per pixel (raw depth)
+    pub bits_per_pixel: u8,
+    /// Bytes per pixel (padded depth)
+    pub bytes_per_pixel: u8,
+    /// Red mask
+    pub rmask: u32,
+    /// Green mask
+    pub gmask: u32,
+    /// Blue mask
+    pub bmask: u32,
+    /// Alpha mask
+    pub amask: u32,
+    /// Number of red bits
+    pub rbits: u8,
+    /// Number of green bits
+    pub gbits: u8,
+    /// Number of blue bits
+    pub bbits: u8,
+    /// Number of alpha bits
+    pub abits: u8,
+    /// Red shift count
+    pub rshift: u8,
+    /// Green shift count
+    pub gshift: u8,
+    /// Blue shift count
+    pub bshift: u8,
+    /// Alpha shift count
+    pub ashift: u8,
+}
 
 /// A pixel format, i.e. a set of masks that define how to pack and unpack pixel data.
 /// This is used to convert between pixel data and surface data.
@@ -334,8 +382,40 @@ impl PixelFormat {
         PixelFormat::from_ll(SDL_PixelFormat::UNKNOWN)
     }
 
+    #[doc(alias = "SDL_GetPixelFormatDetails")]
     pub unsafe fn pixel_format_details(&self) -> *const SDL_PixelFormatDetails {
         sys::pixels::SDL_GetPixelFormatDetails(self.raw)
+    }
+
+    /// Returns detailed information about this pixel format.
+    ///
+    /// Wraps the result of `SDL_GetPixelFormatDetails`, copying the data into
+    /// a safe Rust structure.
+    #[doc(alias = "SDL_GetPixelFormatDetails")]
+    pub fn details(&self) -> PixelFormatDetails {
+        unsafe {
+            let ptr = sys::pixels::SDL_GetPixelFormatDetails(self.raw);
+            // Should not fail for known formats
+            assert!(!ptr.is_null(), "SDL_GetPixelFormatDetails returned null for format: {:?}", self);
+            let d = *ptr;
+            PixelFormatDetails {
+                format: PixelFormat::from_ll(d.format),
+                bits_per_pixel: d.bits_per_pixel,
+                bytes_per_pixel: d.bytes_per_pixel,
+                rmask: d.Rmask,
+                gmask: d.Gmask,
+                bmask: d.Bmask,
+                amask: d.Amask,
+                rbits: d.Rbits,
+                gbits: d.Gbits,
+                bbits: d.Bbits,
+                abits: d.Abits,
+                rshift: d.Rshift,
+                gshift: d.Gshift,
+                bshift: d.Bshift,
+                ashift: d.Ashift,
+            }
+        }
     }
 
     #[doc(alias = "SDL_GetPixelFormatForMasks")]
