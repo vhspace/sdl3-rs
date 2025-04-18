@@ -118,21 +118,15 @@ fn pixel_format_enum_conversions() {
     }
 
     // Test some specific values
-    assert_eq!(
-        PixelFormatEnum::RGB24.as_pixel_format().raw,
-        SDL_PixelFormat::RGB24
-    );
-    assert_eq!(
-        PixelFormatEnum::RGBA8888.as_pixel_format().raw,
-        SDL_PixelFormat::RGBA8888
-    );
+    assert_eq!(PixelFormatEnum::RGB24.to_ll(), SDL_PixelFormat::RGB24);
+    assert_eq!(PixelFormatEnum::RGBA8888.to_ll(), SDL_PixelFormat::RGBA8888);
 }
 
 #[test]
 fn pixel_format_enum_supports_alpha() {
-    assert!(PixelFormatEnum::RGBA8888.as_pixel_format().supports_alpha());
-    assert!(PixelFormatEnum::ARGB2101010.as_pixel_format().supports_alpha());
-    assert!(!PixelFormatEnum::RGB24.as_pixel_format().supports_alpha());
+    assert!(PixelFormatEnum::RGBA8888.into_format().supports_alpha());
+    assert!(PixelFormatEnum::ARGB2101010.into_format().supports_alpha());
+    assert!(!PixelFormatEnum::RGB24.into_format().supports_alpha());
 }
 // Test retrieving pixel format details for a known format
 #[test]
@@ -356,10 +350,17 @@ pub struct PixelFormat {
 }
 
 impl PixelFormatEnum {
-    pub fn as_pixel_format(&self) -> PixelFormat {
-        PixelFormat {
-            raw: SDL_PixelFormat(*self as i32)
-        }
+    /// Converts this enum to the raw SDL_PixelFormat value.
+    #[doc(alias = "SDL_PixelFormat")]  
+    pub fn to_ll(self) -> SDL_PixelFormat {
+        SDL_PixelFormat(self as i32)
+    }
+
+    /// Constructs a `PixelFormat` wrapper for this format.
+    #[doc(alias = "SDL_PixelFormat")]  
+    pub fn into_format(self) -> PixelFormat {
+        // safe; SDL_PixelFormat is repr for format codes
+        unsafe { PixelFormat::from_ll(self.to_ll()) }
     }
 }
 
@@ -579,7 +580,7 @@ impl From<PixelFormat> for SDL_PixelFormat {
 
 impl From<PixelFormatEnum> for PixelFormat {
     fn from(fmt: PixelFormatEnum) -> Self {
-        fmt.as_pixel_format()
+        fmt.into_format()
     }
 }
 
