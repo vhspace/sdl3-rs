@@ -876,9 +876,11 @@ impl VideoSubsystem {
     ) -> Result<WindowCanvas, Error> {
         let mut sdl_window = null_mut();
         let mut renderer = null_mut();
+
+        let title = CString::new(title).unwrap();
         let result = unsafe {
             sys::render::SDL_CreateWindowAndRenderer(
-                title.as_ptr() as *const c_char,
+                title.as_ptr(),
                 width as c_int,
                 height as c_int,
                 0,
