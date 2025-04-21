@@ -5,7 +5,7 @@ use std::convert::{TryFrom, TryInto};
 use std::ffi::c_int;
 use std::fmt::Debug;
 use std::ptr::null;
-// Bring in all SDL pixel-related types and constants
+// Bring in all SDL pixel-related types and constants (for the format enums)
 use sys::everything::*;
 
 pub struct Palette {
