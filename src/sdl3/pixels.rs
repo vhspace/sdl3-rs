@@ -131,7 +131,7 @@ fn pixel_format_enum_supports_alpha() {
 // Test retrieving pixel format details for a known format
 #[test]
 fn pixel_format_details_basic() {
-    let fmt = PixelFormatEnum::RGB24.as_pixel_format();
+    let fmt = PixelFormatEnum::RGB24.into_format();
     let det = fmt.details();
     // format should round-trip
     assert_eq!(det.format, fmt);
