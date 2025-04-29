@@ -1197,6 +1197,16 @@ impl AudioStream {
         }
     }
 
+    #[doc(alias = "SDL_GetAudioStreamQueued")]
+    pub fn queued_bytes(&self) -> Result<i32, Error> {
+        let queue = unsafe { sys::audio::SDL_GetAudioStreamQueued(self.stream) };
+        if queue == -1 {
+            Err(get_error())
+        } else {
+            Ok(queue)
+        }
+    }
+
     /// Converts a slice of bytes to a f32 sample based on AudioFormat.
     /// Returns a Result containing the converted f32 or an error message.
     fn read_bytes_to_f32(&self, chunk: &[u8]) -> Result<f32, Error> {
@@ -1390,6 +1400,10 @@ impl<CB> AudioStreamWithCallback<CB> {
     /// Resumes the audio stream.
     pub fn resume(&self) -> Result<(), Error> {
         self.base_stream.resume()
+    }
+
+    pub fn queued_bytes(&self) -> Result<i32, Error> {
+        self.base_stream.queued_bytes()
     }
 
     pub fn lock(&mut self) -> Option<AudioStreamLockGuard<CB>> {
