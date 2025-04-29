@@ -1197,6 +1197,7 @@ impl AudioStream {
         }
     }
 
+    /// Gets the number of bytes queued.
     #[doc(alias = "SDL_GetAudioStreamQueued")]
     pub fn queued_bytes(&self) -> Result<i32, Error> {
         let queue = unsafe { sys::audio::SDL_GetAudioStreamQueued(self.stream) };
