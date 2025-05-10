@@ -1010,6 +1010,7 @@ pub struct AudioStreamOwner {
     #[expect(dead_code)]
     audio_subsystem: Option<AudioSubsystem>,
 }
+unsafe impl Send for AudioStreamOwner {}
 
 pub struct AudioStream {
     stream: *mut sys::audio::SDL_AudioStream,
