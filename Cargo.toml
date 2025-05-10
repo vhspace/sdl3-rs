@@ -27,14 +27,14 @@ libc = "0.2.169"
 lazy_static = "1.4.0"
 
 [dependencies.sdl3-sys]
-version = "0.4.7+SDL3-3.2.10"
+version = "0.5"
 
 [dependencies.sdl3-image-sys]
-version = "0.1"
+version = "0.2"
 optional = true
 
 [dependencies.sdl3-ttf-sys]
-version = "0.1"
+version = "0.2"
 optional = true
 
 [dependencies.c_vec]
