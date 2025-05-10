@@ -1254,6 +1254,8 @@ impl Event {
                     direction: direction.into(),
                     mouse_x,
                     mouse_y,
+                    integer_x: 0,
+                    integer_y: 0,
                     reserved: 0,
                 };
                 unsafe {
