@@ -1010,14 +1010,14 @@ impl Event {
         match *self {
             Event::User {
                 window_id,
-                type_: _,
+                type_,
                 code,
                 data1,
                 data2,
                 timestamp,
             } => {
                 let event = sys::events::SDL_UserEvent {
-                    r#type: sys::events::SDL_EVENT_USER.into(),
+                    r#type: type_,
                     timestamp,
                     windowID: window_id,
                     code,
