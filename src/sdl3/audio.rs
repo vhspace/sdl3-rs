@@ -2,7 +2,7 @@
 //!
 //! # Example
 //! ```no_run
-//! use sdl3::audio::{AudioCallback, AudioFormat, AudioSpec};
+//! use sdl3::audio::{AudioCallback, AudioFormat, AudioSpec, AudioStream};
 //! use std::time::Duration;
 //!
 //! struct SquareWave {
@@ -12,16 +12,18 @@
 //! }
 //!
 //! impl AudioCallback<f32> for SquareWave {
-//!     fn callback(&mut self, out: &mut [f32]) {
+//!     fn callback(&mut self, stream: &mut AudioStream, requested: i32) {
+//!         let mut out = Vec::<f32>::with_capacity(requested as usize);
 //!         // Generate a square wave
-//!         for x in out.iter_mut() {
-//!             *x = if self.phase <= 0.5 {
+//!         for _ in 0..requested {
+//!             out.push(if self.phase <= 0.5 {
 //!                 self.volume
 //!             } else {
 //!                 -self.volume
-//!             };
+//!             });
 //!             self.phase = (self.phase + self.phase_inc) % 1.0;
 //!         }
+//!         stream.put_data_f32(&out);
 //!     }
 //! }
 //!
