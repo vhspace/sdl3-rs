@@ -214,6 +214,110 @@ impl From<(u8, u8, u8, u8)> for Color {
     }
 }
 
+#[derive(Copy, Clone, PartialEq, Debug)]
+pub struct FColor {
+    r: f32,
+    g: f32,
+    b: f32,
+    a: f32,
+}
+
+impl FColor {
+    #[inline]
+    #[allow(non_snake_case)]
+    pub const fn RGB(r: f32, g: f32, b: f32) -> FColor {
+        FColor { r, g, b, a: 1. }
+    }
+
+    #[inline]
+    #[allow(non_snake_case)]
+    pub const fn RGBA(r: f32, g: f32, b: f32, a: f32) -> FColor {
+        FColor { r, g, b, a }
+    }
+
+    pub fn invert(self) -> FColor {
+        FColor::RGBA(1. - self.r, 1. - self.g, 1. - self.b, 1. - self.a)
+    }
+
+    #[inline]
+    pub const fn rgb(self) -> (f32, f32, f32) {
+        (self.r, self.g, self.b)
+    }
+
+    #[inline]
+    pub const fn rgba(self) -> (f32, f32, f32, f32) {
+        (self.r, self.g, self.b, self.a)
+    }
+
+    // Implemented manually and kept private, because reasons
+    #[inline]
+    const fn raw(self) -> sys::pixels::SDL_FColor {
+        sys::pixels::SDL_FColor {
+            r: self.r,
+            g: self.g,
+            b: self.b,
+            a: self.a,
+        }
+    }
+
+    pub const WHITE: FColor = FColor::RGBA(1., 1., 1., 1.);
+    pub const BLACK: FColor = FColor::RGBA(0., 0., 0., 1.);
+    pub const GRAY: FColor = FColor::RGBA(0.5, 0.5, 0.5, 1.);
+    pub const GREY: FColor = FColor::GRAY;
+    pub const RED: FColor = FColor::RGBA(1., 0., 0., 1.);
+    pub const GREEN: FColor = FColor::RGBA(0., 1., 0., 1.);
+    pub const BLUE: FColor = FColor::RGBA(0., 0., 1., 1.);
+    pub const MAGENTA: FColor = FColor::RGBA(1., 0., 1., 1.);
+    pub const YELLOW: FColor = FColor::RGBA(1., 1., 0., 1.);
+    pub const CYAN: FColor = FColor::RGBA(0., 1., 1., 1.);
+}
+
+impl From<FColor> for sys::pixels::SDL_FColor {
+    fn from(val: FColor) -> Self {
+        val.raw()
+    }
+}
+
+impl From<sys::pixels::SDL_FColor> for FColor {
+    fn from(raw: sys::pixels::SDL_FColor) -> FColor {
+        FColor::RGBA(raw.r, raw.g, raw.b, raw.a)
+    }
+}
+
+impl From<(f32, f32, f32)> for FColor {
+    fn from((r, g, b): (f32, f32, f32)) -> FColor {
+        FColor::RGB(r, g, b)
+    }
+}
+
+impl From<(f32, f32, f32, f32)> for FColor {
+    fn from((r, g, b, a): (f32, f32, f32, f32)) -> FColor {
+        FColor::RGBA(r, g, b, a)
+    }
+}
+
+impl From<Color> for FColor {
+    fn from(val: Color) -> FColor {
+        FColor {
+            r: val.r as f32 / 255.,
+            g: val.g as f32 / 255.,
+            b: val.b as f32 / 255.,
+            a: val.a as f32 / 255.,
+        }
+    }
+}
+
+impl From<FColor> for Color {
+    fn from(val: FColor) -> Color {
+        Color {
+            r: (val.r * 255.) as u8,
+            g: (val.g * 255.) as u8,
+            b: (val.b * 255.) as u8,
+            a: (val.a * 255.) as u8,
+        }
+    }
+}
+
 pub struct PixelMasks {
     /// Bits per pixel; usually 15, 16, or 32
     pub bpp: u8,
