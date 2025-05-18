@@ -26,9 +26,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // animation sheet and extras are available from
     // https://opengameart.org/content/a-platformer-in-the-forest
     let temp_surface = sdl3::surface::Surface::load_bmp(Path::new("assets/characters.bmp"))?;
-    let texture = texture_creator
+    let mut texture = texture_creator
         .create_texture_from_surface(&temp_surface)
         .map_err(|e| e.to_string())?;
+    texture.set_scale_mode(sdl3::render::ScaleMode::Nearest);
 
     let frames_per_anim = 4;
     let sprite_tile_size = (32., 32.);
