@@ -224,6 +224,9 @@ name = "renderer_09_scaling_textures"
 path = "examples/renderer/a09_scaling_textures.rs"
 
 [[example]]
+name = "render-geometry"
+
+[[example]]
 name = "renderer-texture"
 
 [[example]]
