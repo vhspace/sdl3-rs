@@ -310,10 +310,10 @@ impl From<Color> for FColor {
 impl From<FColor> for Color {
     fn from(val: FColor) -> Color {
         Color {
-            r: (val.r * 255.) as u8,
-            g: (val.g * 255.) as u8,
-            b: (val.b * 255.) as u8,
-            a: (val.a * 255.) as u8,
+            r: (val.r * 255.).round().clamp(0., 255.) as u8,
+            g: (val.g * 255.).round().clamp(0., 255.) as u8,
+            b: (val.b * 255.).round().clamp(0., 255.) as u8,
+            a: (val.a * 255.).round().clamp(0., 255.) as u8,
         }
     }
 }
