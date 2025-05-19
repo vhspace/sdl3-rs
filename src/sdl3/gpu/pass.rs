@@ -8,16 +8,19 @@ use crate::{
     Error,
 };
 use sys::gpu::{
-    SDL_AcquireGPUSwapchainTexture, SDL_BindGPUFragmentSamplers, SDL_BindGPUIndexBuffer,
-    SDL_BindGPUVertexBuffers, SDL_DrawGPUIndexedPrimitives, SDL_GPUBufferBinding,
-    SDL_GPUColorTargetInfo, SDL_GPUCommandBuffer, SDL_GPUComputePass, SDL_GPUCopyPass,
-    SDL_GPUDepthStencilTargetInfo, SDL_GPUIndexElementSize, SDL_GPULoadOp, SDL_GPURenderPass,
-    SDL_GPUStoreOp, SDL_GPUTextureSamplerBinding, SDL_PushGPUComputeUniformData,
-    SDL_PushGPUFragmentUniformData, SDL_PushGPUVertexUniformData, SDL_UploadToGPUBuffer,
-    SDL_UploadToGPUTexture, SDL_WaitAndAcquireGPUSwapchainTexture,
+    SDL_AcquireGPUSwapchainTexture, SDL_BindGPUComputeStorageBuffers,
+    SDL_BindGPUComputeStorageTextures, SDL_BindGPUFragmentSamplers,
+    SDL_BindGPUFragmentStorageBuffers, SDL_BindGPUFragmentStorageTextures, SDL_BindGPUIndexBuffer,
+    SDL_BindGPUVertexBuffers, SDL_BindGPUVertexStorageBuffers, SDL_BindGPUVertexStorageTextures,
+    SDL_DrawGPUIndexedPrimitives, SDL_GPUBuffer, SDL_GPUBufferBinding, SDL_GPUColorTargetInfo,
+    SDL_GPUCommandBuffer, SDL_GPUComputePass, SDL_GPUCopyPass, SDL_GPUDepthStencilTargetInfo,
+    SDL_GPUIndexElementSize, SDL_GPULoadOp, SDL_GPURenderPass, SDL_GPUStoreOp, SDL_GPUTexture,
+    SDL_GPUTextureSamplerBinding, SDL_PushGPUComputeUniformData, SDL_PushGPUFragmentUniformData,
+    SDL_PushGPUVertexUniformData, SDL_UploadToGPUBuffer, SDL_UploadToGPUTexture,
+    SDL_WaitAndAcquireGPUSwapchainTexture,
 };
 
-use super::{Buffer, ComputePipeline};
+use super::ComputePipeline;
 
 pub struct CommandBuffer {
     pub(super) inner: *mut SDL_GPUCommandBuffer,
@@ -242,27 +245,33 @@ impl RenderPass {
     }
 
     #[doc(alias = "SDL_BindGPUVertexStorageBuffers")]
-    pub fn bind_vertex_storage_buffers(&self, first_slot: u32, storage_buffers: &[Buffer]) {
-        let buffer_handles = storage_buffers.iter().map(|x| x.raw()).collect::<Vec<_>>();
+    pub fn bind_vertex_storage_buffers(
+        &self,
+        first_slot: u32,
+        storage_buffers: &[*mut SDL_GPUBuffer],
+    ) {
         unsafe {
-            sys::gpu::SDL_BindGPUVertexStorageBuffers(
+            SDL_BindGPUVertexStorageBuffers(
                 self.inner,
                 first_slot,
-                buffer_handles.as_ptr(),
-                buffer_handles.len() as u32,
+                storage_buffers.as_ptr(),
+                storage_buffers.len() as u32,
             )
         }
     }
 
     #[doc(alias = "SDL_BindGPUVertexStorageTextures")]
-    pub fn bind_vertex_storage_textures(&self, first_slot: u32, storage_textures: &[Texture]) {
-        let texture_handles = storage_textures.iter().map(|x| x.raw()).collect::<Vec<_>>();
+    pub fn bind_vertex_storage_textures(
+        &self,
+        first_slot: u32,
+        storage_textures: &[*mut SDL_GPUTexture],
+    ) {
         unsafe {
-            sys::gpu::SDL_BindGPUVertexStorageTextures(
+            SDL_BindGPUVertexStorageTextures(
                 self.inner,
                 first_slot,
-                texture_handles.as_ptr(),
-                texture_handles.len() as u32,
+                storage_textures.as_ptr(),
+                storage_textures.len() as u32,
             )
         }
     }
@@ -291,27 +300,33 @@ impl RenderPass {
     }
 
     #[doc(alias = "SDL_BindGPUFragmentStorageBuffers")]
-    pub fn bind_fragment_storage_buffers(&self, first_slot: u32, storage_buffers: &[Buffer]) {
-        let buffer_handles = storage_buffers.iter().map(|x| x.raw()).collect::<Vec<_>>();
+    pub fn bind_fragment_storage_buffers(
+        &self,
+        first_slot: u32,
+        storage_buffers: &[*mut SDL_GPUBuffer],
+    ) {
         unsafe {
-            sys::gpu::SDL_BindGPUFragmentStorageBuffers(
+            SDL_BindGPUFragmentStorageBuffers(
                 self.inner,
                 first_slot,
-                buffer_handles.as_ptr(),
-                buffer_handles.len() as u32,
+                storage_buffers.as_ptr(),
+                storage_buffers.len() as u32,
             )
         }
     }
 
     #[doc(alias = "SDL_BindGPUFragmentStorageTextures")]
-    pub fn bind_fragment_storage_textures(&self, first_slot: u32, storage_textures: &[Texture]) {
-        let texture_handles = storage_textures.iter().map(|x| x.raw()).collect::<Vec<_>>();
+    pub fn bind_fragment_storage_textures(
+        &self,
+        first_slot: u32,
+        storage_textures: &[*mut SDL_GPUTexture],
+    ) {
         unsafe {
-            sys::gpu::SDL_BindGPUFragmentStorageTextures(
+            SDL_BindGPUFragmentStorageTextures(
                 self.inner,
                 first_slot,
-                texture_handles.as_ptr(),
-                texture_handles.len() as u32,
+                storage_textures.as_ptr(),
+                storage_textures.len() as u32,
             )
         }
     }
@@ -409,27 +424,33 @@ impl ComputePass {
     }
 
     #[doc(alias = "SDL_BindGPUComputeStorageBuffers")]
-    pub fn bind_compute_storage_buffers(&self, first_slot: u32, storage_buffers: &[Buffer]) {
-        let buffer_handles = storage_buffers.iter().map(|x| x.raw()).collect::<Vec<_>>();
+    pub fn bind_compute_storage_buffers(
+        &self,
+        first_slot: u32,
+        storage_buffers: &[*mut SDL_GPUBuffer],
+    ) {
         unsafe {
-            sys::gpu::SDL_BindGPUComputeStorageBuffers(
+            SDL_BindGPUComputeStorageBuffers(
                 self.inner,
                 first_slot,
-                buffer_handles.as_ptr(),
-                buffer_handles.len() as u32,
+                storage_buffers.as_ptr(),
+                storage_buffers.len() as u32,
             )
         }
     }
 
     #[doc(alias = "SDL_BindGPUComputeStorageTextures")]
-    pub fn bind_compute_storage_textures(&self, first_slot: u32, storage_textures: &[Texture]) {
-        let texture_handles = storage_textures.iter().map(|x| x.raw()).collect::<Vec<_>>();
+    pub fn bind_compute_storage_textures(
+        &self,
+        first_slot: u32,
+        storage_textures: &[*mut SDL_GPUTexture],
+    ) {
         unsafe {
-            sys::gpu::SDL_BindGPUComputeStorageTextures(
+            SDL_BindGPUComputeStorageTextures(
                 self.inner,
                 first_slot,
-                texture_handles.as_ptr(),
-                texture_handles.len() as u32,
+                storage_textures.as_ptr(),
+                storage_textures.len() as u32,
             )
         }
     }
