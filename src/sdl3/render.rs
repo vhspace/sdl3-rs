@@ -253,9 +253,10 @@ pub struct RendererInfo {
 
 /// Blend mode for `Canvas`, `Texture` or `Surface`.
 #[repr(i32)]
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, Default, Eq, PartialEq, Hash, Debug)]
 pub enum BlendMode {
     /// no blending (replace destination with source).
+    #[default]
     None = sys::blendmode::SDL_BLENDMODE_NONE as i32,
     /// Alpha blending
     ///
