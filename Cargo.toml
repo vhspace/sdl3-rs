@@ -94,7 +94,7 @@ raw-window-handle = ["dep:raw-window-handle", "dep:objc2"]
 [package.metadata.docs.rs]
 #features = ["default", "gfx", "mixer", "image", "ttf"]
 #features = ["default", "gfx"]
-features = ["default"]
+features = ["default", "raw-window-handle"]
 
 [[example]]
 name = "animation"
