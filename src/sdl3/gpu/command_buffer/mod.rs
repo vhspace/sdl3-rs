@@ -14,9 +14,8 @@ use super::{
 use sys::gpu::{
     SDL_AcquireGPUCommandBuffer, SDL_AcquireGPUSwapchainTexture, SDL_BeginGPUComputePass,
     SDL_BeginGPUCopyPass, SDL_BeginGPURenderPass, SDL_GPUColorTargetInfo, SDL_GPUCommandBuffer,
-    SDL_GPUDevice, SDL_PushGPUComputeUniformData,
-    SDL_PushGPUFragmentUniformData, SDL_PushGPUVertexUniformData,
-    SDL_WaitAndAcquireGPUSwapchainTexture,
+    SDL_GPUDevice, SDL_PushGPUComputeUniformData, SDL_PushGPUFragmentUniformData,
+    SDL_PushGPUVertexUniformData, SDL_WaitAndAcquireGPUSwapchainTexture,
 };
 
 mod compute;
@@ -72,8 +71,10 @@ impl<'gpu> Drop for OwnedCommandBuffer<'gpu> {
             // if already panicking, let's not make it worse
             return;
         } else {
-            panic!("A command buffer was implicitly dropped,
-                but should be explicitly submitted or cancelled.");
+            panic!(
+                "A command buffer was implicitly dropped,
+                but should be explicitly submitted or cancelled."
+            );
         }
     }
 }
@@ -198,11 +199,7 @@ impl CommandBuffer {
         let raw: *mut Texture = raw.cast();
         if success {
             if let Some(tex) = unsafe { raw.as_ref() } {
-                Ok(SwapchainTexture {
-                    tex,
-                    width,
-                    height,
-                })
+                Ok(SwapchainTexture { tex, width, height })
             } else {
                 Err(None)
             }
@@ -225,11 +222,7 @@ impl CommandBuffer {
         let raw: *mut Texture = raw.cast();
         if success {
             if let Some(tex) = unsafe { raw.as_ref() } {
-                Ok(SwapchainTexture {
-                    tex,
-                    width,
-                    height,
-                })
+                Ok(SwapchainTexture { tex, width, height })
             } else {
                 Err(None)
             }

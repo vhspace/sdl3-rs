@@ -4,7 +4,6 @@ use crate::{get_error, Error};
 
 use super::Extern;
 
-
 #[inline(always)]
 pub(super) fn nonnull_ext_or_get_error<T>(ptr: *mut T) -> Result<NonNull<Extern<T>>, Error> {
     NonNull::new(ptr.cast()).ok_or_else(|| get_error())

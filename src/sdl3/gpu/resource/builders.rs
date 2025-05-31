@@ -1,20 +1,22 @@
 //! Defines builders for various GPU-resources.
-//! 
-//! 
+//!
+//!
 
 use std::{ffi::CStr, marker::PhantomData};
 
 use sys::gpu::{
-    SDL_GPUBufferCreateInfo, SDL_GPUComputePipelineCreateInfo,
-    SDL_GPUFillMode, SDL_GPUGraphicsPipelineCreateInfo,
-    SDL_GPUPrimitiveType, SDL_GPUShaderCreateInfo, SDL_GPUTransferBufferCreateInfo
+    SDL_GPUBufferCreateInfo, SDL_GPUComputePipelineCreateInfo, SDL_GPUFillMode,
+    SDL_GPUGraphicsPipelineCreateInfo, SDL_GPUPrimitiveType, SDL_GPUShaderCreateInfo,
+    SDL_GPUTransferBufferCreateInfo,
 };
 
 use crate::gpu::{SamplerCreateInfo, TextureCreateInfo};
 use crate::Error;
 
 use super::super::{
-    BufferUsageFlags, ComputePipeline, DepthStencilState, FillMode, GraphicsPipeline, GraphicsPipelineTargetInfo, PrimitiveType, RasterizerState, Shader, ShaderFormat, ShaderStage, TransferBuffer, TransferBufferUsage, VertexInputState
+    BufferUsageFlags, ComputePipeline, DepthStencilState, FillMode, GraphicsPipeline,
+    GraphicsPipelineTargetInfo, PrimitiveType, RasterizerState, Shader, ShaderFormat, ShaderStage,
+    TransferBuffer, TransferBufferUsage, VertexInputState,
 };
 
 impl Device {
@@ -34,17 +36,20 @@ impl Device {
     }
 
     #[doc(alias = "SDL_CreateGPUSampler")]
-    pub fn create_sampler<'gpu>(&'gpu self, create_info: SamplerCreateInfo) -> Result<Owned<'gpu, Sampler>, Error> {
+    pub fn create_sampler<'gpu>(
+        &'gpu self,
+        create_info: SamplerCreateInfo,
+    ) -> Result<Owned<'gpu, Sampler>, Error> {
         Owned::new(self, &create_info.inner, ())
     }
 
     #[doc(alias = "SDL_CreateGPUGraphicsPipeline")]
-    pub fn create_graphics_pipeline<'gpu,'a>(&'gpu self) -> GraphicsPipelineBuilder<'gpu, 'a> {
+    pub fn create_graphics_pipeline<'gpu, 'a>(&'gpu self) -> GraphicsPipelineBuilder<'gpu, 'a> {
         GraphicsPipelineBuilder::new(self)
     }
 
     #[doc(alias = "SDL_CreateGPUComputePipeline")]
-    pub fn create_compute_pipeline<'gpu,'a>(&'gpu self) -> ComputePipelineBuilder<'gpu, 'a> {
+    pub fn create_compute_pipeline<'gpu, 'a>(&'gpu self) -> ComputePipelineBuilder<'gpu, 'a> {
         ComputePipelineBuilder::new(self)
     }
 
@@ -53,11 +58,13 @@ impl Device {
         &'gpu self,
         create_info: &TextureCreateInfo,
     ) -> Result<Owned<'gpu, Texture>, Error> {
-        Owned::new(self, &create_info.inner, (create_info.inner.width, create_info.inner.height))
+        Owned::new(
+            self,
+            &create_info.inner,
+            (create_info.inner.width, create_info.inner.height),
+        )
     }
-
 }
-
 
 use super::{Buffer, Device, Owned, Sampler, Texture};
 #[repr(C)]
@@ -159,7 +166,12 @@ impl<'gpu, 'builder> ShaderBuilder<'builder, 'gpu> {
         self
     }
 
-    pub fn with_code(mut self, fmt: ShaderFormat, code: &'builder [u8], stage: ShaderStage) -> Self {
+    pub fn with_code(
+        mut self,
+        fmt: ShaderFormat,
+        code: &'builder [u8],
+        stage: ShaderStage,
+    ) -> Self {
         self.inner.format = fmt.0;
         self.inner.code = code.as_ptr();
         self.inner.code_size = code.len() as usize;
@@ -174,7 +186,6 @@ impl<'gpu, 'builder> ShaderBuilder<'builder, 'gpu> {
         Owned::new(self.device, &self.inner, ())
     }
 }
-
 
 pub struct TransferBufferBuilder<'gpu> {
     device: &'gpu Device,
@@ -205,7 +216,6 @@ impl<'gpu> TransferBufferBuilder<'gpu> {
     }
 }
 
-
 pub struct BufferBuilder<'gpu> {
     device: &'gpu Device,
     inner: SDL_GPUBufferCreateInfo,
@@ -233,15 +243,12 @@ impl<'gpu> BufferBuilder<'gpu> {
     }
 }
 
-#[derive(Copy,Clone)]
+#[derive(Copy, Clone)]
 #[repr(C)]
 pub struct GraphicsPipelineBuilder<'gpu, 'builder> {
     device: &'gpu Device,
     inner: SDL_GPUGraphicsPipelineCreateInfo,
-    _marker: PhantomData<(
-        &'builder Shader,
-        GraphicsPipelineTargetInfo<'builder>,
-    )>,
+    _marker: PhantomData<(&'builder Shader, GraphicsPipelineTargetInfo<'builder>)>,
 }
 
 impl<'gpu, 'builder> GraphicsPipelineBuilder<'gpu, 'builder> {

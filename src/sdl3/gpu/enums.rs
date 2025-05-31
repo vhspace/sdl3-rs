@@ -7,13 +7,13 @@ macro_rules! impl_with {
         impl BitOr<$x> for $x {
             type Output = $x;
             fn bitor(self, rhs: $x) -> Self::Output {
-                $x (self.0 | rhs.0)
+                $x(self.0 | rhs.0)
             }
         }
         impl BitAnd<$x> for $x {
             type Output = $x;
             fn bitand(self, rhs: $x) -> Self::Output {
-                $x (self.0 & rhs.0)
+                $x(self.0 & rhs.0)
             }
         }
     };
@@ -38,8 +38,7 @@ impl_with!(bitwise_and_or ShaderFormat);
 
 pub struct TextureUsage(pub sys::gpu::SDL_GPUTextureUsageFlags);
 impl TextureUsage {
-    pub const INVALID: Self =
-        Self(0);
+    pub const INVALID: Self = Self(0);
     pub const COMPUTE_STORAGE_WRITE: Self =
         Self(sys::gpu::SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_WRITE);
     pub const COMPUTE_STORAGE_READ: Self =
@@ -50,10 +49,8 @@ impl TextureUsage {
         Self(sys::gpu::SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET);
     pub const GRAPHICS_STORAGE_READ: Self =
         Self(sys::gpu::SDL_GPU_TEXTUREUSAGE_GRAPHICS_STORAGE_READ);
-    pub const SAMPLER: Self =
-        Self(sys::gpu::SDL_GPU_TEXTUREUSAGE_SAMPLER);
-    pub const COLOR_TARGET: Self =
-        Self(sys::gpu::SDL_GPU_TEXTUREUSAGE_COLOR_TARGET);
+    pub const SAMPLER: Self = Self(sys::gpu::SDL_GPU_TEXTUREUSAGE_SAMPLER);
+    pub const COLOR_TARGET: Self = Self(sys::gpu::SDL_GPU_TEXTUREUSAGE_COLOR_TARGET);
 }
 impl_with!(bitwise_and_or TextureUsage);
 
@@ -227,12 +224,14 @@ pub enum VertexInputRate {
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BufferUsageFlags(pub sys::gpu::SDL_GPUBufferUsageFlags);
 impl BufferUsageFlags {
-    pub const VERTEX                : Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_VERTEX);
-    pub const INDEX                 : Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_INDEX);
-    pub const INDIRECT              : Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_INDIRECT);
-    pub const GRAPHICS_STORAGE_READ : Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ);
-    pub const COMPUTE_STORAGE_READ  : Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_READ);
-    pub const COMPUTE_STORAGE_WRITE : Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_WRITE);
+    pub const VERTEX: Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_VERTEX);
+    pub const INDEX: Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_INDEX);
+    pub const INDIRECT: Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_INDIRECT);
+    pub const GRAPHICS_STORAGE_READ: Self =
+        Self(sys::gpu::SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ);
+    pub const COMPUTE_STORAGE_READ: Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_READ);
+    pub const COMPUTE_STORAGE_WRITE: Self =
+        Self(sys::gpu::SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_WRITE);
 }
 impl_with!(bitwise_and_or BufferUsageFlags);
 

@@ -51,14 +51,10 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .with_clear_color(sdl3::pixels::Color::RGB(5, 3, 255)), //blue with small RG bias
             ];
             // Here we do all (none) of our drawing (clearing the screen)
-            command_buffer.render_pass(
-                &color_targets,
-                None,
-                |_cmd, _pass| {
-                    // Do absolutely nothing -- this clears the screen because of the defined operations above
-                    // which are ALWAYS done even through we just created and ended a render pass
-                }
-            )?;
+            command_buffer.render_pass(&color_targets, None, |_cmd, _pass| {
+                // Do absolutely nothing -- this clears the screen because of the defined operations above
+                // which are ALWAYS done even through we just created and ended a render pass
+            })?;
             command_buffer.submit()?;
         } else {
             // Swapchain unavailable, cancel work

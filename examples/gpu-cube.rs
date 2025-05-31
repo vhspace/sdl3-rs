@@ -1,7 +1,13 @@
 use sdl3::{
     event::Event,
     gpu::{
-        Buffer, BufferBinding, BufferRegion, BufferUsageFlags, ColorTargetDescription, ColorTargetInfo, CompareOp, CopyPass, CullMode, DepthStencilState, DepthStencilTargetInfo, FillMode, GraphicsPipelineTargetInfo, IndexElementSize, LoadOp, Owned, OwnedDevice, PrimitiveType, RasterizerState, SampleCount, ShaderFormat, ShaderStage, StoreOp, TextureCreateInfo, TextureFormat, TextureType, TextureUsage, TransferBuffer, TransferBufferLocation, TransferBufferUsage, VertexAttribute, VertexBufferDescription, VertexElementFormat, VertexInputRate, VertexInputState
+        Buffer, BufferBinding, BufferRegion, BufferUsageFlags, ColorTargetDescription,
+        ColorTargetInfo, CompareOp, CopyPass, CullMode, DepthStencilState, DepthStencilTargetInfo,
+        FillMode, GraphicsPipelineTargetInfo, IndexElementSize, LoadOp, Owned, OwnedDevice,
+        PrimitiveType, RasterizerState, SampleCount, ShaderFormat, ShaderStage, StoreOp,
+        TextureCreateInfo, TextureFormat, TextureType, TextureUsage, TransferBuffer,
+        TransferBufferLocation, TransferBufferUsage, VertexAttribute, VertexBufferDescription,
+        VertexElementFormat, VertexInputRate, VertexInputState,
     },
     keyboard::Keycode,
     pixels::Color,
@@ -170,29 +176,29 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // We need to start a copy pass in order to transfer data to the GPU
     let mut copy_commands = gpu.acquire_command_buffer()?;
-    let (vertex_buffer, index_buffer) = copy_commands.copy_pass(
-        |_cmd, copy_pass| {
-            // Create GPU buffers to hold our vertices and indices and transfer data to them
-            let vertex_buffer = create_buffer_with_data(
-                &gpu,
-                &mut transfer_buffer,
-                &copy_pass,
-                BufferUsageFlags::VERTEX,
-                &CUBE_VERTICES,
-            ).unwrap();
-            let index_buffer = create_buffer_with_data(
-                &gpu,
-                &mut transfer_buffer,
-                &copy_pass,
-                BufferUsageFlags::INDEX,
-                &CUBE_INDICES,
-            ).unwrap();
-            // We're done with the transfer buffer now, so release it.
-            drop(transfer_buffer);
+    let (vertex_buffer, index_buffer) = copy_commands.copy_pass(|_cmd, copy_pass| {
+        // Create GPU buffers to hold our vertices and indices and transfer data to them
+        let vertex_buffer = create_buffer_with_data(
+            &gpu,
+            &mut transfer_buffer,
+            &copy_pass,
+            BufferUsageFlags::VERTEX,
+            &CUBE_VERTICES,
+        )
+        .unwrap();
+        let index_buffer = create_buffer_with_data(
+            &gpu,
+            &mut transfer_buffer,
+            &copy_pass,
+            BufferUsageFlags::INDEX,
+            &CUBE_INDICES,
+        )
+        .unwrap();
+        // We're done with the transfer buffer now, so release it.
+        drop(transfer_buffer);
 
-            (vertex_buffer, index_buffer)
-        }
-    )?;
+        (vertex_buffer, index_buffer)
+    })?;
 
     // Now complete and submit the copy pass commands to actually do the transfer work
     copy_commands.submit()?;
@@ -255,12 +261,14 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     render_pass.bind_graphics_pipeline(&pipeline);
 
                     // Now we'll bind our buffers and draw the cube
-                    render_pass.bind_vertex_buffers( 0, &[
-                        BufferBinding::new().with_buffer(&vertex_buffer)
-                        ]);
+                    render_pass.bind_vertex_buffers(
+                        0,
+                        &[BufferBinding::new().with_buffer(&vertex_buffer)],
+                    );
                     render_pass.bind_index_buffer(
                         &BufferBinding::new().with_buffer(&index_buffer),
-                        IndexElementSize::_16BIT);
+                        IndexElementSize::_16BIT,
+                    );
 
                     // Set the rotation uniform for our cube vert shader
                     command_buffer.push_vertex_uniform_data(0, &rotation);
@@ -268,7 +276,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                     // Finally, draw the cube
                     render_pass.draw_indexed_primitives(CUBE_INDICES.len() as u32, 1, 0, 0, 0);
-                }
+                },
             )?;
             command_buffer.submit()?;
         } else {
@@ -303,16 +311,13 @@ fn create_buffer_with_data<'gpu, T: Copy>(
     // Note: We set `cycle` to true since we're reusing the same transfer buffer to
     // initialize both the vertex and index buffer. This makes SDL synchronize the transfers
     // so that one doesn't interfere with the other.
-    transfer_buffer.mapped_mut(
-        true,
-        |bytes| unsafe {
-            std::ptr::copy_nonoverlapping::<u8>(
-                data.as_ptr() as *const u8,
-                bytes.as_mut_ptr(),
-                len_bytes
-            );
-        }
-    )?;
+    transfer_buffer.mapped_mut(true, |bytes| unsafe {
+        std::ptr::copy_nonoverlapping::<u8>(
+            data.as_ptr() as *const u8,
+            bytes.as_mut_ptr(),
+            len_bytes,
+        );
+    })?;
 
     // Finally, add a command to the copy pass to upload this data to the GPU
     //

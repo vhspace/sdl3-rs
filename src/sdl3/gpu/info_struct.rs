@@ -1,17 +1,31 @@
 //! Types which hold data but don't own any GPU-resources.
 //! There are no calls to SDL here.
-//! 
+//!
 
 use std::marker::PhantomData;
 
 use sys::gpu::{
-    SDL_GPUBlendFactor, SDL_GPUBlendOp, SDL_GPUBufferBinding, SDL_GPUBufferLocation, SDL_GPUBufferRegion, SDL_GPUColorTargetBlendState, SDL_GPUColorTargetDescription, SDL_GPUColorTargetInfo, SDL_GPUCompareOp, SDL_GPUCullMode, SDL_GPUDepthStencilState, SDL_GPUDepthStencilTargetInfo, SDL_GPUFillMode, SDL_GPUFilter, SDL_GPUFrontFace, SDL_GPUGraphicsPipelineTargetInfo, SDL_GPUIndirectDispatchCommand, SDL_GPURasterizerState, SDL_GPUSampleCount, SDL_GPUSamplerAddressMode, SDL_GPUSamplerCreateInfo, SDL_GPUSamplerMipmapMode, SDL_GPUStencilOp, SDL_GPUStencilOpState, SDL_GPUStorageBufferReadWriteBinding, SDL_GPUStorageTextureReadWriteBinding, SDL_GPUTextureCreateInfo, SDL_GPUTextureLocation, SDL_GPUTextureRegion, SDL_GPUTextureSamplerBinding, SDL_GPUTextureTransferInfo, SDL_GPUTextureType, SDL_GPUTransferBufferLocation, SDL_GPUVertexAttribute, SDL_GPUVertexBufferDescription, SDL_GPUVertexInputRate, SDL_GPUVertexInputState
+    SDL_GPUBlendFactor, SDL_GPUBlendOp, SDL_GPUBufferBinding, SDL_GPUBufferLocation,
+    SDL_GPUBufferRegion, SDL_GPUColorTargetBlendState, SDL_GPUColorTargetDescription,
+    SDL_GPUColorTargetInfo, SDL_GPUCompareOp, SDL_GPUCullMode, SDL_GPUDepthStencilState,
+    SDL_GPUDepthStencilTargetInfo, SDL_GPUFillMode, SDL_GPUFilter, SDL_GPUFrontFace,
+    SDL_GPUGraphicsPipelineTargetInfo, SDL_GPUIndirectDispatchCommand, SDL_GPURasterizerState,
+    SDL_GPUSampleCount, SDL_GPUSamplerAddressMode, SDL_GPUSamplerCreateInfo,
+    SDL_GPUSamplerMipmapMode, SDL_GPUStencilOp, SDL_GPUStencilOpState,
+    SDL_GPUStorageBufferReadWriteBinding, SDL_GPUStorageTextureReadWriteBinding,
+    SDL_GPUTextureCreateInfo, SDL_GPUTextureLocation, SDL_GPUTextureRegion,
+    SDL_GPUTextureSamplerBinding, SDL_GPUTextureTransferInfo, SDL_GPUTextureType,
+    SDL_GPUTransferBufferLocation, SDL_GPUVertexAttribute, SDL_GPUVertexBufferDescription,
+    SDL_GPUVertexInputRate, SDL_GPUVertexInputState,
 };
 
 use crate::pixels::Color;
 
 use super::{
-    BlendFactor, BlendOp, Buffer, ColorComponentFlags, CompareOp, CullMode, FillMode, Filter, FrontFace, LoadOp, SampleCount, Sampler, SamplerAddressMode, SamplerMipmapMode, StencilOp, StoreOp, Texture, TextureFormat, TextureType, TextureUsage, TransferBuffer, VertexElementFormat, VertexInputRate
+    BlendFactor, BlendOp, Buffer, ColorComponentFlags, CompareOp, CullMode, FillMode, Filter,
+    FrontFace, LoadOp, SampleCount, Sampler, SamplerAddressMode, SamplerMipmapMode, StencilOp,
+    StoreOp, Texture, TextureFormat, TextureType, TextureUsage, TransferBuffer,
+    VertexElementFormat, VertexInputRate,
 };
 
 #[repr(transparent)]
@@ -101,7 +115,6 @@ impl<'a> ColorTargetInfo<'a> {
     }
 }
 
-
 #[repr(C)]
 #[derive(Default)]
 pub struct TextureCreateInfo {
@@ -160,7 +173,6 @@ impl TextureCreateInfo {
         self
     }
 }
-
 
 #[repr(C)]
 #[derive(Default)]
@@ -353,7 +365,6 @@ impl<'a> TextureTransferInfo<'a> {
     }
 }
 
-
 #[repr(C)]
 #[derive(Default)]
 pub struct BufferBinding<'a> {
@@ -428,13 +439,11 @@ impl VertexBufferDescription {
     }
 }
 
-
-
 #[repr(C)]
 #[derive(Default)]
 pub struct VertexInputState<'a> {
     pub(super) inner: SDL_GPUVertexInputState,
-    _marker: PhantomData<(&'a [VertexBufferDescription],&'a [VertexAttribute])>,
+    _marker: PhantomData<(&'a [VertexBufferDescription], &'a [VertexAttribute])>,
 }
 impl<'a> VertexInputState<'a> {
     pub fn new() -> Self {
@@ -454,7 +463,6 @@ impl<'a> VertexInputState<'a> {
         self
     }
 }
-
 
 #[repr(C)]
 #[derive(Default)]
@@ -609,7 +617,6 @@ impl DepthStencilState {
     }
 }
 
-
 #[repr(C)]
 #[derive(Default)]
 pub struct GraphicsPipelineTargetInfo<'a> {
@@ -641,7 +648,6 @@ impl<'a> GraphicsPipelineTargetInfo<'a> {
         self
     }
 }
-
 
 #[repr(C)]
 #[derive(Clone, Default)]
@@ -677,7 +683,6 @@ impl VertexAttribute {
         self
     }
 }
-
 
 #[repr(C)]
 #[derive(Default)]
@@ -745,7 +750,7 @@ impl ColorTargetBlendState {
 }
 
 #[repr(C)]
-#[derive(Default,Copy,Clone)]
+#[derive(Default, Copy, Clone)]
 pub struct ColorTargetDescription {
     inner: SDL_GPUColorTargetDescription,
 }
@@ -766,7 +771,6 @@ impl ColorTargetDescription {
         self
     }
 }
-
 
 #[repr(C)]
 #[derive(Default)]
@@ -791,7 +795,6 @@ impl<'a> TextureSamplerBinding<'a> {
     //     self
     // }
 }
-
 
 #[repr(C)]
 #[derive(Default)]
@@ -846,7 +849,6 @@ impl<'a> StorageBufferReadWriteBinding<'a> {
     //     self
     // }
 }
-
 
 pub type IndirectDispatchCommand = SDL_GPUIndirectDispatchCommand;
 

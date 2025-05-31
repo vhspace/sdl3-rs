@@ -1,17 +1,13 @@
-
-
-
 use std::{ops::Deref, ptr::NonNull};
 
-use crate::{gpu::{util::nonnull_ext_or_get_error, Extern}, Error};
+use crate::{
+    gpu::{util::nonnull_ext_or_get_error, Extern},
+    Error,
+};
 
 use super::super::ShaderFormat;
 
-use sys::gpu::{
-    SDL_GPUDevice,
-    SDL_CreateGPUDevice,
-    SDL_DestroyGPUDevice
-};
+use sys::gpu::{SDL_CreateGPUDevice, SDL_DestroyGPUDevice, SDL_GPUDevice};
 
 pub type Device = Extern<SDL_GPUDevice>;
 
@@ -24,7 +20,8 @@ impl OwnedDevice {
     pub fn new(flags: ShaderFormat, debug_mode: bool) -> Result<Self, Error> {
         let raw = nonnull_ext_or_get_error(unsafe {
             SDL_CreateGPUDevice(flags.0, debug_mode, std::ptr::null())
-        })?.cast();
+        })?
+        .cast();
         Ok(Self { raw })
     }
 }
@@ -43,4 +40,3 @@ impl Deref for OwnedDevice {
         unsafe { self.raw.as_ref() }
     }
 }
-

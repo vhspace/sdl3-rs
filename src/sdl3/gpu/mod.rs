@@ -1,4 +1,3 @@
-
 use std::cell::UnsafeCell;
 use std::marker::{PhantomData, PhantomPinned};
 
@@ -10,29 +9,16 @@ pub use abstraction::Ref;
 
 mod resource;
 pub use resource::{
-    Owned,
-    Buffer,
-    TransferBuffer,
-    GraphicsPipeline,
-    ComputePipeline,
-    Texture,
-    Sampler,
-    Shader,
-    OwnedDevice, Device,
+    Buffer, ComputePipeline, Device, GraphicsPipeline, Owned, OwnedDevice, Sampler, Shader,
+    Texture, TransferBuffer,
 };
 pub use resource::{
-    ComputePipelineBuilder, GraphicsPipelineBuilder, ShaderBuilder, BufferBuilder, 
+    BufferBuilder, ComputePipelineBuilder, GraphicsPipelineBuilder, ShaderBuilder,
     TransferBufferBuilder,
 };
 
 mod command_buffer;
-pub use command_buffer::{
-    CommandBuffer,
-    ComputePass,
-    RenderPass,
-    CopyPass,
-    Fence,
-};
+pub use command_buffer::{CommandBuffer, ComputePass, CopyPass, Fence, RenderPass};
 
 mod enums;
 pub use enums::{
@@ -44,17 +30,17 @@ pub use enums::{
 
 mod info_struct;
 pub use info_struct::{
-    BufferBinding, BufferRegion, ColorTargetInfo, DepthStencilTargetInfo, SamplerCreateInfo,
-    TextureCreateInfo, TextureRegion, TextureTransferInfo, TransferBufferLocation,
-    VertexBufferDescription, RasterizerState,
-    StencilOpState, VertexAttribute, VertexInputState,
-    ColorTargetBlendState, ColorTargetDescription, GraphicsPipelineTargetInfo,
-    DepthStencilState, TextureSamplerBinding,
-    StorageBufferReadWriteBinding, StorageTextureReadWriteBinding,
+    BufferBinding, BufferRegion, ColorTargetBlendState, ColorTargetDescription, ColorTargetInfo,
+    DepthStencilState, DepthStencilTargetInfo, GraphicsPipelineTargetInfo, RasterizerState,
+    SamplerCreateInfo, StencilOpState, StorageBufferReadWriteBinding,
+    StorageTextureReadWriteBinding, TextureCreateInfo, TextureRegion, TextureSamplerBinding,
+    TextureTransferInfo, TransferBufferLocation, VertexAttribute, VertexBufferDescription,
+    VertexInputState,
 };
 
-
-use sys::gpu::{SDL_ClaimWindowForGPUDevice, SDL_GetGPUSwapchainTextureFormat, SDL_ReleaseWindowFromGPUDevice};
+use sys::gpu::{
+    SDL_ClaimWindowForGPUDevice, SDL_GetGPUSwapchainTextureFormat, SDL_ReleaseWindowFromGPUDevice,
+};
 
 use crate::{get_error, Error};
 
@@ -79,7 +65,6 @@ impl<T> Extern<T> {
 }
 
 impl Device {
-
     #[doc(alias = "SDL_ClaimWindowForGPUDevice")]
     pub fn claim_window(&self, w: &crate::video::Window) -> Result<(), Error> {
         let p = unsafe { SDL_ClaimWindowForGPUDevice(self.ll(), w.raw()) };
@@ -94,7 +79,6 @@ impl Device {
     pub fn release_window(&self, w: &crate::video::Window) {
         unsafe { SDL_ReleaseWindowFromGPUDevice(self.ll(), w.raw()) };
     }
-
 
     #[doc(alias = "SDL_GetGPUSwapchainTextureFormat")]
     pub fn get_swapchain_texture_format(&self, w: &crate::video::Window) -> TextureFormat {
@@ -121,5 +105,4 @@ impl Device {
             sys::gpu::SDL_GDKResumeGPU(self.raw());
         }
     }
-
 }

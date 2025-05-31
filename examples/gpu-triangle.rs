@@ -3,8 +3,8 @@ extern crate sdl3;
 use sdl3::{
     event::Event,
     gpu::{
-        ColorTargetDescription, ColorTargetInfo, OwnedDevice, FillMode, GraphicsPipelineTargetInfo,
-        LoadOp, PrimitiveType, ShaderFormat, ShaderStage, StoreOp,
+        ColorTargetDescription, ColorTargetInfo, FillMode, GraphicsPipelineTargetInfo, LoadOp,
+        OwnedDevice, PrimitiveType, ShaderFormat, ShaderStage, StoreOp,
     },
     keyboard::Keycode,
     pixels::Color,
@@ -99,7 +99,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     .with_store_op(StoreOp::STORE)
                     .with_clear_color(Color::RGB(5, 3, 255)), //blue with small RG bias
             ];
-            
+
             command_buffer.render_pass(&color_targets, None, |_cmd, render_pass| {
                 render_pass.bind_graphics_pipeline(&pipeline);
                 // Screen is cleared here due to the color target info

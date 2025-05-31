@@ -1,12 +1,9 @@
-
-
 // manually checking auto-traits for a type
 type _X = u32;
 const _: () = _copy::<_X>();
 const _: () = _send::<_X>();
 const _: () = _sync::<_X>();
 const _: () = _unpin::<_X>();
-
 
 const fn _copy<T: Copy>() {}
 const fn _send<T: Send>() {}
@@ -30,7 +27,7 @@ mod assertions {
     }
 
     use crate::gpu::*;
-    
+
     // definitely not thread-safe
     thread_unsafe!(CommandBuffer);
 
