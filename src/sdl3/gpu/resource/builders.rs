@@ -233,6 +233,7 @@ impl<'gpu> BufferBuilder<'gpu> {
     }
 }
 
+#[derive(Copy,Clone)]
 #[repr(C)]
 pub struct GraphicsPipelineBuilder<'gpu, 'builder> {
     device: &'gpu Device,
@@ -296,7 +297,7 @@ impl<'gpu, 'builder> GraphicsPipelineBuilder<'gpu, 'builder> {
         self
     }
 
-    pub fn build(self) -> Result<Owned<'gpu, GraphicsPipeline>, Error> {
+    pub fn build(&self) -> Result<Owned<'gpu, GraphicsPipeline>, Error> {
         Owned::new(self.device, &self.inner, ())
     }
 }

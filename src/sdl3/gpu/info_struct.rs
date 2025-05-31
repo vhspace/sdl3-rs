@@ -5,18 +5,7 @@
 use std::marker::PhantomData;
 
 use sys::gpu::{
-    SDL_GPUBlendFactor, SDL_GPUBlendOp, SDL_GPUBufferBinding,
-    SDL_GPUBufferRegion, SDL_GPUColorTargetBlendState, SDL_GPUColorTargetDescription,
-    SDL_GPUColorTargetInfo, SDL_GPUCompareOp, SDL_GPUCullMode, SDL_GPUDepthStencilState,
-    SDL_GPUDepthStencilTargetInfo, SDL_GPUFillMode, SDL_GPUFilter, SDL_GPUFrontFace,
-    SDL_GPUGraphicsPipelineTargetInfo, SDL_GPURasterizerState, SDL_GPUSampleCount,
-    SDL_GPUSamplerAddressMode, SDL_GPUSamplerCreateInfo,
-    SDL_GPUSamplerMipmapMode, SDL_GPUStencilOp, SDL_GPUStencilOpState,
-    SDL_GPUStorageBufferReadWriteBinding, SDL_GPUStorageTextureReadWriteBinding,
-    SDL_GPUTextureCreateInfo, SDL_GPUTextureRegion,
-    SDL_GPUTextureSamplerBinding, SDL_GPUTextureTransferInfo, SDL_GPUTextureType,
-    SDL_GPUTransferBufferLocation, SDL_GPUVertexAttribute,
-    SDL_GPUVertexBufferDescription, SDL_GPUVertexInputRate, SDL_GPUVertexInputState,
+    SDL_GPUBlendFactor, SDL_GPUBlendOp, SDL_GPUBufferBinding, SDL_GPUBufferLocation, SDL_GPUBufferRegion, SDL_GPUColorTargetBlendState, SDL_GPUColorTargetDescription, SDL_GPUColorTargetInfo, SDL_GPUCompareOp, SDL_GPUCullMode, SDL_GPUDepthStencilState, SDL_GPUDepthStencilTargetInfo, SDL_GPUFillMode, SDL_GPUFilter, SDL_GPUFrontFace, SDL_GPUGraphicsPipelineTargetInfo, SDL_GPUIndirectDispatchCommand, SDL_GPURasterizerState, SDL_GPUSampleCount, SDL_GPUSamplerAddressMode, SDL_GPUSamplerCreateInfo, SDL_GPUSamplerMipmapMode, SDL_GPUStencilOp, SDL_GPUStencilOpState, SDL_GPUStorageBufferReadWriteBinding, SDL_GPUStorageTextureReadWriteBinding, SDL_GPUTextureCreateInfo, SDL_GPUTextureLocation, SDL_GPUTextureRegion, SDL_GPUTextureSamplerBinding, SDL_GPUTextureTransferInfo, SDL_GPUTextureType, SDL_GPUTransferBufferLocation, SDL_GPUVertexAttribute, SDL_GPUVertexBufferDescription, SDL_GPUVertexInputRate, SDL_GPUVertexInputState
 };
 
 use crate::pixels::Color;
@@ -396,6 +385,13 @@ pub struct TransferBufferLocation<'a> {
 
 #[repr(C)]
 #[derive(Default)]
+pub struct BufferLocation<'a> {
+    pub(super) inner: SDL_GPUBufferLocation,
+    pub(super) _marker: PhantomData<&'a Buffer>,
+}
+
+#[repr(C)]
+#[derive(Default)]
 pub struct BufferRegion<'a> {
     pub(super) inner: SDL_GPUBufferRegion,
     pub(super) _marker: PhantomData<&'a Buffer>,
@@ -749,7 +745,7 @@ impl ColorTargetBlendState {
 }
 
 #[repr(C)]
-#[derive(Default)]
+#[derive(Default,Copy,Clone)]
 pub struct ColorTargetDescription {
     inner: SDL_GPUColorTargetDescription,
 }
@@ -849,4 +845,12 @@ impl<'a> StorageBufferReadWriteBinding<'a> {
     //     self.inner.cycle = cycle;
     //     self
     // }
+}
+
+
+pub type IndirectDispatchCommand = SDL_GPUIndirectDispatchCommand;
+
+pub struct TextureLocation<'a> {
+    pub(crate) inner: SDL_GPUTextureLocation,
+    pub(crate) _marker: PhantomData<&'a Texture>,
 }

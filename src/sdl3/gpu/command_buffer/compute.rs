@@ -1,9 +1,13 @@
 use sys::gpu::{
     SDL_BindGPUComputePipeline, SDL_BindGPUComputeSamplers, SDL_BindGPUComputeStorageBuffers,
-    SDL_BindGPUComputeStorageTextures, SDL_DispatchGPUCompute, SDL_GPUComputePass,
+    SDL_BindGPUComputeStorageTextures, SDL_DispatchGPUCompute, SDL_DispatchGPUComputeIndirect,
+    SDL_GPUComputePass,
 };
 
-use crate::gpu::{Buffer, ComputePipeline, Extern, Texture, TextureSamplerBinding};
+use crate::gpu::{
+    info_struct::IndirectDispatchCommand, Buffer, ComputePipeline, Extern, Texture,
+    TextureSamplerBinding,
+};
 
 pub type ComputePass = Extern<SDL_GPUComputePass>;
 
@@ -49,8 +53,15 @@ impl ComputePass {
         }
     }
 
+    /// Dispatch compute work
     #[doc(alias = "SDL_DispatchGPUCompute")]
     pub fn dispatch(&self, groupcount_x: u32, groupcount_y: u32, groupcount_z: u32) {
         unsafe { SDL_DispatchGPUCompute(self.ll(), groupcount_x, groupcount_y, groupcount_z) }
+    }
+
+    /// Dispatch compute work. Same as `dispatch`, except the dispatch parameters are read from GPU memory.
+    #[doc(alias = "SDL_DispatchGPUComputeIndirect")]
+    pub fn dispatch_indirect(&self, dispatch: crate::gpu::Ref<'_, IndirectDispatchCommand>) {
+        unsafe { SDL_DispatchGPUComputeIndirect(self.ll(), dispatch.buf.ll(), dispatch.offset) }
     }
 }

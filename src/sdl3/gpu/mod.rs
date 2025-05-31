@@ -1,6 +1,14 @@
-mod resource;
-use std::cell::UnsafeCell;
 
+use std::cell::UnsafeCell;
+use std::marker::{PhantomData, PhantomPinned};
+
+mod abstraction;
+
+mod auto_trait;
+
+pub use abstraction::Ref;
+
+mod resource;
 pub use resource::{
     Owned,
     Buffer,
@@ -19,7 +27,6 @@ pub use resource::{
 
 mod command_buffer;
 pub use command_buffer::{
-    OwnedCommandBuffer,
     CommandBuffer,
     ComputePass,
     RenderPass,
@@ -53,16 +60,17 @@ use crate::{get_error, Error};
 
 mod util;
 
-
-
 unsafe impl Sync for Device {}
 unsafe impl Sync for Buffer {}
+unsafe impl Sync for Texture {}
+unsafe impl<'a, T: resource::GpuRelease + Sync> Sync for Owned<'a, T> {}
 
 // We need some wrapper to be able to implement (inherent) methods for the type.
 // The UnsafeCell doesn't actually do anything for &mut Extern, but the wrapped types
 // are also zero-sized, so safe code still can't access any bytes with that.
+// Also, PhantomPinned so that we can safely give out Pin<&mut Extern<T>>
 #[repr(transparent)]
-pub struct Extern<T>(UnsafeCell<T>);
+pub struct Extern<T>(UnsafeCell<T>, PhantomPinned, PhantomData<*mut ()>);
 
 impl<T> Extern<T> {
     pub fn ll(&self) -> *mut T {
@@ -71,11 +79,6 @@ impl<T> Extern<T> {
 }
 
 impl Device {
-  
-    #[doc(alias = "SDL_AcquireGPUCommandBuffer")]
-    pub fn acquire_command_buffer<'gpu>(&'gpu self) -> Result<OwnedCommandBuffer<'gpu>, Error> {
-        OwnedCommandBuffer::new(self)
-    }
 
     #[doc(alias = "SDL_ClaimWindowForGPUDevice")]
     pub fn claim_window(&self, w: &crate::video::Window) -> Result<(), Error> {

@@ -8,7 +8,7 @@ use crate::{get_error, gpu::util::nonnull_ext_or_get_error, Error};
 
 use super::{
     util::Defer, ColorTargetInfo, DepthStencilTargetInfo, Device, Extern,
-    StorageBufferReadWriteBinding, StorageTextureReadWriteBinding,
+    StorageBufferReadWriteBinding, StorageTextureReadWriteBinding, Texture,
 };
 
 use sys::gpu::{
@@ -55,19 +55,36 @@ impl<'gpu> DerefMut for OwnedCommandBuffer<'gpu> {
         unsafe { self.raw.as_mut() }
     }
 }
-
-impl<'gpu> OwnedCommandBuffer<'gpu> {
-    pub(crate) fn new(device: &'gpu Device) -> Result<Self, Error> {
-        let raw = nonnull_ext_or_get_error(unsafe { SDL_AcquireGPUCommandBuffer(device.ll()) })?;
+impl Device {
+    #[doc(alias = "SDL_AcquireGPUCommandBuffer")]
+    pub fn acquire_command_buffer<'gpu>(&'gpu self) -> Result<OwnedCommandBuffer<'gpu>, Error> {
+        let raw = nonnull_ext_or_get_error(unsafe { SDL_AcquireGPUCommandBuffer(self.ll()) })?;
         Ok(OwnedCommandBuffer {
             raw,
             _marker: PhantomData,
         })
     }
+}
 
+impl<'gpu> Drop for OwnedCommandBuffer<'gpu> {
+    fn drop(&mut self) {
+        if std::thread::panicking() {
+            // if already panicking, let's not make it worse
+            return;
+        } else {
+            panic!("A command buffer was implicitly dropped,
+                but should be explicitly submitted or cancelled.");
+        }
+    }
+}
+
+impl<'gpu> OwnedCommandBuffer<'gpu> {
     #[doc(alias = "SDL_SubmitGPUCommandBuffer")]
     pub fn submit(self) -> Result<(), Error> {
-        if unsafe { sys::gpu::SDL_SubmitGPUCommandBuffer(self.ll()) } {
+        let raw = self.ll();
+        std::mem::forget(self);
+
+        if unsafe { sys::gpu::SDL_SubmitGPUCommandBuffer(raw) } {
             Ok(())
         } else {
             Err(get_error())
@@ -76,13 +93,20 @@ impl<'gpu> OwnedCommandBuffer<'gpu> {
 
     #[doc(alias = "SDL_CancelGPUCommandBuffer")]
     pub fn cancel(self) {
+        let raw = self.ll();
+        std::mem::forget(self);
+
         unsafe {
-            sys::gpu::SDL_CancelGPUCommandBuffer(self.ll());
+            sys::gpu::SDL_CancelGPUCommandBuffer(raw);
         }
     }
 }
 
 impl CommandBuffer {
+    /// Run a compute pass on this command buffer.
+    ///
+    /// Note that *writeable* resources are bound at the start of the pass for the whole pass,
+    /// whereas readonly resources are bound separately and can be rebound during the pass.
     #[doc(alias = "SDL_BeginGPUComputePass")]
     pub fn compute_pass<R>(
         &mut self,
@@ -107,6 +131,7 @@ impl CommandBuffer {
         Ok(unsafe { func(self, raw.as_mut()) })
     }
 
+    /// Run a render pass on this command buffer.
     #[doc(alias = "SDL_BeginGPURenderPass")]
     pub fn render_pass<R>(
         &mut self,
@@ -133,10 +158,11 @@ impl CommandBuffer {
         Ok(unsafe { func(self, raw.as_mut()) })
     }
 
+    /// Run a copy pass on this command buffer.
     #[doc(alias = "SDL_BeginGPUCopyPass")]
     pub fn copy_pass<R>(
         &mut self,
-        func: impl for<'a> FnOnce(&'a Extern<SDL_GPUCommandBuffer>, &'a mut CopyPass) -> R,
+        func: impl for<'a> FnOnce(&'a CommandBuffer, &'a mut CopyPass) -> R,
     ) -> Result<R, Error> {
         let mut raw = nonnull_ext_or_get_error(unsafe { SDL_BeginGPUCopyPass(self.ll()) })?;
 
@@ -169,14 +195,13 @@ impl CommandBuffer {
                 &mut height,
             )
         };
-        let raw = raw.cast();
+        let raw: *mut Texture = raw.cast();
         if success {
-            if let Some(raw) = NonNull::new(raw) {
+            if let Some(tex) = unsafe { raw.as_ref() } {
                 Ok(SwapchainTexture {
-                    raw,
+                    tex,
                     width,
                     height,
-                    _marker: PhantomData,
                 })
             } else {
                 Err(None)
@@ -197,14 +222,13 @@ impl CommandBuffer {
         let success = unsafe {
             SDL_AcquireGPUSwapchainTexture(self.ll(), w.raw(), &mut raw, &mut width, &mut height)
         };
-        let raw = raw.cast();
+        let raw: *mut Texture = raw.cast();
         if success {
-            if let Some(raw) = NonNull::new(raw) {
+            if let Some(tex) = unsafe { raw.as_ref() } {
                 Ok(SwapchainTexture {
-                    raw,
+                    tex,
                     width,
                     height,
-                    _marker: PhantomData,
                 })
             } else {
                 Err(None)
