@@ -44,6 +44,47 @@
 //!     }
 //! }
 //! ```
+//!
+//! # Feature Flags
+//!
+//! ## Linking to `libsdl3`
+//!
+//! This crate requires the SDL3 library to link and run.
+//!
+//! By default without any of these features enabled, it will try to link a system SDL3 library as a dynamic/shared library
+//! using the default library search paths.
+//!
+//! If you don't have `libsdl3` installed on your system and just want it to work, we recommend using `build-from-source`.
+//! Also see the different build configurations that `sdl3-sys` provides:  <https://github.com/maia-s/sdl3-sys-rs/tree/main/sdl3-sys#usage>
+//!
+//! | Name                             | Description                                                    |
+//! |----------------------------------|----------------------------------------------------------------|
+//! | `build-from-source`              | Fetch and build the library from source                        |
+//! | `build-from-source-static`       | Fetch and build the library from source and link it statically |
+//! | `build-from-source-unix-console` | TODO                                                           |
+//! | `use-pkg-config`                 | Use `pkg-config` to find the library                           |
+//! | `use-vcpkg`                      | Use `vcpkg` to find the library                                |
+//! | `static-link`                    | Link the library statically                                    |
+//! | `link-framework`                 | Link the library as a framework on macOS                       |
+//!
+//! ## Optional Features
+//!
+//! Note that since `sdl3` is still in the progress of migrating to and integrating the new
+//! features of `libsdl3`, some features might be not yet, or only partially implemented.
+//!
+//! | Name                | Description                                                            | Implementation Status |
+//! |---------------------|------------------------------------------------------------------------|-----------------------|
+//! | `ash`               | Use Vulkan types from the ash crate                                    | Implemented           |
+//! | `unsafe_textures`   | TODO                                                                   | TODO                  |
+//! | `gfx`               | TODO                                                                   | TODO                  |
+//! | `mixer`             | TODO                                                                   | Not Implemented?      |
+//! | `image`             | TODO                                                                   | TODO                  |
+//! | `ttf`               | TODO                                                                   | TODO                  |
+//! | `hidapi`            | Use hidapi support in SDL                                              | TODO                  |
+//! | `test-mode`         | Allows SDL to be initialised from a thread that is not the main thread | Implemented           |
+//! | `raw-window-handle` | Enables integrations with the [`wgpu`] crate                           | Implemented           |
+//!
+//! [`wgpu`]: https://docs.rs/wgpu/latest/wgpu/
 
 #![crate_name = "sdl3"]
 #![crate_type = "lib"]
