@@ -3,7 +3,7 @@ name = "sdl3"
 description = "Cross-platform multimedia"
 repository = "https://github.com/vhspace/sdl3-rs"
 documentation = "https://docs.rs/sdl3/latest/sdl3/"
-version = "0.14.26"
+version = "0.14.27"
 license = "MIT"
 authors = [
     "Tony Aldridge <tony@angry-lawyer.com>",
@@ -79,7 +79,7 @@ build-from-source-unix-console = ["sdl3-sys/sdl-unix-console-build"]
 ash = ["sdl3-sys/use-ash-v0-38"]
 default = []
 unsafe_textures = []
-gfx = ["c_vec"]      #, "sdl3-sys/gfx"]
+gfx = ["c_vec"] #, "sdl3-sys/gfx"]
 #mixer = ["sdl3-sys/mixer"]
 image = ["dep:sdl3-image-sys"]
 ttf = ["dep:sdl3-ttf-sys"]
