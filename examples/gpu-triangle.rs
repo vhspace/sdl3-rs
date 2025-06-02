@@ -3,8 +3,8 @@ extern crate sdl3;
 use sdl3::{
     event::Event,
     gpu::{
-        ColorTargetDescription, ColorTargetInfo, Device, FillMode, GraphicsPipelineTargetInfo,
-        LoadOp, PrimitiveType, ShaderFormat, ShaderStage, StoreOp,
+        ColorTargetDescription, ColorTargetInfo, FillMode, GraphicsPipelineTargetInfo, LoadOp,
+        OwnedDevice, PrimitiveType, ShaderFormat, ShaderStage, StoreOp,
     },
     keyboard::Keycode,
     pixels::Color,
@@ -24,11 +24,11 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     // by default, and we specify that our shaders will be SPIR-V ones (even through we
     // aren't using any shaders)
     // We'll also turn on debug mode to true, so we get debug stuff
-    let gpu = Device::new(
-        ShaderFormat::SpirV | ShaderFormat::Dxil | ShaderFormat::Dxbc | ShaderFormat::MetalLib,
+    let gpu = OwnedDevice::new(
+        ShaderFormat::SPIRV | ShaderFormat::DXIL | ShaderFormat::DXBC | ShaderFormat::METALLIB,
         true,
-    )?
-    .with_window(&window)?;
+    )?;
+    gpu.claim_window(&window)?;
 
     let fs_source = include_bytes!("shaders/triangle.frag.spv");
     let vs_source = include_bytes!("shaders/triangle.vert.spv");
@@ -36,13 +36,13 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Our shaders, require to be precompiled by a SPIR-V compiler beforehand
     let vs_shader = gpu
         .create_shader()
-        .with_code(ShaderFormat::SpirV, vs_source, ShaderStage::Vertex)
+        .with_code(ShaderFormat::SPIRV, vs_source, ShaderStage::Vertex)
         .with_entrypoint(c"main")
         .build()?;
 
     let fs_shader = gpu
         .create_shader()
-        .with_code(ShaderFormat::SpirV, fs_source, ShaderStage::Fragment)
+        .with_code(ShaderFormat::SPIRV, fs_source, ShaderStage::Fragment)
         .with_entrypoint(c"main")
         .build()?;
 
@@ -95,16 +95,18 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             let color_targets = [
                 ColorTargetInfo::default()
                     .with_texture(&swapchain)
-                    .with_load_op(LoadOp::Clear)
-                    .with_store_op(StoreOp::Store)
+                    .with_load_op(LoadOp::CLEAR)
+                    .with_store_op(StoreOp::STORE)
                     .with_clear_color(Color::RGB(5, 3, 255)), //blue with small RG bias
             ];
-            let render_pass = gpu.begin_render_pass(&command_buffer, &color_targets, None)?;
-            render_pass.bind_graphics_pipeline(&pipeline);
-            // Screen is cleared here due to the color target info
-            // Now we'll draw the triangle primitives
-            render_pass.draw_primitives(3, 1, 0, 0);
-            gpu.end_render_pass(render_pass);
+
+            command_buffer.render_pass(&color_targets, None, |_cmd, render_pass| {
+                render_pass.bind_graphics_pipeline(&pipeline);
+                // Screen is cleared here due to the color target info
+                // Now we'll draw the triangle primitives
+                render_pass.draw_primitives(3, 1, 0, 0);
+            })?;
+
             command_buffer.submit()?;
         } else {
             // Swapchain unavailable, cancel work
