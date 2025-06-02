@@ -46,10 +46,9 @@ Add the following to your `Cargo.toml`:
 sdl3 = { version = "0", features = [] }
 ```
 
-For further instructions either checkout the documentation of the different
-build/feature flags on [`docs.rs`](https://docs.rs/sdl3/latest/sdl3/), or if you
-want to access the documentation locally, run `cargo doc --open` in your project
-and search for `sdl3`.
+### [Read the documentation](https://docs.rs/sdl3/latest/sdl3/)
+
+Or if you would like to open it offline, run `cargo doc --package sdl3 --open`
 
 # Documentation
 
