@@ -7,6 +7,7 @@ use std::error;
 use std::ffi::NulError;
 use std::ffi::{CStr, CString};
 use std::fmt;
+use std::marker::PhantomData;
 use std::os::raw::c_int;
 use sys::surface::SDL_Surface;
 
@@ -271,6 +272,11 @@ pub struct Font<'iostream> {
     // side
     #[allow(dead_code)]
     iostream: Option<IOStream<'iostream>>,
+
+    // Fonts can't implement [`Send`] or [`Sync`] since TTF API on fonts should be called on the
+    // same thread that the fonts were created.
+    /// This field makes sure [`Send`] and [`Sync`] are not implemented by default.
+    _marker: PhantomData<*mut ()>,
 }
 
 impl<'r> Drop for Font<'r> {
@@ -294,6 +300,7 @@ impl<'r> Font<'r> {
             context,
             raw,
             iostream,
+            _marker: PhantomData,
         }
     }
 
@@ -303,6 +310,27 @@ impl<'r> Font<'r> {
     #[allow(clippy::trivially_copy_pass_by_ref)]
     pub unsafe fn raw(&self) -> *mut ttf::TTF_Font {
         self.raw
+    }
+
+    /// Returns a new font copying the original. Currently it doesn't copy fonts created using
+    /// IOStream
+    #[doc(alias = "TTF_CopyFont")]
+    fn try_clone(&self) -> Result<Font<'r>, Error> {
+        if self.iostream.is_some() {
+            return Err(Error("Can't copy Font using IOStream".to_owned()));
+        }
+
+        let raw = unsafe { ttf::TTF_CopyFont(self.raw) };
+        if raw.is_null() {
+            Err(get_error())
+        } else {
+            Ok(Font {
+                context: self.context.clone(),
+                raw,
+                iostream: None,
+                _marker: PhantomData,
+            })
+        }
     }
 
     /// Starts specifying a rendering of the given UTF-8-encoded text.
@@ -507,6 +535,20 @@ impl<'r> Font<'r> {
             })
         } else {
             None
+        }
+    }
+
+    /// Returns the kerning size between the glyphs of two UNICODE codepoints.
+    #[doc(alias = "TTF_GetGlyphKerning")]
+    pub fn get_glyph_kerning(&self, previous_ch: char, ch: char) -> Result<i32, Error> {
+        let mut kerning = 0;
+        let ret = unsafe {
+            ttf::TTF_GetGlyphKerning(self.raw, previous_ch as u32, ch as u32, &mut kerning)
+        };
+        if !ret {
+            Err(get_error())
+        } else {
+            Ok(kerning)
         }
     }
 }
