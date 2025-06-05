@@ -287,7 +287,7 @@ pub fn internal_load_font<'ttf, P: AsRef<Path>>(
             Err(get_error())
         } else {
             Ok(Font {
-                raw: raw,
+                raw,
                 iostream: None,
                 _marker: PhantomData,
             })
@@ -304,7 +304,7 @@ where
     R: Into<Option<IOStream<'r>>>,
 {
     Font {
-        raw: raw,
+        raw,
         iostream: iostream.into(),
         _marker: PhantomData,
     }
@@ -347,7 +347,7 @@ impl<'ttf, 'r> Font<'ttf, 'r> {
             let ret = ttf::TTF_GetStringSize(self.raw, c_string.as_ptr(), 0, &mut w, &mut h);
             (ret, (w as u32, h as u32))
         };
-        if res == true {
+        if res {
             Ok(size)
         } else {
             Err(FontError::SdlError(get_error()))
@@ -465,7 +465,7 @@ impl<'ttf, 'r> Font<'ttf, 'r> {
     pub fn find_glyph(&self, ch: char) -> Option<u16> {
         unsafe {
             let ret = ttf::TTF_FontHasGlyph(self.raw, ch as u32);
-            if ret {
+            if !ret {
                 None
             } else {
                 Some(ret as u16)

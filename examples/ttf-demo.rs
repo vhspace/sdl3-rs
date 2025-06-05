@@ -59,7 +59,7 @@ fn run(font_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let texture_creator = canvas.texture_creator();
 
     // Load a font
-    let mut font = ttf_context.load_font(font_path, 128)?;
+    let mut font = ttf_context.load_font(font_path, 128.0)?;
     font.set_style(sdl3::ttf::FontStyle::BOLD);
 
     // render a surface, and convert it to a texture bound to the canvas
@@ -85,7 +85,7 @@ fn run(font_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
         SCREEN_HEIGHT - padding,
     );
 
-    canvas.copy(&texture, None, Some(target))?;
+    canvas.copy(&texture, None, Some(target.into()))?;
     canvas.present();
 
     'mainloop: loop {
