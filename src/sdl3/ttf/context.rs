@@ -2,95 +2,109 @@ use crate::iostream::IOStream;
 use crate::version::Version;
 use crate::{get_error, Error};
 use sdl3_ttf_sys::ttf;
-use std::error;
-use std::fmt;
-use std::io;
+use std::ffi::CString;
 use std::path::Path;
+use std::sync::atomic::{AtomicU32, Ordering};
 
-use super::font::{internal_load_font, internal_load_font_from_ll, Font};
+use super::font::Font;
 
-/// A context manager for `SDL2_TTF` to manage C code initialization and clean-up.
+/// A context manager for `SDL3_TTF` to manage C code initialization and clean-up.
+/// SDL3_TTF is (do a full check on this) thread-safe, so we let it be `Send` and `Sync`
 #[must_use]
 pub struct Sdl3TtfContext;
 
 // Clean up the context once it goes out of scope
 impl Drop for Sdl3TtfContext {
     fn drop(&mut self) {
-        unsafe {
-            ttf::TTF_Quit();
+        let prev_count = TTF_COUNT.fetch_sub(1, Ordering::Relaxed);
+        assert!(prev_count > 0);
+        if prev_count == 1 {
+            unsafe {
+                ttf::TTF_Quit();
+            }
         }
     }
 }
 
+static TTF_COUNT: AtomicU32 = AtomicU32::new(0);
+
 impl Sdl3TtfContext {
-    /// Loads a font from the given file with the given size in points.
-    pub fn load_font<'ttf, P: AsRef<Path>>(
-        &'ttf self,
-        path: P,
-        point_size: f32,
-    ) -> Result<Font<'ttf, 'static>, Error> {
-        internal_load_font(path, point_size)
+    /// Initializes the truetype font API and returns a context manager which will
+    /// clean up the library once it goes out of scope.
+    #[doc(alias = "TTF_Init")]
+    fn new() -> Result<Self, Error> {
+        if TTF_COUNT.fetch_add(1, Ordering::Relaxed) == 0 {
+            let result;
+
+            unsafe {
+                result = ttf::TTF_Init();
+            }
+
+            if !result {
+                TTF_COUNT.store(0, Ordering::Relaxed);
+                return Err(get_error());
+            }
+        }
+
+        Ok(Self)
     }
 
-    /// Loads a font from the given SDL2 iostream object with the given size in
+    /// Loads a font from the given file with the given size in points.
+    #[doc(alias = "TTF_OpenFont")]
+    pub fn load_font<P: AsRef<Path>>(
+        &self,
+        path: P,
+        point_size: f32,
+    ) -> Result<Font<'static>, Error> {
+        unsafe {
+            let cstring = CString::new(path.as_ref().to_str().unwrap()).unwrap();
+            let raw = ttf::TTF_OpenFont(cstring.as_ptr(), point_size);
+            if raw.is_null() {
+                Err(get_error())
+            } else {
+                Ok(Font::new(self.clone(), raw, None))
+            }
+        }
+    }
+
+    /// Loads a font from the given SDL3 iostream object with the given size in
     /// points.
-    pub fn load_font_from_iostream<'ttf, 'r>(
-        &'ttf self,
+    #[doc(alias = "TTF_OpenFontIO")]
+    pub fn load_font_from_iostream<'r>(
+        &self,
         iostream: IOStream<'r>,
         point_size: f32,
-    ) -> Result<Font<'ttf, 'r>, Error> {
+    ) -> Result<Font<'r>, Error> {
         let raw = unsafe { ttf::TTF_OpenFontIO(iostream.raw(), false, point_size) };
         if (raw as *mut ()).is_null() {
             Err(get_error())
         } else {
-            Ok(internal_load_font_from_ll(raw, Some(iostream)))
+            Ok(Font::new(self.clone(), raw, iostream.into()))
         }
+    }
+}
+
+impl Clone for Sdl3TtfContext {
+    fn clone(&self) -> Self {
+        let prev_count = TTF_COUNT.fetch_add(1, Ordering::Relaxed);
+        assert!(prev_count > 0);
+        Self
     }
 }
 
 /// Returns the version of the dynamically linked `SDL_TTF` library
+#[doc(alias = "TTF_Version")]
 pub fn get_linked_version() -> Version {
     unsafe { Version::from_ll(ttf::TTF_Version()) }
 }
 
-/// An error for when `sdl2_ttf` is attempted initialized twice
-/// Necessary for context management, unless we find a way to have a singleton
-#[derive(Debug)]
-pub enum InitError {
-    InitializationError(io::Error),
-    AlreadyInitializedError,
-}
-
-impl error::Error for InitError {
-    fn cause(&self) -> Option<&dyn error::Error> {
-        match *self {
-            InitError::AlreadyInitializedError => None,
-            InitError::InitializationError(ref error) => Some(error),
-        }
-    }
-}
-
-impl fmt::Display for InitError {
-    fn fmt(&self, formatter: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        formatter.write_str("SDL2_TTF has already been initialized")
-    }
-}
-
-/// Initializes the truetype font API and returns a context manager which will
-/// clean up the library once it goes out of scope.
-pub fn init() -> Result<Sdl3TtfContext, InitError> {
-    unsafe {
-        if ttf::TTF_WasInit() == 1 {
-            Err(InitError::AlreadyInitializedError)
-        } else if ttf::TTF_Init() {
-            Ok(Sdl3TtfContext)
-        } else {
-            Err(InitError::InitializationError(io::Error::last_os_error()))
-        }
-    }
+#[inline]
+pub fn init() -> Result<Sdl3TtfContext, Error> {
+    Sdl3TtfContext::new()
 }
 
 /// Returns whether library has been initialized already.
+#[doc(alias = "TTF_WasInit")]
 pub fn has_been_initialized() -> bool {
     unsafe { ttf::TTF_WasInit() == 1 }
 }
