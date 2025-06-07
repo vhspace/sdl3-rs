@@ -1709,7 +1709,7 @@ impl Window {
         let mut surface: VkSurfaceKHR = VkSurfaceKHR::default();
 
         #[cfg(not(feature = "ash"))]
-        let mut surface: VkSurfaceKHR = 0 as _;
+        let mut surface: VkSurfaceKHR = VkSurfaceKHR::null();
         if unsafe {
             sys::vulkan::SDL_Vulkan_CreateSurface(self.context.raw, instance, null(), &mut surface)
         } {
