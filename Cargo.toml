@@ -28,7 +28,6 @@ lazy_static = "1.4.0"
 
 [dependencies.sdl3-sys]
 version = "0.4.7+SDL3-3.2.10"
-features = ["debug-impls"]
 
 [dependencies.sdl3-image-sys]
 version = "0.1"
@@ -80,7 +79,7 @@ build-from-source-unix-console = ["sdl3-sys/sdl-unix-console-build"]
 ash = ["sdl3-sys/use-ash-v0-38"]
 default = []
 unsafe_textures = []
-gfx = ["c_vec"]      #, "sdl3-sys/gfx"]
+gfx = ["c_vec"] #, "sdl3-sys/gfx"]
 #mixer = ["sdl3-sys/mixer"]
 image = ["dep:sdl3-image-sys"]
 ttf = ["dep:sdl3-ttf-sys"]
