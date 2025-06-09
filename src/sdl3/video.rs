@@ -21,7 +21,7 @@ use std::{fmt, mem, ptr};
 use sys::properties::{
     SDL_CreateProperties, SDL_DestroyProperties, SDL_SetNumberProperty, SDL_SetStringProperty,
 };
-use sys::stdinc::{SDL_FunctionPointer, SDL_free, Uint32, Uint64};
+use sys::stdinc::{SDL_FunctionPointer, SDL_free, Uint64};
 use sys::video::{
     SDL_DisplayID, SDL_DisplayMode, SDL_DisplayModeData, SDL_DisplayOrientation,
     SDL_GetSystemTheme, SDL_WindowFlags, SDL_SYSTEM_THEME_DARK, SDL_SYSTEM_THEME_LIGHT,
@@ -708,12 +708,16 @@ pub enum SystemTheme {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Display {
-    pub(crate) id: Uint32,
+    pub(crate) id: SDL_DisplayID,
 }
 
 impl Display {
     pub(crate) fn from_ll(id: SDL_DisplayID) -> Display {
-        Display { id: id }
+        Display { id }
+    }
+
+    pub fn to_ll(&self) -> SDL_DisplayID {
+        self.id
     }
 
     // There is no good method of determining this directly
