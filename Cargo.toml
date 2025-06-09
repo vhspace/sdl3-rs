@@ -3,7 +3,7 @@ name = "sdl3"
 description = "Cross-platform multimedia"
 repository = "https://github.com/vhspace/sdl3-rs"
 documentation = "https://docs.rs/sdl3/latest/sdl3/"
-version = "0.14.24"
+version = "0.14.30"
 license = "MIT"
 authors = [
     "Tony Aldridge <tony@angry-lawyer.com>",
@@ -27,14 +27,14 @@ libc = "0.2.169"
 lazy_static = "1.4.0"
 
 [dependencies.sdl3-sys]
-version = "0.4.7+SDL3-3.2.10"
+version = "0.5"
 
 [dependencies.sdl3-image-sys]
-version = "0.1"
+version = "0.2"
 optional = true
 
 [dependencies.sdl3-ttf-sys]
-version = "0.1"
+version = "0.2"
 optional = true
 
 [dependencies.c_vec]
@@ -67,13 +67,13 @@ static-link = ["sdl3-sys/link-static"]
 link-framework = ["sdl3-sys/link-framework"]
 build-from-source = [
     "sdl3-sys/build-from-source",
-    "sdl3-image-sys/build-from-source",
-    "sdl3-ttf-sys/build-from-source",
+    "sdl3-image-sys?/build-from-source",
+    "sdl3-ttf-sys?/build-from-source",
 ]
 build-from-source-static = [
     "sdl3-sys/build-from-source-static",
-    "sdl3-image-sys/build-from-source-static",
-    "sdl3-ttf-sys/build-from-source-static",
+    "sdl3-image-sys?/build-from-source-static",
+    "sdl3-ttf-sys?/build-from-source-static",
 ]
 build-from-source-unix-console = ["sdl3-sys/sdl-unix-console-build"]
 ash = ["sdl3-sys/use-ash-v0-38"]
@@ -94,7 +94,7 @@ raw-window-handle = ["dep:raw-window-handle", "dep:objc2"]
 [package.metadata.docs.rs]
 #features = ["default", "gfx", "mixer", "image", "ttf"]
 #features = ["default", "gfx"]
-features = ["default"]
+features = ["default", "raw-window-handle"]
 
 [[example]]
 name = "animation"
@@ -222,6 +222,9 @@ path = "examples/renderer/a08_rotating_textures.rs"
 required-features = ["unsafe_textures"]
 name = "renderer_09_scaling_textures"
 path = "examples/renderer/a09_scaling_textures.rs"
+
+[[example]]
+name = "render-geometry"
 
 [[example]]
 name = "renderer-texture"

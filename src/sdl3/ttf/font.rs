@@ -9,8 +9,9 @@ use std::ffi::{CStr, CString};
 use std::fmt;
 use std::marker::PhantomData;
 use std::os::raw::c_int;
-use std::path::Path;
 use sys::surface::SDL_Surface;
+
+use super::Sdl3TtfContext;
 
 /// Information about the hinting of a font.
 /// See [wikipedia](https://en.wikipedia.org/wiki/Font_hinting)
@@ -90,7 +91,7 @@ impl<'a> RenderableText<'a> {
 #[must_use]
 pub struct PartialRendering<'f, 'text> {
     text: RenderableText<'text>,
-    font: &'f Font<'f, 'f>,
+    font: &'f Font<'f>,
 }
 
 /// Converts the given raw pointer to a surface.
@@ -106,6 +107,7 @@ impl<'f, 'text> PartialRendering<'f, 'text> {
     /// Renders the text in *solid* mode.
     /// See [the SDL3_TTF docs](https://wiki.libsdl.org/SDL3_ttf/TTF_RenderText_Solid)
     /// for an explanation.
+    #[doc(alias = "TTF_RenderText_Solid")]
     pub fn solid<'b, T>(self, color: T) -> FontResult<Surface<'b>>
     where
         T: Into<Color>,
@@ -125,6 +127,7 @@ impl<'f, 'text> PartialRendering<'f, 'text> {
     /// Renders the text in *shaded* mode.
     /// See [the SDL3_TTF docs](https://wiki.libsdl.org/SDL3_ttf/TTF_RenderText_Shaded)
     /// for an explanation.
+    #[doc(alias = "TTF_RenderText_Shaded")]
     pub fn shaded<'b, T>(self, color: T, background: T) -> FontResult<Surface<'b>>
     where
         T: Into<Color>,
@@ -149,6 +152,7 @@ impl<'f, 'text> PartialRendering<'f, 'text> {
     /// Renders the text in *blended* mode.
     /// See [the SDL3_TTF docs](https://wiki.libsdl.org/SDL3_ttf/TTF_RenderText_Blended)
     /// for an explanation.
+    #[doc(alias = "TTF_RenderText_Blended")]
     pub fn blended<'b, T>(self, color: T) -> FontResult<Surface<'b>>
     where
         T: Into<Color>,
@@ -169,6 +173,7 @@ impl<'f, 'text> PartialRendering<'f, 'text> {
     /// exceeds the given maximum width.
     /// See [the SDL3_TTF docs](https://wiki.libsdl.org/SDL3_ttf/TTF_RenderText_Blended_Wrapped)
     /// for an explanation of the mode.
+    #[doc(alias = "TTF_RenderText_Blended_Wrapped")]
     pub fn blended_wrapped<'b, T>(self, color: T, wrap_max_width: i32) -> FontResult<Surface<'b>>
     where
         T: Into<Color>,
@@ -194,6 +199,7 @@ impl<'f, 'text> PartialRendering<'f, 'text> {
     /// Renders the text in *LCD subpixel* mode.
     /// See [the SDL3_TTF docs](https://wiki.libsdl.org/SDL3_ttf/TTF_RenderText_LCD)
     /// for an explanation.
+    #[doc(alias = "TTF_RenderText_LCD")]
     pub fn lcd<'b, T>(self, foreground: T, background: T) -> FontResult<Surface<'b>>
     where
         T: Into<Color>,
@@ -219,6 +225,7 @@ impl<'f, 'text> PartialRendering<'f, 'text> {
     /// exceeds the given maximum width.
     /// See [the SDL3_TTF docs](https://wiki.libsdl.org/SDL3_ttf/TTF_RenderText_LCD_Wrapped)
     /// for an explanation of the mode.
+    #[doc(alias = "TTF_RenderText_LCD_Wrapped")]
     pub fn lcd_wrapped<'b, T>(
         self,
         foreground: T,
@@ -250,8 +257,13 @@ impl<'f, 'text> PartialRendering<'f, 'text> {
 }
 
 /// A loaded TTF font.
-pub struct Font<'ttf_module, 'iostream> {
+pub struct Font<'iostream> {
     raw: *mut ttf::TTF_Font,
+
+    // This will keep TTF alive and avoid having to deal with lifetimes
+    #[allow(dead_code)]
+    context: Sdl3TtfContext,
+
     // Iostream is only stored here because it must not outlive
     // the Font struct, and this Iostream should not be used by
     // anything else
@@ -260,11 +272,14 @@ pub struct Font<'ttf_module, 'iostream> {
     // side
     #[allow(dead_code)]
     iostream: Option<IOStream<'iostream>>,
-    #[allow(dead_code)]
-    _marker: PhantomData<&'ttf_module ()>,
+
+    // Fonts can't implement [`Send`] or [`Sync`] since TTF API on fonts should be called on the
+    // same thread that the fonts were created.
+    /// This field makes sure [`Send`] and [`Sync`] are not implemented by default.
+    _marker: PhantomData<*mut ()>,
 }
 
-impl<'ttf, 'r> Drop for Font<'ttf, 'r> {
+impl<'r> Drop for Font<'r> {
     fn drop(&mut self) {
         unsafe {
             // avoid close font after quit()
@@ -275,48 +290,47 @@ impl<'ttf, 'r> Drop for Font<'ttf, 'r> {
     }
 }
 
-/// Internally used to load a font (for internal visibility).
-pub fn internal_load_font<'ttf, P: AsRef<Path>>(
-    path: P,
-    ptsize: f32,
-) -> Result<Font<'ttf, 'static>, Error> {
-    unsafe {
-        let cstring = CString::new(path.as_ref().to_str().unwrap()).unwrap();
-        let raw = ttf::TTF_OpenFont(cstring.as_ptr(), ptsize);
-        if raw.is_null() {
-            Err(get_error())
-        } else {
-            Ok(Font {
-                raw: raw,
-                iostream: None,
-                _marker: PhantomData,
-            })
+impl<'r> Font<'r> {
+    pub(super) fn new(
+        context: Sdl3TtfContext,
+        raw: *mut ttf::TTF_Font,
+        iostream: Option<IOStream<'r>>,
+    ) -> Self {
+        Self {
+            context,
+            raw,
+            iostream,
+            _marker: PhantomData,
         }
     }
-}
 
-/// Internally used to load a font (for internal visibility).
-pub fn internal_load_font_from_ll<'ttf, 'r, R>(
-    raw: *mut ttf::TTF_Font,
-    iostream: R,
-) -> Font<'ttf, 'r>
-where
-    R: Into<Option<IOStream<'r>>>,
-{
-    Font {
-        raw: raw,
-        iostream: iostream.into(),
-        _marker: PhantomData,
-    }
-}
-
-impl<'ttf, 'r> Font<'ttf, 'r> {
     /// Returns the underlying C font object.
     // this can prevent introducing UB until
     // https://github.com/rust-lang/rust-clippy/issues/5953 is fixed
     #[allow(clippy::trivially_copy_pass_by_ref)]
     pub unsafe fn raw(&self) -> *mut ttf::TTF_Font {
         self.raw
+    }
+
+    /// Returns a new font copying the original. Currently it doesn't copy fonts created using
+    /// IOStream
+    #[doc(alias = "TTF_CopyFont")]
+    fn try_clone(&self) -> Result<Font<'r>, Error> {
+        if self.iostream.is_some() {
+            return Err(Error("Can't copy Font using IOStream".to_owned()));
+        }
+
+        let raw = unsafe { ttf::TTF_CopyFont(self.raw) };
+        if raw.is_null() {
+            Err(get_error())
+        } else {
+            Ok(Font {
+                context: self.context.clone(),
+                raw,
+                iostream: None,
+                _marker: PhantomData,
+            })
+        }
     }
 
     /// Starts specifying a rendering of the given UTF-8-encoded text.
@@ -339,6 +353,7 @@ impl<'ttf, 'r> Font<'ttf, 'r> {
 
     /// Returns the width and height of the given text when rendered using this
     /// font.
+    #[doc(alias = "TTF_GetStringSize")]
     pub fn size_of(&self, text: &str) -> FontResult<(u32, u32)> {
         let c_string = RenderableText::Utf8(text).convert()?;
         let (res, size) = unsafe {
@@ -347,7 +362,7 @@ impl<'ttf, 'r> Font<'ttf, 'r> {
             let ret = ttf::TTF_GetStringSize(self.raw, c_string.as_ptr(), 0, &mut w, &mut h);
             (ret, (w as u32, h as u32))
         };
-        if res == true {
+        if res {
             Ok(size)
         } else {
             Err(FontError::SdlError(get_error()))
@@ -363,6 +378,7 @@ impl<'ttf, 'r> Font<'ttf, 'r> {
     }
 
     /// Returns the font's style flags.
+    #[doc(alias = "TTF_GetFontStyle")]
     pub fn get_style(&self) -> FontStyle {
         unsafe {
             let raw = ttf::TTF_GetFontStyle(self.raw);
@@ -371,72 +387,87 @@ impl<'ttf, 'r> Font<'ttf, 'r> {
     }
 
     /// Sets the font's style flags.
+    #[doc(alias = "TTF_SetFontStyle")]
     pub fn set_style(&mut self, styles: FontStyle) {
         unsafe { ttf::TTF_SetFontStyle(self.raw, styles.bits()) }
     }
 
     /// Returns the width of the font's outline.
+    #[doc(alias = "TTF_GetFontOutline")]
     pub fn get_outline_width(&self) -> u16 {
         unsafe { ttf::TTF_GetFontOutline(self.raw) as u16 }
     }
 
     /// Sets the width of the font's outline.
+    #[doc(alias = "TTF_SetFontOutline")]
     pub fn set_outline_width(&mut self, width: u16) -> bool {
         unsafe { ttf::TTF_SetFontOutline(self.raw, width as c_int) }
     }
 
     /// Returns the font's freetype hints.
+    #[doc(alias = "TTF_GetFontHinting")]
     pub fn get_hinting(&self) -> Hinting {
         unsafe { ttf::TTF_GetFontHinting(self.raw) }
     }
 
     /// Sets the font's freetype hints.
+    #[doc(alias = "TTF_SetFontHinting")]
     pub fn set_hinting(&mut self, hinting: Hinting) {
         unsafe { ttf::TTF_SetFontHinting(self.raw, hinting) }
     }
 
     /// Returns whether the font is kerning.
+    #[doc(alias = "TTF_GetFontKerning")]
     pub fn get_kerning(&self) -> bool {
         unsafe { ttf::TTF_GetFontKerning(self.raw) }
     }
 
     /// Sets whether the font should use kerning.
+    #[doc(alias = "TTF_SetFontKerning")]
     pub fn set_kerning(&mut self, kerning: bool) {
         unsafe { ttf::TTF_SetFontKerning(self.raw, kerning) }
     }
 
+    /// Returns the total height of the font.
+    #[doc(alias = "TTF_GetFontHeight")]
     pub fn height(&self) -> i32 {
         //! Get font maximum total height.
         unsafe { ttf::TTF_GetFontHeight(self.raw) as i32 }
     }
 
     /// Returns the font's highest ascent (height above base).
+    #[doc(alias = "TTF_GetFontAscent")]
     pub fn ascent(&self) -> i32 {
         unsafe { ttf::TTF_GetFontAscent(self.raw) as i32 }
     }
 
     /// Returns the font's lowest descent (height below base).
     /// This is a negative number.
+    #[doc(alias = "TTF_GetFontDescent")]
     pub fn descent(&self) -> i32 {
         unsafe { ttf::TTF_GetFontDescent(self.raw) as i32 }
     }
 
     /// Returns the recommended line spacing for text rendered with this font.
+    #[doc(alias = "TTF_GetFontLineSkip")]
     pub fn recommended_line_spacing(&self) -> i32 {
         unsafe { ttf::TTF_GetFontLineSkip(self.raw) as i32 }
     }
 
     /// Returns the number of faces in this font.
+    #[doc(alias = "TTF_GetNumFontFaces")]
     pub fn face_count(&self) -> u16 {
         unsafe { ttf::TTF_GetNumFontFaces(self.raw) as u16 }
     }
 
     /// Returns whether the font is monospaced.
+    #[doc(alias = "TTF_FontIsFixedWidth")]
     pub fn face_is_fixed_width(&self) -> bool {
         unsafe { ttf::TTF_FontIsFixedWidth(self.raw) }
     }
 
     /// Returns the family name of the current font face.
+    #[doc(alias = "TTF_GetFontFamilyName")]
     pub fn face_family_name(&self) -> Option<String> {
         unsafe {
             // not owns buffer
@@ -450,6 +481,7 @@ impl<'ttf, 'r> Font<'ttf, 'r> {
     }
 
     /// Returns the name of the current font face.
+    #[doc(alias = "TTF_GetFontStyleName")]
     pub fn face_style_name(&self) -> Option<String> {
         unsafe {
             let cname = ttf::TTF_GetFontStyleName(self.raw);
@@ -462,10 +494,11 @@ impl<'ttf, 'r> Font<'ttf, 'r> {
     }
 
     /// Returns the index of the given character in this font face.
+    #[doc(alias = "TTF_FontHasGlyph")]
     pub fn find_glyph(&self, ch: char) -> Option<u16> {
         unsafe {
             let ret = ttf::TTF_FontHasGlyph(self.raw, ch as u32);
-            if ret {
+            if !ret {
                 None
             } else {
                 Some(ret as u16)
@@ -474,6 +507,7 @@ impl<'ttf, 'r> Font<'ttf, 'r> {
     }
 
     /// Returns the glyph metrics of the given character in this font face.
+    #[doc(alias = "TTF_GetGlyphMetrics")]
     pub fn find_glyph_metrics(&self, ch: char) -> Option<GlyphMetrics> {
         let minx = 0;
         let maxx = 0;
@@ -501,6 +535,20 @@ impl<'ttf, 'r> Font<'ttf, 'r> {
             })
         } else {
             None
+        }
+    }
+
+    /// Returns the kerning size between the glyphs of two UNICODE codepoints.
+    #[doc(alias = "TTF_GetGlyphKerning")]
+    pub fn get_glyph_kerning(&self, previous_ch: char, ch: char) -> Result<i32, Error> {
+        let mut kerning = 0;
+        let ret = unsafe {
+            ttf::TTF_GetGlyphKerning(self.raw, previous_ch as u32, ch as u32, &mut kerning)
+        };
+        if !ret {
+            Err(get_error())
+        } else {
+            Ok(kerning)
         }
     }
 }

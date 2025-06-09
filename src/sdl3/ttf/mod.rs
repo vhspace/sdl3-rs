@@ -25,9 +25,7 @@ mod font;
 
 pub use sdl3_ttf_sys::ttf as sys;
 
-pub use self::context::{
-    get_linked_version, has_been_initialized, init, InitError, Sdl3TtfContext,
-};
+pub use self::context::{get_linked_version, has_been_initialized, init, Sdl3TtfContext};
 pub use self::font::{
     Font, FontError, FontResult, FontStyle, GlyphMetrics, Hinting, PartialRendering,
 };

@@ -2,7 +2,7 @@
 //!
 //! # Example
 //! ```no_run
-//! use sdl3::audio::{AudioCallback, AudioFormat, AudioSpec};
+//! use sdl3::audio::{AudioCallback, AudioFormat, AudioSpec, AudioStream};
 //! use std::time::Duration;
 //!
 //! struct SquareWave {
@@ -12,16 +12,18 @@
 //! }
 //!
 //! impl AudioCallback<f32> for SquareWave {
-//!     fn callback(&mut self, out: &mut [f32]) {
+//!     fn callback(&mut self, stream: &mut AudioStream, requested: i32) {
+//!         let mut out = Vec::<f32>::with_capacity(requested as usize);
 //!         // Generate a square wave
-//!         for x in out.iter_mut() {
-//!             *x = if self.phase <= 0.5 {
+//!         for _ in 0..requested {
+//!             out.push(if self.phase <= 0.5 {
 //!                 self.volume
 //!             } else {
 //!                 -self.volume
-//!             };
+//!             });
 //!             self.phase = (self.phase + self.phase_inc) % 1.0;
 //!         }
+//!         stream.put_data_f32(&out);
 //!     }
 //! }
 //!
@@ -1197,6 +1199,47 @@ impl AudioStream {
         }
     }
 
+    /// Gets the number of bytes queued.
+    #[doc(alias = "SDL_GetAudioStreamQueued")]
+    pub fn queued_bytes(&self) -> Result<i32, Error> {
+        let queue = unsafe { sys::audio::SDL_GetAudioStreamQueued(self.stream) };
+        if queue == -1 {
+            Err(get_error())
+        } else {
+            Ok(queue)
+        }
+    }
+
+    /// Clears any pending data.
+    ///
+    /// This drops any queued data, so there will be nothing to read from
+    /// the stream until more is added.
+    #[doc(alias = "SDL_ClearAudioStream")]
+    pub fn clear(&self) -> Result<(), Error> {
+        let result = unsafe { sys::audio::SDL_ClearAudioStream(self.stream) };
+        if result {
+            Ok(())
+        } else {
+            Err(get_error())
+        }
+    }
+
+    /// Tell the stream that you're done sending data.
+    ///
+    /// It is legal to add more data to a stream after flushing,
+    /// but there may be audio gaps in the output.
+    /// Generally this is intended to signal the end of input,
+    /// so the complete output becomes available.
+    #[doc(alias = "SDL_FlushAudioStream")]
+    pub fn flush(&self) -> Result<(), Error> {
+        let result = unsafe { sys::audio::SDL_FlushAudioStream(self.stream) };
+        if result {
+            Ok(())
+        } else {
+            Err(get_error())
+        }
+    }
+
     /// Converts a slice of bytes to a f32 sample based on AudioFormat.
     /// Returns a Result containing the converted f32 or an error message.
     fn read_bytes_to_f32(&self, chunk: &[u8]) -> Result<f32, Error> {
@@ -1390,6 +1433,20 @@ impl<CB> AudioStreamWithCallback<CB> {
     /// Resumes the audio stream.
     pub fn resume(&self) -> Result<(), Error> {
         self.base_stream.resume()
+    }
+
+    /// Clear any pending data in the stream.
+    pub fn clear(&self) -> Result<(), Error> {
+        self.base_stream.clear()
+    }
+
+    /// Tell the stream that you're done sending data.
+    pub fn flush(&self) -> Result<(), Error> {
+        self.base_stream.flush()
+    }
+
+    pub fn queued_bytes(&self) -> Result<i32, Error> {
+        self.base_stream.queued_bytes()
     }
 
     pub fn lock(&mut self) -> Option<AudioStreamLockGuard<CB>> {
