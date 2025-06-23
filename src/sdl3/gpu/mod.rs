@@ -12,9 +12,10 @@ pub use device::Device;
 mod enums;
 pub use enums::{
     BlendFactor, BlendOp, BufferUsageFlags, ColorComponentFlags, CompareOp, CullMode, FillMode,
-    Filter, FrontFace, IndexElementSize, LoadOp, PrimitiveType, SampleCount, SamplerAddressMode,
-    SamplerMipmapMode, ShaderFormat, ShaderStage, StencilOp, StoreOp, TextureFormat, TextureType,
-    TextureUsage, TransferBufferUsage, VertexElementFormat, VertexInputRate,
+    Filter, FrontFace, IndexElementSize, LoadOp, PresentMode, PrimitiveType, SampleCount,
+    SamplerAddressMode, SamplerMipmapMode, ShaderFormat, ShaderStage, StencilOp, StoreOp,
+    SwapchainComposition, TextureFormat, TextureType, TextureUsage, TransferBufferUsage,
+    VertexElementFormat, VertexInputRate,
 };
 
 mod pass;
