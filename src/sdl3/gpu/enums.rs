@@ -422,3 +422,22 @@ pub enum ColorComponentFlags {
     ABit = SDL_GPU_COLORCOMPONENT_A,
 }
 impl_with!(bitwise_and_or ColorComponentFlags u8);
+
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum PresentMode {
+    #[default]
+    Vsync = sys::gpu::SDL_GPU_PRESENTMODE_VSYNC.0 as u32,
+    Immediate = sys::gpu::SDL_GPU_PRESENTMODE_IMMEDIATE.0 as u32,
+    Mailbox = sys::gpu::SDL_GPU_PRESENTMODE_MAILBOX.0 as u32,
+}
+
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u32)]
+pub enum SwapchainComposition {
+    #[default]
+    Sdr = sys::gpu::SDL_GPU_SWAPCHAINCOMPOSITION_SDR.0 as u32,
+    SdrLinear = sys::gpu::SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR.0 as u32,
+    HdrExtendedLinear = sys::gpu::SDL_GPU_SWAPCHAINCOMPOSITION_HDR_EXTENDED_LINEAR.0 as u32,
+    Hdr10St2084 = sys::gpu::SDL_GPU_SWAPCHAINCOMPOSITION_HDR10_ST2084.0 as u32,
+}

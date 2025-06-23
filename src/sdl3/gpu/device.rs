@@ -2,10 +2,13 @@ use crate::{
     get_error,
     gpu::{
         BufferBuilder, ColorTargetInfo, CommandBuffer, CopyPass, DepthStencilTargetInfo,
-        GraphicsPipelineBuilder, RenderPass, Sampler, SamplerCreateInfo, ShaderBuilder,
-        ShaderFormat, Texture, TextureCreateInfo, TextureFormat, TransferBufferBuilder,
+        GraphicsPipelineBuilder, PresentMode, RenderPass, Sampler, SamplerCreateInfo,
+        ShaderBuilder, ShaderFormat, SwapchainComposition, Texture, TextureCreateInfo,
+        TextureFormat, TransferBufferBuilder,
     },
-    sys, Error,
+    sys,
+    video::Window,
+    Error,
 };
 use std::sync::{Arc, Weak};
 use sys::gpu::{
@@ -223,6 +226,36 @@ impl Device {
     #[doc(alias = "SDL_GetGPUShaderFormats")]
     pub fn get_shader_formats(&self) -> ShaderFormat {
         unsafe { std::mem::transmute(sys::gpu::SDL_GetGPUShaderFormats(self.raw())) }
+    }
+
+    #[doc(alias = "SDL_SetGPUSwapchainParameters")]
+    pub fn set_swapchain_parameters(
+        &self,
+        window: &Window,
+        present_mode: PresentMode,
+        swapchain_composition: SwapchainComposition,
+    ) -> Result<(), Error> {
+        let raw_device_ptr = self.raw();
+        let raw_window_ptr = window.raw();
+
+        let c_present_mode = sys::gpu::SDL_GPUPresentMode(present_mode as i32);
+        let c_swapchain_composition =
+            sys::gpu::SDL_GPUSwapchainComposition(swapchain_composition as i32);
+
+        let success = unsafe {
+            sys::gpu::SDL_SetGPUSwapchainParameters(
+                raw_device_ptr,
+                raw_window_ptr,
+                c_swapchain_composition,
+                c_present_mode,
+            )
+        };
+
+        if success {
+            Ok(())
+        } else {
+            Err(get_error())
+        }
     }
 
     // NOTE: for Xbox builds, the target is a UWP, e.g.: x86_64-uwp-windows-msvc
