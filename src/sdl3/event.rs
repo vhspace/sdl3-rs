@@ -12,6 +12,7 @@ use std::mem;
 use std::mem::transmute;
 use std::ptr;
 use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 use crate::gamepad;
 use crate::gamepad::{Axis, Button};
@@ -2688,9 +2689,10 @@ unsafe fn wait_event() -> Event {
     }
 }
 
-unsafe fn wait_event_timeout(timeout: u32) -> Option<Event> {
+unsafe fn wait_event_timeout(timeout: Duration) -> Option<Event> {
+    let ms = timeout.as_millis() as c_int;
     let mut raw = mem::MaybeUninit::uninit();
-    let success = sys::events::SDL_WaitEventTimeout(raw.as_mut_ptr(), timeout as c_int);
+    let success = sys::events::SDL_WaitEventTimeout(raw.as_mut_ptr(), ms);
 
     if success {
         Some(Event::from_ll(raw.assume_init()))
@@ -2742,8 +2744,12 @@ impl crate::EventPump {
         unsafe { wait_event() }
     }
 
-    /// Waits until the specified timeout (in milliseconds) for the next available event.
-    pub fn wait_event_timeout(&mut self, timeout: u32) -> Option<Event> {
+    /// Polls for the next available event, waiting for up to a specified timeout.
+    ///
+    /// Returns `None` if no event occurred in the given time. Given a timeout of
+    /// zero, this function acts the same as calling `poll_event()`, returning the
+    /// first pending event, if any.
+    pub fn wait_event_timeout(&mut self, timeout: Duration) -> Option<Event> {
         unsafe { wait_event_timeout(timeout) }
     }
 
@@ -2758,11 +2764,13 @@ impl crate::EventPump {
 
     /// Returns a waiting iterator that calls `wait_event_timeout()`.
     ///
-    /// Note: The iterator will never terminate, unless waiting for an event
-    /// exceeds the specified timeout.
-    pub fn wait_timeout_iter(&mut self, timeout: u32) -> EventWaitTimeoutIterator {
+    /// The iterator will always yield pending events, but when there are none left,
+    /// it will try wait for the next available event up to a specified timeout since
+    /// this iterator was created, then yield `None` when the timeout is exceeded.
+    pub fn wait_timeout_iter(&mut self, timeout: Duration) -> EventWaitTimeoutIterator {
         EventWaitTimeoutIterator {
             _marker: PhantomData,
+            created: Instant::now(),
             timeout,
         }
     }
@@ -2814,13 +2822,15 @@ impl Iterator for EventWaitIterator<'_> {
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct EventWaitTimeoutIterator<'a> {
     _marker: PhantomData<&'a ()>,
-    timeout: u32,
+    created: Instant,
+    timeout: Duration,
 }
 
 impl Iterator for EventWaitTimeoutIterator<'_> {
     type Item = Event;
     fn next(&mut self) -> Option<Event> {
-        unsafe { wait_event_timeout(self.timeout) }
+        let remaining = self.timeout.saturating_sub(self.created.elapsed());
+        unsafe { wait_event_timeout(remaining) }
     }
 }
 
