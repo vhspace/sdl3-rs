@@ -55,6 +55,20 @@ Or if you would like to open it offline, run `cargo doc --package sdl3 --open`
 - [SDL3 higher-level documentation](https://docs.rs/sdl3/).
 - [SDL3-sys lower-level bindings documentation](https://docs.rs/sdl3-sys/latest/sdl3_sys/)
 
+# Extension Libraries
+Not all [SDL3 extension libraries](https://wiki.libsdl.org/SDL3/Libraries) have full support in sdl3-rs yet.
+| Library  |  |
+| ------------- | ------------- |
+| Dear ImGUI  | ❌ Not currently supported  |
+| RmlUI  | ❌ Not currently supported  |
+| SDL_gfx  | 🟨 Waiting on improvements to the C library  |
+| SDL_image  | ✅ Supported  |
+| SDL_mixer  | 🟨 Awaiting a stable C release  |
+| SDL_sound  | 🟨 Awaiting a stable C release   |
+| SDL_ttf  | ✅ Supported  |
+| SDL_net  | 🟨 Awaiting a stable C release  |
+| SDL_shadercross  | ❌ Not currently supported  |
+
 # Contributing
 
 We're looking for people to help get SDL3 support in Rust built, tested, and completed. You can help out!
