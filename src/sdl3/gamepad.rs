@@ -690,7 +690,7 @@ impl From<Button> for u8 {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[repr(i32)]
 pub enum ButtonLabel {
     Unknown = sys::gamepad::SDL_GamepadButtonLabel::UNKNOWN.0,
