@@ -902,6 +902,16 @@ impl VideoSubsystem {
         Ok(WindowCanvas::from_window_and_renderer(window, renderer))
     }
 
+    /// Get window from its ID
+    pub fn window_from_id(&self, id: u32) -> Result<Window, Error> {
+        let raw = unsafe { sys::video::SDL_GetWindowFromID(id) };
+        if raw.is_null() {
+            Err(get_error())
+        } else {
+            unsafe { Ok(Window::from_ll(self.clone(), raw, core::ptr::null_mut())) }
+        }
+    }
+
     /// Initializes a new `PopupWindowBuilder`; a convenience method that calls `PopupWindowBuilder::new()`.
     pub unsafe fn popup_window(
         &self,

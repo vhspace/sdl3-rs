@@ -241,7 +241,7 @@ impl TextInputUtil {
     }
 
     #[doc(alias = "SDL_SetTextInputArea")]
-    pub fn set_rect(&self, window: Window, rect: Rect, cursor: i32) {
+    pub fn set_rect(&self, window: &Window, rect: Rect, cursor: i32) {
         unsafe {
             sys::keyboard::SDL_SetTextInputArea(
                 window.raw(),
