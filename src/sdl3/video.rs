@@ -14,6 +14,7 @@ use std::error;
 use std::ffi::{CStr, CString, NulError};
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::mem::ManuallyDrop;
 use std::ops::{Deref, DerefMut};
 use std::ptr::{null, null_mut};
 use std::sync::Arc;
@@ -903,12 +904,24 @@ impl VideoSubsystem {
     }
 
     /// Get window from its ID
-    pub fn window_from_id(&self, id: u32) -> Result<Window, Error> {
+    ///
+    /// SAFETY this procedure creates a new [Window] handle that has no direct relation to any
+    /// other [Window] with the same id. When this, or any [Window] with the same id, gets dropped,
+    /// all other [Window]s with the same id will become invalid.
+    /// A solution to make this safe would be to store the [WindowContext]s in the [VideoSubsystem]
+    /// and correctly refcount the contexts.
+    pub unsafe fn window_from_id(&self, id: u32) -> Result<ManuallyDrop<Window>, Error> {
         let raw = unsafe { sys::video::SDL_GetWindowFromID(id) };
         if raw.is_null() {
             Err(get_error())
         } else {
-            unsafe { Ok(Window::from_ll(self.clone(), raw, core::ptr::null_mut())) }
+            unsafe {
+                Ok(ManuallyDrop::new(Window::from_ll(
+                    self.clone(),
+                    raw,
+                    core::ptr::null_mut(),
+                )))
+            }
         }
     }
 
