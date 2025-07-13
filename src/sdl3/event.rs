@@ -2681,6 +2681,42 @@ impl Event {
         )
     }
 
+    /// Returns `true` if this is a pen event.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use sdl3::event::Event;
+    ///
+    /// let ev = Event::PenDown {
+    ///     timestamp: 0,
+    ///     which: 0,
+    ///     window: 0,
+    ///     x: 0.,
+    ///     y: 0.,
+    ///     eraser: false,
+    /// };
+    /// assert!(ev.is_pen());
+    ///
+    /// let another_ev = Event::Quit {
+    ///     timestamp: 0,
+    /// };
+    /// assert!(another_ev.is_pen() == false); // Not a pen event!
+    /// ```
+    pub fn is_pen(&self) -> bool {
+        matches!(
+            self,
+            Self::PenProximityIn { .. }
+                | Self::PenProximityOut { .. }
+                | Self::PenDown { .. }
+                | Self::PenUp { .. }
+                | Self::PenMotion { .. }
+                | Self::PenButtonUp { .. }
+                | Self::PenButtonDown { .. }
+                | Self::PenAxis { .. }
+        )
+    }
+
     /// Returns `true` if this is a drop event.
     ///
     /// # Example
