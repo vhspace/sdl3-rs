@@ -125,6 +125,7 @@ pub mod keyboard;
 pub mod log;
 pub mod messagebox;
 pub mod mouse;
+pub mod pen;
 pub mod pixels;
 pub mod properties;
 pub mod rect;
