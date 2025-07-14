@@ -24,6 +24,7 @@ use crate::keyboard::Mod;
 use crate::keyboard::Scancode;
 use crate::mouse;
 use crate::mouse::{MouseButton, MouseState, MouseWheelDirection};
+use crate::pen::PenAxis;
 use crate::sys;
 use crate::sys::events::SDL_EventFilter;
 use crate::video::{Display, Orientation};
@@ -350,6 +351,15 @@ pub enum EventType {
     AudioDeviceAdded = sys::events::SDL_EVENT_AUDIO_DEVICE_ADDED.0,
     AudioDeviceRemoved = sys::events::SDL_EVENT_AUDIO_DEVICE_REMOVED.0,
 
+    PenProximityIn = sys::events::SDL_EVENT_PEN_PROXIMITY_IN.0,
+    PenProximityOut = sys::events::SDL_EVENT_PEN_PROXIMITY_OUT.0,
+    PenDown = sys::events::SDL_EVENT_PEN_DOWN.0,
+    PenUp = sys::events::SDL_EVENT_PEN_UP.0,
+    PenButtonUp = sys::events::SDL_EVENT_PEN_BUTTON_UP.0,
+    PenButtonDown = sys::events::SDL_EVENT_PEN_BUTTON_DOWN.0,
+    PenMotion = sys::events::SDL_EVENT_PEN_MOTION.0,
+    PenAxis = sys::events::SDL_EVENT_PEN_AXIS.0,
+
     RenderTargetsReset = sys::events::SDL_EVENT_RENDER_TARGETS_RESET.0,
     RenderDeviceReset = sys::events::SDL_EVENT_RENDER_DEVICE_RESET.0,
 
@@ -450,6 +460,15 @@ impl TryFrom<u32> for EventType {
 
             SDL_EVENT_AUDIO_DEVICE_ADDED => AudioDeviceAdded,
             SDL_EVENT_AUDIO_DEVICE_REMOVED => AudioDeviceRemoved,
+
+            SDL_EVENT_PEN_PROXIMITY_IN => PenProximityIn,
+            SDL_EVENT_PEN_PROXIMITY_OUT => PenProximityOut,
+            SDL_EVENT_PEN_DOWN => PenDown,
+            SDL_EVENT_PEN_UP => PenUp,
+            SDL_EVENT_PEN_BUTTON_UP => PenButtonUp,
+            SDL_EVENT_PEN_BUTTON_DOWN => PenButtonDown,
+            SDL_EVENT_PEN_MOTION => PenMotion,
+            SDL_EVENT_PEN_AXIS => PenAxis,
 
             SDL_EVENT_RENDER_TARGETS_RESET => RenderTargetsReset,
             SDL_EVENT_RENDER_DEVICE_RESET => RenderDeviceReset,
@@ -961,6 +980,65 @@ pub enum Event {
         timestamp: u64,
         which: u32,
         iscapture: bool,
+    },
+
+    PenProximityIn {
+        timestamp: u64,
+        which: u32,
+        window: u32,
+    },
+    PenProximityOut {
+        timestamp: u64,
+        which: u32,
+        window: u32,
+    },
+    PenDown {
+        timestamp: u64,
+        which: u32,
+        window: u32,
+        x: f32,
+        y: f32,
+        eraser: bool,
+    },
+    PenUp {
+        timestamp: u64,
+        which: u32,
+        window: u32,
+        x: f32,
+        y: f32,
+        eraser: bool,
+    },
+    PenMotion {
+        timestamp: u64,
+        which: u32,
+        window: u32,
+        x: f32,
+        y: f32,
+    },
+    PenButtonUp {
+        timestamp: u64,
+        which: u32,
+        window: u32,
+        x: f32,
+        y: f32,
+        button: u8,
+    },
+    PenButtonDown {
+        timestamp: u64,
+        which: u32,
+        window: u32,
+        x: f32,
+        y: f32,
+        button: u8,
+    },
+    PenAxis {
+        timestamp: u64,
+        which: u32,
+        window: u32,
+        x: f32,
+        y: f32,
+        axis: PenAxis,
+        value: f32,
     },
 
     RenderTargetsReset {
@@ -2041,6 +2119,90 @@ impl Event {
                     }
                 }
 
+                EventType::PenProximityIn => {
+                    let event = raw.pproximity;
+                    Event::PenProximityIn {
+                        timestamp: event.timestamp,
+                        which: event.which,
+                        window: event.windowID,
+                    }
+                }
+                EventType::PenProximityOut => {
+                    let event = raw.pproximity;
+                    Event::PenProximityOut {
+                        timestamp: event.timestamp,
+                        which: event.which,
+                        window: event.windowID,
+                    }
+                }
+                EventType::PenDown => {
+                    let event = raw.ptouch;
+                    Event::PenDown {
+                        timestamp: event.timestamp,
+                        which: event.which,
+                        window: event.windowID,
+                        x: event.x,
+                        y: event.y,
+                        eraser: event.eraser,
+                    }
+                }
+                EventType::PenUp => {
+                    let event = raw.ptouch;
+                    Event::PenUp {
+                        timestamp: event.timestamp,
+                        which: event.which,
+                        window: event.windowID,
+                        x: event.x,
+                        y: event.y,
+                        eraser: event.eraser,
+                    }
+                }
+                EventType::PenMotion => {
+                    let event = raw.pmotion;
+                    Event::PenMotion {
+                        timestamp: event.timestamp,
+                        which: event.which,
+                        window: event.windowID,
+                        x: event.x,
+                        y: event.y,
+                    }
+                }
+
+                EventType::PenButtonUp => {
+                    let event = raw.pbutton;
+                    Event::PenButtonUp {
+                        timestamp: event.timestamp,
+                        which: event.which,
+                        window: event.windowID,
+                        x: event.x,
+                        y: event.y,
+                        button: event.button,
+                    }
+                }
+                EventType::PenButtonDown => {
+                    let event = raw.pbutton;
+                    Event::PenButtonDown {
+                        timestamp: event.timestamp,
+                        which: event.which,
+                        window: event.windowID,
+                        x: event.x,
+                        y: event.y,
+                        button: event.button,
+                    }
+                }
+                EventType::PenAxis => {
+                    let event = raw.paxis;
+                    Event::PenAxis {
+                        timestamp: event.timestamp,
+                        which: event.which,
+                        window: event.windowID,
+                        x: event.x,
+                        y: event.y,
+                        axis: PenAxis::from_ll(event.axis),
+                        value: event.value,
+                    }
+                }
+
                 EventType::RenderTargetsReset => Event::RenderTargetsReset {
                     timestamp: raw.common.timestamp,
                 },
@@ -2247,6 +2409,14 @@ impl Event {
             Self::DropComplete { timestamp, .. } => timestamp,
             Self::AudioDeviceAdded { timestamp, .. } => timestamp,
             Self::AudioDeviceRemoved { timestamp, .. } => timestamp,
+            Self::PenProximityIn { timestamp, .. } => timestamp,
+            Self::PenProximityOut { timestamp, .. } => timestamp,
+            Self::PenDown { timestamp, .. } => timestamp,
+            Self::PenUp { timestamp, .. } => timestamp,
+            Self::PenMotion { timestamp, .. } => timestamp,
+            Self::PenButtonUp { timestamp, .. } => timestamp,
+            Self::PenButtonDown { timestamp, .. } => timestamp,
+            Self::PenAxis { timestamp, .. } => timestamp,
             Self::RenderTargetsReset { timestamp, .. } => timestamp,
             Self::RenderDeviceReset { timestamp, .. } => timestamp,
             Self::User { timestamp, .. } => timestamp,
@@ -2508,6 +2678,42 @@ impl Event {
         matches!(
             self,
             Self::FingerDown { .. } | Self::FingerUp { .. } | Self::FingerMotion { .. }
+        )
+    }
+
+    /// Returns `true` if this is a pen event.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use sdl3::event::Event;
+    ///
+    /// let ev = Event::PenDown {
+    ///     timestamp: 0,
+    ///     which: 0,
+    ///     window: 0,
+    ///     x: 0.,
+    ///     y: 0.,
+    ///     eraser: false,
+    /// };
+    /// assert!(ev.is_pen());
+    ///
+    /// let another_ev = Event::Quit {
+    ///     timestamp: 0,
+    /// };
+    /// assert!(another_ev.is_pen() == false); // Not a pen event!
+    /// ```
+    pub fn is_pen(&self) -> bool {
+        matches!(
+            self,
+            Self::PenProximityIn { .. }
+                | Self::PenProximityOut { .. }
+                | Self::PenDown { .. }
+                | Self::PenUp { .. }
+                | Self::PenMotion { .. }
+                | Self::PenButtonUp { .. }
+                | Self::PenButtonDown { .. }
+                | Self::PenAxis { .. }
         )
     }
 
