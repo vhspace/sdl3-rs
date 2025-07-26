@@ -197,7 +197,7 @@ impl Device {
             SDL_BeginGPUComputePass(
                 command_buffer.inner,
                 storage_texture_bindings.as_ptr().cast(),
-                storage_buffer_bindings.len() as u32,
+                storage_texture_bindings.len() as u32,
                 storage_buffer_bindings.as_ptr().cast(),
                 storage_buffer_bindings.len() as u32,
             )
