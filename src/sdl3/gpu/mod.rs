@@ -27,7 +27,8 @@ mod pipeline;
 pub use pipeline::{
     ColorTargetBlendState, ColorTargetDescription, ComputePipeline, ComputePipelineBuilder,
     DepthStencilState, GraphicsPipeline, GraphicsPipelineBuilder, GraphicsPipelineTargetInfo,
-    RasterizerState, StencilOpState, VertexAttribute, VertexInputState,
+    RasterizerState, StencilOpState, StorageBufferReadWriteBinding, StorageTextureReadWriteBinding,
+    VertexAttribute, VertexInputState,
 };
 
 mod texture;
