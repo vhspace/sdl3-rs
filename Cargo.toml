@@ -180,6 +180,9 @@ name = "gpu-clear"
 name = "gpu-triangle"
 
 [[example]]
+name = "gpu-particles"
+
+[[example]]
 name = "demo_games_02_woodeneye"
 path = "examples/demo_games/a02_woodeneye_008.rs"
 
