@@ -9,14 +9,15 @@ use crate::{
 };
 use sys::gpu::{
     SDL_AcquireGPUSwapchainTexture, SDL_BindGPUFragmentSamplers, SDL_BindGPUIndexBuffer,
-    SDL_BindGPUVertexBuffers, SDL_DrawGPUIndexedPrimitives, SDL_GPUBufferBinding,
+    SDL_BindGPUVertexBuffers, SDL_DrawGPUIndexedPrimitives, SDL_GPUBlitInfo, SDL_GPUBufferBinding,
     SDL_GPUColorTargetInfo, SDL_GPUCommandBuffer, SDL_GPUComputePass, SDL_GPUCopyPass,
-    SDL_GPUDepthStencilTargetInfo, SDL_GPURenderPass, SDL_GPUTextureSamplerBinding,
-    SDL_PushGPUComputeUniformData, SDL_PushGPUFragmentUniformData, SDL_PushGPUVertexUniformData,
-    SDL_UploadToGPUBuffer, SDL_UploadToGPUTexture, SDL_WaitAndAcquireGPUSwapchainTexture,
+    SDL_GPUDepthStencilTargetInfo, SDL_GPUFilter, SDL_GPULoadOp, SDL_GPURenderPass,
+    SDL_GPUTextureSamplerBinding, SDL_PushGPUComputeUniformData, SDL_PushGPUFragmentUniformData,
+    SDL_PushGPUVertexUniformData, SDL_UploadToGPUBuffer, SDL_UploadToGPUTexture,
+    SDL_WaitAndAcquireGPUSwapchainTexture,
 };
 
-use super::{Buffer, ComputePipeline};
+use super::{Buffer, ComputePipeline, Filter};
 
 pub struct CommandBuffer {
     pub(super) inner: *mut SDL_GPUCommandBuffer,
@@ -115,6 +116,13 @@ impl CommandBuffer {
         }
     }
 
+    #[doc(alias = "SDL_BlitGPUTexture")]
+    pub fn blit_texture(&self, blit_info: BlitInfo) {
+        unsafe {
+            sys::gpu::SDL_BlitGPUTexture(self.inner, &blit_info.inner);
+        }
+    }
+
     #[doc(alias = "SDL_SubmitGPUCommandBuffer")]
     pub fn submit(self) -> Result<(), Error> {
         if unsafe { sys::gpu::SDL_SubmitGPUCommandBuffer(self.inner) } {
@@ -206,6 +214,88 @@ impl ColorTargetInfo {
         self.inner.clear_color.g = (value.g as f32) / 255.0;
         self.inner.clear_color.b = (value.b as f32) / 255.0;
         self.inner.clear_color.a = (value.a as f32) / 255.0;
+        self
+    }
+}
+
+#[repr(C)]
+#[derive(Default)]
+pub struct BlitInfo {
+    inner: SDL_GPUBlitInfo,
+}
+impl BlitInfo {
+    pub fn with_source_texture(mut self, texture: &Texture) -> Self {
+        self.inner.source.texture = texture.raw();
+        self
+    }
+
+    pub fn with_source_mip(mut self, mip_level: u32) -> Self {
+        self.inner.source.mip_level = mip_level;
+        self
+    }
+
+    pub fn with_source_region(
+        mut self,
+        layer_or_depth: u32,
+        x: u32,
+        y: u32,
+        width: u32,
+        height: u32,
+    ) -> Self {
+        self.inner.source.layer_or_depth_plane = layer_or_depth;
+        self.inner.source.x = x;
+        self.inner.source.y = y;
+        self.inner.source.w = width;
+        self.inner.source.h = height;
+        self
+    }
+
+    pub fn with_destination_texture(mut self, texture: &Texture) -> Self {
+        self.inner.destination.texture = texture.raw();
+        self
+    }
+
+    pub fn with_destination_mip(mut self, mip_level: u32) -> Self {
+        self.inner.destination.mip_level = mip_level;
+        self
+    }
+
+    pub fn with_destination_region(
+        mut self,
+        layer_or_depth: u32,
+        x: u32,
+        y: u32,
+        width: u32,
+        height: u32,
+    ) -> Self {
+        self.inner.destination.layer_or_depth_plane = layer_or_depth;
+        self.inner.destination.x = x;
+        self.inner.destination.y = y;
+        self.inner.destination.w = width;
+        self.inner.destination.h = height;
+        self
+    }
+
+    pub fn with_load_op(mut self, load_op: LoadOp) -> Self {
+        self.inner.load_op = SDL_GPULoadOp(i32::from(load_op));
+        self
+    }
+
+    pub fn with_clear_color(mut self, clear_color: Color) -> Self {
+        self.inner.clear_color.r = (clear_color.r as f32) / 255.0;
+        self.inner.clear_color.g = (clear_color.g as f32) / 255.0;
+        self.inner.clear_color.b = (clear_color.b as f32) / 255.0;
+        self.inner.clear_color.a = (clear_color.a as f32) / 255.0;
+        self
+    }
+
+    pub fn with_filter(mut self, filter: Filter) -> Self {
+        self.inner.filter = SDL_GPUFilter(filter as i32);
+        self
+    }
+
+    pub fn with_cycle(mut self, cycle: bool) -> Self {
+        self.inner.cycle = cycle;
         self
     }
 }

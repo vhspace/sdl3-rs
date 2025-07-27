@@ -20,7 +20,8 @@ pub use enums::{
 
 mod pass;
 pub use pass::{
-    ColorTargetInfo, CommandBuffer, ComputePass, CopyPass, DepthStencilTargetInfo, RenderPass,
+    BlitInfo, ColorTargetInfo, CommandBuffer, ComputePass, CopyPass, DepthStencilTargetInfo,
+    RenderPass,
 };
 
 mod pipeline;
