@@ -434,6 +434,18 @@ impl ComputePass {
         }
     }
 
+    #[doc(alias = "SDL_BindGPUComputeSamplers")]
+    pub fn bind_compute_samplers(&self, first_slot: u32, bindings: &[TextureSamplerBinding]) {
+        unsafe {
+            sys::gpu::SDL_BindGPUComputeSamplers(
+                self.inner,
+                first_slot,
+                bindings.as_ptr() as *const SDL_GPUTextureSamplerBinding,
+                bindings.len() as u32,
+            );
+        }
+    }
+
     #[doc(alias = "SDL_DispatchGPUCompute")]
     pub fn dispatch(&self, groupcount_x: u32, groupcount_y: u32, groupcount_z: u32) {
         unsafe {
