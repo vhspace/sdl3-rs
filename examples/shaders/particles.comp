@@ -1,0 +1,23 @@
+#version 450
+layout (local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+
+struct Particle {
+    vec2 pos;
+    vec2 vel;
+    vec4 color;
+};
+
+layout(set = 1, binding = 0) buffer Particles {
+    Particle particles[];
+};
+
+void main() {
+    uint idx = gl_GlobalInvocationID.x;
+    if (idx >= particles.length()) return;
+
+    particles[idx].vel.y -= 0.001; 
+    particles[idx].pos += particles[idx].vel * 0.16;
+    if (particles[idx].pos.y < -1.0) {
+        particles[idx].vel.y = 0.2 * particles[idx].color.x; 
+    }
+}
