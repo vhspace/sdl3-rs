@@ -499,6 +499,11 @@ impl<'a> ComputePipelineBuilder<'a> {
         self
     }
 
+    pub fn with_samplers(mut self, value: u32) -> Self {
+        self.inner.num_samplers = value;
+        self
+    }
+
     pub fn with_thread_count(mut self, x: u32, y: u32, z: u32) -> Self {
         self.inner.threadcount_x = x;
         self.inner.threadcount_y = y;
