@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .position_centered()
         .build()?;
 
-    let device: Device = Device::new(ShaderFormat::SpirV, true)?.with_window(&window)?;
+    let device: Device = Device::new(ShaderFormat::SPIRV, true)?.with_window(&window)?;
 
     // === Create particle buffer ===
     let particles: Vec<Particle> = (0..PARTICLE_COUNT)
@@ -38,14 +38,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let particle_buffer = device
         .create_buffer()
         .with_size(buffer_size)
-        .with_usage(BufferUsageFlags::ComputeStorageWrite)
+        .with_usage(BufferUsageFlags::COMPUTE_STORAGE_WRITE)
         .build()?;
 
     // === Upload particles to GPU ===
     let upload = device
         .create_transfer_buffer()
         .with_size(buffer_size)
-        .with_usage(TransferBufferUsage::Upload)
+        .with_usage(TransferBufferUsage::UPLOAD)
         .build()?;
 
     {
@@ -77,7 +77,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &device
                 .create_shader()
                 .with_code(
-                    ShaderFormat::SpirV,
+                    ShaderFormat::SPIRV,
                     include_bytes!("shaders/particles.vert.spv"),
                     ShaderStage::Vertex,
                 )
@@ -89,7 +89,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             &device
                 .create_shader()
                 .with_code(
-                    ShaderFormat::SpirV,
+                    ShaderFormat::SPIRV,
                     include_bytes!("shaders/particles.frag.spv"),
                     ShaderStage::Fragment,
                 )
@@ -106,7 +106,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let compute_pipeline = device
         .create_compute_pipeline()
         .with_code(
-            ShaderFormat::SpirV,
+            ShaderFormat::SPIRV,
             include_bytes!("shaders/particles.comp.spv"),
         )
         .with_entrypoint(c"main")
@@ -144,8 +144,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         if let Ok(swapchain) = draw_cmd.wait_and_acquire_swapchain_texture(&window) {
             let color_target = ColorTargetInfo::default()
                 .with_texture(&swapchain)
-                .with_load_op(LoadOp::Clear)
-                .with_store_op(StoreOp::Store)
+                .with_load_op(LoadOp::CLEAR)
+                .with_store_op(StoreOp::STORE)
                 .with_clear_color(Color::RGB(10, 10, 30));
             let pass = device.begin_render_pass(&draw_cmd, &[color_target], None)?;
 
