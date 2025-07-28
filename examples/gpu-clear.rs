@@ -17,7 +17,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     // by default, and we specify that our shaders will be SPIR-V ones (even through we
     // aren't using any shaders)
     // We'll also turn on debug mode to true, so we get debug stuff
-    let gpu = sdl3::gpu::Device::new(sdl3::gpu::ShaderFormat::SpirV, true)?.with_window(&window)?;
+    let gpu = sdl3::gpu::Device::new(sdl3::gpu::ShaderFormat::SPIRV, true)?.with_window(&window)?;
 
     let mut event_pump = sdl_context.event_pump()?;
     println!(
@@ -45,8 +45,8 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             let color_targets = [
                 sdl3::gpu::ColorTargetInfo::default()
                     .with_texture(&swapchain) // Use swapchain texture
-                    .with_load_op(sdl3::gpu::LoadOp::Clear) // Clear when load
-                    .with_store_op(sdl3::gpu::StoreOp::Store) // Store back
+                    .with_load_op(sdl3::gpu::LoadOp::CLEAR) // Clear when load
+                    .with_store_op(sdl3::gpu::StoreOp::STORE) // Store back
                     .with_clear_color(sdl3::pixels::Color::RGB(5, 3, 255)), //blue with small RG bias
             ];
             // Here we do all (none) of our drawing (clearing the screen)

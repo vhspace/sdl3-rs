@@ -63,7 +63,7 @@ impl<'a> ShaderBuilder<'a> {
     }
 
     pub fn with_code(mut self, fmt: ShaderFormat, code: &'a [u8], stage: ShaderStage) -> Self {
-        self.inner.format = fmt as u32;
+        self.inner.format = fmt.0;
         self.inner.code = code.as_ptr();
         self.inner.code_size = code.len() as usize;
         self.inner.stage = unsafe { std::mem::transmute(stage as u32) };

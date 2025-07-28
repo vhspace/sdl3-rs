@@ -25,7 +25,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     // aren't using any shaders)
     // We'll also turn on debug mode to true, so we get debug stuff
     let gpu = Device::new(
-        ShaderFormat::SpirV | ShaderFormat::Dxil | ShaderFormat::Dxbc | ShaderFormat::MetalLib,
+        ShaderFormat::SPIRV | ShaderFormat::DXIL | ShaderFormat::DXBC | ShaderFormat::METALLIB,
         true,
     )?
     .with_window(&window)?;
@@ -36,13 +36,13 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Our shaders, require to be precompiled by a SPIR-V compiler beforehand
     let vs_shader = gpu
         .create_shader()
-        .with_code(ShaderFormat::SpirV, vs_source, ShaderStage::Vertex)
+        .with_code(ShaderFormat::SPIRV, vs_source, ShaderStage::Vertex)
         .with_entrypoint(c"main")
         .build()?;
 
     let fs_shader = gpu
         .create_shader()
-        .with_code(ShaderFormat::SpirV, fs_source, ShaderStage::Fragment)
+        .with_code(ShaderFormat::SPIRV, fs_source, ShaderStage::Fragment)
         .with_entrypoint(c"main")
         .build()?;
 
@@ -95,8 +95,8 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
             let color_targets = [
                 ColorTargetInfo::default()
                     .with_texture(&swapchain)
-                    .with_load_op(LoadOp::Clear)
-                    .with_store_op(StoreOp::Store)
+                    .with_load_op(LoadOp::CLEAR)
+                    .with_store_op(StoreOp::STORE)
                     .with_clear_color(Color::RGB(5, 3, 255)), //blue with small RG bias
             ];
             let render_pass = gpu.begin_render_pass(&command_buffer, &color_targets, None)?;
