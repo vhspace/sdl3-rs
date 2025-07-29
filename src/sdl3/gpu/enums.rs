@@ -343,6 +343,7 @@ impl BufferUsageFlags {
     pub const COMPUTE_STORAGE_WRITE: Self =
         Self(sys::gpu::SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_WRITE);
 }
+impl_with!(bitwise_and_or BufferUsageFlags u32);
 
 pub type TransferBufferUsage = sys::gpu::SDL_GPUTransferBufferUsage;
 
