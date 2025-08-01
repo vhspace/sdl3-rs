@@ -373,11 +373,11 @@ pub fn get_platform() -> &'static str {
 /// // SDL_Quit() is called here as `sdl_context` is dropped.
 /// ```
 #[inline]
-#[doc(alias = "SDL_GetError")]
 pub fn init() -> Result<Sdl, Error> {
     Sdl::new()
 }
 
+#[doc(alias = "SDL_GetError")]
 pub fn get_error() -> Error {
     unsafe {
         let err = sys::error::SDL_GetError();
