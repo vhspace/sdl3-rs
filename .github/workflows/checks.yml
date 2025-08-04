@@ -58,7 +58,8 @@ jobs:
             --all-targets \
             --features "$CI_BUILD_FEATURES ${{ matrix.feature }}" \
             -- \
-            -A warnings 
+            -A warnings \
+            -W clippy::not_unsafe_ptr_arg_deref
 
   build-version-features:
     name: Build - ${{ matrix.os }} - feature ${{ matrix.feature }}
