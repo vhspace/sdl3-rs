@@ -63,7 +63,7 @@ fn main() -> Result<(), String> {
         .map_err(|e| format!("error enabling gyroscope: {}", e))?;
     let mut now = Instant::now();
     for event in sdl_context.event_pump().unwrap().wait_iter() {
-        if false && now.elapsed() > Duration::from_secs(1) {
+        if now.elapsed() > Duration::from_secs(1) {
             now = Instant::now();
 
             let mut gyro_data = [0f32; 3];

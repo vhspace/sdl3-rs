@@ -137,7 +137,7 @@ impl Sensor {
     pub fn instance_id(&self) -> u32 {
         let result = unsafe { sys::sensor::SDL_GetSensorID(self.raw) };
 
-        if result < 0 {
+        if result == 0 {
             // Should only fail if the joystick is NULL.
             panic!("{}", get_error())
         } else {

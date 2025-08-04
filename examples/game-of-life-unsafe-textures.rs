@@ -104,7 +104,7 @@ mod game_of_life {
                 } else if count == 3 {
                     *square = true;
                 } else if count == 2 {
-                    *square = *square;
+                    // *square = *square;
                 }
             }
             self.playground = new_playground;
