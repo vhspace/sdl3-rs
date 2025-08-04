@@ -1,5 +1,6 @@
 extern crate sdl3;
 
+#[cfg(not(feature = "unsafe_textures"))]
 use crate::game_of_life::{PLAYGROUND_HEIGHT, PLAYGROUND_WIDTH, SQUARE_SIZE};
 use sdl3::event::Event;
 use sdl3::keyboard::Keycode;
@@ -9,6 +10,7 @@ use sdl3::rect::Point;
 use sdl3::render::{Canvas, FRect, Texture, TextureCreator};
 use sdl3::video::{Window, WindowContext};
 
+#[cfg(not(feature = "unsafe_textures"))]
 mod game_of_life {
     pub const SQUARE_SIZE: u32 = 16;
     pub const PLAYGROUND_WIDTH: u32 = 49;
@@ -117,6 +119,7 @@ mod game_of_life {
     }
 }
 
+#[cfg(not(feature = "unsafe_textures"))]
 fn dummy_texture<'a>(
     canvas: &mut Canvas<Window>,
     texture_creator: &'a TextureCreator<WindowContext>,
@@ -209,6 +212,7 @@ fn dummy_texture<'a>(
     Ok((square_texture1, square_texture2))
 }
 
+#[cfg(not(feature = "unsafe_textures"))]
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
@@ -321,3 +325,6 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
+
+#[cfg(feature = "unsafe_textures")]
+pub fn main() {}
