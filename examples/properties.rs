@@ -77,7 +77,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         unsafe {
             properties.clear("pointer").ok();
             let value = Box::from_raw(pointer);
-            println!("Pointer from box: {:?}", value);
+            println!("Pointer from box: {value:?}");
         }
     } else {
         println!("Failed to get pointer");

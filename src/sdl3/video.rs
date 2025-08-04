@@ -592,10 +592,7 @@ impl From<i32> for SwapInterval {
             -1 => SwapInterval::LateSwapTearing,
             0 => SwapInterval::Immediate,
             1 => SwapInterval::VSync,
-            other => panic!(
-                "Invalid value for SwapInterval: {}; valid values are -1, 0, 1",
-                other
-            ),
+            other => panic!("Invalid value for SwapInterval: {other}; valid values are -1, 0, 1"),
         }
     }
 }
@@ -1203,10 +1200,10 @@ impl fmt::Display for WindowBuildError {
         use self::WindowBuildError::*;
 
         match *self {
-            HeightOverflows(h) => write!(f, "Window height ({}) is too high.", h),
-            WidthOverflows(w) => write!(f, "Window width ({}) is too high.", w),
-            InvalidTitle(ref e) => write!(f, "Invalid window title: {}", e),
-            SdlError(ref e) => write!(f, "SDL error: {}", e),
+            HeightOverflows(h) => write!(f, "Window height ({h}) is too high."),
+            WidthOverflows(w) => write!(f, "Window width ({w}) is too high."),
+            InvalidTitle(ref e) => write!(f, "Invalid window title: {e}"),
+            SdlError(ref e) => write!(f, "SDL error: {e}"),
         }
     }
 }

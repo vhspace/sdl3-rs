@@ -8,7 +8,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let joysticks = joystick_subsystem
         .joysticks()
-        .map_err(|e| format!("can't get joysticks: {}", e))?;
+        .map_err(|e| format!("can't get joysticks: {e}"))?;
 
     println!("{} joysticks available", joysticks.len());
 
@@ -21,7 +21,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Some(c)
             }
             Err(e) => {
-                println!("failed: {:?}", e);
+                println!("failed: {e:?}");
                 None
             }
         })
@@ -50,11 +50,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 // zone to ignore spurious events.
                 let dead_zone = 10_000;
                 if val > dead_zone || val < -dead_zone {
-                    println!("Axis {} moved to {}", axis_idx, val);
+                    println!("Axis {axis_idx} moved to {val}");
                 }
             }
             Event::JoyButtonDown { button_idx, .. } => {
-                println!("Button {} down", button_idx);
+                println!("Button {button_idx} down");
                 if button_idx == 0 {
                     lo_freq = 65535;
                 } else if button_idx == 1 {
@@ -62,7 +62,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 if button_idx < 2 {
                     if joystick.set_rumble(lo_freq, hi_freq, 15000) {
-                        println!("Set rumble to ({}, {})", lo_freq, hi_freq);
+                        println!("Set rumble to ({lo_freq}, {hi_freq})");
                     } else {
                         println!(
                             "Error setting rumble to ({}, {}): {:?}",
@@ -74,7 +74,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
             Event::JoyButtonUp { button_idx, .. } => {
-                println!("Button {} up", button_idx);
+                println!("Button {button_idx} up");
                 if button_idx == 0 {
                     lo_freq = 0;
                 } else if button_idx == 1 {
@@ -82,7 +82,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
                 if button_idx < 2 {
                     if joystick.set_rumble(lo_freq, hi_freq, 15000) {
-                        println!("Set rumble to ({}, {})", lo_freq, hi_freq);
+                        println!("Set rumble to ({lo_freq}, {hi_freq})");
                     } else {
                         println!(
                             "Error setting rumble to ({}, {}): {:?}",
@@ -94,7 +94,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
             Event::JoyHatMotion { hat_idx, state, .. } => {
-                println!("Hat {} moved to {:?}", hat_idx, state)
+                println!("Hat {hat_idx} moved to {state:?}")
             }
             Event::Quit { .. } => break,
             _ => (),

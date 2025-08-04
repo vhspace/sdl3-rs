@@ -25,7 +25,7 @@ pub struct VertexPosition {
 }
 
 // Below are the vertices and indices that make up the 3D mesh of the cube.
-const CUBE_VERTICES: &'static [VertexPosition] = &[
+const CUBE_VERTICES: &[VertexPosition] = &[
     VertexPosition {
         x: -0.5,
         y: -0.5,
@@ -68,7 +68,7 @@ const CUBE_VERTICES: &'static [VertexPosition] = &[
     },
 ];
 
-const CUBE_INDICES: &'static [u16] = &[
+const CUBE_INDICES: &[u16] = &[
     0, 1, 2, 0, 2, 3, // front
     4, 5, 6, 4, 6, 7, // back
     4, 0, 3, 3, 7, 4, // left
@@ -166,8 +166,8 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Next, we create a transfer buffer that is large enough to hold either
     // our vertices or indices since we will be transferring both with it.
-    let vertices_len_bytes = CUBE_VERTICES.len() * size_of::<VertexPosition>();
-    let indices_len_bytes = CUBE_INDICES.len() * size_of::<u16>();
+    let vertices_len_bytes = std::mem::size_of_val(CUBE_VERTICES);
+    let indices_len_bytes = std::mem::size_of_val(CUBE_INDICES);
     let transfer_buffer = gpu
         .create_transfer_buffer()
         .with_size(vertices_len_bytes.max(indices_len_bytes) as u32)
@@ -184,14 +184,14 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         &transfer_buffer,
         &copy_pass,
         BufferUsageFlags::VERTEX,
-        &CUBE_VERTICES,
+        CUBE_VERTICES,
     )?;
     let index_buffer = create_buffer_with_data(
         &gpu,
         &transfer_buffer,
         &copy_pass,
         BufferUsageFlags::INDEX,
-        &CUBE_INDICES,
+        CUBE_INDICES,
     )?;
 
     // We're done with the transfer buffer now, so release it.
@@ -298,7 +298,7 @@ fn create_buffer_with_data<T: Copy>(
     data: &[T],
 ) -> Result<Buffer, Error> {
     // Figure out the length of the data in bytes
-    let len_bytes = data.len() * std::mem::size_of::<T>();
+    let len_bytes = std::mem::size_of_val(data);
 
     // Create the buffer with the size and usage we want
     let buffer = gpu

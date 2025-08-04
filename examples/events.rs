@@ -36,7 +36,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 // skip mouse motion intentionally because of the verbose it might cause.
                 Event::MouseMotion { .. } => {}
                 e => {
-                    println!("{:?}", e);
+                    println!("{e:?}");
                 }
             }
         }

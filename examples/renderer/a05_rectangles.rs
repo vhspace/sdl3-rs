@@ -57,7 +57,7 @@ impl AppState {
         rects[0].h = 100.0 + (100.0 * scale);
         self.canvas.set_draw_color(Color::RGB(255, 0, 0));
         self.canvas
-            .draw_rect(Self::convert_frect_to_rect(&rects[0].into()).into())
+            .draw_rect(Self::convert_frect_to_rect(&rects[0]).into())
             .unwrap();
 
         // Draw several rectangles
@@ -87,7 +87,7 @@ impl AppState {
 
         // Draw multiple filled rectangles
         for i in 0..rects.len() {
-            let w = (WINDOW_WIDTH as f32 / rects.len() as f32) as f32;
+            let w = WINDOW_WIDTH as f32 / rects.len() as f32;
             let h = i as f32 * 8.0;
             rects[i].x = i as f32 * w;
             rects[i].y = WINDOW_HEIGHT as f32 - h;
@@ -127,7 +127,7 @@ fn main() -> Result<(), String> {
         }
 
         let now = sdl3::timer::ticks() - start_time;
-        app_state.iterate(now as u64);
+        app_state.iterate(now);
     }
 
     Ok(())

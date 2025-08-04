@@ -68,13 +68,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // set the current frame for time
         source_rect_0.set_x((32 * ((ticks / 100) % frames_per_anim)) as f32);
-        dest_rect_0.set_x((1 * ((ticks / 14) % 768) - 128) as f32);
+        dest_rect_0.set_x((((ticks / 14) % 768) - 128) as f32);
 
         source_rect_1.set_x((32 * ((ticks / 100) % frames_per_anim)) as f32);
-        dest_rect_1.set_x(((1 * ((ticks / 12) % 768) - 672) * -1) as f32);
+        dest_rect_1.set_x(-(((ticks / 12) % 768) - 672) as f32);
 
         source_rect_2.set_x((32 * ((ticks / 100) % frames_per_anim)) as f32);
-        dest_rect_2.set_x((1 * ((ticks / 10) % 768) - 128) as f32);
+        dest_rect_2.set_x((((ticks / 10) % 768) - 128) as f32);
 
         canvas.clear();
         // copy the frame to the canvas

@@ -273,13 +273,10 @@ impl TextureContainer {
 impl Drop for TextureContainer {
     #[doc(alias = "SDL_ReleaseGPUTexture")]
     fn drop(&mut self) {
-        match self {
-            Self::UserManaged { raw, device } => {
-                if let Some(device) = device.upgrade() {
-                    unsafe { SDL_ReleaseGPUTexture(device.raw(), *raw) };
-                }
+        if let Self::UserManaged { raw, device } = self {
+            if let Some(device) = device.upgrade() {
+                unsafe { SDL_ReleaseGPUTexture(device.raw(), *raw) };
             }
-            _ => {}
         }
     }
 }

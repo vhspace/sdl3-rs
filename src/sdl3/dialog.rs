@@ -31,10 +31,10 @@ impl fmt::Display for DialogError {
         use self::DialogError::*;
 
         match *self {
-            FilterError(ref e) => write!(f, "Could not create filter: {}", e),
-            InvalidFilename(ref e) => write!(f, "Invalid filename: {}", e),
+            FilterError(ref e) => write!(f, "Could not create filter: {e}"),
+            InvalidFilename(ref e) => write!(f, "Invalid filename: {e}"),
             Canceled => write!(f, "Canceled"),
-            SdlError(ref e) => write!(f, "SDL error: {}", e),
+            SdlError(ref e) => write!(f, "SDL error: {e}"),
         }
     }
 }

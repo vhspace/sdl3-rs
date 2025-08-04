@@ -70,7 +70,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         None,
         None,
     );
-    println!("{:?}", res);
+    println!("{res:?}");
 
     Ok(())
 }

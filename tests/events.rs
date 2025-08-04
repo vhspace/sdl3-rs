@@ -81,7 +81,7 @@ fn test2(ev: &sdl3::EventSubsystem, ep: &mut sdl3::EventPump) {
             assert_eq!(a1, b1);
             assert_eq!(a2, b2);
         }
-        other => panic!("Received non User event: {:?}", other),
+        other => panic!("Received non User event: {other:?}"),
     }
 }
 

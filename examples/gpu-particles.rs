@@ -135,7 +135,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             .with_cycle(false);
         let compute_pass = device.begin_compute_pass(&compute_cmd, &[], &[binding])?;
         compute_pass.bind_compute_pipeline(&compute_pipeline);
-        compute_pass.dispatch((PARTICLE_COUNT + 63) / 64, 1, 1);
+        compute_pass.dispatch(PARTICLE_COUNT.div_ceil(64), 1, 1);
         device.end_compute_pass(compute_pass);
         compute_cmd.submit()?;
 

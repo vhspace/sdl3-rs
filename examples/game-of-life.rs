@@ -25,6 +25,12 @@ mod game_of_life {
         state: State,
     }
 
+    impl Default for GameOfLife {
+        fn default() -> Self {
+            Self::new()
+        }
+    }
+
     impl GameOfLife {
         pub fn new() -> GameOfLife {
             let mut playground = [false; (PLAYGROUND_WIDTH * PLAYGROUND_HEIGHT) as usize];
@@ -40,7 +46,7 @@ mod game_of_life {
             }
 
             GameOfLife {
-                playground: playground,
+                playground,
                 state: State::Paused,
             }
         }
@@ -90,7 +96,7 @@ mod game_of_life {
                         }
                     }
                 }
-                if count > 3 || count < 2 {
+                if !(2..=3).contains(&count) {
                     *square = false;
                 } else if count == 3 {
                     *square = true;
@@ -127,7 +133,7 @@ fn dummy_texture<'a>(
         .map_err(|e| e.to_string())?;
     // let's change the textures we just created
     {
-        let textures = vec![
+        let textures = [
             (&mut square_texture1, TextureColor::Yellow),
             (&mut square_texture2, TextureColor::White),
         ];
@@ -139,13 +145,13 @@ fn dummy_texture<'a>(
                     TextureColor::Yellow => {
                         for i in 0..SQUARE_SIZE {
                             for j in 0..SQUARE_SIZE {
-                                if (i + j) % 4 == 0 {
+                                if (i + j).is_multiple_of(4) {
                                     texture_canvas.set_draw_color(Color::RGB(255, 255, 0));
                                     texture_canvas
                                         .draw_point(Point::new(i as i32, j as i32))
                                         .expect("could not draw point");
                                 }
-                                if (i + j * 2) % 9 == 0 {
+                                if (i + j * 2).is_multiple_of(9) {
                                     texture_canvas.set_draw_color(Color::RGB(200, 200, 0));
                                     texture_canvas
                                         .draw_point(Point::new(i as i32, j as i32))
@@ -159,7 +165,7 @@ fn dummy_texture<'a>(
                             for j in 0..SQUARE_SIZE {
                                 // drawing pixel by pixel isn't very effective, but we only do it once and store
                                 // the texture afterwards so it's still alright!
-                                if (i + j) % 7 == 0 {
+                                if (i + j).is_multiple_of(7) {
                                     // this doesn't mean anything, there was some trial and error to find
                                     // something that wasn't too ugly
                                     texture_canvas.set_draw_color(Color::RGB(192, 192, 192));
@@ -167,7 +173,7 @@ fn dummy_texture<'a>(
                                         .draw_point(Point::new(i as i32, j as i32))
                                         .expect("could not draw point");
                                 }
-                                if (i + j * 2) % 5 == 0 {
+                                if (i + j * 2).is_multiple_of(5) {
                                     texture_canvas.set_draw_color(Color::RGB(64, 64, 64));
                                     texture_canvas
                                         .draw_point(Point::new(i as i32, j as i32))
@@ -181,7 +187,7 @@ fn dummy_texture<'a>(
                     for j in 0..SQUARE_SIZE {
                         // drawing pixel by pixel isn't very effective, but we only do it once and store
                         // the texture afterwards so it's still alright!
-                        if (i + j) % 7 == 0 {
+                        if (i + j).is_multiple_of(7) {
                             // this doesn't mean anything, there was some trial and serror to find
                             // something that wasn't too ugly
                             texture_canvas.set_draw_color(Color::RGB(192, 192, 192));
@@ -189,7 +195,7 @@ fn dummy_texture<'a>(
                                 .draw_point(Point::new(i as i32, j as i32))
                                 .expect("could not draw point");
                         }
-                        if (i + j * 2) % 5 == 0 {
+                        if (i + j * 2).is_multiple_of(5) {
                             texture_canvas.set_draw_color(Color::RGB(64, 64, 64));
                             texture_canvas
                                 .draw_point(Point::new(i as i32, j as i32))

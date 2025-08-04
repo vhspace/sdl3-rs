@@ -27,14 +27,12 @@ fn fill_triangle(canvas: &mut Canvas<Window>, p1: (i32, i32), p2: (i32, i32), p3
         } else {
             (x2, y2, x1, y1, x3, y3)
         }
+    } else if y1 > y3 {
+        (x3, y3, x1, y1, x2, y2)
+    } else if y2 > y3 {
+        (x1, y1, x3, y3, x2, y2)
     } else {
-        if y1 > y3 {
-            (x3, y3, x1, y1, x2, y2)
-        } else if y2 > y3 {
-            (x1, y1, x3, y3, x2, y2)
-        } else {
-            (x1, y1, x2, y2, x3, y3)
-        }
+        (x1, y1, x2, y2, x3, y3)
     };
 
     // Helper function to draw a horizontal line

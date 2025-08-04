@@ -7,7 +7,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let joysticks = joystick_subsystem
         .joysticks()
-        .map_err(|e| format!("can't enumerate joysticks: {}", e))?;
+        .map_err(|e| format!("can't enumerate joysticks: {e}"))?;
 
     println!("{} joysticks available", joysticks.len());
 
@@ -20,7 +20,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Some(id)
             }
             Err(e) => {
-                println!("failed: {:?}", e);
+                println!("failed: {e:?}");
                 None
             }
         })
@@ -44,16 +44,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 // zone to ignore spurious events.
                 let dead_zone = 10_000;
                 if val > dead_zone || val < -dead_zone {
-                    println!("Axis {} moved to {}", axis_idx, val);
+                    println!("Axis {axis_idx} moved to {val}");
                 }
             }
             Event::JoyButtonDown { button_idx, .. } => {
-                println!("Button {} down", button_idx);
+                println!("Button {button_idx} down");
                 haptic.rumble_play(0.5, 500);
             }
-            Event::JoyButtonUp { button_idx, .. } => println!("Button {} up", button_idx),
+            Event::JoyButtonUp { button_idx, .. } => println!("Button {button_idx} up"),
             Event::JoyHatMotion { hat_idx, state, .. } => {
-                println!("Hat {} moved to {:?}", hat_idx, state)
+                println!("Hat {hat_idx} moved to {state:?}")
             }
             Event::Quit { .. } => break,
             _ => (),

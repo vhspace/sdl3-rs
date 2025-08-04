@@ -20,7 +20,7 @@
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const ALLOW_ALT_TAB_WHILE_GRABBED: &'static str = "SDL_ALLOW_ALT_TAB_WHILE_GRABBED";
+pub const ALLOW_ALT_TAB_WHILE_GRABBED: &str = "SDL_ALLOW_ALT_TAB_WHILE_GRABBED";
 
 /// A variable to control whether the SDL activity is allowed to be re-created.
 ///
@@ -39,7 +39,7 @@ pub const ALLOW_ALT_TAB_WHILE_GRABBED: &'static str = "SDL_ALLOW_ALT_TAB_WHILE_G
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const ANDROID_ALLOW_RECREATE_ACTIVITY: &'static str = "SDL_ANDROID_ALLOW_RECREATE_ACTIVITY";
+pub const ANDROID_ALLOW_RECREATE_ACTIVITY: &str = "SDL_ANDROID_ALLOW_RECREATE_ACTIVITY";
 
 /// A variable to control whether the event loop will block itself when the app
 /// is paused.
@@ -53,7 +53,7 @@ pub const ANDROID_ALLOW_RECREATE_ACTIVITY: &'static str = "SDL_ANDROID_ALLOW_REC
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const ANDROID_BLOCK_ON_PAUSE: &'static str = "SDL_ANDROID_BLOCK_ON_PAUSE";
+pub const ANDROID_BLOCK_ON_PAUSE: &str = "SDL_ANDROID_BLOCK_ON_PAUSE";
 
 /// A variable to control whether low latency audio should be enabled.
 ///
@@ -69,7 +69,7 @@ pub const ANDROID_BLOCK_ON_PAUSE: &'static str = "SDL_ANDROID_BLOCK_ON_PAUSE";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const ANDROID_LOW_LATENCY_AUDIO: &'static str = "SDL_ANDROID_LOW_LATENCY_AUDIO";
+pub const ANDROID_LOW_LATENCY_AUDIO: &str = "SDL_ANDROID_LOW_LATENCY_AUDIO";
 
 /// A variable to control whether we trap the Android back button to handle it
 /// manually.
@@ -91,7 +91,7 @@ pub const ANDROID_LOW_LATENCY_AUDIO: &'static str = "SDL_ANDROID_LOW_LATENCY_AUD
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const ANDROID_TRAP_BACK_BUTTON: &'static str = "SDL_ANDROID_TRAP_BACK_BUTTON";
+pub const ANDROID_TRAP_BACK_BUTTON: &str = "SDL_ANDROID_TRAP_BACK_BUTTON";
 
 /// A variable setting the app ID string.
 ///
@@ -106,7 +106,7 @@ pub const ANDROID_TRAP_BACK_BUTTON: &'static str = "SDL_ANDROID_TRAP_BACK_BUTTON
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const APP_ID: &'static str = "SDL_APP_ID";
+pub const APP_ID: &str = "SDL_APP_ID";
 
 /// A variable setting the application name.
 ///
@@ -123,7 +123,7 @@ pub const APP_ID: &'static str = "SDL_APP_ID";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const APP_NAME: &'static str = "SDL_APP_NAME";
+pub const APP_NAME: &str = "SDL_APP_NAME";
 
 /// A variable controlling whether controllers used with the Apple TV generate
 /// UI events.
@@ -145,7 +145,7 @@ pub const APP_NAME: &'static str = "SDL_APP_NAME";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const APPLE_TV_CONTROLLER_UI_EVENTS: &'static str = "SDL_APPLE_TV_CONTROLLER_UI_EVENTS";
+pub const APPLE_TV_CONTROLLER_UI_EVENTS: &str = "SDL_APPLE_TV_CONTROLLER_UI_EVENTS";
 
 /// A variable controlling whether the Apple TV remote's joystick axes will
 /// automatically match the rotation of the remote.
@@ -159,7 +159,7 @@ pub const APPLE_TV_CONTROLLER_UI_EVENTS: &'static str = "SDL_APPLE_TV_CONTROLLER
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const APPLE_TV_REMOTE_ALLOW_ROTATION: &'static str = "SDL_APPLE_TV_REMOTE_ALLOW_ROTATION";
+pub const APPLE_TV_REMOTE_ALLOW_ROTATION: &str = "SDL_APPLE_TV_REMOTE_ALLOW_ROTATION";
 
 /// Specify the default ALSA audio device name.
 ///
@@ -179,7 +179,7 @@ pub const APPLE_TV_REMOTE_ALLOW_ROTATION: &'static str = "SDL_APPLE_TV_REMOTE_AL
 /// ### See also
 /// - [`AUDIO_ALSA_DEFAULT_PLAYBACK_DEVICE`]
 /// - [`AUDIO_ALSA_DEFAULT_RECORDING_DEVICE`]
-pub const AUDIO_ALSA_DEFAULT_DEVICE: &'static str = "SDL_AUDIO_ALSA_DEFAULT_DEVICE";
+pub const AUDIO_ALSA_DEFAULT_DEVICE: &str = "SDL_AUDIO_ALSA_DEFAULT_DEVICE";
 
 /// Specify the default ALSA audio playback device name.
 ///
@@ -197,8 +197,7 @@ pub const AUDIO_ALSA_DEFAULT_DEVICE: &'static str = "SDL_AUDIO_ALSA_DEFAULT_DEVI
 /// ### See also
 /// - [`AUDIO_ALSA_DEFAULT_RECORDING_DEVICE`]
 /// - [`AUDIO_ALSA_DEFAULT_DEVICE`]
-pub const AUDIO_ALSA_DEFAULT_PLAYBACK_DEVICE: &'static str =
-    "SDL_AUDIO_ALSA_DEFAULT_PLAYBACK_DEVICE";
+pub const AUDIO_ALSA_DEFAULT_PLAYBACK_DEVICE: &str = "SDL_AUDIO_ALSA_DEFAULT_PLAYBACK_DEVICE";
 
 /// Specify the default ALSA audio recording device name.
 ///
@@ -216,8 +215,7 @@ pub const AUDIO_ALSA_DEFAULT_PLAYBACK_DEVICE: &'static str =
 /// ### See also
 /// - [`AUDIO_ALSA_DEFAULT_PLAYBACK_DEVICE`]
 /// - [`AUDIO_ALSA_DEFAULT_DEVICE`]
-pub const AUDIO_ALSA_DEFAULT_RECORDING_DEVICE: &'static str =
-    "SDL_AUDIO_ALSA_DEFAULT_RECORDING_DEVICE";
+pub const AUDIO_ALSA_DEFAULT_RECORDING_DEVICE: &str = "SDL_AUDIO_ALSA_DEFAULT_RECORDING_DEVICE";
 
 /// A variable controlling the audio category on iOS and macOS.
 ///
@@ -234,7 +232,7 @@ pub const AUDIO_ALSA_DEFAULT_RECORDING_DEVICE: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const AUDIO_CATEGORY: &'static str = "SDL_AUDIO_CATEGORY";
+pub const AUDIO_CATEGORY: &str = "SDL_AUDIO_CATEGORY";
 
 /// A variable controlling the default audio channel count.
 ///
@@ -246,7 +244,7 @@ pub const AUDIO_CATEGORY: &'static str = "SDL_AUDIO_CATEGORY";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const AUDIO_CHANNELS: &'static str = "SDL_AUDIO_CHANNELS";
+pub const AUDIO_CHANNELS: &str = "SDL_AUDIO_CHANNELS";
 
 /// Specify an application icon name for an audio device.
 ///
@@ -268,7 +266,7 @@ pub const AUDIO_CHANNELS: &'static str = "SDL_AUDIO_CHANNELS";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const AUDIO_DEVICE_APP_ICON_NAME: &'static str = "SDL_AUDIO_DEVICE_APP_ICON_NAME";
+pub const AUDIO_DEVICE_APP_ICON_NAME: &str = "SDL_AUDIO_DEVICE_APP_ICON_NAME";
 
 /// A variable controlling device buffer size.
 ///
@@ -289,7 +287,7 @@ pub const AUDIO_DEVICE_APP_ICON_NAME: &'static str = "SDL_AUDIO_DEVICE_APP_ICON_
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const AUDIO_DEVICE_SAMPLE_FRAMES: &'static str = "SDL_AUDIO_DEVICE_SAMPLE_FRAMES";
+pub const AUDIO_DEVICE_SAMPLE_FRAMES: &str = "SDL_AUDIO_DEVICE_SAMPLE_FRAMES";
 
 /// Specify an audio stream name for an audio device.
 ///
@@ -315,7 +313,7 @@ pub const AUDIO_DEVICE_SAMPLE_FRAMES: &'static str = "SDL_AUDIO_DEVICE_SAMPLE_FR
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const AUDIO_DEVICE_STREAM_NAME: &'static str = "SDL_AUDIO_DEVICE_STREAM_NAME";
+pub const AUDIO_DEVICE_STREAM_NAME: &str = "SDL_AUDIO_DEVICE_STREAM_NAME";
 
 /// Specify an application role for an audio device.
 ///
@@ -340,7 +338,7 @@ pub const AUDIO_DEVICE_STREAM_NAME: &'static str = "SDL_AUDIO_DEVICE_STREAM_NAME
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const AUDIO_DEVICE_STREAM_ROLE: &'static str = "SDL_AUDIO_DEVICE_STREAM_ROLE";
+pub const AUDIO_DEVICE_STREAM_ROLE: &str = "SDL_AUDIO_DEVICE_STREAM_ROLE";
 
 /// Specify the input file when recording audio using the disk audio driver.
 ///
@@ -350,7 +348,7 @@ pub const AUDIO_DEVICE_STREAM_ROLE: &'static str = "SDL_AUDIO_DEVICE_STREAM_ROLE
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const AUDIO_DISK_INPUT_FILE: &'static str = "SDL_AUDIO_DISK_INPUT_FILE";
+pub const AUDIO_DISK_INPUT_FILE: &str = "SDL_AUDIO_DISK_INPUT_FILE";
 
 /// Specify the output file when playing audio using the disk audio driver.
 ///
@@ -360,7 +358,7 @@ pub const AUDIO_DISK_INPUT_FILE: &'static str = "SDL_AUDIO_DISK_INPUT_FILE";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const AUDIO_DISK_OUTPUT_FILE: &'static str = "SDL_AUDIO_DISK_OUTPUT_FILE";
+pub const AUDIO_DISK_OUTPUT_FILE: &str = "SDL_AUDIO_DISK_OUTPUT_FILE";
 
 /// A variable controlling the audio rate when using the disk audio driver.
 ///
@@ -372,7 +370,7 @@ pub const AUDIO_DISK_OUTPUT_FILE: &'static str = "SDL_AUDIO_DISK_OUTPUT_FILE";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const AUDIO_DISK_TIMESCALE: &'static str = "SDL_AUDIO_DISK_TIMESCALE";
+pub const AUDIO_DISK_TIMESCALE: &str = "SDL_AUDIO_DISK_TIMESCALE";
 
 /// A variable that specifies an audio backend to use.
 ///
@@ -385,7 +383,7 @@ pub const AUDIO_DISK_TIMESCALE: &'static str = "SDL_AUDIO_DISK_TIMESCALE";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const AUDIO_DRIVER: &'static str = "SDL_AUDIO_DRIVER";
+pub const AUDIO_DRIVER: &str = "SDL_AUDIO_DRIVER";
 
 /// A variable controlling the audio rate when using the dummy audio driver.
 ///
@@ -397,7 +395,7 @@ pub const AUDIO_DRIVER: &'static str = "SDL_AUDIO_DRIVER";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const AUDIO_DUMMY_TIMESCALE: &'static str = "SDL_AUDIO_DUMMY_TIMESCALE";
+pub const AUDIO_DUMMY_TIMESCALE: &str = "SDL_AUDIO_DUMMY_TIMESCALE";
 
 /// A variable controlling the default audio format.
 ///
@@ -423,7 +421,7 @@ pub const AUDIO_DUMMY_TIMESCALE: &'static str = "SDL_AUDIO_DUMMY_TIMESCALE";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const AUDIO_FORMAT: &'static str = "SDL_AUDIO_FORMAT";
+pub const AUDIO_FORMAT: &str = "SDL_AUDIO_FORMAT";
 
 /// A variable controlling the default audio frequency.
 ///
@@ -435,7 +433,7 @@ pub const AUDIO_FORMAT: &'static str = "SDL_AUDIO_FORMAT";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const AUDIO_FREQUENCY: &'static str = "SDL_AUDIO_FREQUENCY";
+pub const AUDIO_FREQUENCY: &str = "SDL_AUDIO_FREQUENCY";
 
 /// A variable that causes SDL to not ignore audio "monitors".
 ///
@@ -457,7 +455,7 @@ pub const AUDIO_FREQUENCY: &'static str = "SDL_AUDIO_FREQUENCY";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const AUDIO_INCLUDE_MONITORS: &'static str = "SDL_AUDIO_INCLUDE_MONITORS";
+pub const AUDIO_INCLUDE_MONITORS: &str = "SDL_AUDIO_INCLUDE_MONITORS";
 
 /// A variable controlling whether SDL updates joystick state when getting
 /// input events.
@@ -471,7 +469,7 @@ pub const AUDIO_INCLUDE_MONITORS: &'static str = "SDL_AUDIO_INCLUDE_MONITORS";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const AUTO_UPDATE_JOYSTICKS: &'static str = "SDL_AUTO_UPDATE_JOYSTICKS";
+pub const AUTO_UPDATE_JOYSTICKS: &str = "SDL_AUTO_UPDATE_JOYSTICKS";
 
 /// A variable controlling whether SDL updates sensor state when getting input
 /// events.
@@ -485,7 +483,7 @@ pub const AUTO_UPDATE_JOYSTICKS: &'static str = "SDL_AUTO_UPDATE_JOYSTICKS";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const AUTO_UPDATE_SENSORS: &'static str = "SDL_AUTO_UPDATE_SENSORS";
+pub const AUTO_UPDATE_SENSORS: &str = "SDL_AUTO_UPDATE_SENSORS";
 
 /// Prevent SDL from using version 4 of the bitmap header when saving BMPs.
 ///
@@ -507,7 +505,7 @@ pub const AUTO_UPDATE_SENSORS: &'static str = "SDL_AUTO_UPDATE_SENSORS";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const BMP_SAVE_LEGACY_FORMAT: &'static str = "SDL_BMP_SAVE_LEGACY_FORMAT";
+pub const BMP_SAVE_LEGACY_FORMAT: &str = "SDL_BMP_SAVE_LEGACY_FORMAT";
 
 /// A variable that decides what camera backend to use.
 ///
@@ -522,7 +520,7 @@ pub const BMP_SAVE_LEGACY_FORMAT: &'static str = "SDL_BMP_SAVE_LEGACY_FORMAT";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const CAMERA_DRIVER: &'static str = "SDL_CAMERA_DRIVER";
+pub const CAMERA_DRIVER: &str = "SDL_CAMERA_DRIVER";
 
 /// A variable that limits what CPU features are available.
 ///
@@ -554,7 +552,7 @@ pub const CAMERA_DRIVER: &'static str = "SDL_CAMERA_DRIVER";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const CPU_FEATURE_MASK: &'static str = "SDL_CPU_FEATURE_MASK";
+pub const CPU_FEATURE_MASK: &str = "SDL_CPU_FEATURE_MASK";
 
 /// A variable controlling whether DirectInput should be used for controllers.
 ///
@@ -567,7 +565,7 @@ pub const CPU_FEATURE_MASK: &'static str = "SDL_CPU_FEATURE_MASK";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_DIRECTINPUT: &'static str = "SDL_JOYSTICK_DIRECTINPUT";
+pub const JOYSTICK_DIRECTINPUT: &str = "SDL_JOYSTICK_DIRECTINPUT";
 
 /// A variable that specifies a dialog backend to use.
 ///
@@ -595,7 +593,7 @@ pub const JOYSTICK_DIRECTINPUT: &'static str = "SDL_JOYSTICK_DIRECTINPUT";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const FILE_DIALOG_DRIVER: &'static str = "SDL_FILE_DIALOG_DRIVER";
+pub const FILE_DIALOG_DRIVER: &str = "SDL_FILE_DIALOG_DRIVER";
 
 /// Override for [`SDL_GetDisplayUsableBounds()`].
 ///
@@ -612,7 +610,7 @@ pub const FILE_DIALOG_DRIVER: &'static str = "SDL_FILE_DIALOG_DRIVER";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const DISPLAY_USABLE_BOUNDS: &'static str = "SDL_DISPLAY_USABLE_BOUNDS";
+pub const DISPLAY_USABLE_BOUNDS: &str = "SDL_DISPLAY_USABLE_BOUNDS";
 
 /// Disable giving back control to the browser automatically when running with
 /// asyncify.
@@ -632,7 +630,7 @@ pub const DISPLAY_USABLE_BOUNDS: &'static str = "SDL_DISPLAY_USABLE_BOUNDS";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const EMSCRIPTEN_ASYNCIFY: &'static str = "SDL_EMSCRIPTEN_ASYNCIFY";
+pub const EMSCRIPTEN_ASYNCIFY: &str = "SDL_EMSCRIPTEN_ASYNCIFY";
 
 /// Specify the CSS selector used for the "default" window/canvas.
 ///
@@ -644,7 +642,7 @@ pub const EMSCRIPTEN_ASYNCIFY: &'static str = "SDL_EMSCRIPTEN_ASYNCIFY";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const EMSCRIPTEN_CANVAS_SELECTOR: &'static str = "SDL_EMSCRIPTEN_CANVAS_SELECTOR";
+pub const EMSCRIPTEN_CANVAS_SELECTOR: &str = "SDL_EMSCRIPTEN_CANVAS_SELECTOR";
 
 /// Override the binding element for keyboard inputs for Emscripten builds.
 ///
@@ -664,7 +662,7 @@ pub const EMSCRIPTEN_CANVAS_SELECTOR: &'static str = "SDL_EMSCRIPTEN_CANVAS_SELE
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const EMSCRIPTEN_KEYBOARD_ELEMENT: &'static str = "SDL_EMSCRIPTEN_KEYBOARD_ELEMENT";
+pub const EMSCRIPTEN_KEYBOARD_ELEMENT: &str = "SDL_EMSCRIPTEN_KEYBOARD_ELEMENT";
 
 /// A variable that controls whether the on-screen keyboard should be shown
 /// when text input is active.
@@ -680,7 +678,7 @@ pub const EMSCRIPTEN_KEYBOARD_ELEMENT: &'static str = "SDL_EMSCRIPTEN_KEYBOARD_E
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const ENABLE_SCREEN_KEYBOARD: &'static str = "SDL_ENABLE_SCREEN_KEYBOARD";
+pub const ENABLE_SCREEN_KEYBOARD: &str = "SDL_ENABLE_SCREEN_KEYBOARD";
 
 /// A variable containing a list of evdev devices to use if udev is not
 /// available.
@@ -696,7 +694,7 @@ pub const ENABLE_SCREEN_KEYBOARD: &'static str = "SDL_ENABLE_SCREEN_KEYBOARD";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const EVDEV_DEVICES: &'static str = "SDL_EVDEV_DEVICES";
+pub const EVDEV_DEVICES: &str = "SDL_EVDEV_DEVICES";
 
 /// A variable controlling verbosity of the logging of SDL events pushed onto
 /// the internal queue.
@@ -719,7 +717,7 @@ pub const EVDEV_DEVICES: &'static str = "SDL_EVDEV_DEVICES";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const EVENT_LOGGING: &'static str = "SDL_EVENT_LOGGING";
+pub const EVENT_LOGGING: &str = "SDL_EVENT_LOGGING";
 
 /// A variable controlling whether raising the window should be done more
 /// forcefully.
@@ -738,7 +736,7 @@ pub const EVENT_LOGGING: &'static str = "SDL_EVENT_LOGGING";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const FORCE_RAISEWINDOW: &'static str = "SDL_FORCE_RAISEWINDOW";
+pub const FORCE_RAISEWINDOW: &str = "SDL_FORCE_RAISEWINDOW";
 
 /// A variable controlling how 3D acceleration is used to accelerate the SDL
 /// screen surface.
@@ -758,7 +756,7 @@ pub const FORCE_RAISEWINDOW: &'static str = "SDL_FORCE_RAISEWINDOW";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const FRAMEBUFFER_ACCELERATION: &'static str = "SDL_FRAMEBUFFER_ACCELERATION";
+pub const FRAMEBUFFER_ACCELERATION: &str = "SDL_FRAMEBUFFER_ACCELERATION";
 
 /// A variable that lets you manually hint extra gamecontroller db entries.
 ///
@@ -772,7 +770,7 @@ pub const FRAMEBUFFER_ACCELERATION: &'static str = "SDL_FRAMEBUFFER_ACCELERATION
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const GAMECONTROLLERCONFIG: &'static str = "SDL_GAMECONTROLLERCONFIG";
+pub const GAMECONTROLLERCONFIG: &str = "SDL_GAMECONTROLLERCONFIG";
 
 /// A variable that lets you provide a file with extra gamecontroller db
 /// entries.
@@ -787,7 +785,7 @@ pub const GAMECONTROLLERCONFIG: &'static str = "SDL_GAMECONTROLLERCONFIG";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const GAMECONTROLLERCONFIG_FILE: &'static str = "SDL_GAMECONTROLLERCONFIG_FILE";
+pub const GAMECONTROLLERCONFIG_FILE: &str = "SDL_GAMECONTROLLERCONFIG_FILE";
 
 /// A variable that overrides the automatic controller type detection.
 ///
@@ -810,7 +808,7 @@ pub const GAMECONTROLLERCONFIG_FILE: &'static str = "SDL_GAMECONTROLLERCONFIG_FI
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const GAMECONTROLLERTYPE: &'static str = "SDL_GAMECONTROLLERTYPE";
+pub const GAMECONTROLLERTYPE: &str = "SDL_GAMECONTROLLERTYPE";
 
 /// A variable containing a list of devices to skip when scanning for game
 /// controllers.
@@ -827,7 +825,7 @@ pub const GAMECONTROLLERTYPE: &'static str = "SDL_GAMECONTROLLERTYPE";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const GAMECONTROLLER_IGNORE_DEVICES: &'static str = "SDL_GAMECONTROLLER_IGNORE_DEVICES";
+pub const GAMECONTROLLER_IGNORE_DEVICES: &str = "SDL_GAMECONTROLLER_IGNORE_DEVICES";
 
 /// If set, all devices will be skipped when scanning for game controllers
 /// except for the ones listed in this variable.
@@ -844,8 +842,7 @@ pub const GAMECONTROLLER_IGNORE_DEVICES: &'static str = "SDL_GAMECONTROLLER_IGNO
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const GAMECONTROLLER_IGNORE_DEVICES_EXCEPT: &'static str =
-    "SDL_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT";
+pub const GAMECONTROLLER_IGNORE_DEVICES_EXCEPT: &str = "SDL_GAMECONTROLLER_IGNORE_DEVICES_EXCEPT";
 
 /// A variable that controls whether the device's built-in accelerometer and
 /// gyro should be used as sensors for gamepads.
@@ -867,7 +864,7 @@ pub const GAMECONTROLLER_IGNORE_DEVICES_EXCEPT: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const GAMECONTROLLER_SENSOR_FUSION: &'static str = "SDL_GAMECONTROLLER_SENSOR_FUSION";
+pub const GAMECONTROLLER_SENSOR_FUSION: &str = "SDL_GAMECONTROLLER_SENSOR_FUSION";
 
 /// This variable sets the default text of the TextInput window on GDK
 /// platforms.
@@ -878,7 +875,7 @@ pub const GAMECONTROLLER_SENSOR_FUSION: &'static str = "SDL_GAMECONTROLLER_SENSO
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const GDK_TEXTINPUT_DEFAULT_TEXT: &'static str = "SDL_GDK_TEXTINPUT_DEFAULT_TEXT";
+pub const GDK_TEXTINPUT_DEFAULT_TEXT: &str = "SDL_GDK_TEXTINPUT_DEFAULT_TEXT";
 
 /// This variable sets the description of the TextInput window on GDK
 /// platforms.
@@ -889,7 +886,7 @@ pub const GDK_TEXTINPUT_DEFAULT_TEXT: &'static str = "SDL_GDK_TEXTINPUT_DEFAULT_
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const GDK_TEXTINPUT_DESCRIPTION: &'static str = "SDL_GDK_TEXTINPUT_DESCRIPTION";
+pub const GDK_TEXTINPUT_DESCRIPTION: &str = "SDL_GDK_TEXTINPUT_DESCRIPTION";
 
 /// This variable sets the maximum input length of the TextInput window on GDK
 /// platforms.
@@ -903,7 +900,7 @@ pub const GDK_TEXTINPUT_DESCRIPTION: &'static str = "SDL_GDK_TEXTINPUT_DESCRIPTI
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const GDK_TEXTINPUT_MAX_LENGTH: &'static str = "SDL_GDK_TEXTINPUT_MAX_LENGTH";
+pub const GDK_TEXTINPUT_MAX_LENGTH: &str = "SDL_GDK_TEXTINPUT_MAX_LENGTH";
 
 /// This variable sets the input scope of the TextInput window on GDK
 /// platforms.
@@ -918,7 +915,7 @@ pub const GDK_TEXTINPUT_MAX_LENGTH: &'static str = "SDL_GDK_TEXTINPUT_MAX_LENGTH
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const GDK_TEXTINPUT_SCOPE: &'static str = "SDL_GDK_TEXTINPUT_SCOPE";
+pub const GDK_TEXTINPUT_SCOPE: &str = "SDL_GDK_TEXTINPUT_SCOPE";
 
 /// This variable sets the title of the TextInput window on GDK platforms.
 ///
@@ -928,7 +925,7 @@ pub const GDK_TEXTINPUT_SCOPE: &'static str = "SDL_GDK_TEXTINPUT_SCOPE";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const GDK_TEXTINPUT_TITLE: &'static str = "SDL_GDK_TEXTINPUT_TITLE";
+pub const GDK_TEXTINPUT_TITLE: &str = "SDL_GDK_TEXTINPUT_TITLE";
 
 /// A variable to control whether HIDAPI uses libusb for device access.
 ///
@@ -945,7 +942,7 @@ pub const GDK_TEXTINPUT_TITLE: &'static str = "SDL_GDK_TEXTINPUT_TITLE";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const HIDAPI_LIBUSB: &'static str = "SDL_HIDAPI_LIBUSB";
+pub const HIDAPI_LIBUSB: &str = "SDL_HIDAPI_LIBUSB";
 
 /// A variable to control whether HIDAPI uses libusb only for whitelisted
 /// devices.
@@ -962,7 +959,7 @@ pub const HIDAPI_LIBUSB: &'static str = "SDL_HIDAPI_LIBUSB";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const HIDAPI_LIBUSB_WHITELIST: &'static str = "SDL_HIDAPI_LIBUSB_WHITELIST";
+pub const HIDAPI_LIBUSB_WHITELIST: &str = "SDL_HIDAPI_LIBUSB_WHITELIST";
 
 /// A variable to control whether HIDAPI uses udev for device detection.
 ///
@@ -975,7 +972,7 @@ pub const HIDAPI_LIBUSB_WHITELIST: &'static str = "SDL_HIDAPI_LIBUSB_WHITELIST";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const HIDAPI_UDEV: &'static str = "SDL_HIDAPI_UDEV";
+pub const HIDAPI_UDEV: &str = "SDL_HIDAPI_UDEV";
 
 /// A variable that specifies a GPU backend to use.
 ///
@@ -988,7 +985,7 @@ pub const HIDAPI_UDEV: &'static str = "SDL_HIDAPI_UDEV";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const GPU_DRIVER: &'static str = "SDL_GPU_DRIVER";
+pub const GPU_DRIVER: &str = "SDL_GPU_DRIVER";
 
 /// A variable to control whether [`SDL_hid_enumerate()`] enumerates all HID
 /// devices or only controllers.
@@ -1006,7 +1003,7 @@ pub const GPU_DRIVER: &'static str = "SDL_GPU_DRIVER";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const HIDAPI_ENUMERATE_ONLY_CONTROLLERS: &'static str = "SDL_HIDAPI_ENUMERATE_ONLY_CONTROLLERS";
+pub const HIDAPI_ENUMERATE_ONLY_CONTROLLERS: &str = "SDL_HIDAPI_ENUMERATE_ONLY_CONTROLLERS";
 
 /// A variable containing a list of devices to ignore in [`SDL_hid_enumerate()`].
 ///
@@ -1022,7 +1019,7 @@ pub const HIDAPI_ENUMERATE_ONLY_CONTROLLERS: &'static str = "SDL_HIDAPI_ENUMERAT
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const HIDAPI_IGNORE_DEVICES: &'static str = "SDL_HIDAPI_IGNORE_DEVICES";
+pub const HIDAPI_IGNORE_DEVICES: &str = "SDL_HIDAPI_IGNORE_DEVICES";
 
 /// A variable describing what IME UI elements the application can display.
 ///
@@ -1044,7 +1041,7 @@ pub const HIDAPI_IGNORE_DEVICES: &'static str = "SDL_HIDAPI_IGNORE_DEVICES";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const IME_IMPLEMENTED_UI: &'static str = "SDL_IME_IMPLEMENTED_UI";
+pub const IME_IMPLEMENTED_UI: &str = "SDL_IME_IMPLEMENTED_UI";
 
 /// A variable controlling whether the home indicator bar on iPhone X should be
 /// hidden.
@@ -1062,7 +1059,7 @@ pub const IME_IMPLEMENTED_UI: &'static str = "SDL_IME_IMPLEMENTED_UI";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const IOS_HIDE_HOME_INDICATOR: &'static str = "SDL_IOS_HIDE_HOME_INDICATOR";
+pub const IOS_HIDE_HOME_INDICATOR: &str = "SDL_IOS_HIDE_HOME_INDICATOR";
 
 /// A variable that lets you enable joystick (and gamecontroller) events even
 /// when your app is in the background.
@@ -1078,7 +1075,7 @@ pub const IOS_HIDE_HOME_INDICATOR: &'static str = "SDL_IOS_HIDE_HOME_INDICATOR";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_ALLOW_BACKGROUND_EVENTS: &'static str = "SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS";
+pub const JOYSTICK_ALLOW_BACKGROUND_EVENTS: &str = "SDL_JOYSTICK_ALLOW_BACKGROUND_EVENTS";
 
 /// A variable containing a list of arcade stick style controllers.
 ///
@@ -1094,7 +1091,7 @@ pub const JOYSTICK_ALLOW_BACKGROUND_EVENTS: &'static str = "SDL_JOYSTICK_ALLOW_B
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_ARCADESTICK_DEVICES: &'static str = "SDL_JOYSTICK_ARCADESTICK_DEVICES";
+pub const JOYSTICK_ARCADESTICK_DEVICES: &str = "SDL_JOYSTICK_ARCADESTICK_DEVICES";
 
 /// A variable containing a list of devices that are not arcade stick style
 /// controllers.
@@ -1114,8 +1111,7 @@ pub const JOYSTICK_ARCADESTICK_DEVICES: &'static str = "SDL_JOYSTICK_ARCADESTICK
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_ARCADESTICK_DEVICES_EXCLUDED: &'static str =
-    "SDL_JOYSTICK_ARCADESTICK_DEVICES_EXCLUDED";
+pub const JOYSTICK_ARCADESTICK_DEVICES_EXCLUDED: &str = "SDL_JOYSTICK_ARCADESTICK_DEVICES_EXCLUDED";
 
 /// A variable containing a list of devices that should not be considered
 /// joysticks.
@@ -1132,7 +1128,7 @@ pub const JOYSTICK_ARCADESTICK_DEVICES_EXCLUDED: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_BLACKLIST_DEVICES: &'static str = "SDL_JOYSTICK_BLACKLIST_DEVICES";
+pub const JOYSTICK_BLACKLIST_DEVICES: &str = "SDL_JOYSTICK_BLACKLIST_DEVICES";
 
 /// A variable containing a list of devices that should be considered
 /// joysticks.
@@ -1152,8 +1148,7 @@ pub const JOYSTICK_BLACKLIST_DEVICES: &'static str = "SDL_JOYSTICK_BLACKLIST_DEV
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_BLACKLIST_DEVICES_EXCLUDED: &'static str =
-    "SDL_JOYSTICK_BLACKLIST_DEVICES_EXCLUDED";
+pub const JOYSTICK_BLACKLIST_DEVICES_EXCLUDED: &str = "SDL_JOYSTICK_BLACKLIST_DEVICES_EXCLUDED";
 
 /// A variable containing a comma separated list of devices to open as
 /// joysticks.
@@ -1162,7 +1157,7 @@ pub const JOYSTICK_BLACKLIST_DEVICES_EXCLUDED: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_DEVICE: &'static str = "SDL_JOYSTICK_DEVICE";
+pub const JOYSTICK_DEVICE: &str = "SDL_JOYSTICK_DEVICE";
 
 /// A variable controlling whether enhanced reports should be used for
 /// controllers when using the HIDAPI driver.
@@ -1186,7 +1181,7 @@ pub const JOYSTICK_DEVICE: &'static str = "SDL_JOYSTICK_DEVICE";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_ENHANCED_REPORTS: &'static str = "SDL_JOYSTICK_ENHANCED_REPORTS";
+pub const JOYSTICK_ENHANCED_REPORTS: &str = "SDL_JOYSTICK_ENHANCED_REPORTS";
 
 /// A variable containing a list of flightstick style controllers.
 ///
@@ -1202,7 +1197,7 @@ pub const JOYSTICK_ENHANCED_REPORTS: &'static str = "SDL_JOYSTICK_ENHANCED_REPOR
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_FLIGHTSTICK_DEVICES: &'static str = "SDL_JOYSTICK_FLIGHTSTICK_DEVICES";
+pub const JOYSTICK_FLIGHTSTICK_DEVICES: &str = "SDL_JOYSTICK_FLIGHTSTICK_DEVICES";
 
 /// A variable containing a list of devices that are not flightstick style
 /// controllers.
@@ -1222,8 +1217,7 @@ pub const JOYSTICK_FLIGHTSTICK_DEVICES: &'static str = "SDL_JOYSTICK_FLIGHTSTICK
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_FLIGHTSTICK_DEVICES_EXCLUDED: &'static str =
-    "SDL_JOYSTICK_FLIGHTSTICK_DEVICES_EXCLUDED";
+pub const JOYSTICK_FLIGHTSTICK_DEVICES_EXCLUDED: &str = "SDL_JOYSTICK_FLIGHTSTICK_DEVICES_EXCLUDED";
 
 /// A variable controlling whether GameInput should be used for controller
 /// handling on Windows.
@@ -1239,7 +1233,7 @@ pub const JOYSTICK_FLIGHTSTICK_DEVICES_EXCLUDED: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_GAMEINPUT: &'static str = "SDL_JOYSTICK_GAMEINPUT";
+pub const JOYSTICK_GAMEINPUT: &str = "SDL_JOYSTICK_GAMEINPUT";
 
 /// A variable containing a list of devices known to have a GameCube form
 /// factor.
@@ -1256,7 +1250,7 @@ pub const JOYSTICK_GAMEINPUT: &'static str = "SDL_JOYSTICK_GAMEINPUT";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_GAMECUBE_DEVICES: &'static str = "SDL_JOYSTICK_GAMECUBE_DEVICES";
+pub const JOYSTICK_GAMECUBE_DEVICES: &str = "SDL_JOYSTICK_GAMECUBE_DEVICES";
 
 /// A variable containing a list of devices known not to have a GameCube form
 /// factor.
@@ -1276,8 +1270,7 @@ pub const JOYSTICK_GAMECUBE_DEVICES: &'static str = "SDL_JOYSTICK_GAMECUBE_DEVIC
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_GAMECUBE_DEVICES_EXCLUDED: &'static str =
-    "SDL_JOYSTICK_GAMECUBE_DEVICES_EXCLUDED";
+pub const JOYSTICK_GAMECUBE_DEVICES_EXCLUDED: &str = "SDL_JOYSTICK_GAMECUBE_DEVICES_EXCLUDED";
 
 /// A variable controlling whether the HIDAPI joystick drivers should be used.
 ///
@@ -1293,7 +1286,7 @@ pub const JOYSTICK_GAMECUBE_DEVICES_EXCLUDED: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI: &'static str = "SDL_JOYSTICK_HIDAPI";
+pub const JOYSTICK_HIDAPI: &str = "SDL_JOYSTICK_HIDAPI";
 
 /// A variable controlling whether Nintendo Switch Joy-Con controllers will be
 /// combined into a single Pro-like controller when using the HIDAPI driver.
@@ -1309,7 +1302,7 @@ pub const JOYSTICK_HIDAPI: &'static str = "SDL_JOYSTICK_HIDAPI";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_COMBINE_JOY_CONS: &'static str = "SDL_JOYSTICK_HIDAPI_COMBINE_JOY_CONS";
+pub const JOYSTICK_HIDAPI_COMBINE_JOY_CONS: &str = "SDL_JOYSTICK_HIDAPI_COMBINE_JOY_CONS";
 
 /// A variable controlling whether the HIDAPI driver for Nintendo GameCube
 /// controllers should be used.
@@ -1325,7 +1318,7 @@ pub const JOYSTICK_HIDAPI_COMBINE_JOY_CONS: &'static str = "SDL_JOYSTICK_HIDAPI_
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_GAMECUBE: &'static str = "SDL_JOYSTICK_HIDAPI_GAMECUBE";
+pub const JOYSTICK_HIDAPI_GAMECUBE: &str = "SDL_JOYSTICK_HIDAPI_GAMECUBE";
 
 /// A variable controlling whether rumble is used to implement the GameCube
 /// controller's 3 rumble modes, Stop(0), Rumble(1), and StopHard(2).
@@ -1345,8 +1338,7 @@ pub const JOYSTICK_HIDAPI_GAMECUBE: &'static str = "SDL_JOYSTICK_HIDAPI_GAMECUBE
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_GAMECUBE_RUMBLE_BRAKE: &'static str =
-    "SDL_JOYSTICK_HIDAPI_GAMECUBE_RUMBLE_BRAKE";
+pub const JOYSTICK_HIDAPI_GAMECUBE_RUMBLE_BRAKE: &str = "SDL_JOYSTICK_HIDAPI_GAMECUBE_RUMBLE_BRAKE";
 
 /// A variable controlling whether the HIDAPI driver for Nintendo Switch
 /// Joy-Cons should be used.
@@ -1362,7 +1354,7 @@ pub const JOYSTICK_HIDAPI_GAMECUBE_RUMBLE_BRAKE: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_JOY_CONS: &'static str = "SDL_JOYSTICK_HIDAPI_JOY_CONS";
+pub const JOYSTICK_HIDAPI_JOY_CONS: &str = "SDL_JOYSTICK_HIDAPI_JOY_CONS";
 
 /// A variable controlling whether the Home button LED should be turned on when
 /// a Nintendo Switch Joy-Con controller is opened.
@@ -1380,7 +1372,7 @@ pub const JOYSTICK_HIDAPI_JOY_CONS: &'static str = "SDL_JOYSTICK_HIDAPI_JOY_CONS
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_JOYCON_HOME_LED: &'static str = "SDL_JOYSTICK_HIDAPI_JOYCON_HOME_LED";
+pub const JOYSTICK_HIDAPI_JOYCON_HOME_LED: &str = "SDL_JOYSTICK_HIDAPI_JOYCON_HOME_LED";
 
 /// A variable controlling whether the HIDAPI driver for Amazon Luna
 /// controllers connected via Bluetooth should be used.
@@ -1396,7 +1388,7 @@ pub const JOYSTICK_HIDAPI_JOYCON_HOME_LED: &'static str = "SDL_JOYSTICK_HIDAPI_J
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_LUNA: &'static str = "SDL_JOYSTICK_HIDAPI_LUNA";
+pub const JOYSTICK_HIDAPI_LUNA: &str = "SDL_JOYSTICK_HIDAPI_LUNA";
 
 /// A variable controlling whether the HIDAPI driver for Nintendo Online
 /// classic controllers should be used.
@@ -1412,7 +1404,7 @@ pub const JOYSTICK_HIDAPI_LUNA: &'static str = "SDL_JOYSTICK_HIDAPI_LUNA";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_NINTENDO_CLASSIC: &'static str = "SDL_JOYSTICK_HIDAPI_NINTENDO_CLASSIC";
+pub const JOYSTICK_HIDAPI_NINTENDO_CLASSIC: &str = "SDL_JOYSTICK_HIDAPI_NINTENDO_CLASSIC";
 
 /// A variable controlling whether the HIDAPI driver for PS3 controllers should
 /// be used.
@@ -1433,7 +1425,7 @@ pub const JOYSTICK_HIDAPI_NINTENDO_CLASSIC: &'static str = "SDL_JOYSTICK_HIDAPI_
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_PS3: &'static str = "SDL_JOYSTICK_HIDAPI_PS3";
+pub const JOYSTICK_HIDAPI_PS3: &str = "SDL_JOYSTICK_HIDAPI_PS3";
 
 /// A variable controlling whether the Sony driver (sixaxis.sys) for PS3
 /// controllers (Sixaxis/DualShock 3) should be used.
@@ -1449,8 +1441,7 @@ pub const JOYSTICK_HIDAPI_PS3: &'static str = "SDL_JOYSTICK_HIDAPI_PS3";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_PS3_SIXAXIS_DRIVER: &'static str =
-    "SDL_JOYSTICK_HIDAPI_PS3_SIXAXIS_DRIVER";
+pub const JOYSTICK_HIDAPI_PS3_SIXAXIS_DRIVER: &str = "SDL_JOYSTICK_HIDAPI_PS3_SIXAXIS_DRIVER";
 
 /// A variable controlling whether the HIDAPI driver for PS4 controllers should
 /// be used.
@@ -1466,7 +1457,7 @@ pub const JOYSTICK_HIDAPI_PS3_SIXAXIS_DRIVER: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_PS4: &'static str = "SDL_JOYSTICK_HIDAPI_PS4";
+pub const JOYSTICK_HIDAPI_PS4: &str = "SDL_JOYSTICK_HIDAPI_PS4";
 
 /// A variable controlling the update rate of the PS4 controller over Bluetooth
 /// when using the HIDAPI driver.
@@ -1480,8 +1471,7 @@ pub const JOYSTICK_HIDAPI_PS4: &'static str = "SDL_JOYSTICK_HIDAPI_PS4";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_PS4_REPORT_INTERVAL: &'static str =
-    "SDL_JOYSTICK_HIDAPI_PS4_REPORT_INTERVAL";
+pub const JOYSTICK_HIDAPI_PS4_REPORT_INTERVAL: &str = "SDL_JOYSTICK_HIDAPI_PS4_REPORT_INTERVAL";
 
 /// A variable controlling whether the HIDAPI driver for PS5 controllers should
 /// be used.
@@ -1497,7 +1487,7 @@ pub const JOYSTICK_HIDAPI_PS4_REPORT_INTERVAL: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_PS5: &'static str = "SDL_JOYSTICK_HIDAPI_PS5";
+pub const JOYSTICK_HIDAPI_PS5: &str = "SDL_JOYSTICK_HIDAPI_PS5";
 
 /// A variable controlling whether the player LEDs should be lit to indicate
 /// which player is associated with a PS5 controller.
@@ -1509,7 +1499,7 @@ pub const JOYSTICK_HIDAPI_PS5: &'static str = "SDL_JOYSTICK_HIDAPI_PS5";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_PS5_PLAYER_LED: &'static str = "SDL_JOYSTICK_HIDAPI_PS5_PLAYER_LED";
+pub const JOYSTICK_HIDAPI_PS5_PLAYER_LED: &str = "SDL_JOYSTICK_HIDAPI_PS5_PLAYER_LED";
 
 /// A variable controlling whether the HIDAPI driver for NVIDIA SHIELD
 /// controllers should be used.
@@ -1525,7 +1515,7 @@ pub const JOYSTICK_HIDAPI_PS5_PLAYER_LED: &'static str = "SDL_JOYSTICK_HIDAPI_PS
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_SHIELD: &'static str = "SDL_JOYSTICK_HIDAPI_SHIELD";
+pub const JOYSTICK_HIDAPI_SHIELD: &str = "SDL_JOYSTICK_HIDAPI_SHIELD";
 
 /// A variable controlling whether the HIDAPI driver for Google Stadia
 /// controllers should be used.
@@ -1539,7 +1529,7 @@ pub const JOYSTICK_HIDAPI_SHIELD: &'static str = "SDL_JOYSTICK_HIDAPI_SHIELD";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_STADIA: &'static str = "SDL_JOYSTICK_HIDAPI_STADIA";
+pub const JOYSTICK_HIDAPI_STADIA: &str = "SDL_JOYSTICK_HIDAPI_STADIA";
 
 /// A variable controlling whether the HIDAPI driver for Bluetooth Steam
 /// Controllers should be used.
@@ -1555,7 +1545,7 @@ pub const JOYSTICK_HIDAPI_STADIA: &'static str = "SDL_JOYSTICK_HIDAPI_STADIA";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_STEAM: &'static str = "SDL_JOYSTICK_HIDAPI_STEAM";
+pub const JOYSTICK_HIDAPI_STEAM: &str = "SDL_JOYSTICK_HIDAPI_STEAM";
 
 /// A variable controlling whether the Steam button LED should be turned on
 /// when a Steam controller is opened.
@@ -1573,7 +1563,7 @@ pub const JOYSTICK_HIDAPI_STEAM: &'static str = "SDL_JOYSTICK_HIDAPI_STEAM";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_STEAM_HOME_LED: &'static str = "SDL_JOYSTICK_HIDAPI_STEAM_HOME_LED";
+pub const JOYSTICK_HIDAPI_STEAM_HOME_LED: &str = "SDL_JOYSTICK_HIDAPI_STEAM_HOME_LED";
 
 /// A variable controlling whether the HIDAPI driver for the Steam Deck builtin
 /// controller should be used.
@@ -1589,7 +1579,7 @@ pub const JOYSTICK_HIDAPI_STEAM_HOME_LED: &'static str = "SDL_JOYSTICK_HIDAPI_ST
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_STEAMDECK: &'static str = "SDL_JOYSTICK_HIDAPI_STEAMDECK";
+pub const JOYSTICK_HIDAPI_STEAMDECK: &str = "SDL_JOYSTICK_HIDAPI_STEAMDECK";
 
 /// A variable controlling whether the HIDAPI driver for HORI licensed Steam
 /// controllers should be used.
@@ -1598,7 +1588,7 @@ pub const JOYSTICK_HIDAPI_STEAMDECK: &'static str = "SDL_JOYSTICK_HIDAPI_STEAMDE
 /// not used "1" - HIDAPI driver is used
 ///
 /// The default is the value of [`JOYSTICK_HIDAPI`]
-pub const JOYSTICK_HIDAPI_STEAM_HORI: &'static str = "SDL_JOYSTICK_HIDAPI_STEAM_HORI";
+pub const JOYSTICK_HIDAPI_STEAM_HORI: &str = "SDL_JOYSTICK_HIDAPI_STEAM_HORI";
 
 /// A variable controlling whether the HIDAPI driver for Nintendo Switch
 /// controllers should be used.
@@ -1614,7 +1604,7 @@ pub const JOYSTICK_HIDAPI_STEAM_HORI: &'static str = "SDL_JOYSTICK_HIDAPI_STEAM_
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_SWITCH: &'static str = "SDL_JOYSTICK_HIDAPI_SWITCH";
+pub const JOYSTICK_HIDAPI_SWITCH: &str = "SDL_JOYSTICK_HIDAPI_SWITCH";
 
 /// A variable controlling whether the Home button LED should be turned on when
 /// a Nintendo Switch Pro controller is opened.
@@ -1632,7 +1622,7 @@ pub const JOYSTICK_HIDAPI_SWITCH: &'static str = "SDL_JOYSTICK_HIDAPI_SWITCH";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_SWITCH_HOME_LED: &'static str = "SDL_JOYSTICK_HIDAPI_SWITCH_HOME_LED";
+pub const JOYSTICK_HIDAPI_SWITCH_HOME_LED: &str = "SDL_JOYSTICK_HIDAPI_SWITCH_HOME_LED";
 
 /// A variable controlling whether the player LEDs should be lit to indicate
 /// which player is associated with a Nintendo Switch controller.
@@ -1646,7 +1636,7 @@ pub const JOYSTICK_HIDAPI_SWITCH_HOME_LED: &'static str = "SDL_JOYSTICK_HIDAPI_S
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_SWITCH_PLAYER_LED: &'static str = "SDL_JOYSTICK_HIDAPI_SWITCH_PLAYER_LED";
+pub const JOYSTICK_HIDAPI_SWITCH_PLAYER_LED: &str = "SDL_JOYSTICK_HIDAPI_SWITCH_PLAYER_LED";
 
 /// A variable controlling whether Nintendo Switch Joy-Con controllers will be
 /// in vertical mode when using the HIDAPI driver.
@@ -1661,7 +1651,7 @@ pub const JOYSTICK_HIDAPI_SWITCH_PLAYER_LED: &'static str = "SDL_JOYSTICK_HIDAPI
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_VERTICAL_JOY_CONS: &'static str = "SDL_JOYSTICK_HIDAPI_VERTICAL_JOY_CONS";
+pub const JOYSTICK_HIDAPI_VERTICAL_JOY_CONS: &str = "SDL_JOYSTICK_HIDAPI_VERTICAL_JOY_CONS";
 
 /// A variable controlling whether the HIDAPI driver for Nintendo Wii and Wii U
 /// controllers should be used.
@@ -1678,7 +1668,7 @@ pub const JOYSTICK_HIDAPI_VERTICAL_JOY_CONS: &'static str = "SDL_JOYSTICK_HIDAPI
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_WII: &'static str = "SDL_JOYSTICK_HIDAPI_WII";
+pub const JOYSTICK_HIDAPI_WII: &str = "SDL_JOYSTICK_HIDAPI_WII";
 
 /// A variable controlling whether the player LEDs should be lit to indicate
 /// which player is associated with a Wii controller.
@@ -1692,7 +1682,7 @@ pub const JOYSTICK_HIDAPI_WII: &'static str = "SDL_JOYSTICK_HIDAPI_WII";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_WII_PLAYER_LED: &'static str = "SDL_JOYSTICK_HIDAPI_WII_PLAYER_LED";
+pub const JOYSTICK_HIDAPI_WII_PLAYER_LED: &str = "SDL_JOYSTICK_HIDAPI_WII_PLAYER_LED";
 
 /// A variable controlling whether the HIDAPI driver for XBox controllers
 /// should be used.
@@ -1709,7 +1699,7 @@ pub const JOYSTICK_HIDAPI_WII_PLAYER_LED: &'static str = "SDL_JOYSTICK_HIDAPI_WI
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_XBOX: &'static str = "SDL_JOYSTICK_HIDAPI_XBOX";
+pub const JOYSTICK_HIDAPI_XBOX: &str = "SDL_JOYSTICK_HIDAPI_XBOX";
 
 /// A variable controlling whether the HIDAPI driver for XBox 360 controllers
 /// should be used.
@@ -1725,7 +1715,7 @@ pub const JOYSTICK_HIDAPI_XBOX: &'static str = "SDL_JOYSTICK_HIDAPI_XBOX";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_XBOX_360: &'static str = "SDL_JOYSTICK_HIDAPI_XBOX_360";
+pub const JOYSTICK_HIDAPI_XBOX_360: &str = "SDL_JOYSTICK_HIDAPI_XBOX_360";
 
 /// A variable controlling whether the player LEDs should be lit to indicate
 /// which player is associated with an Xbox 360 controller.
@@ -1739,8 +1729,7 @@ pub const JOYSTICK_HIDAPI_XBOX_360: &'static str = "SDL_JOYSTICK_HIDAPI_XBOX_360
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_XBOX_360_PLAYER_LED: &'static str =
-    "SDL_JOYSTICK_HIDAPI_XBOX_360_PLAYER_LED";
+pub const JOYSTICK_HIDAPI_XBOX_360_PLAYER_LED: &str = "SDL_JOYSTICK_HIDAPI_XBOX_360_PLAYER_LED";
 
 /// A variable controlling whether the HIDAPI driver for XBox 360 wireless
 /// controllers should be used.
@@ -1756,7 +1745,7 @@ pub const JOYSTICK_HIDAPI_XBOX_360_PLAYER_LED: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_XBOX_360_WIRELESS: &'static str = "SDL_JOYSTICK_HIDAPI_XBOX_360_WIRELESS";
+pub const JOYSTICK_HIDAPI_XBOX_360_WIRELESS: &str = "SDL_JOYSTICK_HIDAPI_XBOX_360_WIRELESS";
 
 /// A variable controlling whether the HIDAPI driver for XBox One controllers
 /// should be used.
@@ -1772,7 +1761,7 @@ pub const JOYSTICK_HIDAPI_XBOX_360_WIRELESS: &'static str = "SDL_JOYSTICK_HIDAPI
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_XBOX_ONE: &'static str = "SDL_JOYSTICK_HIDAPI_XBOX_ONE";
+pub const JOYSTICK_HIDAPI_XBOX_ONE: &str = "SDL_JOYSTICK_HIDAPI_XBOX_ONE";
 
 /// A variable controlling whether the Home button LED should be turned on when
 /// an Xbox One controller is opened.
@@ -1790,7 +1779,7 @@ pub const JOYSTICK_HIDAPI_XBOX_ONE: &'static str = "SDL_JOYSTICK_HIDAPI_XBOX_ONE
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_HIDAPI_XBOX_ONE_HOME_LED: &'static str = "SDL_JOYSTICK_HIDAPI_XBOX_ONE_HOME_LED";
+pub const JOYSTICK_HIDAPI_XBOX_ONE_HOME_LED: &str = "SDL_JOYSTICK_HIDAPI_XBOX_ONE_HOME_LED";
 
 /// A variable controlling whether IOKit should be used for controller
 /// handling.
@@ -1804,7 +1793,7 @@ pub const JOYSTICK_HIDAPI_XBOX_ONE_HOME_LED: &'static str = "SDL_JOYSTICK_HIDAPI
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_IOKIT: &'static str = "SDL_JOYSTICK_IOKIT";
+pub const JOYSTICK_IOKIT: &str = "SDL_JOYSTICK_IOKIT";
 
 /// A variable controlling whether to use the classic /dev/input/js* joystick
 /// interface or the newer /dev/input/event* joystick interface on Linux.
@@ -1818,7 +1807,7 @@ pub const JOYSTICK_IOKIT: &'static str = "SDL_JOYSTICK_IOKIT";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_LINUX_CLASSIC: &'static str = "SDL_JOYSTICK_LINUX_CLASSIC";
+pub const JOYSTICK_LINUX_CLASSIC: &str = "SDL_JOYSTICK_LINUX_CLASSIC";
 
 /// A variable controlling whether joysticks on Linux adhere to their
 /// HID-defined deadzones or return unfiltered values.
@@ -1832,7 +1821,7 @@ pub const JOYSTICK_LINUX_CLASSIC: &'static str = "SDL_JOYSTICK_LINUX_CLASSIC";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_LINUX_DEADZONES: &'static str = "SDL_JOYSTICK_LINUX_DEADZONES";
+pub const JOYSTICK_LINUX_DEADZONES: &str = "SDL_JOYSTICK_LINUX_DEADZONES";
 
 /// A variable controlling whether joysticks on Linux will always treat 'hat'
 /// axis inputs (ABS_HAT0X - ABS_HAT3Y) as 8-way digital hats without checking
@@ -1849,7 +1838,7 @@ pub const JOYSTICK_LINUX_DEADZONES: &'static str = "SDL_JOYSTICK_LINUX_DEADZONES
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_LINUX_DIGITAL_HATS: &'static str = "SDL_JOYSTICK_LINUX_DIGITAL_HATS";
+pub const JOYSTICK_LINUX_DIGITAL_HATS: &str = "SDL_JOYSTICK_LINUX_DIGITAL_HATS";
 
 /// A variable controlling whether digital hats on Linux will apply deadzones
 /// to their underlying input axes or use unfiltered values.
@@ -1864,7 +1853,7 @@ pub const JOYSTICK_LINUX_DIGITAL_HATS: &'static str = "SDL_JOYSTICK_LINUX_DIGITA
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_LINUX_HAT_DEADZONES: &'static str = "SDL_JOYSTICK_LINUX_HAT_DEADZONES";
+pub const JOYSTICK_LINUX_HAT_DEADZONES: &str = "SDL_JOYSTICK_LINUX_HAT_DEADZONES";
 
 /// A variable controlling whether GCController should be used for controller
 /// handling.
@@ -1878,7 +1867,7 @@ pub const JOYSTICK_LINUX_HAT_DEADZONES: &'static str = "SDL_JOYSTICK_LINUX_HAT_D
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_MFI: &'static str = "SDL_JOYSTICK_MFI";
+pub const JOYSTICK_MFI: &str = "SDL_JOYSTICK_MFI";
 
 /// A variable controlling whether the RAWINPUT joystick drivers should be used
 /// for better handling XInput-capable devices.
@@ -1892,7 +1881,7 @@ pub const JOYSTICK_MFI: &'static str = "SDL_JOYSTICK_MFI";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_RAWINPUT: &'static str = "SDL_JOYSTICK_RAWINPUT";
+pub const JOYSTICK_RAWINPUT: &str = "SDL_JOYSTICK_RAWINPUT";
 
 /// A variable controlling whether the RAWINPUT driver should pull correlated
 /// data from XInput.
@@ -1908,8 +1897,7 @@ pub const JOYSTICK_RAWINPUT: &'static str = "SDL_JOYSTICK_RAWINPUT";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_RAWINPUT_CORRELATE_XINPUT: &'static str =
-    "SDL_JOYSTICK_RAWINPUT_CORRELATE_XINPUT";
+pub const JOYSTICK_RAWINPUT_CORRELATE_XINPUT: &str = "SDL_JOYSTICK_RAWINPUT_CORRELATE_XINPUT";
 
 /// A variable controlling whether the ROG Chakram mice should show up as
 /// joysticks.
@@ -1923,7 +1911,7 @@ pub const JOYSTICK_RAWINPUT_CORRELATE_XINPUT: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_ROG_CHAKRAM: &'static str = "SDL_JOYSTICK_ROG_CHAKRAM";
+pub const JOYSTICK_ROG_CHAKRAM: &str = "SDL_JOYSTICK_ROG_CHAKRAM";
 
 /// A variable controlling whether a separate thread should be used for
 /// handling joystick detection and raw input messages on Windows.
@@ -1937,7 +1925,7 @@ pub const JOYSTICK_ROG_CHAKRAM: &'static str = "SDL_JOYSTICK_ROG_CHAKRAM";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_THREAD: &'static str = "SDL_JOYSTICK_THREAD";
+pub const JOYSTICK_THREAD: &str = "SDL_JOYSTICK_THREAD";
 
 /// A variable containing a list of throttle style controllers.
 ///
@@ -1953,7 +1941,7 @@ pub const JOYSTICK_THREAD: &'static str = "SDL_JOYSTICK_THREAD";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_THROTTLE_DEVICES: &'static str = "SDL_JOYSTICK_THROTTLE_DEVICES";
+pub const JOYSTICK_THROTTLE_DEVICES: &str = "SDL_JOYSTICK_THROTTLE_DEVICES";
 
 /// A variable containing a list of devices that are not throttle style
 /// controllers.
@@ -1973,8 +1961,7 @@ pub const JOYSTICK_THROTTLE_DEVICES: &'static str = "SDL_JOYSTICK_THROTTLE_DEVIC
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_THROTTLE_DEVICES_EXCLUDED: &'static str =
-    "SDL_JOYSTICK_THROTTLE_DEVICES_EXCLUDED";
+pub const JOYSTICK_THROTTLE_DEVICES_EXCLUDED: &str = "SDL_JOYSTICK_THROTTLE_DEVICES_EXCLUDED";
 
 /// A variable controlling whether Windows.Gaming.Input should be used for
 /// controller handling.
@@ -1988,7 +1975,7 @@ pub const JOYSTICK_THROTTLE_DEVICES_EXCLUDED: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_WGI: &'static str = "SDL_JOYSTICK_WGI";
+pub const JOYSTICK_WGI: &str = "SDL_JOYSTICK_WGI";
 
 /// A variable containing a list of wheel style controllers.
 ///
@@ -2004,7 +1991,7 @@ pub const JOYSTICK_WGI: &'static str = "SDL_JOYSTICK_WGI";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_WHEEL_DEVICES: &'static str = "SDL_JOYSTICK_WHEEL_DEVICES";
+pub const JOYSTICK_WHEEL_DEVICES: &str = "SDL_JOYSTICK_WHEEL_DEVICES";
 
 /// A variable containing a list of devices that are not wheel style
 /// controllers.
@@ -2024,7 +2011,7 @@ pub const JOYSTICK_WHEEL_DEVICES: &'static str = "SDL_JOYSTICK_WHEEL_DEVICES";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_WHEEL_DEVICES_EXCLUDED: &'static str = "SDL_JOYSTICK_WHEEL_DEVICES_EXCLUDED";
+pub const JOYSTICK_WHEEL_DEVICES_EXCLUDED: &str = "SDL_JOYSTICK_WHEEL_DEVICES_EXCLUDED";
 
 /// A variable containing a list of devices known to have all axes centered at
 /// zero.
@@ -2041,7 +2028,7 @@ pub const JOYSTICK_WHEEL_DEVICES_EXCLUDED: &'static str = "SDL_JOYSTICK_WHEEL_DE
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const JOYSTICK_ZERO_CENTERED_DEVICES: &'static str = "SDL_JOYSTICK_ZERO_CENTERED_DEVICES";
+pub const JOYSTICK_ZERO_CENTERED_DEVICES: &str = "SDL_JOYSTICK_ZERO_CENTERED_DEVICES";
 
 /// A variable that controls keycode representation in keyboard events.
 ///
@@ -2074,7 +2061,7 @@ pub const JOYSTICK_ZERO_CENTERED_DEVICES: &'static str = "SDL_JOYSTICK_ZERO_CENT
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const KEYCODE_OPTIONS: &'static str = "SDL_KEYCODE_OPTIONS";
+pub const KEYCODE_OPTIONS: &str = "SDL_KEYCODE_OPTIONS";
 
 /// A variable that controls what KMSDRM device to use.
 ///
@@ -2087,7 +2074,7 @@ pub const KEYCODE_OPTIONS: &'static str = "SDL_KEYCODE_OPTIONS";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const KMSDRM_DEVICE_INDEX: &'static str = "SDL_KMSDRM_DEVICE_INDEX";
+pub const KMSDRM_DEVICE_INDEX: &str = "SDL_KMSDRM_DEVICE_INDEX";
 
 /// A variable that controls whether SDL requires DRM master access in order to
 /// initialize the KMSDRM video backend.
@@ -2114,7 +2101,7 @@ pub const KMSDRM_DEVICE_INDEX: &'static str = "SDL_KMSDRM_DEVICE_INDEX";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const KMSDRM_REQUIRE_DRM_MASTER: &'static str = "SDL_KMSDRM_REQUIRE_DRM_MASTER";
+pub const KMSDRM_REQUIRE_DRM_MASTER: &str = "SDL_KMSDRM_REQUIRE_DRM_MASTER";
 
 /// A variable controlling the default SDL log levels.
 ///
@@ -2139,7 +2126,7 @@ pub const KMSDRM_REQUIRE_DRM_MASTER: &'static str = "SDL_KMSDRM_REQUIRE_DRM_MAST
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const LOGGING: &'static str = "SDL_LOGGING";
+pub const LOGGING: &str = "SDL_LOGGING";
 
 /// A variable controlling whether to force the application to become the
 /// foreground process when launched on macOS.
@@ -2154,7 +2141,7 @@ pub const LOGGING: &'static str = "SDL_LOGGING";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MAC_BACKGROUND_APP: &'static str = "SDL_MAC_BACKGROUND_APP";
+pub const MAC_BACKGROUND_APP: &str = "SDL_MAC_BACKGROUND_APP";
 
 /// A variable that determines whether Ctrl+Click should generate a right-click
 /// event on macOS.
@@ -2169,8 +2156,7 @@ pub const MAC_BACKGROUND_APP: &'static str = "SDL_MAC_BACKGROUND_APP";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK: &'static str =
-    "SDL_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK";
+pub const MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK: &str = "SDL_MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK";
 
 /// A variable controlling whether dispatching OpenGL context updates should
 /// block the dispatching thread until the main thread finishes processing on
@@ -2192,7 +2178,7 @@ pub const MAC_CTRL_CLICK_EMULATE_RIGHT_CLICK: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MAC_OPENGL_ASYNC_DISPATCH: &'static str = "SDL_MAC_OPENGL_ASYNC_DISPATCH";
+pub const MAC_OPENGL_ASYNC_DISPATCH: &str = "SDL_MAC_OPENGL_ASYNC_DISPATCH";
 
 /// A variable controlling whether the Option key on macOS should be remapped
 /// to act as the Alt key.
@@ -2216,7 +2202,7 @@ pub const MAC_OPENGL_ASYNC_DISPATCH: &'static str = "SDL_MAC_OPENGL_ASYNC_DISPAT
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MAC_OPTION_AS_ALT: &'static str = "SDL_MAC_OPTION_AS_ALT";
+pub const MAC_OPTION_AS_ALT: &str = "SDL_MAC_OPTION_AS_ALT";
 
 /// A variable controlling whether [`SDL_EVENT_MOUSE_WHEEL`] event values will have
 /// momentum on macOS.
@@ -2230,7 +2216,7 @@ pub const MAC_OPTION_AS_ALT: &'static str = "SDL_MAC_OPTION_AS_ALT";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MAC_SCROLL_MOMENTUM: &'static str = "SDL_MAC_SCROLL_MOMENTUM";
+pub const MAC_SCROLL_MOMENTUM: &str = "SDL_MAC_SCROLL_MOMENTUM";
 
 /// Request [`SDL_AppIterate()`] be called at a specific rate.
 ///
@@ -2255,7 +2241,7 @@ pub const MAC_SCROLL_MOMENTUM: &'static str = "SDL_MAC_SCROLL_MOMENTUM";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MAIN_CALLBACK_RATE: &'static str = "SDL_MAIN_CALLBACK_RATE";
+pub const MAIN_CALLBACK_RATE: &str = "SDL_MAIN_CALLBACK_RATE";
 
 /// A variable controlling whether the mouse is captured while mouse buttons
 /// are pressed.
@@ -2273,7 +2259,7 @@ pub const MAIN_CALLBACK_RATE: &'static str = "SDL_MAIN_CALLBACK_RATE";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MOUSE_AUTO_CAPTURE: &'static str = "SDL_MOUSE_AUTO_CAPTURE";
+pub const MOUSE_AUTO_CAPTURE: &str = "SDL_MOUSE_AUTO_CAPTURE";
 
 /// A variable setting the double click radius, in pixels.
 ///
@@ -2281,7 +2267,7 @@ pub const MOUSE_AUTO_CAPTURE: &'static str = "SDL_MOUSE_AUTO_CAPTURE";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MOUSE_DOUBLE_CLICK_RADIUS: &'static str = "SDL_MOUSE_DOUBLE_CLICK_RADIUS";
+pub const MOUSE_DOUBLE_CLICK_RADIUS: &str = "SDL_MOUSE_DOUBLE_CLICK_RADIUS";
 
 /// A variable setting the double click time, in milliseconds.
 ///
@@ -2289,7 +2275,7 @@ pub const MOUSE_DOUBLE_CLICK_RADIUS: &'static str = "SDL_MOUSE_DOUBLE_CLICK_RADI
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MOUSE_DOUBLE_CLICK_TIME: &'static str = "SDL_MOUSE_DOUBLE_CLICK_TIME";
+pub const MOUSE_DOUBLE_CLICK_TIME: &str = "SDL_MOUSE_DOUBLE_CLICK_TIME";
 
 /// A variable setting which system cursor to use as the default cursor.
 ///
@@ -2300,7 +2286,7 @@ pub const MOUSE_DOUBLE_CLICK_TIME: &'static str = "SDL_MOUSE_DOUBLE_CLICK_TIME";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MOUSE_DEFAULT_SYSTEM_CURSOR: &'static str = "SDL_MOUSE_DEFAULT_SYSTEM_CURSOR";
+pub const MOUSE_DEFAULT_SYSTEM_CURSOR: &str = "SDL_MOUSE_DEFAULT_SYSTEM_CURSOR";
 
 /// A variable controlling whether warping a hidden mouse cursor will activate
 /// relative mouse mode.
@@ -2331,7 +2317,7 @@ pub const MOUSE_DEFAULT_SYSTEM_CURSOR: &'static str = "SDL_MOUSE_DEFAULT_SYSTEM_
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MOUSE_EMULATE_WARP_WITH_RELATIVE: &'static str = "SDL_MOUSE_EMULATE_WARP_WITH_RELATIVE";
+pub const MOUSE_EMULATE_WARP_WITH_RELATIVE: &str = "SDL_MOUSE_EMULATE_WARP_WITH_RELATIVE";
 
 /// Allow mouse click events when clicking to focus an SDL window.
 ///
@@ -2344,7 +2330,7 @@ pub const MOUSE_EMULATE_WARP_WITH_RELATIVE: &'static str = "SDL_MOUSE_EMULATE_WA
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MOUSE_FOCUS_CLICKTHROUGH: &'static str = "SDL_MOUSE_FOCUS_CLICKTHROUGH";
+pub const MOUSE_FOCUS_CLICKTHROUGH: &str = "SDL_MOUSE_FOCUS_CLICKTHROUGH";
 
 /// A variable setting the speed scale for mouse motion, in floating point,
 /// when the mouse is not in relative mode.
@@ -2353,7 +2339,7 @@ pub const MOUSE_FOCUS_CLICKTHROUGH: &'static str = "SDL_MOUSE_FOCUS_CLICKTHROUGH
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MOUSE_NORMAL_SPEED_SCALE: &'static str = "SDL_MOUSE_NORMAL_SPEED_SCALE";
+pub const MOUSE_NORMAL_SPEED_SCALE: &str = "SDL_MOUSE_NORMAL_SPEED_SCALE";
 
 /// A variable controlling whether relative mouse mode constrains the mouse to
 /// the center of the window.
@@ -2373,7 +2359,7 @@ pub const MOUSE_NORMAL_SPEED_SCALE: &'static str = "SDL_MOUSE_NORMAL_SPEED_SCALE
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MOUSE_RELATIVE_MODE_CENTER: &'static str = "SDL_MOUSE_RELATIVE_MODE_CENTER";
+pub const MOUSE_RELATIVE_MODE_CENTER: &str = "SDL_MOUSE_RELATIVE_MODE_CENTER";
 
 /// A variable setting the scale for mouse motion, in floating point, when the
 /// mouse is in relative mode.
@@ -2382,7 +2368,7 @@ pub const MOUSE_RELATIVE_MODE_CENTER: &'static str = "SDL_MOUSE_RELATIVE_MODE_CE
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MOUSE_RELATIVE_SPEED_SCALE: &'static str = "SDL_MOUSE_RELATIVE_SPEED_SCALE";
+pub const MOUSE_RELATIVE_SPEED_SCALE: &str = "SDL_MOUSE_RELATIVE_SPEED_SCALE";
 
 /// A variable controlling whether the system mouse acceleration curve is used
 /// for relative mouse motion.
@@ -2400,7 +2386,7 @@ pub const MOUSE_RELATIVE_SPEED_SCALE: &'static str = "SDL_MOUSE_RELATIVE_SPEED_S
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MOUSE_RELATIVE_SYSTEM_SCALE: &'static str = "SDL_MOUSE_RELATIVE_SYSTEM_SCALE";
+pub const MOUSE_RELATIVE_SYSTEM_SCALE: &str = "SDL_MOUSE_RELATIVE_SYSTEM_SCALE";
 
 /// A variable controlling whether a motion event should be generated for mouse
 /// warping in relative mode.
@@ -2418,7 +2404,7 @@ pub const MOUSE_RELATIVE_SYSTEM_SCALE: &'static str = "SDL_MOUSE_RELATIVE_SYSTEM
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MOUSE_RELATIVE_WARP_MOTION: &'static str = "SDL_MOUSE_RELATIVE_WARP_MOTION";
+pub const MOUSE_RELATIVE_WARP_MOTION: &str = "SDL_MOUSE_RELATIVE_WARP_MOTION";
 
 /// A variable controlling whether the hardware cursor stays visible when
 /// relative mode is active.
@@ -2436,7 +2422,7 @@ pub const MOUSE_RELATIVE_WARP_MOTION: &'static str = "SDL_MOUSE_RELATIVE_WARP_MO
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MOUSE_RELATIVE_CURSOR_VISIBLE: &'static str = "SDL_MOUSE_RELATIVE_CURSOR_VISIBLE";
+pub const MOUSE_RELATIVE_CURSOR_VISIBLE: &str = "SDL_MOUSE_RELATIVE_CURSOR_VISIBLE";
 
 /// A variable controlling whether mouse events should generate synthetic touch
 /// events.
@@ -2452,7 +2438,7 @@ pub const MOUSE_RELATIVE_CURSOR_VISIBLE: &'static str = "SDL_MOUSE_RELATIVE_CURS
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MOUSE_TOUCH_EVENTS: &'static str = "SDL_MOUSE_TOUCH_EVENTS";
+pub const MOUSE_TOUCH_EVENTS: &str = "SDL_MOUSE_TOUCH_EVENTS";
 
 /// A variable controlling whether the keyboard should be muted on the console.
 ///
@@ -2469,7 +2455,7 @@ pub const MOUSE_TOUCH_EVENTS: &'static str = "SDL_MOUSE_TOUCH_EVENTS";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const MUTE_CONSOLE_KEYBOARD: &'static str = "SDL_MUTE_CONSOLE_KEYBOARD";
+pub const MUTE_CONSOLE_KEYBOARD: &str = "SDL_MUTE_CONSOLE_KEYBOARD";
 
 /// Tell SDL not to catch the SIGINT or SIGTERM signals on POSIX platforms.
 ///
@@ -2483,7 +2469,7 @@ pub const MUTE_CONSOLE_KEYBOARD: &'static str = "SDL_MUTE_CONSOLE_KEYBOARD";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const NO_SIGNAL_HANDLERS: &'static str = "SDL_NO_SIGNAL_HANDLERS";
+pub const NO_SIGNAL_HANDLERS: &str = "SDL_NO_SIGNAL_HANDLERS";
 
 /// Specify the OpenGL library to load.
 ///
@@ -2493,7 +2479,7 @@ pub const NO_SIGNAL_HANDLERS: &'static str = "SDL_NO_SIGNAL_HANDLERS";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const OPENGL_LIBRARY: &'static str = "SDL_OPENGL_LIBRARY";
+pub const OPENGL_LIBRARY: &str = "SDL_OPENGL_LIBRARY";
 
 /// Specify the EGL library to load.
 ///
@@ -2504,7 +2490,7 @@ pub const OPENGL_LIBRARY: &'static str = "SDL_OPENGL_LIBRARY";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const EGL_LIBRARY: &'static str = "SDL_EGL_LIBRARY";
+pub const EGL_LIBRARY: &str = "SDL_EGL_LIBRARY";
 
 /// A variable controlling what driver to use for OpenGL ES contexts.
 ///
@@ -2537,7 +2523,7 @@ pub const EGL_LIBRARY: &'static str = "SDL_EGL_LIBRARY";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const OPENGL_ES_DRIVER: &'static str = "SDL_OPENGL_ES_DRIVER";
+pub const OPENGL_ES_DRIVER: &str = "SDL_OPENGL_ES_DRIVER";
 
 /// Mechanism to specify openvr_api library location
 ///
@@ -2548,7 +2534,7 @@ pub const OPENGL_ES_DRIVER: &'static str = "SDL_OPENGL_ES_DRIVER";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const OPENVR_LIBRARY: &'static str = "SDL_OPENVR_LIBRARY";
+pub const OPENVR_LIBRARY: &str = "SDL_OPENVR_LIBRARY";
 
 /// A variable controlling which orientations are allowed on iOS/Android.
 ///
@@ -2566,7 +2552,7 @@ pub const OPENVR_LIBRARY: &'static str = "SDL_OPENVR_LIBRARY";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const ORIENTATIONS: &'static str = "SDL_ORIENTATIONS";
+pub const ORIENTATIONS: &str = "SDL_ORIENTATIONS";
 
 /// A variable controlling the use of a sentinel event when polling the event
 /// queue.
@@ -2585,7 +2571,7 @@ pub const ORIENTATIONS: &'static str = "SDL_ORIENTATIONS";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const POLL_SENTINEL: &'static str = "SDL_POLL_SENTINEL";
+pub const POLL_SENTINEL: &str = "SDL_POLL_SENTINEL";
 
 /// Override for [`SDL_GetPreferredLocales()`].
 ///
@@ -2602,7 +2588,7 @@ pub const POLL_SENTINEL: &'static str = "SDL_POLL_SENTINEL";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const PREFERRED_LOCALES: &'static str = "SDL_PREFERRED_LOCALES";
+pub const PREFERRED_LOCALES: &str = "SDL_PREFERRED_LOCALES";
 
 /// A variable that decides whether to send [`SDL_EVENT_QUIT`] when closing the
 /// last window.
@@ -2624,7 +2610,7 @@ pub const PREFERRED_LOCALES: &'static str = "SDL_PREFERRED_LOCALES";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const QUIT_ON_LAST_WINDOW_CLOSE: &'static str = "SDL_QUIT_ON_LAST_WINDOW_CLOSE";
+pub const QUIT_ON_LAST_WINDOW_CLOSE: &str = "SDL_QUIT_ON_LAST_WINDOW_CLOSE";
 
 /// A variable controlling whether the Direct3D device is initialized for
 /// thread-safe operations.
@@ -2638,7 +2624,7 @@ pub const QUIT_ON_LAST_WINDOW_CLOSE: &'static str = "SDL_QUIT_ON_LAST_WINDOW_CLO
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const RENDER_DIRECT3D_THREADSAFE: &'static str = "SDL_RENDER_DIRECT3D_THREADSAFE";
+pub const RENDER_DIRECT3D_THREADSAFE: &str = "SDL_RENDER_DIRECT3D_THREADSAFE";
 
 /// A variable controlling whether to enable Direct3D 11+'s Debug Layer.
 ///
@@ -2653,7 +2639,7 @@ pub const RENDER_DIRECT3D_THREADSAFE: &'static str = "SDL_RENDER_DIRECT3D_THREAD
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const RENDER_DIRECT3D11_DEBUG: &'static str = "SDL_RENDER_DIRECT3D11_DEBUG";
+pub const RENDER_DIRECT3D11_DEBUG: &str = "SDL_RENDER_DIRECT3D11_DEBUG";
 
 /// A variable controlling whether to enable Vulkan Validation Layers.
 ///
@@ -2666,7 +2652,7 @@ pub const RENDER_DIRECT3D11_DEBUG: &'static str = "SDL_RENDER_DIRECT3D11_DEBUG";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const RENDER_VULKAN_DEBUG: &'static str = "SDL_RENDER_VULKAN_DEBUG";
+pub const RENDER_VULKAN_DEBUG: &str = "SDL_RENDER_VULKAN_DEBUG";
 
 /// A variable controlling whether to create the GPU device in debug mode.
 ///
@@ -2679,7 +2665,7 @@ pub const RENDER_VULKAN_DEBUG: &'static str = "SDL_RENDER_VULKAN_DEBUG";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const RENDER_GPU_DEBUG: &'static str = "SDL_RENDER_GPU_DEBUG";
+pub const RENDER_GPU_DEBUG: &str = "SDL_RENDER_GPU_DEBUG";
 
 /// A variable controlling whether to prefer a low-power GPU on multi-GPU
 /// systems.
@@ -2693,7 +2679,7 @@ pub const RENDER_GPU_DEBUG: &'static str = "SDL_RENDER_GPU_DEBUG";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const RENDER_GPU_LOW_POWER: &'static str = "SDL_RENDER_GPU_LOW_POWER";
+pub const RENDER_GPU_LOW_POWER: &str = "SDL_RENDER_GPU_LOW_POWER";
 
 /// A variable specifying which render driver to use.
 ///
@@ -2725,7 +2711,7 @@ pub const RENDER_GPU_LOW_POWER: &'static str = "SDL_RENDER_GPU_LOW_POWER";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const RENDER_DRIVER: &'static str = "SDL_RENDER_DRIVER";
+pub const RENDER_DRIVER: &str = "SDL_RENDER_DRIVER";
 
 /// A variable controlling how the 2D render API renders lines.
 ///
@@ -2742,7 +2728,7 @@ pub const RENDER_DRIVER: &'static str = "SDL_RENDER_DRIVER";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const RENDER_LINE_METHOD: &'static str = "SDL_RENDER_LINE_METHOD";
+pub const RENDER_LINE_METHOD: &str = "SDL_RENDER_LINE_METHOD";
 
 /// A variable controlling whether the Metal render driver select low power
 /// device over default one.
@@ -2756,8 +2742,7 @@ pub const RENDER_LINE_METHOD: &'static str = "SDL_RENDER_LINE_METHOD";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const RENDER_METAL_PREFER_LOW_POWER_DEVICE: &'static str =
-    "SDL_RENDER_METAL_PREFER_LOW_POWER_DEVICE";
+pub const RENDER_METAL_PREFER_LOW_POWER_DEVICE: &str = "SDL_RENDER_METAL_PREFER_LOW_POWER_DEVICE";
 
 /// A variable controlling whether updates to the SDL screen surface should be
 /// synchronized with the vertical refresh, to avoid tearing.
@@ -2773,7 +2758,7 @@ pub const RENDER_METAL_PREFER_LOW_POWER_DEVICE: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const RENDER_VSYNC: &'static str = "SDL_RENDER_VSYNC";
+pub const RENDER_VSYNC: &str = "SDL_RENDER_VSYNC";
 
 /// A variable to control whether the return key on the soft keyboard should
 /// hide the soft keyboard on Android and iOS.
@@ -2789,7 +2774,7 @@ pub const RENDER_VSYNC: &'static str = "SDL_RENDER_VSYNC";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const RETURN_KEY_HIDES_IME: &'static str = "SDL_RETURN_KEY_HIDES_IME";
+pub const RETURN_KEY_HIDES_IME: &str = "SDL_RETURN_KEY_HIDES_IME";
 
 /// A variable containing a list of ROG gamepad capable mice.
 ///
@@ -2808,7 +2793,7 @@ pub const RETURN_KEY_HIDES_IME: &'static str = "SDL_RETURN_KEY_HIDES_IME";
 ///
 /// ### See also
 /// - [`ROG_GAMEPAD_MICE_EXCLUDED`]
-pub const ROG_GAMEPAD_MICE: &'static str = "SDL_ROG_GAMEPAD_MICE";
+pub const ROG_GAMEPAD_MICE: &str = "SDL_ROG_GAMEPAD_MICE";
 
 /// A variable containing a list of devices that are not ROG gamepad capable
 /// mice.
@@ -2827,7 +2812,7 @@ pub const ROG_GAMEPAD_MICE: &'static str = "SDL_ROG_GAMEPAD_MICE";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const ROG_GAMEPAD_MICE_EXCLUDED: &'static str = "SDL_ROG_GAMEPAD_MICE_EXCLUDED";
+pub const ROG_GAMEPAD_MICE_EXCLUDED: &str = "SDL_ROG_GAMEPAD_MICE_EXCLUDED";
 
 /// A variable controlling which Dispmanx layer to use on a Raspberry PI.
 ///
@@ -2838,7 +2823,7 @@ pub const ROG_GAMEPAD_MICE_EXCLUDED: &'static str = "SDL_ROG_GAMEPAD_MICE_EXCLUD
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const RPI_VIDEO_LAYER: &'static str = "SDL_RPI_VIDEO_LAYER";
+pub const RPI_VIDEO_LAYER: &str = "SDL_RPI_VIDEO_LAYER";
 
 /// Specify an "activity name" for screensaver inhibition.
 ///
@@ -2859,7 +2844,7 @@ pub const RPI_VIDEO_LAYER: &'static str = "SDL_RPI_VIDEO_LAYER";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const SCREENSAVER_INHIBIT_ACTIVITY_NAME: &'static str = "SDL_SCREENSAVER_INHIBIT_ACTIVITY_NAME";
+pub const SCREENSAVER_INHIBIT_ACTIVITY_NAME: &str = "SDL_SCREENSAVER_INHIBIT_ACTIVITY_NAME";
 
 /// A variable controlling whether SDL calls dbus_shutdown() on quit.
 ///
@@ -2877,7 +2862,7 @@ pub const SCREENSAVER_INHIBIT_ACTIVITY_NAME: &'static str = "SDL_SCREENSAVER_INH
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const SHUTDOWN_DBUS_ON_QUIT: &'static str = "SDL_SHUTDOWN_DBUS_ON_QUIT";
+pub const SHUTDOWN_DBUS_ON_QUIT: &str = "SDL_SHUTDOWN_DBUS_ON_QUIT";
 
 /// A variable that specifies a backend to use for title storage.
 ///
@@ -2890,7 +2875,7 @@ pub const SHUTDOWN_DBUS_ON_QUIT: &'static str = "SDL_SHUTDOWN_DBUS_ON_QUIT";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const STORAGE_TITLE_DRIVER: &'static str = "SDL_STORAGE_TITLE_DRIVER";
+pub const STORAGE_TITLE_DRIVER: &str = "SDL_STORAGE_TITLE_DRIVER";
 
 /// A variable that specifies a backend to use for user storage.
 ///
@@ -2903,7 +2888,7 @@ pub const STORAGE_TITLE_DRIVER: &'static str = "SDL_STORAGE_TITLE_DRIVER";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const STORAGE_USER_DRIVER: &'static str = "SDL_STORAGE_USER_DRIVER";
+pub const STORAGE_USER_DRIVER: &str = "SDL_STORAGE_USER_DRIVER";
 
 /// Specifies whether [`SDL_THREAD_PRIORITY_TIME_CRITICAL`] should be treated as
 /// realtime.
@@ -2931,8 +2916,7 @@ pub const STORAGE_USER_DRIVER: &'static str = "SDL_STORAGE_USER_DRIVER";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const THREAD_FORCE_REALTIME_TIME_CRITICAL: &'static str =
-    "SDL_THREAD_FORCE_REALTIME_TIME_CRITICAL";
+pub const THREAD_FORCE_REALTIME_TIME_CRITICAL: &str = "SDL_THREAD_FORCE_REALTIME_TIME_CRITICAL";
 
 /// A string specifying additional information to use with
 /// [`SDL_SetCurrentThreadPriority`].
@@ -2954,7 +2938,7 @@ pub const THREAD_FORCE_REALTIME_TIME_CRITICAL: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const THREAD_PRIORITY_POLICY: &'static str = "SDL_THREAD_PRIORITY_POLICY";
+pub const THREAD_PRIORITY_POLICY: &str = "SDL_THREAD_PRIORITY_POLICY";
 
 /// A variable that controls the timer resolution, in milliseconds.
 ///
@@ -2973,7 +2957,7 @@ pub const THREAD_PRIORITY_POLICY: &'static str = "SDL_THREAD_PRIORITY_POLICY";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const TIMER_RESOLUTION: &'static str = "SDL_TIMER_RESOLUTION";
+pub const TIMER_RESOLUTION: &str = "SDL_TIMER_RESOLUTION";
 
 /// A variable controlling whether touch events should generate synthetic mouse
 /// events.
@@ -2987,7 +2971,7 @@ pub const TIMER_RESOLUTION: &'static str = "SDL_TIMER_RESOLUTION";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const TOUCH_MOUSE_EVENTS: &'static str = "SDL_TOUCH_MOUSE_EVENTS";
+pub const TOUCH_MOUSE_EVENTS: &str = "SDL_TOUCH_MOUSE_EVENTS";
 
 /// A variable controlling whether trackpads should be treated as touch
 /// devices.
@@ -3007,7 +2991,7 @@ pub const TOUCH_MOUSE_EVENTS: &'static str = "SDL_TOUCH_MOUSE_EVENTS";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const TRACKPAD_IS_TOUCH_ONLY: &'static str = "SDL_TRACKPAD_IS_TOUCH_ONLY";
+pub const TRACKPAD_IS_TOUCH_ONLY: &str = "SDL_TRACKPAD_IS_TOUCH_ONLY";
 
 /// A variable controlling whether the Android / tvOS remotes should be listed
 /// as joystick devices, instead of sending keyboard events.
@@ -3021,7 +3005,7 @@ pub const TRACKPAD_IS_TOUCH_ONLY: &'static str = "SDL_TRACKPAD_IS_TOUCH_ONLY";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const TV_REMOTE_AS_JOYSTICK: &'static str = "SDL_TV_REMOTE_AS_JOYSTICK";
+pub const TV_REMOTE_AS_JOYSTICK: &str = "SDL_TV_REMOTE_AS_JOYSTICK";
 
 /// A variable controlling whether the screensaver is enabled.
 ///
@@ -3034,7 +3018,7 @@ pub const TV_REMOTE_AS_JOYSTICK: &'static str = "SDL_TV_REMOTE_AS_JOYSTICK";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_ALLOW_SCREENSAVER: &'static str = "SDL_VIDEO_ALLOW_SCREENSAVER";
+pub const VIDEO_ALLOW_SCREENSAVER: &str = "SDL_VIDEO_ALLOW_SCREENSAVER";
 
 /// A comma separated list containing the names of the displays that SDL should
 /// sort to the front of the display list.
@@ -3058,7 +3042,7 @@ pub const VIDEO_ALLOW_SCREENSAVER: &'static str = "SDL_VIDEO_ALLOW_SCREENSAVER";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_DISPLAY_PRIORITY: &'static str = "SDL_VIDEO_DISPLAY_PRIORITY";
+pub const VIDEO_DISPLAY_PRIORITY: &str = "SDL_VIDEO_DISPLAY_PRIORITY";
 
 /// Tell the video driver that we only want a double buffer.
 ///
@@ -3080,7 +3064,7 @@ pub const VIDEO_DISPLAY_PRIORITY: &'static str = "SDL_VIDEO_DISPLAY_PRIORITY";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_DOUBLE_BUFFER: &'static str = "SDL_VIDEO_DOUBLE_BUFFER";
+pub const VIDEO_DOUBLE_BUFFER: &str = "SDL_VIDEO_DOUBLE_BUFFER";
 
 /// A variable that specifies a video backend to use.
 ///
@@ -3097,7 +3081,7 @@ pub const VIDEO_DOUBLE_BUFFER: &'static str = "SDL_VIDEO_DOUBLE_BUFFER";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_DRIVER: &'static str = "SDL_VIDEO_DRIVER";
+pub const VIDEO_DRIVER: &str = "SDL_VIDEO_DRIVER";
 
 /// A variable controlling whether the dummy video driver saves output frames.
 ///
@@ -3109,7 +3093,7 @@ pub const VIDEO_DRIVER: &'static str = "SDL_VIDEO_DRIVER";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_DUMMY_SAVE_FRAMES: &'static str = "SDL_VIDEO_DUMMY_SAVE_FRAMES";
+pub const VIDEO_DUMMY_SAVE_FRAMES: &str = "SDL_VIDEO_DUMMY_SAVE_FRAMES";
 
 /// If eglGetPlatformDisplay fails, fall back to calling eglGetDisplay.
 ///
@@ -3122,8 +3106,7 @@ pub const VIDEO_DUMMY_SAVE_FRAMES: &'static str = "SDL_VIDEO_DUMMY_SAVE_FRAMES";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_EGL_ALLOW_GETDISPLAY_FALLBACK: &'static str =
-    "SDL_VIDEO_EGL_ALLOW_GETDISPLAY_FALLBACK";
+pub const VIDEO_EGL_ALLOW_GETDISPLAY_FALLBACK: &str = "SDL_VIDEO_EGL_ALLOW_GETDISPLAY_FALLBACK";
 
 /// A variable controlling whether the OpenGL context should be created with
 /// EGL.
@@ -3138,7 +3121,7 @@ pub const VIDEO_EGL_ALLOW_GETDISPLAY_FALLBACK: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_FORCE_EGL: &'static str = "SDL_VIDEO_FORCE_EGL";
+pub const VIDEO_FORCE_EGL: &str = "SDL_VIDEO_FORCE_EGL";
 
 /// A variable that specifies the policy for fullscreen Spaces on macOS.
 ///
@@ -3155,7 +3138,7 @@ pub const VIDEO_FORCE_EGL: &'static str = "SDL_VIDEO_FORCE_EGL";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_MAC_FULLSCREEN_SPACES: &'static str = "SDL_VIDEO_MAC_FULLSCREEN_SPACES";
+pub const VIDEO_MAC_FULLSCREEN_SPACES: &str = "SDL_VIDEO_MAC_FULLSCREEN_SPACES";
 
 /// A variable that specifies the menu visibility when a window is fullscreen
 /// in Spaces on macOS.
@@ -3175,8 +3158,7 @@ pub const VIDEO_MAC_FULLSCREEN_SPACES: &'static str = "SDL_VIDEO_MAC_FULLSCREEN_
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_MAC_FULLSCREEN_MENU_VISIBILITY: &'static str =
-    "SDL_VIDEO_MAC_FULLSCREEN_MENU_VISIBILITY";
+pub const VIDEO_MAC_FULLSCREEN_MENU_VISIBILITY: &str = "SDL_VIDEO_MAC_FULLSCREEN_MENU_VISIBILITY";
 
 /// A variable controlling whether fullscreen windows are minimized when they
 /// lose focus.
@@ -3191,7 +3173,7 @@ pub const VIDEO_MAC_FULLSCREEN_MENU_VISIBILITY: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_MINIMIZE_ON_FOCUS_LOSS: &'static str = "SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS";
+pub const VIDEO_MINIMIZE_ON_FOCUS_LOSS: &str = "SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS";
 
 /// A variable controlling whether the offscreen video driver saves output
 /// frames.
@@ -3207,7 +3189,7 @@ pub const VIDEO_MINIMIZE_ON_FOCUS_LOSS: &'static str = "SDL_VIDEO_MINIMIZE_ON_FO
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_OFFSCREEN_SAVE_FRAMES: &'static str = "SDL_VIDEO_OFFSCREEN_SAVE_FRAMES";
+pub const VIDEO_OFFSCREEN_SAVE_FRAMES: &str = "SDL_VIDEO_OFFSCREEN_SAVE_FRAMES";
 
 /// A variable controlling whether all window operations will block until
 /// complete.
@@ -3232,7 +3214,7 @@ pub const VIDEO_OFFSCREEN_SAVE_FRAMES: &'static str = "SDL_VIDEO_OFFSCREEN_SAVE_
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_SYNC_WINDOW_OPERATIONS: &'static str = "SDL_VIDEO_SYNC_WINDOW_OPERATIONS";
+pub const VIDEO_SYNC_WINDOW_OPERATIONS: &str = "SDL_VIDEO_SYNC_WINDOW_OPERATIONS";
 
 /// A variable controlling whether the libdecor Wayland backend is allowed to
 /// be used.
@@ -3249,7 +3231,7 @@ pub const VIDEO_SYNC_WINDOW_OPERATIONS: &'static str = "SDL_VIDEO_SYNC_WINDOW_OP
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_WAYLAND_ALLOW_LIBDECOR: &'static str = "SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR";
+pub const VIDEO_WAYLAND_ALLOW_LIBDECOR: &str = "SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR";
 
 /// A variable controlling whether video mode emulation is enabled under
 /// Wayland.
@@ -3268,7 +3250,7 @@ pub const VIDEO_WAYLAND_ALLOW_LIBDECOR: &'static str = "SDL_VIDEO_WAYLAND_ALLOW_
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_WAYLAND_MODE_EMULATION: &'static str = "SDL_VIDEO_WAYLAND_MODE_EMULATION";
+pub const VIDEO_WAYLAND_MODE_EMULATION: &str = "SDL_VIDEO_WAYLAND_MODE_EMULATION";
 
 /// A variable controlling how modes with a non-native aspect ratio are
 /// displayed under Wayland.
@@ -3289,7 +3271,7 @@ pub const VIDEO_WAYLAND_MODE_EMULATION: &'static str = "SDL_VIDEO_WAYLAND_MODE_E
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_WAYLAND_MODE_SCALING: &'static str = "SDL_VIDEO_WAYLAND_MODE_SCALING";
+pub const VIDEO_WAYLAND_MODE_SCALING: &str = "SDL_VIDEO_WAYLAND_MODE_SCALING";
 
 /// A variable controlling whether the libdecor Wayland backend is preferred
 /// over native decorations.
@@ -3308,7 +3290,7 @@ pub const VIDEO_WAYLAND_MODE_SCALING: &'static str = "SDL_VIDEO_WAYLAND_MODE_SCA
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_WAYLAND_PREFER_LIBDECOR: &'static str = "SDL_VIDEO_WAYLAND_PREFER_LIBDECOR";
+pub const VIDEO_WAYLAND_PREFER_LIBDECOR: &str = "SDL_VIDEO_WAYLAND_PREFER_LIBDECOR";
 
 /// A variable forcing non-DPI-aware Wayland windows to output at 1:1 scaling.
 ///
@@ -3346,7 +3328,7 @@ pub const VIDEO_WAYLAND_PREFER_LIBDECOR: &'static str = "SDL_VIDEO_WAYLAND_PREFE
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_WAYLAND_SCALE_TO_DISPLAY: &'static str = "SDL_VIDEO_WAYLAND_SCALE_TO_DISPLAY";
+pub const VIDEO_WAYLAND_SCALE_TO_DISPLAY: &str = "SDL_VIDEO_WAYLAND_SCALE_TO_DISPLAY";
 
 /// A variable specifying which shader compiler to preload when using the
 /// Chrome ANGLE binaries.
@@ -3367,7 +3349,7 @@ pub const VIDEO_WAYLAND_SCALE_TO_DISPLAY: &'static str = "SDL_VIDEO_WAYLAND_SCAL
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_WIN_D3DCOMPILER: &'static str = "SDL_VIDEO_WIN_D3DCOMPILER";
+pub const VIDEO_WIN_D3DCOMPILER: &str = "SDL_VIDEO_WIN_D3DCOMPILER";
 
 /// A variable controlling whether the X11 _NET_WM_BYPASS_COMPOSITOR hint
 /// should be used.
@@ -3381,8 +3363,7 @@ pub const VIDEO_WIN_D3DCOMPILER: &'static str = "SDL_VIDEO_WIN_D3DCOMPILER";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_X11_NET_WM_BYPASS_COMPOSITOR: &'static str =
-    "SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR";
+pub const VIDEO_X11_NET_WM_BYPASS_COMPOSITOR: &str = "SDL_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR";
 
 /// A variable controlling whether the X11 _NET_WM_PING protocol should be
 /// supported.
@@ -3400,7 +3381,7 @@ pub const VIDEO_X11_NET_WM_BYPASS_COMPOSITOR: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_X11_NET_WM_PING: &'static str = "SDL_VIDEO_X11_NET_WM_PING";
+pub const VIDEO_X11_NET_WM_PING: &str = "SDL_VIDEO_X11_NET_WM_PING";
 
 /// A variable controlling whether SDL uses DirectColor visuals.
 ///
@@ -3413,7 +3394,7 @@ pub const VIDEO_X11_NET_WM_PING: &'static str = "SDL_VIDEO_X11_NET_WM_PING";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_X11_NODIRECTCOLOR: &'static str = "SDL_VIDEO_X11_NODIRECTCOLOR";
+pub const VIDEO_X11_NODIRECTCOLOR: &str = "SDL_VIDEO_X11_NODIRECTCOLOR";
 
 /// A variable forcing the content scaling factor for X11 displays.
 ///
@@ -3423,7 +3404,7 @@ pub const VIDEO_X11_NODIRECTCOLOR: &'static str = "SDL_VIDEO_X11_NODIRECTCOLOR";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_X11_SCALING_FACTOR: &'static str = "SDL_VIDEO_X11_SCALING_FACTOR";
+pub const VIDEO_X11_SCALING_FACTOR: &str = "SDL_VIDEO_X11_SCALING_FACTOR";
 
 /// A variable forcing the visual ID used for X11 display modes.
 ///
@@ -3431,7 +3412,7 @@ pub const VIDEO_X11_SCALING_FACTOR: &'static str = "SDL_VIDEO_X11_SCALING_FACTOR
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_X11_VISUALID: &'static str = "SDL_VIDEO_X11_VISUALID";
+pub const VIDEO_X11_VISUALID: &str = "SDL_VIDEO_X11_VISUALID";
 
 /// A variable forcing the visual ID chosen for new X11 windows.
 ///
@@ -3439,7 +3420,7 @@ pub const VIDEO_X11_VISUALID: &'static str = "SDL_VIDEO_X11_VISUALID";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_X11_WINDOW_VISUALID: &'static str = "SDL_VIDEO_X11_WINDOW_VISUALID";
+pub const VIDEO_X11_WINDOW_VISUALID: &str = "SDL_VIDEO_X11_WINDOW_VISUALID";
 
 /// A variable controlling whether the X11 XRandR extension should be used.
 ///
@@ -3452,7 +3433,7 @@ pub const VIDEO_X11_WINDOW_VISUALID: &'static str = "SDL_VIDEO_X11_WINDOW_VISUAL
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VIDEO_X11_XRANDR: &'static str = "SDL_VIDEO_X11_XRANDR";
+pub const VIDEO_X11_XRANDR: &str = "SDL_VIDEO_X11_XRANDR";
 
 /// A variable controlling whether touch should be enabled on the back panel of
 /// the PlayStation Vita.
@@ -3466,7 +3447,7 @@ pub const VIDEO_X11_XRANDR: &'static str = "SDL_VIDEO_X11_XRANDR";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VITA_ENABLE_BACK_TOUCH: &'static str = "SDL_VITA_ENABLE_BACK_TOUCH";
+pub const VITA_ENABLE_BACK_TOUCH: &str = "SDL_VITA_ENABLE_BACK_TOUCH";
 
 /// A variable controlling whether touch should be enabled on the front panel
 /// of the PlayStation Vita.
@@ -3480,7 +3461,7 @@ pub const VITA_ENABLE_BACK_TOUCH: &'static str = "SDL_VITA_ENABLE_BACK_TOUCH";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VITA_ENABLE_FRONT_TOUCH: &'static str = "SDL_VITA_ENABLE_FRONT_TOUCH";
+pub const VITA_ENABLE_FRONT_TOUCH: &str = "SDL_VITA_ENABLE_FRONT_TOUCH";
 
 /// A variable controlling the module path on the PlayStation Vita.
 ///
@@ -3490,7 +3471,7 @@ pub const VITA_ENABLE_FRONT_TOUCH: &'static str = "SDL_VITA_ENABLE_FRONT_TOUCH";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VITA_MODULE_PATH: &'static str = "SDL_VITA_MODULE_PATH";
+pub const VITA_MODULE_PATH: &str = "SDL_VITA_MODULE_PATH";
 
 /// A variable controlling whether to perform PVR initialization on the
 /// PlayStation Vita.
@@ -3502,7 +3483,7 @@ pub const VITA_MODULE_PATH: &'static str = "SDL_VITA_MODULE_PATH";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VITA_PVR_INIT: &'static str = "SDL_VITA_PVR_INIT";
+pub const VITA_PVR_INIT: &str = "SDL_VITA_PVR_INIT";
 
 /// A variable overriding the resolution reported on the PlayStation Vita.
 ///
@@ -3516,7 +3497,7 @@ pub const VITA_PVR_INIT: &'static str = "SDL_VITA_PVR_INIT";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VITA_RESOLUTION: &'static str = "SDL_VITA_RESOLUTION";
+pub const VITA_RESOLUTION: &str = "SDL_VITA_RESOLUTION";
 
 /// A variable controlling whether OpenGL should be used instead of OpenGL ES
 /// on the PlayStation Vita.
@@ -3530,7 +3511,7 @@ pub const VITA_RESOLUTION: &'static str = "SDL_VITA_RESOLUTION";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VITA_PVR_OPENGL: &'static str = "SDL_VITA_PVR_OPENGL";
+pub const VITA_PVR_OPENGL: &str = "SDL_VITA_PVR_OPENGL";
 
 /// A variable controlling which touchpad should generate synthetic mouse
 /// events.
@@ -3545,7 +3526,7 @@ pub const VITA_PVR_OPENGL: &'static str = "SDL_VITA_PVR_OPENGL";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VITA_TOUCH_MOUSE_DEVICE: &'static str = "SDL_VITA_TOUCH_MOUSE_DEVICE";
+pub const VITA_TOUCH_MOUSE_DEVICE: &str = "SDL_VITA_TOUCH_MOUSE_DEVICE";
 
 /// A variable overriding the display index used in [`SDL_Vulkan_CreateSurface()`]
 ///
@@ -3555,7 +3536,7 @@ pub const VITA_TOUCH_MOUSE_DEVICE: &'static str = "SDL_VITA_TOUCH_MOUSE_DEVICE";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VULKAN_DISPLAY: &'static str = "SDL_VULKAN_DISPLAY";
+pub const VULKAN_DISPLAY: &str = "SDL_VULKAN_DISPLAY";
 
 /// Specify the Vulkan library to load.
 ///
@@ -3564,7 +3545,7 @@ pub const VULKAN_DISPLAY: &'static str = "SDL_VULKAN_DISPLAY";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const VULKAN_LIBRARY: &'static str = "SDL_VULKAN_LIBRARY";
+pub const VULKAN_LIBRARY: &str = "SDL_VULKAN_LIBRARY";
 
 /// A variable controlling how the fact chunk affects the loading of a WAVE
 /// file.
@@ -3595,7 +3576,7 @@ pub const VULKAN_LIBRARY: &'static str = "SDL_VULKAN_LIBRARY";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const WAVE_FACT_CHUNK: &'static str = "SDL_WAVE_FACT_CHUNK";
+pub const WAVE_FACT_CHUNK: &str = "SDL_WAVE_FACT_CHUNK";
 
 /// A variable controlling the maximum number of chunks in a WAVE file.
 ///
@@ -3606,7 +3587,7 @@ pub const WAVE_FACT_CHUNK: &'static str = "SDL_WAVE_FACT_CHUNK";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const WAVE_CHUNK_LIMIT: &'static str = "SDL_WAVE_CHUNK_LIMIT";
+pub const WAVE_CHUNK_LIMIT: &str = "SDL_WAVE_CHUNK_LIMIT";
 
 /// A variable controlling how the size of the RIFF chunk affects the loading
 /// of a WAVE file.
@@ -3633,7 +3614,7 @@ pub const WAVE_CHUNK_LIMIT: &'static str = "SDL_WAVE_CHUNK_LIMIT";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const WAVE_RIFF_CHUNK_SIZE: &'static str = "SDL_WAVE_RIFF_CHUNK_SIZE";
+pub const WAVE_RIFF_CHUNK_SIZE: &str = "SDL_WAVE_RIFF_CHUNK_SIZE";
 
 /// A variable controlling how a truncated WAVE file is handled.
 ///
@@ -3652,7 +3633,7 @@ pub const WAVE_RIFF_CHUNK_SIZE: &'static str = "SDL_WAVE_RIFF_CHUNK_SIZE";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const WAVE_TRUNCATION: &'static str = "SDL_WAVE_TRUNCATION";
+pub const WAVE_TRUNCATION: &str = "SDL_WAVE_TRUNCATION";
 
 /// A variable controlling whether the window is activated when the
 /// [`SDL_RaiseWindow`] function is called.
@@ -3668,7 +3649,7 @@ pub const WAVE_TRUNCATION: &'static str = "SDL_WAVE_TRUNCATION";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const WINDOW_ACTIVATE_WHEN_RAISED: &'static str = "SDL_WINDOW_ACTIVATE_WHEN_RAISED";
+pub const WINDOW_ACTIVATE_WHEN_RAISED: &str = "SDL_WINDOW_ACTIVATE_WHEN_RAISED";
 
 /// A variable controlling whether the window is activated when the
 /// [`SDL_ShowWindow`] function is called.
@@ -3684,7 +3665,7 @@ pub const WINDOW_ACTIVATE_WHEN_RAISED: &'static str = "SDL_WINDOW_ACTIVATE_WHEN_
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const WINDOW_ACTIVATE_WHEN_SHOWN: &'static str = "SDL_WINDOW_ACTIVATE_WHEN_SHOWN";
+pub const WINDOW_ACTIVATE_WHEN_SHOWN: &str = "SDL_WINDOW_ACTIVATE_WHEN_SHOWN";
 
 /// If set to "0" then never set the top-most flag on an SDL Window even if the
 /// application requests it.
@@ -3701,7 +3682,7 @@ pub const WINDOW_ACTIVATE_WHEN_SHOWN: &'static str = "SDL_WINDOW_ACTIVATE_WHEN_S
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const WINDOW_ALLOW_TOPMOST: &'static str = "SDL_WINDOW_ALLOW_TOPMOST";
+pub const WINDOW_ALLOW_TOPMOST: &str = "SDL_WINDOW_ALLOW_TOPMOST";
 
 /// A variable controlling whether the window frame and title bar are
 /// interactive when the cursor is hidden.
@@ -3716,7 +3697,7 @@ pub const WINDOW_ALLOW_TOPMOST: &'static str = "SDL_WINDOW_ALLOW_TOPMOST";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN: &'static str =
+pub const WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN: &str =
     "SDL_WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN";
 
 /// A variable controlling whether SDL generates window-close events for Alt+F4
@@ -3732,7 +3713,7 @@ pub const WINDOW_FRAME_USABLE_WHILE_CURSOR_HIDDEN: &'static str =
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const WINDOWS_CLOSE_ON_ALT_F4: &'static str = "SDL_WINDOWS_CLOSE_ON_ALT_F4";
+pub const WINDOWS_CLOSE_ON_ALT_F4: &str = "SDL_WINDOWS_CLOSE_ON_ALT_F4";
 
 /// A variable controlling whether menus can be opened with their keyboard
 /// shortcut (Alt+mnemonic).
@@ -3760,7 +3741,7 @@ pub const WINDOWS_CLOSE_ON_ALT_F4: &'static str = "SDL_WINDOWS_CLOSE_ON_ALT_F4";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const WINDOWS_ENABLE_MENU_MNEMONICS: &'static str = "SDL_WINDOWS_ENABLE_MENU_MNEMONICS";
+pub const WINDOWS_ENABLE_MENU_MNEMONICS: &str = "SDL_WINDOWS_ENABLE_MENU_MNEMONICS";
 
 /// A variable controlling whether the windows message loop is processed by
 /// SDL.
@@ -3774,7 +3755,7 @@ pub const WINDOWS_ENABLE_MENU_MNEMONICS: &'static str = "SDL_WINDOWS_ENABLE_MENU
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const WINDOWS_ENABLE_MESSAGELOOP: &'static str = "SDL_WINDOWS_ENABLE_MESSAGELOOP";
+pub const WINDOWS_ENABLE_MESSAGELOOP: &str = "SDL_WINDOWS_ENABLE_MESSAGELOOP";
 
 /// A variable controlling whether GameInput is used for raw keyboard and mouse
 /// on Windows.
@@ -3789,7 +3770,7 @@ pub const WINDOWS_ENABLE_MESSAGELOOP: &'static str = "SDL_WINDOWS_ENABLE_MESSAGE
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const WINDOWS_GAMEINPUT: &'static str = "SDL_WINDOWS_GAMEINPUT";
+pub const WINDOWS_GAMEINPUT: &str = "SDL_WINDOWS_GAMEINPUT";
 
 /// A variable controlling whether raw keyboard events are used on Windows.
 ///
@@ -3802,7 +3783,7 @@ pub const WINDOWS_GAMEINPUT: &'static str = "SDL_WINDOWS_GAMEINPUT";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const WINDOWS_RAW_KEYBOARD: &'static str = "SDL_WINDOWS_RAW_KEYBOARD";
+pub const WINDOWS_RAW_KEYBOARD: &str = "SDL_WINDOWS_RAW_KEYBOARD";
 
 /// A variable controlling whether SDL uses Kernel Semaphores on Windows.
 ///
@@ -3822,7 +3803,7 @@ pub const WINDOWS_RAW_KEYBOARD: &'static str = "SDL_WINDOWS_RAW_KEYBOARD";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const WINDOWS_FORCE_SEMAPHORE_KERNEL: &'static str = "SDL_WINDOWS_FORCE_SEMAPHORE_KERNEL";
+pub const WINDOWS_FORCE_SEMAPHORE_KERNEL: &str = "SDL_WINDOWS_FORCE_SEMAPHORE_KERNEL";
 
 /// A variable to specify custom icon resource id from RC file on Windows
 /// platform.
@@ -3831,7 +3812,7 @@ pub const WINDOWS_FORCE_SEMAPHORE_KERNEL: &'static str = "SDL_WINDOWS_FORCE_SEMA
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const WINDOWS_INTRESOURCE_ICON: &'static str = "SDL_WINDOWS_INTRESOURCE_ICON";
+pub const WINDOWS_INTRESOURCE_ICON: &str = "SDL_WINDOWS_INTRESOURCE_ICON";
 
 /// A variable to specify custom icon resource id from RC file on Windows
 /// platform.
@@ -3840,7 +3821,7 @@ pub const WINDOWS_INTRESOURCE_ICON: &'static str = "SDL_WINDOWS_INTRESOURCE_ICON
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const WINDOWS_INTRESOURCE_ICON_SMALL: &'static str = "SDL_WINDOWS_INTRESOURCE_ICON_SMALL";
+pub const WINDOWS_INTRESOURCE_ICON_SMALL: &str = "SDL_WINDOWS_INTRESOURCE_ICON_SMALL";
 
 /// A variable controlling whether SDL uses the D3D9Ex API introduced in
 /// Windows Vista, instead of normal D3D9.
@@ -3865,7 +3846,7 @@ pub const WINDOWS_INTRESOURCE_ICON_SMALL: &'static str = "SDL_WINDOWS_INTRESOURC
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const WINDOWS_USE_D3D9EX: &'static str = "SDL_WINDOWS_USE_D3D9EX";
+pub const WINDOWS_USE_D3D9EX: &str = "SDL_WINDOWS_USE_D3D9EX";
 
 /// A variable controlling whether SDL will clear the window contents when the
 /// WM_ERASEBKGND message is received.
@@ -3881,7 +3862,7 @@ pub const WINDOWS_USE_D3D9EX: &'static str = "SDL_WINDOWS_USE_D3D9EX";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const WINDOWS_ERASE_BACKGROUND_MODE: &'static str = "SDL_WINDOWS_ERASE_BACKGROUND_MODE";
+pub const WINDOWS_ERASE_BACKGROUND_MODE: &str = "SDL_WINDOWS_ERASE_BACKGROUND_MODE";
 
 /// A variable controlling whether X11 windows are marked as override-redirect.
 ///
@@ -3901,7 +3882,7 @@ pub const WINDOWS_ERASE_BACKGROUND_MODE: &'static str = "SDL_WINDOWS_ERASE_BACKG
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const X11_FORCE_OVERRIDE_REDIRECT: &'static str = "SDL_X11_FORCE_OVERRIDE_REDIRECT";
+pub const X11_FORCE_OVERRIDE_REDIRECT: &str = "SDL_X11_FORCE_OVERRIDE_REDIRECT";
 
 /// A variable specifying the type of an X11 window.
 ///
@@ -3917,7 +3898,7 @@ pub const X11_FORCE_OVERRIDE_REDIRECT: &'static str = "SDL_X11_FORCE_OVERRIDE_RE
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const X11_WINDOW_TYPE: &'static str = "SDL_X11_WINDOW_TYPE";
+pub const X11_WINDOW_TYPE: &str = "SDL_X11_WINDOW_TYPE";
 
 /// Specify the XCB library to load for the X11 driver.
 ///
@@ -3927,7 +3908,7 @@ pub const X11_WINDOW_TYPE: &'static str = "SDL_X11_WINDOW_TYPE";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const X11_XCB_LIBRARY: &'static str = "SDL_X11_XCB_LIBRARY";
+pub const X11_XCB_LIBRARY: &str = "SDL_X11_XCB_LIBRARY";
 
 /// A variable controlling whether XInput should be used for controller
 /// handling.
@@ -3941,7 +3922,7 @@ pub const X11_XCB_LIBRARY: &'static str = "SDL_X11_XCB_LIBRARY";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const XINPUT_ENABLED: &'static str = "SDL_XINPUT_ENABLED";
+pub const XINPUT_ENABLED: &str = "SDL_XINPUT_ENABLED";
 
 /// A variable controlling response to [`SDL_assert`] failures.
 ///
@@ -3964,7 +3945,7 @@ pub const XINPUT_ENABLED: &'static str = "SDL_XINPUT_ENABLED";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const ASSERT: &'static str = "SDL_ASSERT";
+pub const ASSERT: &str = "SDL_ASSERT";
 
 /// A variable controlling whether pen events should generate synthetic mouse
 /// events.
@@ -3978,7 +3959,7 @@ pub const ASSERT: &'static str = "SDL_ASSERT";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const PEN_MOUSE_EVENTS: &'static str = "SDL_PEN_MOUSE_EVENTS";
+pub const PEN_MOUSE_EVENTS: &str = "SDL_PEN_MOUSE_EVENTS";
 
 /// A variable controlling whether pen events should generate synthetic touch
 /// events.
@@ -3992,9 +3973,9 @@ pub const PEN_MOUSE_EVENTS: &'static str = "SDL_PEN_MOUSE_EVENTS";
 ///
 /// ### Availability
 /// This hint is available since SDL 3.2.0.
-pub const PEN_TOUCH_EVENTS: &'static str = "SDL_PEN_TOUCH_EVENTS";
+pub const PEN_TOUCH_EVENTS: &str = "SDL_PEN_TOUCH_EVENTS";
 
-pub const ALL: [&'static str; 236] = [
+pub const ALL: [&str; 236] = [
     ALLOW_ALT_TAB_WHILE_GRABBED,
     ANDROID_ALLOW_RECREATE_ACTIVITY,
     ANDROID_BLOCK_ON_PAUSE,

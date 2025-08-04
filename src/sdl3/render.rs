@@ -68,7 +68,7 @@ impl fmt::Display for TargetRenderError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use self::TargetRenderError::*;
         match *self {
-            SdlError(ref e) => write!(f, "SDL error: {}", e),
+            SdlError(ref e) => write!(f, "SDL error: {e}"),
         }
     }
 }
@@ -307,15 +307,15 @@ pub enum ClippingRect {
     None,
 }
 
-impl Into<ClippingRect> for Rect {
-    fn into(self) -> ClippingRect {
-        ClippingRect::Some(self)
+impl From<Rect> for ClippingRect {
+    fn from(val: Rect) -> Self {
+        ClippingRect::Some(val)
     }
 }
 
-impl Into<ClippingRect> for Option<Rect> {
-    fn into(self) -> ClippingRect {
-        match self {
+impl From<Option<Rect>> for ClippingRect {
+    fn from(val: Option<Rect>) -> Self {
+        match val {
             Some(v) => v.into(),
             None => ClippingRect::None,
         }
@@ -695,9 +695,9 @@ impl<T: RenderTarget> Canvas<T> {
         for<'r> F: FnOnce(&'r mut Canvas<T>),
     {
         let target = unsafe { self.get_raw_target() };
-        unsafe { self.set_raw_target(texture.raw) }.map_err(|e| TargetRenderError::SdlError(e))?;
+        unsafe { self.set_raw_target(texture.raw) }.map_err(TargetRenderError::SdlError)?;
         f(self);
-        unsafe { self.set_raw_target(target) }.map_err(|e| TargetRenderError::SdlError(e))?;
+        unsafe { self.set_raw_target(target) }.map_err(TargetRenderError::SdlError)?;
         Ok(())
     }
 
@@ -769,12 +769,11 @@ impl<T: RenderTarget> Canvas<T> {
     {
         let target = unsafe { self.get_raw_target() };
         for (texture, user_context) in textures {
-            unsafe { self.set_raw_target(texture.raw) }
-                .map_err(|e| TargetRenderError::SdlError(e))?;
+            unsafe { self.set_raw_target(texture.raw) }.map_err(TargetRenderError::SdlError)?;
             f(self, user_context);
         }
         // reset the target to its source
-        unsafe { self.set_raw_target(target) }.map_err(|e| TargetRenderError::SdlError(e))?;
+        unsafe { self.set_raw_target(target) }.map_err(TargetRenderError::SdlError)?;
         Ok(())
     }
 
@@ -855,16 +854,15 @@ impl fmt::Display for TextureValueError {
         use self::TextureValueError::*;
 
         match *self {
-            WidthOverflows(value) => write!(f, "Integer width overflows ({})", value),
-            HeightOverflows(value) => write!(f, "Integer height overflows ({})", value),
+            WidthOverflows(value) => write!(f, "Integer width overflows ({value})"),
+            HeightOverflows(value) => write!(f, "Integer height overflows ({value})"),
             WidthMustBeMultipleOfTwoForFormat(value, format) => {
                 write!(
                     f,
-                    "Texture width must be multiple of two for pixel format '{:?}' ({})",
-                    format, value
+                    "Texture width must be multiple of two for pixel format '{format:?}' ({value})"
                 )
             }
-            SdlError(ref e) => write!(f, "SDL error: {}", e),
+            SdlError(ref e) => write!(f, "SDL error: {e}"),
         }
     }
 }
@@ -929,9 +927,9 @@ pub enum ScaleMode {
     Linear = sdl3_sys::everything::SDL_ScaleMode::LINEAR.0,
 }
 
-impl Into<sdl3_sys::everything::SDL_ScaleMode> for ScaleMode {
-    fn into(self) -> sdl3_sys::everything::SDL_ScaleMode {
-        match self {
+impl From<ScaleMode> for sdl3_sys::everything::SDL_ScaleMode {
+    fn from(val: ScaleMode) -> Self {
+        match val {
             ScaleMode::Nearest => sdl3_sys::everything::SDL_ScaleMode::NEAREST,
             ScaleMode::Linear => sdl3_sys::everything::SDL_ScaleMode::LINEAR,
         }
@@ -2139,43 +2137,38 @@ impl fmt::Display for UpdateTextureError {
         use self::UpdateTextureError::*;
 
         match *self {
-            PitchOverflows(value) => write!(f, "Pitch overflows ({})", value),
+            PitchOverflows(value) => write!(f, "Pitch overflows ({value})"),
             PitchMustBeMultipleOfTwoForFormat(value, format) => {
                 write!(
                     f,
-                    "Pitch must be multiple of two for pixel format '{:?}' ({})",
-                    format, value
+                    "Pitch must be multiple of two for pixel format '{format:?}' ({value})"
                 )
             }
             XMustBeMultipleOfTwoForFormat(value, format) => {
                 write!(
                     f,
-                    "X must be multiple of two for pixel format '{:?}' ({})",
-                    format, value
+                    "X must be multiple of two for pixel format '{format:?}' ({value})"
                 )
             }
             YMustBeMultipleOfTwoForFormat(value, format) => {
                 write!(
                     f,
-                    "Y must be multiple of two for pixel format '{:?}' ({})",
-                    format, value
+                    "Y must be multiple of two for pixel format '{format:?}' ({value})"
                 )
             }
             WidthMustBeMultipleOfTwoForFormat(value, format) => {
                 write!(
                     f,
-                    "Width must be multiple of two for pixel format '{:?}' ({})",
-                    format, value
+                    "Width must be multiple of two for pixel format '{format:?}' ({value})"
                 )
             }
             HeightMustBeMultipleOfTwoForFormat(value, format) => {
                 write!(
                     f,
-                    "Height must be multiple of two for pixel format '{:?}' ({})",
-                    format, value
+                    "Height must be multiple of two for pixel format '{format:?}' ({value})"
                 )
             }
-            SdlError(ref e) => write!(f, "SDL error: {}", e),
+            SdlError(ref e) => write!(f, "SDL error: {e}"),
         }
     }
 }
@@ -2222,7 +2215,7 @@ impl fmt::Display for UpdateTextureYUVError {
 
         match *self {
             PitchOverflows { plane, value } => {
-                write!(f, "Pitch overflows on {} plane ({})", plane, value)
+                write!(f, "Pitch overflows on {plane} plane ({value})")
             }
             InvalidPlaneLength {
                 plane,
@@ -2232,24 +2225,23 @@ impl fmt::Display for UpdateTextureYUVError {
             } => {
                 write!(
                     f,
-                    "The {} plane is wrong length ({}, should be {} * {})",
-                    plane, length, pitch, height
+                    "The {plane} plane is wrong length ({length}, should be {pitch} * {height})"
                 )
             }
             XMustBeMultipleOfTwoForFormat(value) => {
-                write!(f, "X must be multiple of two ({})", value)
+                write!(f, "X must be multiple of two ({value})")
             }
             YMustBeMultipleOfTwoForFormat(value) => {
-                write!(f, "Y must be multiple of two ({})", value)
+                write!(f, "Y must be multiple of two ({value})")
             }
             WidthMustBeMultipleOfTwoForFormat(value) => {
-                write!(f, "Width must be multiple of two ({})", value)
+                write!(f, "Width must be multiple of two ({value})")
             }
             HeightMustBeMultipleOfTwoForFormat(value) => {
-                write!(f, "Height must be multiple of two ({})", value)
+                write!(f, "Height must be multiple of two ({value})")
             }
             RectNotInsideTexture(_) => write!(f, "Rect must be inside texture"),
-            SdlError(ref e) => write!(f, "SDL error: {}", e),
+            SdlError(ref e) => write!(f, "SDL error: {e}"),
         }
     }
 }
@@ -2443,13 +2435,13 @@ impl InternalTexture {
                             return Err(XMustBeMultipleOfTwoForFormat(r.x(), format));
                         } else if r.y() % 2 != 0 {
                             return Err(YMustBeMultipleOfTwoForFormat(r.y(), format));
-                        } else if r.width() % 2 != 0 {
+                        } else if !r.width().is_multiple_of(2) {
                             return Err(WidthMustBeMultipleOfTwoForFormat(r.width(), format));
-                        } else if r.height() % 2 != 0 {
+                        } else if !r.height().is_multiple_of(2) {
                             return Err(HeightMustBeMultipleOfTwoForFormat(r.height(), format));
                         }
                     };
-                    if pitch % 2 != 0 {
+                    if !pitch.is_multiple_of(2) {
                         return Err(PitchMustBeMultipleOfTwoForFormat(pitch, format));
                     }
                 }
@@ -2506,9 +2498,9 @@ impl InternalTexture {
                 return Err(XMustBeMultipleOfTwoForFormat(r.x()));
             } else if r.y() % 2 != 0 {
                 return Err(YMustBeMultipleOfTwoForFormat(r.y()));
-            } else if r.width() % 2 != 0 {
+            } else if !r.width().is_multiple_of(2) {
                 return Err(WidthMustBeMultipleOfTwoForFormat(r.width()));
-            } else if r.height() % 2 != 0 {
+            } else if !r.height().is_multiple_of(2) {
                 return Err(HeightMustBeMultipleOfTwoForFormat(r.height()));
             }
         };

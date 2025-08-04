@@ -1095,7 +1095,7 @@ impl Debug for AudioStream {
 impl Display for AudioStream {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(name) = self.device_id().and_then(|id| id.name().ok()) {
-            write!(f, "AudioStream({})", name)
+            write!(f, "AudioStream({name})")
         } else {
             write!(f, "AudioStream")
         }
@@ -1397,7 +1397,7 @@ impl Read for AudioStream {
             )
         };
         if ret == -1 {
-            Err(io::Error::new(io::ErrorKind::Other, get_error()))
+            Err(io::Error::other(get_error()))
         } else {
             Ok(ret as usize)
         }

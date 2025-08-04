@@ -10,7 +10,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let gamepad_joysticks_ids = gamepad_subsystem
         .gamepads()
-        .map_err(|e| format!("can't enumerate gamepads: {}", e))?;
+        .map_err(|e| format!("can't enumerate gamepads: {e}"))?;
 
     println!("{} gamepads available", gamepad_joysticks_ids.len());
 
@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut controller = gamepad_joysticks_ids
         .into_iter()
         .find_map(|id| {
-            println!("Attempting to open gamepad {}", id);
+            println!("Attempting to open gamepad {id}");
 
             match gamepad_subsystem.open(id) {
                 Ok(c) => {
@@ -31,7 +31,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Some(c)
                 }
                 Err(e) => {
-                    println!("failed: {:?}", e);
+                    println!("failed: {e:?}");
                     None
                 }
             }
@@ -58,11 +58,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 // Trigger axes go from 0 to 32767, so this should be okay
                 lo_freq = (val as u16) * 2;
                 match controller.set_rumble(lo_freq, hi_freq, 15000) {
-                    Ok(()) => println!("Set rumble to ({}, {})", lo_freq, hi_freq),
-                    Err(e) => println!(
-                        "Error setting rumble to ({}, {}): {:?}",
-                        lo_freq, hi_freq, e
-                    ),
+                    Ok(()) => println!("Set rumble to ({lo_freq}, {hi_freq})"),
+                    Err(e) => println!("Error setting rumble to ({lo_freq}, {hi_freq}): {e:?}"),
                 }
             }
             Event::ControllerAxisMotion {
@@ -73,11 +70,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 // Trigger axes go from 0 to 32767, so this should be okay
                 hi_freq = (val as u16) * 2;
                 match controller.set_rumble(lo_freq, hi_freq, 15000) {
-                    Ok(()) => println!("Set rumble to ({}, {})", lo_freq, hi_freq),
-                    Err(e) => println!(
-                        "Error setting rumble to ({}, {}): {:?}",
-                        lo_freq, hi_freq, e
-                    ),
+                    Ok(()) => println!("Set rumble to ({lo_freq}, {hi_freq})"),
+                    Err(e) => println!("Error setting rumble to ({lo_freq}, {hi_freq}): {e:?}"),
                 }
             }
             Event::ControllerAxisMotion {
@@ -88,11 +82,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 // zone to ignore spurious events.
                 let dead_zone = 10_000;
                 if val > dead_zone || val < -dead_zone {
-                    println!("Axis {:?} moved to {}", axis, val);
+                    println!("Axis {axis:?} moved to {val}");
                 }
             }
-            Event::ControllerButtonDown { button, .. } => println!("Button {:?} down", button),
-            Event::ControllerButtonUp { button, .. } => println!("Button {:?} up", button),
+            Event::ControllerButtonDown { button, .. } => println!("Button {button:?} down"),
+            Event::ControllerButtonUp { button, .. } => println!("Button {button:?} up"),
             Event::ControllerTouchpadDown {
                 touchpad,
                 finger,
