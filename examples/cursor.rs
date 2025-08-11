@@ -44,7 +44,7 @@ pub fn run(png: &Path) -> Result<(), Box<dyn std::error::Error>> {
                     ..
                 } => break 'mainloop,
                 Event::MouseButtonDown { x, y, .. } => {
-                    canvas.fill_rect(Rect::new(x, y, 1, 1))?;
+                    canvas.fill_rect(Rect::new(x as i32, y as i32, 1, 1))?;
                     canvas.present();
                 }
                 _ => {}

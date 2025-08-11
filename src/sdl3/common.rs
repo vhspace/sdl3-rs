@@ -31,8 +31,8 @@ impl fmt::Display for IntegerOrSdlError {
         use self::IntegerOrSdlError::*;
 
         match *self {
-            IntegerOverflows(name, value) => write!(f, "Integer '{}' overflows ({})", name, value),
-            SdlError(ref e) => write!(f, "SDL error: {}", e),
+            IntegerOverflows(name, value) => write!(f, "Integer '{name}' overflows ({value})"),
+            SdlError(ref e) => write!(f, "SDL error: {e}"),
         }
     }
 }

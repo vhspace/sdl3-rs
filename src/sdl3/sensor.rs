@@ -20,6 +20,7 @@ use crate::sys;
 
 use crate::common::IntegerOrSdlError;
 use crate::get_error;
+use crate::Error;
 use crate::SensorSubsystem;
 use libc::c_char;
 use std::ffi::{c_int, CStr};
@@ -31,7 +32,7 @@ type SensorId = u32;
 impl SensorSubsystem {
     /// Get a list of currently connected sensors.
     #[doc(alias = "SDL_GetSensors")]
-    pub fn num_sensors(&self) -> Result<Vec<SensorId>, String> {
+    pub fn num_sensors(&self) -> Result<Vec<SensorId>, Error> {
         let mut count: c_int = 0;
         let sensor_ids = unsafe { sys::sensor::SDL_GetSensors(&mut count) };
 
@@ -136,7 +137,7 @@ impl Sensor {
     pub fn instance_id(&self) -> u32 {
         let result = unsafe { sys::sensor::SDL_GetSensorID(self.raw) };
 
-        if result < 0 {
+        if result == 0 {
             // Should only fail if the joystick is NULL.
             panic!("{}", get_error())
         } else {

@@ -945,8 +945,8 @@ mod test {
             )),
             Rect::from_enclose_points(
                 &[
-                    Point::new(i32::min_value(), i32::min_value()),
-                    Point::new(i32::max_value(), i32::max_value())
+                    Point::new(i32::MIN, i32::min_value()),
+                    Point::new(i32::MAX, i32::max_value())
                 ],
                 None
             )

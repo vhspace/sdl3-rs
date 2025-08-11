@@ -18,8 +18,8 @@ impl fmt::Display for OpenUrlError {
         use self::OpenUrlError::*;
 
         match *self {
-            InvalidUrl(ref e) => write!(f, "Invalid URL: {}", e),
-            SdlError(ref e) => write!(f, "SDL error: {}", e),
+            InvalidUrl(ref e) => write!(f, "Invalid URL: {e}"),
+            SdlError(ref e) => write!(f, "SDL error: {e}"),
         }
     }
 }

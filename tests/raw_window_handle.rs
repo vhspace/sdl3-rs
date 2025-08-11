@@ -51,14 +51,15 @@ mod raw_window_handle_test {
     #[test]
     fn get_linux_handle() {
         let window = new_hidden_window();
-        match window.raw_window_handle() {
+        match window.window_handle().unwrap().as_raw() {
             RawWindowHandle::Xlib(x11_handle) => {
                 assert_ne!(x11_handle.window, 0, "Window for X11 should not be 0");
                 println!("Successfully received linux X11 RawWindowHandle!");
             }
             RawWindowHandle::Wayland(wayland_handle) => {
                 assert_ne!(
-                    wayland_handle.surface, 0 as *mut libc::c_void,
+                    wayland_handle.surface.as_ptr(),
+                    std::ptr::null_mut(),
                     "Surface for Wayland should not be null"
                 );
                 println!("Successfully received linux Wayland RawWindowHandle!");
@@ -69,16 +70,18 @@ mod raw_window_handle_test {
                 x
             ),
         }
-        match window.raw_display_handle() {
+        match window.display_handle().unwrap().as_raw() {
             RawDisplayHandle::Xlib(x11_display) => {
                 assert_ne!(
-                    x11_display.display, 0 as *mut libc::c_void,
+                    x11_display.display.unwrap().as_ptr(),
+                    std::ptr::null_mut(),
                     "Display for X11 should not be null"
                 );
             }
             RawDisplayHandle::Wayland(wayland_display) => {
                 assert_ne!(
-                    wayland_display.display, 0 as *mut libc::c_void,
+                    wayland_display.display.as_ptr(),
+                    std::ptr::null_mut(),
                     "Display for Wayland should not be null"
                 );
             }

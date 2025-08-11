@@ -1,10 +1,5 @@
 extern crate sdl3;
 
-use sdl3::audio::{AudioCallback, AudioSpec, AudioSpecWAV, AudioStream};
-use std::borrow::Cow;
-use std::path::{Path, PathBuf};
-use std::time::Duration;
-
 // NOTE: You probably want to investigate the
 // mixer feature for real use cases.
 
@@ -39,7 +34,7 @@ impl AudioCallback<u8> for Sound {
 }
 
 // FIXME: Convert to AudioStream library
-fn main() -> () {}
+fn main() {}
 #[cfg(any())]
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let wav_file: Cow<'static, Path> = match std::env::args().nth(1) {

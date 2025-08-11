@@ -155,12 +155,12 @@ mod test {
 
         std::thread::sleep(Duration::from_millis(50));
         let flag = local_flag.lock().unwrap();
-        assert_eq!(*flag, true);
+        assert!(*flag);
     }
 
     #[test]
     fn test_timer_can_be_recreated() {
-        let sdl_context = crate::sdl::init().unwrap();
+        let _sdl_context = crate::sdl::init().unwrap();
         //let timer_subsystem = sdl_context.timer().unwrap();
 
         let local_num = Arc::new(Mutex::new(0));

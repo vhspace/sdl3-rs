@@ -196,9 +196,9 @@ impl fmt::Display for PrefPathError {
         use self::PrefPathError::*;
 
         match *self {
-            InvalidOrganizationName(ref e) => write!(f, "Invalid organization name: {}", e),
-            InvalidApplicationName(ref e) => write!(f, "Invalid application name: {}", e),
-            SdlError(ref e) => write!(f, "SDL error: {}", e),
+            InvalidOrganizationName(ref e) => write!(f, "Invalid organization name: {e}"),
+            InvalidApplicationName(ref e) => write!(f, "Invalid application name: {e}"),
+            SdlError(ref e) => write!(f, "SDL error: {e}"),
         }
     }
 }

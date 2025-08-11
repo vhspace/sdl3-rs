@@ -531,8 +531,7 @@ impl PixelFormat {
             // Should not fail for known formats
             assert!(
                 !ptr.is_null(),
-                "SDL_GetPixelFormatDetails returned null for format: {:?}",
-                self
+                "SDL_GetPixelFormatDetails returned null for format: {self:?}"
             );
             let d = *ptr;
             PixelFormatDetails {
@@ -648,7 +647,7 @@ impl PixelFormat {
             | pixels::SDL_PixelFormat::INDEX1MSB
             | pixels::SDL_PixelFormat::INDEX4LSB
             | pixels::SDL_PixelFormat::INDEX4MSB
-            | _ => panic!("not supported format: {:?}", self),
+            | _ => panic!("not supported format: {self:?}"),
         }
     }
 
@@ -691,7 +690,7 @@ impl PixelFormat {
             | pixels::SDL_PixelFormat::INDEX1MSB
             | pixels::SDL_PixelFormat::INDEX4LSB
             | pixels::SDL_PixelFormat::INDEX4MSB
-            | _ => panic!("not supported format: {:?}", self),
+            | _ => panic!("not supported format: {self:?}"),
         }
     }
 

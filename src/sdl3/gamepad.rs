@@ -34,10 +34,10 @@ impl fmt::Display for AddMappingError {
         use self::AddMappingError::*;
 
         match *self {
-            InvalidMapping(ref e) => write!(f, "Null error: {}", e),
-            InvalidFilePath(ref value) => write!(f, "Invalid file path ({})", value),
-            ReadError(ref e) => write!(f, "Read error: {}", e),
-            SdlError(ref e) => write!(f, "SDL error: {}", e),
+            InvalidMapping(ref e) => write!(f, "Null error: {e}"),
+            InvalidFilePath(ref value) => write!(f, "Invalid file path ({value})"),
+            ReadError(ref e) => write!(f, "Read error: {e}"),
+            SdlError(ref e) => write!(f, "SDL error: {e}"),
         }
     }
 }
@@ -403,18 +403,17 @@ impl GamepadSubsystem {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 #[repr(i32)]
 pub enum GamepadType {
-    Unknown = sys::gamepad::SDL_GamepadType::UNKNOWN.0 as i32,
-    Standard = sys::gamepad::SDL_GamepadType::STANDARD.0 as i32,
-    Xbox360 = sys::gamepad::SDL_GamepadType::XBOX360.0 as i32,
-    XboxOne = sys::gamepad::SDL_GamepadType::XBOXONE.0 as i32,
-    PS3 = sys::gamepad::SDL_GamepadType::PS3.0 as i32,
-    PS4 = sys::gamepad::SDL_GamepadType::PS4.0 as i32,
-    PS5 = sys::gamepad::SDL_GamepadType::PS5.0 as i32,
-    NintendoSwitchPro = sys::gamepad::SDL_GamepadType::NINTENDO_SWITCH_PRO.0 as i32,
-    NintendoSwitchJoyconLeft = sys::gamepad::SDL_GamepadType::NINTENDO_SWITCH_JOYCON_LEFT.0 as i32,
-    NintendoSwitchJoyconRight =
-        sys::gamepad::SDL_GamepadType::NINTENDO_SWITCH_JOYCON_RIGHT.0 as i32,
-    NintendoSwitchJoyconPair = sys::gamepad::SDL_GamepadType::NINTENDO_SWITCH_JOYCON_PAIR.0 as i32,
+    Unknown = sys::gamepad::SDL_GamepadType::UNKNOWN.0,
+    Standard = sys::gamepad::SDL_GamepadType::STANDARD.0,
+    Xbox360 = sys::gamepad::SDL_GamepadType::XBOX360.0,
+    XboxOne = sys::gamepad::SDL_GamepadType::XBOXONE.0,
+    PS3 = sys::gamepad::SDL_GamepadType::PS3.0,
+    PS4 = sys::gamepad::SDL_GamepadType::PS4.0,
+    PS5 = sys::gamepad::SDL_GamepadType::PS5.0,
+    NintendoSwitchPro = sys::gamepad::SDL_GamepadType::NINTENDO_SWITCH_PRO.0,
+    NintendoSwitchJoyconLeft = sys::gamepad::SDL_GamepadType::NINTENDO_SWITCH_JOYCON_LEFT.0,
+    NintendoSwitchJoyconRight = sys::gamepad::SDL_GamepadType::NINTENDO_SWITCH_JOYCON_RIGHT.0,
+    NintendoSwitchJoyconPair = sys::gamepad::SDL_GamepadType::NINTENDO_SWITCH_JOYCON_PAIR.0,
 }
 
 impl GamepadType {

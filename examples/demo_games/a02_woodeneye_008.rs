@@ -57,8 +57,8 @@ fn shoot(shooter: usize, players: &mut [Player], players_len: usize) {
 
     // Convert yaw and pitch to radians
     let bin_rad = PI / 2147483648.0;
-    let yaw_rad = (bin_rad as f64) * (players[shooter].yaw) as f64;
-    let pitch_rad = (bin_rad as f64) * players[shooter].pitch as f64;
+    let yaw_rad = bin_rad * (players[shooter].yaw) as f64;
+    let pitch_rad = bin_rad * players[shooter].pitch as f64;
 
     // Calculate shooting direction vector
     let cos_yaw = yaw_rad.cos();
@@ -83,7 +83,7 @@ fn shoot(shooter: usize, players: &mut [Player], players_len: usize) {
             let dx = target.pos[0] - x0; // Difference in x position
             let dy = target.pos[1] - y0 + if j == 0 { 0.0 } else { r - h }; // Difference in y position (adjust for head/feet)
             let dz = target.pos[2] - z0; // Difference in z position
-            let vd = vx * dx as f64 + vy * dy as f64 + vz * dz as f64; // Dot product of velocity and distance vectors
+            let vd = vx * dx + vy * dy + vz * dz; // Dot product of velocity and distance vectors
             let dd = dx * dx + dy * dy + dz * dz; // Squared distance between shooter and target
             let vv = vx * vx + vy * vy + vz * vz; // Squared magnitude of velocity vector
             let rr = r * r; // Squared radius
@@ -92,7 +92,7 @@ fn shoot(shooter: usize, players: &mut [Player], players_len: usize) {
             if vd < 0.0 {
                 continue; // If the target is moving away, skip
             }
-            if vd * vd >= vv * (dd as f64 - rr as f64) {
+            if vd * vd >= vv * (dd - rr) {
                 hit += 1; // Increment hit counter if the shot hits the target
             }
         }
@@ -107,25 +107,25 @@ fn shoot(shooter: usize, players: &mut [Player], players_len: usize) {
 
 /// 1. update Function - Physics and Movement:
 
-///   Time Delta: The dt_ns (delta time in nanoseconds) is crucial for frame-rate independent physics. It's converted to seconds (time).
-///   Drag: drag = (-time * rate).exp(); calculates an exponential drag factor. This simulates air resistance or friction, slowing the player down over time. The higher rate is, the stronger the drag.
-///   Acceleration: The code calculates the player's acceleration based on the WASD keys pressed and the player's current yaw (horizontal rotation). It uses trigonometry (cos and sin) to determine the direction of movement in 2D (x and z axes). norm normalizes the direction vector.
-///   Velocity Update: The player's velocity is updated by:
-///      Applying drag: player.vel[0] -= vel_x * diff; (and similarly for z).
-///      Applying gravity: player.vel[1] -= grav * time;.
-///      Applying acceleration: player.vel[0] += diff * acc_x / rate; (and similarly for z).
-///   Position Update: The player's position is updated using a combination of the current velocity and the calculated acceleration. The formula used is a discrete approximation of the equations of motion.
-///   Boundary Collision: The code now clamps the player's position to the map boundaries (-bound to bound). If a player hits a boundary, their velocity in that direction is set to 0.
-///   Jumping: The spacebar (keycode 16) now allows the player to jump. If the player is on the ground (y position is at the boundary), pressing space sets a vertical velocity.
+/// Time Delta: The dt_ns (delta time in nanoseconds) is crucial for frame-rate independent physics. It's converted to seconds (time).
+/// Drag: drag = (-time * rate).exp(); calculates an exponential drag factor. This simulates air resistance or friction, slowing the player down over time. The higher rate is, the stronger the drag.
+/// Acceleration: The code calculates the player's acceleration based on the WASD keys pressed and the player's current yaw (horizontal rotation). It uses trigonometry (cos and sin) to determine the direction of movement in 2D (x and z axes). norm normalizes the direction vector.
+/// Velocity Update: The player's velocity is updated by:
+/// - Applying drag: player.vel[0] -= vel_x * diff; (and similarly for z).
+/// - Applying gravity: player.vel[1] -= grav * time;.
+/// - Applying acceleration: player.vel[0] += diff * acc_x / rate; (and similarly for z).
+/// Position Update: The player's position is updated using a combination of the current velocity and the calculated acceleration. The formula used is a discrete approximation of the equations of motion.
+/// Boundary Collision: The code now clamps the player's position to the map boundaries (-bound to bound). If a player hits a boundary, their velocity in that direction is set to 0.
+/// Jumping: The spacebar (keycode 16) now allows the player to jump. If the player is on the ground (y position is at the boundary), pressing space sets a vertical velocity.
 ///
 /// 2. Mathematical Principles (Simplified):
 ///
-///   Drag: The drag force is proportional to the player's velocity, acting in the opposite direction. The exponential form is common for simulating drag.
-///   Gravity: A constant downward acceleration is applied to the player's y-velocity.
-///   Equations of Motion (Simplified): The position updates are based on simplified versions of the following:
-///       position = initial_position + velocity * time + 0.5 * acceleration * time^2
-///       velocity = initial_velocity + acceleration * time
-///   The code uses a slightly different form to account for the changing acceleration due to drag.
+/// Drag: The drag force is proportional to the player's velocity, acting in the opposite direction. The exponential form is common for simulating drag.
+/// Gravity: A constant downward acceleration is applied to the player's y-velocity.
+/// Equations of Motion (Simplified): The position updates are based on simplified versions of the following:
+/// - position = initial_position + velocity * time + 0.5 * acceleration * time^2
+/// - velocity = initial_velocity + acceleration * time
+/// The code uses a slightly different form to account for the changing acceleration due to drag.
 ///
 /// 3. Frame Rate Independence: By using dt_ns, the physics calculations are adjusted based on the time elapsed between frames. This makes the game's physics behave more consistently regardless of the frame rate.
 
@@ -224,11 +224,11 @@ fn draw_circle(canvas: &mut Canvas<Window>, r: f32, x: f32, y: f32) {
 /// fn draw_clipped_segment()
 ///
 /// 1. Clipping: The function implements a simple form of clipping against a plane defined by z = -w. This is a common technique in 3D graphics to prevent drawing objects that are behind the "camera" or outside the viewing frustum.
-///   The if az >= -w && bz >= -w check efficiently handles the case where both points of the line segment are behind the clipping plane.  No drawing is needed in this case.
-///   The code then checks each point individually (if az > -w and if bz > -w). If a point is behind the plane, the code calculates the intersection point of the line segment with the plane using linear interpolation.  The parameter t determines how far along the line segment the intersection occurs.
+/// The if az >= -w && bz >= -w check efficiently handles the case where both points of the line segment are behind the clipping plane.  No drawing is needed in this case.
+/// The code then checks each point individually (if az > -w and if bz > -w). If a point is behind the plane, the code calculates the intersection point of the line segment with the plane using linear interpolation.  The parameter t determines how far along the line segment the intersection occurs.
 ///
 /// 2. Perspective Projection: After clipping, the code performs perspective projection.  This is what makes objects appear smaller as they are further away.
-///   ax = -z * ax / az; (and similarly for ay, bx, by): This is the perspective divide. Dividing by az (and bz) makes the coordinates scale inversely with distance, creating the perspective effect. -z is used because the code assumes the camera is looking along the negative z-axis.
+/// ax = -z * ax / az; (and similarly for ay, bx, by): This is the perspective divide. Dividing by az (and bz) makes the coordinates scale inversely with distance, creating the perspective effect. -z is used because the code assumes the camera is looking along the negative z-axis.
 ///
 /// 3 .Screen Coordinates:  The projected coordinates (ax, ay, bx, by) are then added to x and y respectively. These x and y values likely represent the origin or offset for the current viewport or camera. The y-coordinate is also negated (y - ay) because in most screen coordinate systems, the y-axis points downwards, while in typical Cartesian coordinate systems, it points upwards.
 ///
@@ -312,7 +312,7 @@ fn draw(canvas: &mut Canvas<Window>, edges: &[[f32; 6]], players: &[Player], pla
             let mod_y = (i / part_hor) as f32; // y-coordinate of the viewport in the grid
             let hor_origin = (mod_x + 0.5) * size_hor; // x-coordinate of the center of the viewport
             let ver_origin = (mod_y + 0.5) * size_ver; // y-coordinate of the center of the viewport
-            let cam_origin = (0.5 * (size_hor * size_hor + size_ver * size_ver).sqrt()) as f32; // Distance to the "camera"
+            let cam_origin = 0.5 * (size_hor * size_hor + size_ver * size_ver).sqrt(); // Distance to the "camera"
             let hor_offset = mod_x * size_hor; // x-offset of the viewport
             let ver_offset = mod_y * size_ver; // y-offset of the viewport
 
@@ -417,8 +417,8 @@ fn draw(canvas: &mut Canvas<Window>, edges: &[[f32; 6]], players: &[Player], pla
                     draw_circle(
                         canvas,
                         r_eff as f32,
-                        (hor_origin - cam_origin * dx as f32 / dz as f32) as f32,
-                        (ver_origin + cam_origin * dy as f32 / dz as f32) as f32,
+                        hor_origin - cam_origin * dx as f32 / dz as f32,
+                        ver_origin + cam_origin * dy as f32 / dz as f32,
                     );
                 }
             }

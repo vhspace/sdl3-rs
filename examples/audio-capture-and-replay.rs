@@ -40,10 +40,7 @@ fn record(
     audio_subsystem: &AudioSubsystem,
     desired_spec: &AudioSpec,
 ) -> Result<Vec<i16>, Box<dyn std::error::Error>> {
-    println!(
-        "Capturing {:} seconds... Please rock!",
-        RECORDING_LENGTH_SECONDS
-    );
+    println!("Capturing {RECORDING_LENGTH_SECONDS:} seconds... Please rock!");
 
     let (done_sender, done_receiver) = mpsc::channel();
 

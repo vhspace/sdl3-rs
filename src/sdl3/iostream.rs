@@ -90,7 +90,7 @@ impl<'a> IOStream<'a> {
         match r.read_to_end(buffer) {
             Ok(_size) => IOStream::from_bytes(buffer),
             Err(ioerror) => {
-                let msg = format!("IO error: {}", ioerror);
+                let msg = format!("IO error: {ioerror}");
                 Err(Error(msg))
             }
         }

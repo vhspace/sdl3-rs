@@ -3,31 +3,31 @@ use std::time::{Duration, Instant};
 
 use sdl3::{event::Event, sensor::SensorType};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let sdl_context = sdl3::init()?;
-    let game_controller_subsystem = sdl_context.gamepad()?;
+fn main() -> Result<(), String> {
+    let sdl_context = sdl3::init().unwrap();
+    let game_controller_subsystem = sdl_context.gamepad().unwrap();
 
     let available = game_controller_subsystem
-        .num_gamepads()
+        .gamepads()
         .map_err(|e| format!("can't enumerate joysticks: {}", e))?;
 
-    println!("{} joysticks available", available);
+    println!("{} joysticks available", available.len());
 
     // Iterate over all available joysticks and look for game controllers.
-    let controller = (0..available)
+    let controller = (0..available.len())
         .find_map(|id| {
-            if !game_controller_subsystem.is_gamepad(id) {
+            if !game_controller_subsystem.is_gamepad(id as u32) {
                 println!("{} is not a game controller", id);
                 return None;
             }
 
             println!("Attempting to open controller {}", id);
 
-            match game_controller_subsystem.open(id) {
+            match game_controller_subsystem.open(id as u32) {
                 Ok(c) => {
                     // We managed to find and open a game controller,
                     // exit the loop
-                    println!("Success: opened \"{}\"", c.name());
+                    println!("Success: opened \"{:?}\"", c.name());
                     Some(c)
                 }
                 Err(e) => {
@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     unsafe {
         if !controller.has_sensor(SensorType::Accelerometer) {
             return Err(format!(
-                "{} doesn't support the accelerometer",
+                "{:?} doesn't support the accelerometer",
                 controller.name()
             ));
         }
@@ -49,7 +49,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     unsafe {
         if !controller.has_sensor(SensorType::Gyroscope) {
             return Err(format!(
-                "{} doesn't support the gyroscope",
+                "{:?} doesn't support the gyroscope",
                 controller.name()
             ));
         }
@@ -62,8 +62,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .sensor_set_enabled(SensorType::Gyroscope, true)
         .map_err(|e| format!("error enabling gyroscope: {}", e))?;
     let mut now = Instant::now();
-    for event in sdl_context.event_pump()?.wait_iter() {
-        if false && now.elapsed() > Duration::from_secs(1) {
+    for event in sdl_context.event_pump().unwrap().wait_iter() {
+        if now.elapsed() > Duration::from_secs(1) {
             now = Instant::now();
 
             let mut gyro_data = [0f32; 3];

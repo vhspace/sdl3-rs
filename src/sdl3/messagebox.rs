@@ -121,10 +121,10 @@ impl fmt::Display for ShowMessageError {
         use self::ShowMessageError::*;
 
         match *self {
-            InvalidTitle(ref e) => write!(f, "Invalid title: {}", e),
-            InvalidMessage(ref e) => write!(f, "Invalid message: {}", e),
-            InvalidButton(ref e, value) => write!(f, "Invalid button ({}): {}", value, e),
-            SdlError(ref e) => write!(f, "SDL error: {}", e),
+            InvalidTitle(ref e) => write!(f, "Invalid title: {e}"),
+            InvalidMessage(ref e) => write!(f, "Invalid message: {e}"),
+            InvalidButton(ref e, value) => write!(f, "Invalid button ({value}): {e}"),
+            SdlError(ref e) => write!(f, "SDL error: {e}"),
         }
     }
 }

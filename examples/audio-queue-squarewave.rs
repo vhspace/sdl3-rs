@@ -1,9 +1,5 @@
 extern crate sdl3;
 
-use sdl3::audio::AudioSpec;
-
-use std::time::Duration;
-
 fn gen_wave(bytes_to_write: i32) -> Vec<i16> {
     // Generate a square wave
     let tone_volume = 1_000i16;
@@ -22,7 +18,7 @@ fn gen_wave(bytes_to_write: i32) -> Vec<i16> {
 }
 
 // FIXME
-fn main() -> () {}
+fn main() {}
 
 #[cfg(any())]
 fn main() -> Result<(), Box<dyn std::error::Error>> {

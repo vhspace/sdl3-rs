@@ -12,7 +12,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     enumerate_directory(base_path, |directory, file| {
         println!("Enumerate {directory:?}: {file:?}");
-        return EnumerationResult::CONTINUE;
+        EnumerationResult::CONTINUE
     })
     .ok();
 
