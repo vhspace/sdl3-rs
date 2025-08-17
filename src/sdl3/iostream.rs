@@ -12,6 +12,8 @@ use crate::sys;
 /// A structure that provides an abstract interface to stream I/O.
 pub struct IOStream<'a> {
     raw: NonNull<sys::iostream::SDL_IOStream>,
+    #[allow(dead_code)]
+    buf: Option<Vec<u8>>,
     _marker: PhantomData<&'a ()>,
 }
 
@@ -34,6 +36,7 @@ impl<'a> IOStream<'a> {
     pub unsafe fn from_ll<'b>(raw: *mut sys::iostream::SDL_IOStream) -> IOStream<'b> {
         IOStream {
             raw: NonNull::new_unchecked(raw),
+            buf: None,
             _marker: PhantomData,
         }
     }
@@ -50,6 +53,7 @@ impl<'a> IOStream<'a> {
         match NonNull::new(raw) {
             Some(raw) => Ok(IOStream {
                 raw,
+                buf: None,
                 _marker: PhantomData,
             }),
             None => Err(get_error()),
@@ -76,6 +80,25 @@ impl<'a> IOStream<'a> {
         unsafe {
             let raw = sys::iostream::SDL_IOFromConstMem(buf.as_ptr() as *const c_void, buf.len());
             Self::from_ll_or_error(raw)
+        }
+    }
+
+    /// Prepares a read-only memory buffer for use with `IOStream` by taking ownership of a `Vec`.
+    ///
+    /// This method can only fail if the buffer size is zero.
+    pub fn from_vec(buf: Vec<u8>) -> Result<IOStream<'static>, Error> {
+        if buf.is_empty() {
+            return Err(Error(String::from("buffer must not be empty")));
+        }
+        let raw =
+            unsafe { sys::iostream::SDL_IOFromConstMem(buf.as_ptr() as *const c_void, buf.len()) };
+        match NonNull::new(raw) {
+            Some(raw) => Ok(IOStream {
+                raw,
+                buf: Some(buf),
+                _marker: PhantomData,
+            }),
+            None => Err(get_error()),
         }
     }
 
