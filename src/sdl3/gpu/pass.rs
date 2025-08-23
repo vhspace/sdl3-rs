@@ -1,3 +1,4 @@
+use super::{Buffer, ComputePipeline, Device, Filter, WeakDevice};
 use crate::{
     get_error,
     gpu::{
@@ -7,17 +8,53 @@ use crate::{
     pixels::Color,
     Error,
 };
+use std::sync::Arc;
 use sys::gpu::{
     SDL_AcquireGPUSwapchainTexture, SDL_BindGPUFragmentSamplers, SDL_BindGPUIndexBuffer,
     SDL_BindGPUVertexBuffers, SDL_DrawGPUIndexedPrimitives, SDL_GPUBlitInfo, SDL_GPUBufferBinding,
     SDL_GPUColorTargetInfo, SDL_GPUCommandBuffer, SDL_GPUComputePass, SDL_GPUCopyPass,
-    SDL_GPUDepthStencilTargetInfo, SDL_GPUFilter, SDL_GPULoadOp, SDL_GPURenderPass,
+    SDL_GPUDepthStencilTargetInfo, SDL_GPUFence, SDL_GPUFilter, SDL_GPULoadOp, SDL_GPURenderPass,
     SDL_GPUTextureSamplerBinding, SDL_PushGPUComputeUniformData, SDL_PushGPUFragmentUniformData,
-    SDL_PushGPUVertexUniformData, SDL_UploadToGPUBuffer, SDL_UploadToGPUTexture,
-    SDL_WaitAndAcquireGPUSwapchainTexture,
+    SDL_PushGPUVertexUniformData, SDL_QueryGPUFence, SDL_ReleaseGPUFence, SDL_UploadToGPUBuffer,
+    SDL_UploadToGPUTexture, SDL_WaitAndAcquireGPUSwapchainTexture,
 };
 
-use super::{Buffer, ComputePipeline, Filter};
+/// Manages the raw `SDL_GPUFence` pointer and releases it on drop
+struct FenceContainer {
+    raw: *mut SDL_GPUFence,
+    device: WeakDevice,
+}
+impl Drop for FenceContainer {
+    fn drop(&mut self) {
+        if let Some(device) = self.device.upgrade() {
+            unsafe { SDL_ReleaseGPUFence(device.raw(), self.raw) }
+        }
+    }
+}
+
+pub struct Fence {
+    inner: Arc<FenceContainer>,
+}
+impl Fence {
+    pub(super) fn new(device: &Device, raw_fence: *mut SDL_GPUFence) -> Self {
+        Self {
+            inner: Arc::new(FenceContainer {
+                raw: raw_fence,
+                device: device.weak(),
+            }),
+        }
+    }
+
+    #[inline]
+    pub fn raw(&self) -> *mut SDL_GPUFence {
+        self.inner.raw
+    }
+
+    #[doc(alias = "SDL_QueryGPUFence")]
+    pub fn query(&self, device: &Device) -> bool {
+        unsafe { SDL_QueryGPUFence(device.raw(), self.inner.raw) }
+    }
+}
 
 pub struct CommandBuffer {
     pub(super) inner: *mut SDL_GPUCommandBuffer,
@@ -129,6 +166,16 @@ impl CommandBuffer {
             Ok(())
         } else {
             Err(get_error())
+        }
+    }
+
+    #[doc(alias = "SDL_SubmitGPUCommandBufferAndAcquireFence")]
+    pub fn submit_and_acquire_fence(self, device: &Device) -> Result<Fence, Error> {
+        let fence_raw = unsafe { sys::gpu::SDL_SubmitGPUCommandBufferAndAcquireFence(self.inner) };
+        if fence_raw.is_null() {
+            Err(get_error())
+        } else {
+            Ok(Fence::new(device, fence_raw))
         }
     }
 
