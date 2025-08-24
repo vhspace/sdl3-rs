@@ -24,6 +24,30 @@ use super::{
     ComputePass, ComputePipelineBuilder,
 };
 
+pub struct Viewport {
+    inner: SDL_GPUViewport,
+}
+impl Viewport {
+    #[doc(alias = "SDL_GPUViewport")]
+    pub fn new(x: f32, y: f32, w: f32, h: f32, min_depth: f32, max_depth: f32) -> Self {
+        Self {
+            inner: SDL_GPUViewport {
+                x,
+                y,
+                w,
+                h,
+                min_depth,
+                max_depth,
+            },
+        }
+    }
+
+    #[inline]
+    pub fn raw(&self) -> *const SDL_GPUViewport {
+        &self.inner
+    }
+}
+
 /// Manages the raw `SDL_GPUDevice` pointer and releases it on drop
 pub(super) struct DeviceContainer(*mut SDL_GPUDevice);
 impl DeviceContainer {
@@ -129,8 +153,8 @@ impl Device {
     }
 
     #[doc(alias = "SDL_SetGPUViewport")]
-    pub fn set_viewport(&self, render_pass: &RenderPass, viewport: SDL_GPUViewport) {
-        unsafe { SDL_SetGPUViewport(render_pass.inner, &viewport) }
+    pub fn set_viewport(&self, render_pass: &RenderPass, viewport: Viewport) {
+        unsafe { SDL_SetGPUViewport(render_pass.inner, viewport.raw()) }
     }
 
     pub fn get_swapchain_texture_format(&self, w: &crate::video::Window) -> TextureFormat {
