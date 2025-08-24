@@ -19,6 +19,7 @@ use sys::gpu::{
 };
 
 use super::{
+    pass::Fence,
     pipeline::{StorageBufferReadWriteBinding, StorageTextureReadWriteBinding},
     ComputePass, ComputePipelineBuilder,
 };
@@ -221,6 +222,23 @@ impl Device {
 
     pub fn create_compute_pipeline<'a>(&'a self) -> ComputePipelineBuilder<'a> {
         ComputePipelineBuilder::new(self)
+    }
+
+    #[doc(alias = "SDL_WaitForGPUFences")]
+    pub fn wait_fences(&self, wait_all: bool, fences: &[Fence]) -> Result<(), Error> {
+        let fences: Vec<_> = fences.iter().map(|x| x.raw()).collect();
+        unsafe {
+            if !sys::gpu::SDL_WaitForGPUFences(
+                self.raw(),
+                wait_all,
+                fences.as_ptr(),
+                fences.len() as u32,
+            ) {
+                Err(get_error())
+            } else {
+                Ok(())
+            }
+        }
     }
 
     #[doc(alias = "SDL_GetGPUShaderFormats")]
