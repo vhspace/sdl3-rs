@@ -6,6 +6,7 @@ use crate::{
         TextureRegion, TextureSamplerBinding, TextureTransferInfo, TransferBufferLocation,
     },
     pixels::Color,
+    rect::Rect,
     Error,
 };
 use std::sync::Arc;
@@ -480,6 +481,11 @@ impl RenderPass {
                 first_instance as u32,
             );
         }
+    }
+
+    #[doc(alias = "SDL_SetGPUScissor")]
+    pub fn set_scissor(&self, scissor: Rect) {
+        unsafe { sys::gpu::SDL_SetGPUScissor(self.inner, scissor.raw()) }
     }
 }
 
