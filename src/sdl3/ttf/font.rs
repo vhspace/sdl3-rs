@@ -551,4 +551,14 @@ impl<'r> Font<'r> {
             Ok(kerning)
         }
     }
+
+    #[doc(alias = "TTF_SetFontSize")]
+    pub fn set_size(&self, size: f32) -> Result<(), Error> {
+        let ret = unsafe { ttf::TTF_SetFontSize(self.raw, size) };
+        if ret {
+            Ok(())
+        } else {
+            Err(get_error())
+        }
+    }
 }
