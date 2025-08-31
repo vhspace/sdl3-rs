@@ -1,6 +1,5 @@
 use crate::sys;
 use std::ffi::{CStr, CString};
-use std::mem::transmute;
 use std::ptr::null_mut;
 use sys::log::*;
 
@@ -21,8 +20,8 @@ pub enum Category {
 }
 
 impl Category {
-    fn from_ll(value: u32) -> Category {
-        match unsafe { transmute::<u32, SDL_LogCategory>(value) } {
+    fn from_ll(value: i32) -> Category {
+        match SDL_LogCategory(value) {
             SDL_LOG_CATEGORY_APPLICATION => Self::Application,
             SDL_LOG_CATEGORY_ERROR => Self::Error,
             SDL_LOG_CATEGORY_ASSERT => Self::Assert,
@@ -38,27 +37,28 @@ impl Category {
         }
     }
 
-    fn to_ll(&self) -> u32 {
-        match *self {
-            Category::Application => SDL_LOG_CATEGORY_APPLICATION.0 as u32,
-            Category::Error => SDL_LOG_CATEGORY_ERROR.0 as u32,
-            Category::Assert => SDL_LOG_CATEGORY_ASSERT.0 as u32,
-            Category::System => SDL_LOG_CATEGORY_SYSTEM.0 as u32,
-            Category::Audio => SDL_LOG_CATEGORY_AUDIO.0 as u32,
-            Category::Video => SDL_LOG_CATEGORY_VIDEO.0 as u32,
-            Category::Render => SDL_LOG_CATEGORY_RENDER.0 as u32,
-            Category::Input => SDL_LOG_CATEGORY_INPUT.0 as u32,
-            Category::Test => SDL_LOG_CATEGORY_TEST.0 as u32,
-            Category::Gpu => SDL_LOG_CATEGORY_GPU.0 as u32,
-            Category::Custom => SDL_LOG_CATEGORY_CUSTOM.0 as u32,
+    fn to_ll(self) -> i32 {
+        match self {
+            Category::Application => SDL_LOG_CATEGORY_APPLICATION.0,
+            Category::Error => SDL_LOG_CATEGORY_ERROR.0,
+            Category::Assert => SDL_LOG_CATEGORY_ASSERT.0,
+            Category::System => SDL_LOG_CATEGORY_SYSTEM.0,
+            Category::Audio => SDL_LOG_CATEGORY_AUDIO.0,
+            Category::Video => SDL_LOG_CATEGORY_VIDEO.0,
+            Category::Render => SDL_LOG_CATEGORY_RENDER.0,
+            Category::Input => SDL_LOG_CATEGORY_INPUT.0,
+            Category::Test => SDL_LOG_CATEGORY_TEST.0,
+            Category::Gpu => SDL_LOG_CATEGORY_GPU.0,
+            Category::Custom => SDL_LOG_CATEGORY_CUSTOM.0,
             // Only the application uses this category
-            Category::Unknown => SDL_LOG_CATEGORY_APPLICATION.0 as u32,
+            Category::Unknown => SDL_LOG_CATEGORY_APPLICATION.0,
         }
     }
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Priority {
+    Trace,
     Verbose,
     Debug,
     Info,
@@ -70,6 +70,7 @@ pub enum Priority {
 impl Priority {
     fn from_ll(value: SDL_LogPriority) -> Priority {
         match value {
+            SDL_LOG_PRIORITY_TRACE => Priority::Trace,
             SDL_LOG_PRIORITY_VERBOSE => Priority::Verbose,
             SDL_LOG_PRIORITY_DEBUG => Priority::Debug,
             SDL_LOG_PRIORITY_INFO => Priority::Info,
@@ -80,14 +81,15 @@ impl Priority {
         }
     }
 
-    fn to_ll(&self) -> u32 {
-        match *self {
-            Priority::Verbose => SDL_LOG_PRIORITY_VERBOSE.0 as u32,
-            Priority::Debug => SDL_LOG_PRIORITY_DEBUG.0 as u32,
-            Priority::Info => SDL_LOG_PRIORITY_INFO.0 as u32,
-            Priority::Warn => SDL_LOG_PRIORITY_WARN.0 as u32,
-            Priority::Error => SDL_LOG_PRIORITY_ERROR.0 as u32,
-            Priority::Critical => SDL_LOG_PRIORITY_CRITICAL.0 as u32,
+    fn to_ll(self) -> SDL_LogPriority {
+        match self {
+            Priority::Trace => SDL_LOG_PRIORITY_TRACE,
+            Priority::Verbose => SDL_LOG_PRIORITY_VERBOSE,
+            Priority::Debug => SDL_LOG_PRIORITY_DEBUG,
+            Priority::Info => SDL_LOG_PRIORITY_INFO,
+            Priority::Warn => SDL_LOG_PRIORITY_WARN,
+            Priority::Error => SDL_LOG_PRIORITY_ERROR,
+            Priority::Critical => SDL_LOG_PRIORITY_CRITICAL,
         }
     }
 }
@@ -104,7 +106,7 @@ unsafe extern "C" fn rust_sdl2_log_fn(
     priority: SDL_LogPriority,
     message: *const libc::c_char,
 ) {
-    let category = Category::from_ll(category as u32);
+    let category = Category::from_ll(category);
     let priority = Priority::from_ll(priority);
     let message = CStr::from_ptr(message).to_string_lossy();
     custom_log_fn(priority, category, &message);
@@ -122,7 +124,7 @@ pub fn set_output_function(callback: fn(Priority, Category, &str)) {
 pub fn set_log_priorities(priority: Priority) {
     let priority = priority.to_ll();
     unsafe {
-        crate::sys::log::SDL_SetLogPriorities(SDL_LogPriority(priority as i32));
+        crate::sys::log::SDL_SetLogPriorities(priority);
     }
 }
 
@@ -131,14 +133,14 @@ pub fn set_log_priority(category: Category, priority: Priority) {
     let category = category.to_ll();
     let priority = priority.to_ll();
     unsafe {
-        crate::sys::log::SDL_SetLogPriority(category as i32, SDL_LogPriority(priority as i32));
+        crate::sys::log::SDL_SetLogPriority(category, priority);
     }
 }
 
 #[doc(alias = "SDL_GetLogPriority")]
 pub fn get_log_priority(category: Category) -> Priority {
     let category = category.to_ll();
-    unsafe { Priority::from_ll(crate::sys::log::SDL_GetLogPriority(category as i32)) }
+    unsafe { Priority::from_ll(crate::sys::log::SDL_GetLogPriority(category)) }
 }
 
 #[doc(alias = "SDL_ResetLogPriorities")]
@@ -153,10 +155,7 @@ pub fn set_log_priority_prefix(priority: Priority, prefix: &str) {
     let prefix = CString::new(prefix).unwrap();
     let priority = priority.to_ll();
     unsafe {
-        crate::sys::log::SDL_SetLogPriorityPrefix(
-            SDL_LogPriority(priority as i32),
-            prefix.into_raw(),
-        );
+        crate::sys::log::SDL_SetLogPriorityPrefix(priority, prefix.into_raw());
     }
 }
 
@@ -177,7 +176,7 @@ pub fn log_trace(category: Category, message: &str) {
     let message = CString::new(message).unwrap();
     let category = category.to_ll();
     unsafe {
-        crate::sys::log::SDL_LogTrace(category as i32, message.into_raw());
+        crate::sys::log::SDL_LogTrace(category, message.into_raw());
     }
 }
 
@@ -187,7 +186,7 @@ pub fn log_verbose(category: Category, message: &str) {
     let message = CString::new(message).unwrap();
     let category = category.to_ll();
     unsafe {
-        crate::sys::log::SDL_LogVerbose(category as i32, message.into_raw());
+        crate::sys::log::SDL_LogVerbose(category, message.into_raw());
     }
 }
 
@@ -197,7 +196,7 @@ pub fn log_debug(category: Category, message: &str) {
     let message = CString::new(message).unwrap();
     let category = category.to_ll();
     unsafe {
-        crate::sys::log::SDL_LogDebug(category as i32, message.into_raw());
+        crate::sys::log::SDL_LogDebug(category, message.into_raw());
     }
 }
 
@@ -207,7 +206,7 @@ pub fn log_info(category: Category, message: &str) {
     let message = CString::new(message).unwrap();
     let category = category.to_ll();
     unsafe {
-        crate::sys::log::SDL_LogInfo(category as i32, message.into_raw());
+        crate::sys::log::SDL_LogInfo(category, message.into_raw());
     }
 }
 
@@ -217,7 +216,7 @@ pub fn log_warn(category: Category, message: &str) {
     let message = CString::new(message).unwrap();
     let category = category.to_ll();
     unsafe {
-        crate::sys::log::SDL_LogWarn(category as i32, message.into_raw());
+        crate::sys::log::SDL_LogWarn(category, message.into_raw());
     }
 }
 
@@ -227,7 +226,7 @@ pub fn log_error(category: Category, message: &str) {
     let message = CString::new(message).unwrap();
     let category = category.to_ll();
     unsafe {
-        crate::sys::log::SDL_LogError(category as i32, message.into_raw());
+        crate::sys::log::SDL_LogError(category, message.into_raw());
     }
 }
 
@@ -237,7 +236,7 @@ pub fn log_critical(category: Category, message: &str) {
     let message = CString::new(message).unwrap();
     let category = category.to_ll();
     unsafe {
-        crate::sys::log::SDL_LogCritical(category as i32, message.into_raw());
+        crate::sys::log::SDL_LogCritical(category, message.into_raw());
     }
 }
 
@@ -248,10 +247,6 @@ pub fn log_message(category: Category, priority: Priority, message: &str) {
     let category = category.to_ll();
     let priority = priority.to_ll();
     unsafe {
-        crate::sys::log::SDL_LogMessage(
-            category as i32,
-            SDL_LogPriority(priority as i32),
-            message.into_raw(),
-        );
+        crate::sys::log::SDL_LogMessage(category, priority, message.into_raw());
     }
 }
