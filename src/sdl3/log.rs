@@ -1,7 +1,6 @@
-use crate::sys;
+use crate::sys::log::*;
 use std::ffi::{CStr, CString};
 use std::ptr::null_mut;
-use sys::log::*;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Category {
@@ -116,7 +115,7 @@ unsafe extern "C" fn rust_sdl2_log_fn(
 pub fn set_output_function(callback: fn(Priority, Category, &str)) {
     unsafe {
         custom_log_fn = callback;
-        sys::log::SDL_SetLogOutputFunction(Some(rust_sdl2_log_fn), null_mut());
+        SDL_SetLogOutputFunction(Some(rust_sdl2_log_fn), null_mut());
     };
 }
 
@@ -124,7 +123,7 @@ pub fn set_output_function(callback: fn(Priority, Category, &str)) {
 pub fn set_log_priorities(priority: Priority) {
     let priority = priority.to_ll();
     unsafe {
-        crate::sys::log::SDL_SetLogPriorities(priority);
+        SDL_SetLogPriorities(priority);
     }
 }
 
@@ -133,20 +132,20 @@ pub fn set_log_priority(category: Category, priority: Priority) {
     let category = category.to_ll();
     let priority = priority.to_ll();
     unsafe {
-        crate::sys::log::SDL_SetLogPriority(category, priority);
+        SDL_SetLogPriority(category, priority);
     }
 }
 
 #[doc(alias = "SDL_GetLogPriority")]
 pub fn get_log_priority(category: Category) -> Priority {
     let category = category.to_ll();
-    unsafe { Priority::from_ll(crate::sys::log::SDL_GetLogPriority(category)) }
+    unsafe { Priority::from_ll(SDL_GetLogPriority(category)) }
 }
 
 #[doc(alias = "SDL_ResetLogPriorities")]
 pub fn reset_log_priorities() {
     unsafe {
-        crate::sys::log::SDL_ResetLogPriorities();
+        SDL_ResetLogPriorities();
     }
 }
 
@@ -155,7 +154,7 @@ pub fn set_log_priority_prefix(priority: Priority, prefix: &str) {
     let prefix = CString::new(prefix).unwrap();
     let priority = priority.to_ll();
     unsafe {
-        crate::sys::log::SDL_SetLogPriorityPrefix(priority, prefix.into_raw());
+        SDL_SetLogPriorityPrefix(priority, prefix.into_raw());
     }
 }
 
@@ -166,7 +165,7 @@ pub fn log(message: &str) {
     let message = message.replace('%', "%%");
     let message = CString::new(message).unwrap();
     unsafe {
-        crate::sys::log::SDL_Log(message.into_raw());
+        SDL_Log(message.into_raw());
     }
 }
 
@@ -176,7 +175,7 @@ pub fn log_trace(category: Category, message: &str) {
     let message = CString::new(message).unwrap();
     let category = category.to_ll();
     unsafe {
-        crate::sys::log::SDL_LogTrace(category, message.into_raw());
+        SDL_LogTrace(category, message.into_raw());
     }
 }
 
@@ -186,7 +185,7 @@ pub fn log_verbose(category: Category, message: &str) {
     let message = CString::new(message).unwrap();
     let category = category.to_ll();
     unsafe {
-        crate::sys::log::SDL_LogVerbose(category, message.into_raw());
+        SDL_LogVerbose(category, message.into_raw());
     }
 }
 
@@ -196,7 +195,7 @@ pub fn log_debug(category: Category, message: &str) {
     let message = CString::new(message).unwrap();
     let category = category.to_ll();
     unsafe {
-        crate::sys::log::SDL_LogDebug(category, message.into_raw());
+        SDL_LogDebug(category, message.into_raw());
     }
 }
 
@@ -206,7 +205,7 @@ pub fn log_info(category: Category, message: &str) {
     let message = CString::new(message).unwrap();
     let category = category.to_ll();
     unsafe {
-        crate::sys::log::SDL_LogInfo(category, message.into_raw());
+        SDL_LogInfo(category, message.into_raw());
     }
 }
 
@@ -216,7 +215,7 @@ pub fn log_warn(category: Category, message: &str) {
     let message = CString::new(message).unwrap();
     let category = category.to_ll();
     unsafe {
-        crate::sys::log::SDL_LogWarn(category, message.into_raw());
+        SDL_LogWarn(category, message.into_raw());
     }
 }
 
@@ -226,7 +225,7 @@ pub fn log_error(category: Category, message: &str) {
     let message = CString::new(message).unwrap();
     let category = category.to_ll();
     unsafe {
-        crate::sys::log::SDL_LogError(category, message.into_raw());
+        SDL_LogError(category, message.into_raw());
     }
 }
 
@@ -236,7 +235,7 @@ pub fn log_critical(category: Category, message: &str) {
     let message = CString::new(message).unwrap();
     let category = category.to_ll();
     unsafe {
-        crate::sys::log::SDL_LogCritical(category, message.into_raw());
+        SDL_LogCritical(category, message.into_raw());
     }
 }
 
@@ -247,6 +246,6 @@ pub fn log_message(category: Category, priority: Priority, message: &str) {
     let category = category.to_ll();
     let priority = priority.to_ll();
     unsafe {
-        crate::sys::log::SDL_LogMessage(category, priority, message.into_raw());
+        SDL_LogMessage(category, priority, message.into_raw());
     }
 }
