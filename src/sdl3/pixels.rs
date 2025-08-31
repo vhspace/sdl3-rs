@@ -102,10 +102,10 @@ fn create_palette() {
 }
 
 #[test]
-fn pixel_format_enum_supports_alpha() {
-    assert!(PixelFormat::RGBA8888.supports_alpha());
-    assert!(PixelFormat::ARGB2101010.supports_alpha());
-    assert!(!PixelFormat::RGB24.supports_alpha());
+fn pixel_format_is_alpha() {
+    assert!(PixelFormat::RGBA8888.is_alpha());
+    assert!(PixelFormat::ARGB2101010.is_alpha());
+    assert!(!PixelFormat::RGB24.is_alpha());
 }
 
 // Test retrieving pixel format details for a known format
@@ -610,110 +610,40 @@ impl PixelFormat {
         }
     }
 
-    #[allow(clippy::match_same_arms)]
-    pub fn byte_size_of_pixels(self, num_of_pixels: usize) -> usize {
-        match self.raw {
-            pixels::SDL_PixelFormat::RGB332 => num_of_pixels,
-            pixels::SDL_PixelFormat::XRGB4444
-            | pixels::SDL_PixelFormat::XRGB1555
-            | pixels::SDL_PixelFormat::XBGR1555
-            | pixels::SDL_PixelFormat::ARGB4444
-            | pixels::SDL_PixelFormat::RGBA4444
-            | pixels::SDL_PixelFormat::ABGR4444
-            | pixels::SDL_PixelFormat::BGRA4444
-            | pixels::SDL_PixelFormat::ARGB1555
-            | pixels::SDL_PixelFormat::RGBA5551
-            | pixels::SDL_PixelFormat::ABGR1555
-            | pixels::SDL_PixelFormat::BGRA5551
-            | pixels::SDL_PixelFormat::RGB565
-            | pixels::SDL_PixelFormat::BGR565 => num_of_pixels * 2,
-            pixels::SDL_PixelFormat::RGB24 | pixels::SDL_PixelFormat::BGR24 => num_of_pixels * 3,
-            pixels::SDL_PixelFormat::XRGB8888
-            | pixels::SDL_PixelFormat::RGBX8888
-            | pixels::SDL_PixelFormat::XBGR8888
-            | pixels::SDL_PixelFormat::BGRX8888
-            | pixels::SDL_PixelFormat::ARGB8888
-            | pixels::SDL_PixelFormat::RGBA8888
-            | pixels::SDL_PixelFormat::ABGR8888
-            | pixels::SDL_PixelFormat::BGRA8888
-            | pixels::SDL_PixelFormat::ARGB2101010 => num_of_pixels * 4,
-            // YUV formats
-            // FIXME: rounding error here?
-            pixels::SDL_PixelFormat::YV12 | pixels::SDL_PixelFormat::IYUV => num_of_pixels / 2 * 3,
-            pixels::SDL_PixelFormat::YUY2
-            | pixels::SDL_PixelFormat::UYVY
-            | pixels::SDL_PixelFormat::YVYU => num_of_pixels * 2,
-            // Unsupported formats
-            pixels::SDL_PixelFormat::INDEX8 => num_of_pixels,
-            pixels::SDL_PixelFormat::UNKNOWN
-            | pixels::SDL_PixelFormat::INDEX1LSB
-            | pixels::SDL_PixelFormat::INDEX1MSB
-            | pixels::SDL_PixelFormat::INDEX4LSB
-            | pixels::SDL_PixelFormat::INDEX4MSB
-            | _ => panic!("not supported format: {self:?}"),
-        }
+    pub fn is_fourcc(self) -> bool {
+        pixels::SDL_ISPIXELFORMAT_FOURCC(self.raw)
     }
 
-    #[allow(clippy::match_same_arms)]
-    pub fn byte_size_per_pixel(self) -> usize {
-        match self.raw {
-            pixels::SDL_PixelFormat::RGB332 => 1,
-            pixels::SDL_PixelFormat::XRGB4444
-            | pixels::SDL_PixelFormat::XRGB1555
-            | pixels::SDL_PixelFormat::XBGR1555
-            | pixels::SDL_PixelFormat::ARGB4444
-            | pixels::SDL_PixelFormat::RGBA4444
-            | pixels::SDL_PixelFormat::ABGR4444
-            | pixels::SDL_PixelFormat::BGRA4444
-            | pixels::SDL_PixelFormat::ARGB1555
-            | pixels::SDL_PixelFormat::RGBA5551
-            | pixels::SDL_PixelFormat::ABGR1555
-            | pixels::SDL_PixelFormat::BGRA5551
-            | pixels::SDL_PixelFormat::RGB565
-            | pixels::SDL_PixelFormat::BGR565 => 2,
-            pixels::SDL_PixelFormat::RGB24 | pixels::SDL_PixelFormat::BGR24 => 3,
-            pixels::SDL_PixelFormat::XRGB8888
-            | pixels::SDL_PixelFormat::RGBX8888
-            | pixels::SDL_PixelFormat::XBGR8888
-            | pixels::SDL_PixelFormat::BGRX8888
-            | pixels::SDL_PixelFormat::ARGB8888
-            | pixels::SDL_PixelFormat::RGBA8888
-            | pixels::SDL_PixelFormat::ABGR8888
-            | pixels::SDL_PixelFormat::BGRA8888
-            | pixels::SDL_PixelFormat::ARGB2101010 => 4,
-            // YUV formats
-            pixels::SDL_PixelFormat::YV12 | pixels::SDL_PixelFormat::IYUV => 1,
-            pixels::SDL_PixelFormat::YUY2
-            | pixels::SDL_PixelFormat::UYVY
-            | pixels::SDL_PixelFormat::YVYU => 2,
-            // Unsupported formats
-            pixels::SDL_PixelFormat::INDEX8 => 1,
-            pixels::SDL_PixelFormat::UNKNOWN
-            | pixels::SDL_PixelFormat::INDEX1LSB
-            | pixels::SDL_PixelFormat::INDEX1MSB
-            | pixels::SDL_PixelFormat::INDEX4LSB
-            | pixels::SDL_PixelFormat::INDEX4MSB
-            | _ => panic!("not supported format: {self:?}"),
-        }
+    pub fn bits_per_pixel(self) -> u8 {
+        pixels::SDL_BITSPERPIXEL(self.raw)
     }
 
-    pub fn supports_alpha(self) -> bool {
-        matches!(
-            self.raw,
-            pixels::SDL_PixelFormat::ARGB4444
-                | pixels::SDL_PixelFormat::ARGB1555
-                | pixels::SDL_PixelFormat::ARGB8888
-                | pixels::SDL_PixelFormat::ARGB2101010
-                | pixels::SDL_PixelFormat::ABGR4444
-                | pixels::SDL_PixelFormat::ABGR1555
-                | pixels::SDL_PixelFormat::ABGR8888
-                | pixels::SDL_PixelFormat::BGRA4444
-                | pixels::SDL_PixelFormat::BGRA5551
-                | pixels::SDL_PixelFormat::BGRA8888
-                | pixels::SDL_PixelFormat::RGBA4444
-                | pixels::SDL_PixelFormat::RGBA5551
-                | pixels::SDL_PixelFormat::RGBA8888
-        )
+    pub fn is_indexed(self) -> bool {
+        pixels::SDL_ISPIXELFORMAT_INDEXED(self.raw)
+    }
+
+    pub fn is_packed(self) -> bool {
+        pixels::SDL_ISPIXELFORMAT_PACKED(self.raw)
+    }
+
+    pub fn is_array(self) -> bool {
+        pixels::SDL_ISPIXELFORMAT_ARRAY(self.raw)
+    }
+
+    pub fn is_float(self) -> bool {
+        pixels::SDL_ISPIXELFORMAT_FLOAT(self.raw)
+    }
+
+    pub fn is_alpha(self) -> bool {
+        pixels::SDL_ISPIXELFORMAT_ALPHA(self.raw)
+    }
+
+    pub fn is_10bit(self) -> bool {
+        pixels::SDL_ISPIXELFORMAT_10BIT(self.raw)
+    }
+
+    pub fn bytes_per_pixel(self) -> usize {
+        pixels::SDL_BYTESPERPIXEL(self.raw) as usize
     }
 }
 
