@@ -451,7 +451,7 @@ impl DisplayMode {
     pub unsafe fn from_ll(raw: &SDL_DisplayMode) -> DisplayMode {
         DisplayMode::new(
             Display::from_ll(raw.displayID),
-            PixelFormat::try_from(raw.format).unwrap_or(PixelFormat::unknown()),
+            PixelFormat::try_from(raw.format).unwrap_or(PixelFormat::UNKNOWN),
             raw.w,
             raw.h,
             raw.pixel_density,
