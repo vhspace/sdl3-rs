@@ -3010,6 +3010,18 @@ impl Texture {
         InternalTexture { raw: self.raw }.blend_mode()
     }
 
+    /// Sets the scale mode for use when rendered.
+    #[inline]
+    pub fn set_scale_mode(&mut self, scale: ScaleMode) {
+        InternalTexture { raw: self.raw }.set_scale_mode(scale)
+    }
+
+    /// Gets the scale mode for use when rendered.
+    #[inline]
+    pub fn scale_mode(&self) -> ScaleMode {
+        InternalTexture { raw: self.raw }.scale_mode()
+    }
+
     /// Updates the given texture rectangle with new pixel data.
     ///
     /// `pitch` is the number of bytes in a row of pixel data, including padding
