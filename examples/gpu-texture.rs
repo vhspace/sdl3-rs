@@ -429,8 +429,7 @@ fn create_texture_from_image(
 ) -> Result<Texture<'static>, Error> {
     let image = Surface::load_bmp(image_path.as_ref())?;
     let image_size = image.size();
-    let size_bytes =
-        image.pixel_format().byte_size_per_pixel() as u32 * image_size.0 * image_size.1;
+    let size_bytes = image.pixel_format().bytes_per_pixel() as u32 * image_size.0 * image_size.1;
 
     let texture = gpu.create_texture(
         TextureCreateInfo::new()
