@@ -1,0 +1,62 @@
+name: Lint PR Title
+
+on:
+  pull_request_target:
+    types: [opened, edited, synchronize]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  main:
+    name: Validate PR title
+    runs-on: ubuntu-latest
+    steps:
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          scopes: |
+            gfx
+            gpu
+            hint
+            image
+            keyboard
+            mixer
+            mouse
+            ttf
+            audio
+            clipboard
+            cpuinfo
+            dialog
+            event
+            filesystem
+            gamepad
+            guid
+            haptic
+            iostream
+            joystick
+            log
+            macros
+            messagebox
+            pen
+            pixels
+            properties
+            raw_window_handle
+            rect
+            render
+            sensor
+            surface
+            timer
+            touch
+            url
+            util
+            version
+            video
+          requireScope: false
+          # If the PR only contains a single commit, the action will validate that
+          # it matches the configured pattern.
+          validateSingleCommit: true
+          # Related to `validateSingleCommit` you can opt-in to validate that the PR
+          # title matches a single commit to avoid confusion.
+          validateSingleCommitMatchesPrTitle: true
