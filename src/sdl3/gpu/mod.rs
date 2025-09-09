@@ -7,7 +7,7 @@ pub use buffer::{
 };
 
 mod device;
-pub use device::Device;
+pub use device::{Device, Viewport};
 
 mod enums;
 pub use enums::{
