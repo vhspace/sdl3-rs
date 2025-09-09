@@ -88,10 +88,10 @@ jobs:
         with:
           toolchain: stable
 
-      - name: Cache cargo output
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: stable-all-features
+      # - name: Cache cargo output
+      #   uses: Swatinem/rust-cache@v2
+      #   with:
+      #     key: stable-all-features
 
       - name: Fetch dependencies
         run: cargo +stable fetch --locked
