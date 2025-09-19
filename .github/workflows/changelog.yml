@@ -1,0 +1,42 @@
+name: changelog
+
+on:
+  push:
+    branches: ["master"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  changelog:
+    name: Generate changelog
+    runs-on: ubuntu-24.04
+    outputs:
+      release_body: ${{ steps.git-cliff.outputs.content }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          ref: master
+
+      - name: Generate changelog
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --verbose v0.14.36..HEAD
+        env:
+          OUTPUT: CHANGELOG.md
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: 'chore: update CHANGELOG.md'
+          author: changelog-updater <vhspace@users.noreply.github.com>
+          signoff: false
+          branch: update-changelog
+          delete-branch: true
+          title: 'chore: update CHANGELOG.md'
