@@ -41,7 +41,7 @@ use libc::{c_double, c_int, c_void};
 use pixels::PixelFormat;
 use std::convert::{Into, TryFrom, TryInto};
 use std::error;
-use std::ffi::CStr;
+use std::ffi::{c_char, CStr, CString};
 use std::fmt;
 #[cfg(not(feature = "unsafe_textures"))]
 use std::marker::PhantomData;
@@ -1372,6 +1372,31 @@ impl<T: RenderTarget> Canvas<T> {
         let end = end.into();
         let result = unsafe {
             sys::render::SDL_RenderLine(self.context.raw, start.x, start.y, end.x, end.y)
+        };
+        if !result {
+            Err(get_error())
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Draw debug text to an SDL_Renderer.
+    /// Errors if drawing fails for any reason (e.g. driver failure)
+    #[doc(alias = "SDL_RenderDebugText")]
+    pub fn draw_debug_text<P: Into<FPoint>>(
+        &mut self,
+        string: &str,
+        point: P,
+    ) -> Result<(), Error> {
+        let string = CString::new(string).unwrap();
+        let point = point.into();
+        let result = unsafe {
+            sys::render::SDL_RenderDebugText(
+                self.context.raw,
+                point.x,
+                point.y,
+                string.as_ptr() as *const c_char,
+            )
         };
         if !result {
             Err(get_error())
