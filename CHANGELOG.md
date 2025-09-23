@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### <!-- 0 -->Added
+- Add draw_debug_text() ([#233](https://github.com/vhspace/sdl3-rs/pull/233))
+
 ### <!-- 1 -->Changed
 - Automate changelog generation ([#231](https://github.com/vhspace/sdl3-rs/pull/231))
 
