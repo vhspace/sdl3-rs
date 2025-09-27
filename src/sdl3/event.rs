@@ -266,6 +266,16 @@ impl crate::EventSubsystem {
     ) -> EventWatch<'a, CB> {
         EventWatch::add(callback)
     }
+
+    #[doc(alias = "SDL_SetEventEnabled")]
+    pub fn set_event_enabled(event_type: EventType, enabled: bool) {
+        unsafe { sys::events::SDL_SetEventEnabled(event_type.into(), enabled) };
+    }
+
+    #[doc(alias = "SDL_EventEnabled")]
+    pub fn event_enabled(event_type: EventType) -> bool {
+        unsafe { sys::events::SDL_EventEnabled(event_type.into()) }
+    }
 }
 
 /// Types of events that can be delivered.
