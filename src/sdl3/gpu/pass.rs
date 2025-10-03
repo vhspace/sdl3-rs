@@ -130,11 +130,24 @@ impl CommandBuffer {
         }
     }
 
+    /// Try to acquire the swapchain texture without waiting. This may return `None` if all the swapchains allocated by
+    /// your GPU driver are already in use.
+    ///
+    /// To guarantee there is a swapchain available, you can either use [`wait_and_acquire_swapchain_texture`], or
+    /// submit your command buffer with a fence:
+    ///
+    /// ```rs
+    /// # let sdl = sdl3::init()?;
+    /// # let device = Device::new(ShaderFormat::INVALID, true)?;
+    /// # let command_buffer = device.acquire_command_buffer()?;
+    /// let fence = command_buffer.submit_and_acquire_fence(&device)?;
+    /// device.wait_fences(true, &[fence])?;
+    /// ```
     #[doc(alias = "SDL_AcquireGPUSwapchainTexture")]
     pub fn acquire_swapchain_texture<'a>(
         &'a mut self,
         w: &crate::video::Window,
-    ) -> Result<Texture<'a>, Error> {
+    ) -> Result<Option<Texture<'a>>, Error> {
         let mut swapchain = std::ptr::null_mut();
         let mut width = 0;
         let mut height = 0;
@@ -148,7 +161,11 @@ impl CommandBuffer {
             )
         };
         if success {
-            Ok(Texture::new_sdl_managed(swapchain, width, height))
+            if swapchain.is_null() {
+                Ok(None)
+            } else {
+                Ok(Some(Texture::new_sdl_managed(swapchain, width, height)))
+            }
         } else {
             Err(get_error())
         }
