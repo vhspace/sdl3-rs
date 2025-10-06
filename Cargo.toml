@@ -47,7 +47,7 @@ version = "0.6.2"
 optional = true
 
 [target.'cfg(target_os = "macos")'.dependencies.objc2]
-version = "0.6.0"
+version = "0.6.3"
 optional = true
 
 [dev-dependencies]
