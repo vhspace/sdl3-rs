@@ -41,8 +41,6 @@ jobs:
 
       - name: Cache cargo output
         uses: Swatinem/rust-cache@v2
-        with:
-          key: stable-${{ matrix.feature }}
 
       - name: Fetch dependencies
         run: cargo +stable fetch --locked
@@ -90,8 +88,6 @@ jobs:
 
       - name: Cache cargo output
         uses: Swatinem/rust-cache@v2
-        with:
-          key: stable-${{ matrix.os }}-${{ matrix.feature }}
 
       - name: Fetch dependencies
         run: cargo +stable fetch --locked
