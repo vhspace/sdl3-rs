@@ -11,7 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add draw_debug_text() ([#233](https://github.com/vhspace/sdl3-rs/pull/233))
 
 ### <!-- 1 -->Changed
+- Remove rust cache ([#245](https://github.com/vhspace/sdl3-rs/pull/245))
 - Automate changelog generation ([#231](https://github.com/vhspace/sdl3-rs/pull/231))
+
+### <!-- 2 -->Fixed
+- Change acquire_swapchain_texture to return an Option<Texture> ([#240](https://github.com/vhspace/sdl3-rs/pull/240))
 
 ## [0.15.1] - 2025-09-14
 
