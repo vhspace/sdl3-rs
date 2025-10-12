@@ -39,11 +39,6 @@ jobs:
           toolchain: stable
           components: clippy
 
-      - name: Cache cargo output
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: stable-${{ matrix.feature }}
-
       - name: Fetch dependencies
         run: cargo +stable fetch --locked
 
@@ -87,11 +82,6 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-
-      - name: Cache cargo output
-        uses: Swatinem/rust-cache@v2
-        with:
-          key: stable-${{ matrix.os }}-${{ matrix.feature }}
 
       - name: Fetch dependencies
         run: cargo +stable fetch --locked
