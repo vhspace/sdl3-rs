@@ -39,9 +39,6 @@ jobs:
           toolchain: stable
           components: clippy
 
-      - name: Cache cargo output
-        uses: Swatinem/rust-cache@v2
-
       - name: Fetch dependencies
         run: cargo +stable fetch --locked
 
@@ -85,9 +82,6 @@ jobs:
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-
-      - name: Cache cargo output
-        uses: Swatinem/rust-cache@v2
 
       - name: Fetch dependencies
         run: cargo +stable fetch --locked
