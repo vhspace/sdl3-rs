@@ -477,7 +477,7 @@ impl DisplayMode {
     }
 }
 
-/// Flags controlling various on/off state on a window. Bitflags wrapper around 
+/// Flags controlling various on/off state on a window. Bitflags wrapper around
 /// [`SDL_WindowFlags`].
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct WindowFlags(pub SDL_WindowFlags);
