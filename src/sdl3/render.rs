@@ -1431,8 +1431,8 @@ impl<T: RenderTarget> Canvas<T> {
     /// Draws a rectangle on the current rendering target.
     /// Errors if drawing fails for any reason (e.g. driver failure)
     #[doc(alias = "SDL_RenderRect")]
-    pub fn draw_rect(&mut self, rect: FRect) -> Result<(), Error> {
-        let rect = rect.to_ll();
+    pub fn draw_rect<R: Into<FRect>>(&mut self, rect: R) -> Result<(), Error> {
+        let rect = rect.into().to_ll();
 
         let result = unsafe { sys::render::SDL_RenderRect(self.context.raw, &rect) };
         if !result {
