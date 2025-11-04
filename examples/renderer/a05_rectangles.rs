@@ -57,7 +57,7 @@ impl AppState {
         rects[0].h = 100.0 + (100.0 * scale);
         self.canvas.set_draw_color(Color::RGB(255, 0, 0));
         self.canvas
-            .draw_rect(Self::convert_frect_to_rect(&rects[0]).into())
+            .draw_rect(rects[0])
             .unwrap();
 
         // Draw several rectangles
@@ -71,7 +71,7 @@ impl AppState {
         self.canvas.set_draw_color(Color::RGB(0, 255, 0));
         for rect in &rects[..3] {
             self.canvas
-                .draw_rect(Self::convert_frect_to_rect(rect).into())
+                .draw_rect(*rect)
                 .unwrap();
         }
 
