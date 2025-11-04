@@ -56,9 +56,7 @@ impl AppState {
         rects[0].w = 100.0 + (100.0 * scale);
         rects[0].h = 100.0 + (100.0 * scale);
         self.canvas.set_draw_color(Color::RGB(255, 0, 0));
-        self.canvas
-            .draw_rect(rects[0])
-            .unwrap();
+        self.canvas.draw_rect(rects[0]).unwrap();
 
         // Draw several rectangles
         for i in 0..3 {
@@ -70,9 +68,7 @@ impl AppState {
         }
         self.canvas.set_draw_color(Color::RGB(0, 255, 0));
         for rect in &rects[..3] {
-            self.canvas
-                .draw_rect(*rect)
-                .unwrap();
+            self.canvas.draw_rect(*rect).unwrap();
         }
 
         // Draw a filled rectangle
