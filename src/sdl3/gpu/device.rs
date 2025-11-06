@@ -67,6 +67,9 @@ pub(super) type WeakDevice = Weak<DeviceContainer>;
 #[derive(Clone)]
 pub struct Device {
     inner: Arc<DeviceContainer>,
+    // Keep a `VideoSubsystem` in each `Device`,
+    // to properly drop data in the right order
+    subsystem: Option<crate::VideoSubsystem>,
 }
 impl Device {
     #[inline]
@@ -86,13 +89,16 @@ impl Device {
         } else {
             Ok(Self {
                 inner: Arc::new(DeviceContainer(raw_device)),
+                subsystem: None,
             })
         }
     }
 
     #[doc(alias = "SDL_ClaimWindowForGPUDevice")]
-    pub fn with_window(self, w: &crate::video::Window) -> Result<Self, Error> {
-        let p = unsafe { sys::gpu::SDL_ClaimWindowForGPUDevice(self.inner.0, w.raw()) };
+    pub fn with_window(mut self, window: &crate::video::Window) -> Result<Self, Error> {
+        self.subsystem = Some(window.subsystem().clone());
+
+        let p = unsafe { sys::gpu::SDL_ClaimWindowForGPUDevice(self.inner.0, window.raw()) };
         if p {
             Ok(self)
         } else {
