@@ -260,7 +260,7 @@ impl crate::EventSubsystem {
     ///     dbg!(event);
     /// });
     /// ```
-    pub fn add_event_watch<'a, CB: EventWatchCallback + 'a + Send + Sync>(
+    pub fn add_event_watch<'a, CB: EventWatchCallback + 'a>(
         &self,
         callback: CB,
     ) -> EventWatch<'a, CB> {
@@ -3125,14 +3125,14 @@ impl EventSender {
 }
 
 /// A callback trait for [`EventSubsystem::add_event_watch`].
-pub trait EventWatchCallback {
+pub trait EventWatchCallback: Send + Sync {
     fn callback(&mut self, event: Event);
 }
 
 /// An handler for the event watch callback.
 /// One must bind this struct in a variable as long as you want to keep the callback active.
 /// For further information, see [`EventSubsystem::add_event_watch`].
-pub struct EventWatch<'a, CB: EventWatchCallback + 'a + Send + Sync> {
+pub struct EventWatch<'a, CB: EventWatchCallback + 'a> {
     activated: bool,
     callback: Box<CB>,
     _phantom: PhantomData<&'a CB>,
@@ -3191,7 +3191,7 @@ impl<'a, CB: EventWatchCallback + 'a + Send + Sync> EventWatch<'a, CB> {
     }
 }
 
-impl<'a, CB: EventWatchCallback + 'a + Send + Sync> Drop for EventWatch<'a, CB> {
+impl<'a, CB: EventWatchCallback + 'a> Drop for EventWatch<'a, CB> {
     fn drop(&mut self) {
         self.deactivate();
     }
@@ -3207,7 +3207,7 @@ extern "C" fn event_callback_marshall<CB: EventWatchCallback>(
     false
 }
 
-impl<F: FnMut(Event)> EventWatchCallback for F {
+impl<F: FnMut(Event) + Send + Sync> EventWatchCallback for F {
     fn callback(&mut self, event: Event) {
         self(event)
     }
