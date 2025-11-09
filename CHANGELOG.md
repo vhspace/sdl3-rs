@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### <!-- 0 -->Added
+- Make draw_rect consistent with fill_rect generic parameter ([#253](https://github.com/vhspace/sdl3-rs/pull/253))
+
+### <!-- 2 -->Fixed
+- Add Send + Sync bounds for EventWatch to avoid soundness hole ([#256](https://github.com/vhspace/sdl3-rs/pull/256))
+- Avoid segfault when device is drop after window ([#255](https://github.com/vhspace/sdl3-rs/pull/255))
+
 ## [0.16.1] - 2025-10-17
 
 ### <!-- 0 -->Added
@@ -76,6 +85,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump bitflags from 2.9.0 to 2.9.1 ([#207](https://github.com/vhspace/sdl3-rs/pull/207))
 - Bump actions/cache from 3 to 4 ([#208](https://github.com/vhspace/sdl3-rs/pull/208))
 
+[unreleased]: https://github.com/vhspace/sdl3-rs/compare/v0.16.1...HEAD
 [0.16.1]: https://github.com/vhspace/sdl3-rs/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/vhspace/sdl3-rs/compare/v0.15.1...v0.16.0
 [0.15.1]: https://github.com/vhspace/sdl3-rs/compare/v0.14.42...v0.15.1
