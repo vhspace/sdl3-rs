@@ -3138,7 +3138,7 @@ pub struct EventWatch<'a, CB: EventWatchCallback + 'a> {
     _phantom: PhantomData<&'a CB>,
 }
 
-impl<'a, CB: EventWatchCallback + 'a + Send + Sync> EventWatch<'a, CB> {
+impl<'a, CB: EventWatchCallback + 'a> EventWatch<'a, CB> {
     fn add(callback: CB) -> EventWatch<'a, CB> {
         let f = Box::new(callback);
         let mut watch = EventWatch {
