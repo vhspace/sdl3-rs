@@ -1,6 +1,6 @@
 extern crate sdl3;
 
-use sdl3::event::Event;
+use sdl3::event::{Event, KeyState, KeyboardEvent};
 use sdl3::image::{InitFlag, LoadTexture};
 use sdl3::keyboard::Keycode;
 use sdl3::pixels::Color;
@@ -47,11 +47,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         'mainloop: loop {
             for event in sdl_context.event_pump()?.poll_iter() {
                 match event {
-                    Event::KeyDown {
+                    Event::Quit(_)
+                    | Event::Keyboard(KeyboardEvent {
                         keycode: Some(Keycode::Escape),
+                        state: KeyState::Down,
                         ..
-                    }
-                    | Event::Quit { .. } => break 'mainloop,
+                    }) => break 'mainloop,
                     _ => {}
                 }
             }

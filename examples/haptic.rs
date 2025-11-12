@@ -1,5 +1,7 @@
 extern crate sdl3;
 
+use sdl3::event::{Event, JoyButtonState, JoystickEvent, KeyState, KeyboardEvent};
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let joystick_subsystem = sdl_context.joystick()?;
@@ -31,32 +33,42 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map_err(|e| e.to_string())?;
 
     for event in sdl_context.event_pump()?.wait_iter() {
-        use sdl3::event::Event;
-
         match event {
-            Event::JoyAxisMotion {
-                axis_idx,
-                value: val,
-                ..
-            } => {
-                // Axis motion is an absolute value in the range
-                // [-32768, 32767]. Let's simulate a very rough dead
-                // zone to ignore spurious events.
+            Event::Joystick(JoystickEvent::Axis {
+                axis_index, value, ..
+            }) => {
+                // Axis motion is an absolute value in the range [-32768, 32767].
                 let dead_zone = 10_000;
-                if val > dead_zone || val < -dead_zone {
-                    println!("Axis {axis_idx} moved to {val}");
+                if value > dead_zone || value < -dead_zone {
+                    println!("Axis {axis_index} moved to {value}");
                 }
             }
-            Event::JoyButtonDown { button_idx, .. } => {
-                println!("Button {button_idx} down");
+            Event::Joystick(JoystickEvent::Button {
+                button_index,
+                state: JoyButtonState::Down,
+                ..
+            }) => {
+                println!("Button {button_index} down");
+                // Play a short rumble
                 haptic.rumble_play(0.5, 500);
             }
-            Event::JoyButtonUp { button_idx, .. } => println!("Button {button_idx} up"),
-            Event::JoyHatMotion { hat_idx, state, .. } => {
-                println!("Hat {hat_idx} moved to {state:?}")
+            Event::Joystick(JoystickEvent::Button {
+                button_index,
+                state: JoyButtonState::Up,
+                ..
+            }) => println!("Button {button_index} up"),
+            Event::Joystick(JoystickEvent::Hat {
+                hat_index, state, ..
+            }) => {
+                println!("Hat {hat_index} moved to {state:?}");
             }
-            Event::Quit { .. } => break,
-            _ => (),
+            Event::Keyboard(KeyboardEvent {
+                keycode: Some(sdl3::keyboard::Keycode::Escape),
+                state: KeyState::Down,
+                ..
+            }) => break,
+            Event::Quit(_) => break,
+            _ => {}
         }
     }
 

@@ -1,6 +1,6 @@
 extern crate sdl3;
 
-use sdl3::event::Event;
+use sdl3::event::{Event, KeyState, KeyboardEvent};
 use sdl3::keyboard::Keycode;
 use sdl3_sys::keycode::SDL_KMOD_NONE;
 use std::collections::HashSet;
@@ -22,9 +22,15 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     'running: loop {
         for event in events.poll_iter() {
-            if let Event::Quit { .. } = event {
-                break 'running;
-            };
+            match event {
+                Event::Quit(_) => break 'running,
+                Event::Keyboard(KeyboardEvent {
+                    state: KeyState::Down,
+                    keycode: Some(Keycode::Escape),
+                    ..
+                }) => break 'running,
+                _ => {}
+            }
         }
 
         // Create a set of pressed Keys.

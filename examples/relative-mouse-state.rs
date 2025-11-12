@@ -1,6 +1,6 @@
 extern crate sdl3;
 
-use sdl3::event::Event;
+use sdl3::event::{Event, KeyState, KeyboardEvent};
 use sdl3::keyboard::Keycode;
 use sdl3::mouse::MouseButton;
 use std::time::Duration;
@@ -21,11 +21,12 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     'running: loop {
         for event in events.poll_iter() {
             match event {
-                Event::KeyDown {
+                Event::Keyboard(KeyboardEvent {
                     keycode: Some(Keycode::Escape),
+                    state: KeyState::Down,
                     ..
-                }
-                | Event::Quit { .. } => break 'running,
+                })
+                | Event::Quit(_) => break 'running,
                 _ => {}
             }
         }
