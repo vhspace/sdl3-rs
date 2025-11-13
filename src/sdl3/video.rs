@@ -477,6 +477,60 @@ impl DisplayMode {
     }
 }
 
+/// Flags controlling various on/off state on a window. Bitflags wrapper around
+/// [`SDL_WindowFlags`].
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct WindowFlags(pub SDL_WindowFlags);
+
+impl WindowFlags {
+    pub const fn as_u32(self) -> u32 {
+        self.0 as u32
+    }
+}
+
+impl From<SDL_WindowFlags> for WindowFlags {
+    fn from(value: SDL_WindowFlags) -> Self {
+        WindowFlags(value)
+    }
+}
+
+impl From<WindowFlags> for SDL_WindowFlags {
+    fn from(value: WindowFlags) -> Self {
+        value.0
+    }
+}
+
+bitflags! {
+    impl WindowFlags: SDL_WindowFlags {
+        const FULLSCREEN = sys::video::SDL_WINDOW_FULLSCREEN;
+        const OPENGL = sys::video::SDL_WINDOW_OPENGL;
+        const OCCLUDED = sys::video::SDL_WINDOW_OCCLUDED;
+        const HIDDEN = sys::video::SDL_WINDOW_HIDDEN;
+        const BORDERLESS = sys::video::SDL_WINDOW_BORDERLESS;
+        const RESIZABLE = sys::video::SDL_WINDOW_RESIZABLE;
+        const MINIMIZED = sys::video::SDL_WINDOW_MINIMIZED;
+        const MAXIMIZED = sys::video::SDL_WINDOW_MAXIMIZED;
+        const MOUSE_GRABBED = sys::video::SDL_WINDOW_MOUSE_GRABBED;
+        const INPUT_FOCUS = sys::video::SDL_WINDOW_INPUT_FOCUS;
+        const MOUSE_FOCUS = sys::video::SDL_WINDOW_MOUSE_FOCUS;
+        const EXTERNAL = sys::video::SDL_WINDOW_EXTERNAL;
+        const MODAL = sys::video::SDL_WINDOW_MODAL;
+        const HIGH_PIXEL_DENSITY = sys::video::SDL_WINDOW_HIGH_PIXEL_DENSITY;
+        const MOUSE_CAPTURE = sys::video::SDL_WINDOW_MOUSE_CAPTURE;
+        const MOUSE_RELATIVE_MODE = sys::video::SDL_WINDOW_MOUSE_RELATIVE_MODE;
+        const ALWAYS_ON_TOP = sys::video::SDL_WINDOW_ALWAYS_ON_TOP;
+        const UTILITY = sys::video::SDL_WINDOW_UTILITY;
+        const TOOLTIP = sys::video::SDL_WINDOW_TOOLTIP;
+        const POPUP_MENU = sys::video::SDL_WINDOW_POPUP_MENU;
+        const KEYBOARD_GRABBED = sys::video::SDL_WINDOW_KEYBOARD_GRABBED;
+        const VULKAN = sys::video::SDL_WINDOW_VULKAN;
+        const METAL = sys::video::SDL_WINDOW_METAL;
+        const TRANSPARENT = sys::video::SDL_WINDOW_TRANSPARENT;
+        const NOT_FOCUSABLE = sys::video::SDL_WINDOW_NOT_FOCUSABLE;
+        const _ = !0;
+    }
+}
+
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum FullscreenType {
     Off = 0,
@@ -1229,7 +1283,7 @@ pub struct WindowBuilder {
     height: u32,
     x: WindowPos,
     y: WindowPos,
-    window_flags: u32,
+    window_flags: WindowFlags,
     create_metal_view: bool,
     /// The window builder cannot be built on a non-main thread, so prevent cross-threaded moves and references.
     /// `!Send` and `!Sync`,
@@ -1245,7 +1299,7 @@ impl WindowBuilder {
             height,
             x: WindowPos::Undefined,
             y: WindowPos::Undefined,
-            window_flags: 0,
+            window_flags: WindowFlags(0),
             subsystem: v.clone(),
             create_metal_view: false,
         }
@@ -1302,7 +1356,11 @@ impl WindowBuilder {
                 raw_height.into(),
             );
             let flags_cstr = CString::new("SDL.window.create.flags").unwrap();
-            SDL_SetNumberProperty(props, flags_cstr.as_ptr(), self.window_flags.into());
+            SDL_SetNumberProperty(
+                props,
+                flags_cstr.as_ptr(),
+                self.window_flags.0 as sys::stdinc::Sint64,
+            );
 
             let raw = sys::video::SDL_CreateWindowWithProperties(props);
             SDL_DestroyProperties(props);
@@ -1328,12 +1386,23 @@ impl WindowBuilder {
 
     /// Gets the underlying window flags.
     pub fn window_flags(&self) -> u32 {
+        self.window_flags.as_u32()
+    }
+
+    pub fn flags(&self) -> WindowFlags {
         self.window_flags
     }
 
     /// Sets the underlying window flags.
     /// This will effectively undo any previous build operations, excluding window size and position.
     pub fn set_window_flags(&mut self, flags: u32) -> &mut WindowBuilder {
+        self.window_flags = WindowFlags(flags as SDL_WindowFlags);
+        self
+    }
+
+    /// Sets the underlying window flags.
+    /// This will effectively undo any previous build operations, excluding window size and position.
+    pub fn set_flags(&mut self, flags: WindowFlags) -> &mut WindowBuilder {
         self.window_flags = flags;
         self
     }
@@ -1354,61 +1423,61 @@ impl WindowBuilder {
 
     /// Sets the window to fullscreen.
     pub fn fullscreen(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_FULLSCREEN as u32;
+        self.window_flags |= WindowFlags::FULLSCREEN;
         self
     }
 
     /// Window uses high pixel density back buffer if possible.
     pub fn high_pixel_density(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_HIGH_PIXEL_DENSITY as u32;
+        self.window_flags |= WindowFlags::HIGH_PIXEL_DENSITY;
         self
     }
 
     /// Sets the window to be usable with an OpenGL context
     pub fn opengl(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_OPENGL as u32;
+        self.window_flags |= WindowFlags::OPENGL;
         self
     }
 
     /// Sets the window to be usable with a Vulkan instance
     pub fn vulkan(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_VULKAN as u32;
+        self.window_flags |= WindowFlags::VULKAN;
         self
     }
 
     /// Hides the window.
     pub fn hidden(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_HIDDEN as u32;
+        self.window_flags |= WindowFlags::HIDDEN;
         self
     }
 
     /// Removes the window decoration.
     pub fn borderless(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_BORDERLESS as u32;
+        self.window_flags |= WindowFlags::BORDERLESS;
         self
     }
 
     /// Sets the window to be resizable.
     pub fn resizable(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_RESIZABLE as u32;
+        self.window_flags |= WindowFlags::RESIZABLE;
         self
     }
 
     /// Minimizes the window.
     pub fn minimized(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_MINIMIZED as u32;
+        self.window_flags |= WindowFlags::MINIMIZED;
         self
     }
 
     /// Maximizes the window.
     pub fn maximized(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_MAXIMIZED as u32;
+        self.window_flags |= WindowFlags::MAXIMIZED;
         self
     }
 
     /// Sets the window to have grabbed input focus.
     pub fn input_grabbed(&mut self) -> &mut WindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_MOUSE_GRABBED as u32;
+        self.window_flags |= WindowFlags::MOUSE_GRABBED;
         self
     }
 
@@ -1428,7 +1497,7 @@ pub struct PopupWindowBuilder {
     height: u32,
     offset_x: i32,
     offset_y: i32,
-    window_flags: u32,
+    window_flags: WindowFlags,
     create_metal_view: bool,
     /// The window builder cannot be built on a non-main thread, so prevent cross-threaded moves and references.
     /// `!Send` and `!Sync`,
@@ -1449,7 +1518,7 @@ impl PopupWindowBuilder {
             height,
             offset_x: 0,
             offset_y: 0,
-            window_flags: 0,
+            window_flags: WindowFlags(0),
             subsystem: v.clone(),
             create_metal_view: false,
         }
@@ -1465,15 +1534,17 @@ impl PopupWindowBuilder {
         if self.height >= (1 << 31) {
             return Err(HeightOverflows(self.width));
         }
-        if (self.window_flags & sys::video::SDL_WINDOW_TOOLTIP as u32 != 0)
-            && (self.window_flags & sys::video::SDL_WINDOW_POPUP_MENU as u32 != 0)
+        if self
+            .window_flags
+            .contains(WindowFlags::TOOLTIP | WindowFlags::POPUP_MENU)
         {
             return Err(SdlError(Error(
                 "SDL_WINDOW_TOOLTIP and SDL_WINDOW_POPUP are mutually exclusive".to_owned(),
             )));
         }
-        if (self.window_flags & sys::video::SDL_WINDOW_TOOLTIP as u32 == 0)
-            && (self.window_flags & sys::video::SDL_WINDOW_POPUP_MENU as u32 == 0)
+        if !self
+            .window_flags
+            .intersects(WindowFlags::TOOLTIP | WindowFlags::POPUP_MENU)
         {
             return Err(SdlError(Error(
                 "SDL_WINDOW_TOOLTIP or SDL_WINDOW_POPUP are required for popup windows".to_owned(),
@@ -1509,12 +1580,24 @@ impl PopupWindowBuilder {
 
     /// Gets the underlying window flags.
     pub fn window_flags(&self) -> u32 {
+        self.window_flags.as_u32()
+    }
+
+    /// Gets the underlying window flags.
+    pub fn flags(&self) -> WindowFlags {
         self.window_flags
     }
 
     /// Sets the underlying window flags.
     /// This will effectively undo any previous build operations, excluding window size and position.
     pub fn set_window_flags(&mut self, flags: u32) -> &mut PopupWindowBuilder {
+        self.window_flags = WindowFlags(flags as SDL_WindowFlags);
+        self
+    }
+
+    /// Sets the underlying window flags.
+    /// This will effectively undo any previous build operations, excluding window size and position.
+    pub fn set_flags(&mut self, flags: WindowFlags) -> &mut PopupWindowBuilder {
         self.window_flags = flags;
         self
     }
@@ -1528,31 +1611,31 @@ impl PopupWindowBuilder {
 
     /// Sets the window to be usable with an OpenGL context
     pub fn opengl(&mut self) -> &mut PopupWindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_OPENGL as u32;
+        self.window_flags |= WindowFlags::OPENGL;
         self
     }
 
     /// Sets the window to be usable with a Vulkan instance
     pub fn vulkan(&mut self) -> &mut PopupWindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_VULKAN as u32;
+        self.window_flags |= WindowFlags::VULKAN;
         self
     }
 
     /// Hides the window.
     pub fn hidden(&mut self) -> &mut PopupWindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_HIDDEN as u32;
+        self.window_flags |= WindowFlags::HIDDEN;
         self
     }
 
     /// Sets the window to be resizable.
     pub fn resizable(&mut self) -> &mut PopupWindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_RESIZABLE as u32;
+        self.window_flags |= WindowFlags::RESIZABLE;
         self
     }
 
     /// Sets the window to have grabbed input focus.
     pub fn input_grabbed(&mut self) -> &mut PopupWindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_MOUSE_GRABBED as u32;
+        self.window_flags |= WindowFlags::MOUSE_GRABBED;
         self
     }
 
@@ -1566,25 +1649,25 @@ impl PopupWindowBuilder {
 
     /// Sets the window to be a tooltip.
     pub fn tooltip(&mut self) -> &mut PopupWindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_TOOLTIP as u32;
+        self.window_flags |= WindowFlags::TOOLTIP;
         self
     }
 
     /// Sets the window to be a popup menu.
     pub fn popup_menu(&mut self) -> &mut PopupWindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_POPUP_MENU as u32;
+        self.window_flags |= WindowFlags::POPUP_MENU;
         self
     }
 
     /// Sets the window to be transparent
     pub fn transparent(&mut self) -> &mut PopupWindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_TRANSPARENT as u32;
+        self.window_flags |= WindowFlags::TRANSPARENT;
         self
     }
 
     /// Sets the window to be shown on top of all other windows
     pub fn always_on_top(&mut self) -> &mut PopupWindowBuilder {
-        self.window_flags |= sys::video::SDL_WINDOW_ALWAYS_ON_TOP as u32;
+        self.window_flags |= WindowFlags::ALWAYS_ON_TOP;
         self
     }
 }
