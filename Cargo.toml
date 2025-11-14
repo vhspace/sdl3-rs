@@ -22,7 +22,7 @@ name = "sdl3"
 path = "src/sdl3/lib.rs"
 
 [dependencies]
-bitflags = "2.9.4"
+bitflags = "2.10.0"
 libc = "0.2.175"
 lazy_static = "1.4.0"
 
