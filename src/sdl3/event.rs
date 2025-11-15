@@ -1248,7 +1248,7 @@ impl Event {
                         e.r#type = SDL_EventType(EventType::ControllerSensorUpdated as u32);
                         e.timestamp = *timestamp;
                         e.which = *which;
-                        e.sensor = sensor.into_raw();
+                        e.sensor = sensor.to_ll().0;
                         e.data = *data;
                         ptr::copy(
                             &e,

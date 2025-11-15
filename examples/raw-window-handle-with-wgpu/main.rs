@@ -7,7 +7,7 @@ extern crate wgpu;
 use std::borrow::Cow;
 use wgpu::{InstanceDescriptor, SurfaceError};
 
-use sdl3::event::{Event, WindowEvent, WindowEventKind};
+use sdl3::event::{Event, KeyState, KeyboardEvent, WindowEvent, WindowEventKind};
 use sdl3::keyboard::Keycode;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -130,22 +130,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 Event::Window(WindowEvent {
                     window_id,
                     kind:
-                        WindowEventKind::PixelSizeChanged(width, height)
-                        | WindowEventKind::Resized(width, height),
+                        WindowEventKind::PixelSizeChanged { w, h } | WindowEventKind::Resized { w, h },
                     ..
                 }) if window_id == window.id() => {
-                    config.width = width as u32;
-                    config.height = height as u32;
+                    config.width = w as u32;
+                    config.height = h as u32;
                     surface.configure(&device, &config);
                 }
                 Event::Quit(_)
                 | Event::Keyboard(KeyboardEvent {
                     keycode: Some(Keycode::Escape),
                     state: KeyState::Down,
+                    repeat: false,
                     ..
-                }) => {
-                    break 'running;
-                }
+                }) => break 'running,
                 e => {
                     dbg!(e);
                 }
