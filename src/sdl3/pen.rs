@@ -36,4 +36,8 @@ impl PenAxis {
             _ => PenAxis::Unknown,
         }
     }
+    #[inline]
+    pub fn to_ll(self) -> sys::pen::SDL_PenAxis {
+        sys::pen::SDL_PenAxis(self as i32)
+    }
 }

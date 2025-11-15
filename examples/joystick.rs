@@ -1,6 +1,8 @@
-use sdl3::get_error;
-
 extern crate sdl3;
+
+use sdl3::event::{Event, JoyButtonState, JoystickEvent, KeyState, KeyboardEvent};
+use sdl3::get_error;
+use sdl3::keyboard::Keycode;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
@@ -15,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Iterate over all available joysticks and stop once we manage to open one.
     let mut joystick = joysticks
         .into_iter()
-        .find_map(|joystick| match joystick_subsystem.open(joystick) {
+        .find_map(|joystick_id| match joystick_subsystem.open(joystick_id) {
             Ok(c) => {
                 println!("Success: opened \"{}\"", c.name());
                 Some(c)
@@ -34,34 +36,32 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         joystick.power_info().map_err(|e| e.to_string())?
     );
 
-    let (mut lo_freq, mut hi_freq) = (0, 0);
+    let (mut lo_freq, mut hi_freq) = (0u16, 0u16);
 
     for event in sdl_context.event_pump()?.wait_iter() {
-        use sdl3::event::Event;
-
         match event {
-            Event::JoyAxisMotion {
-                axis_idx,
-                value: val,
-                ..
-            } => {
-                // Axis motion is an absolute value in the range
-                // [-32768, 32767]. Let's simulate a very rough dead
-                // zone to ignore spurious events.
+            Event::Joystick(JoystickEvent::Axis {
+                axis_index, value, ..
+            }) => {
+                // Axis motion is an absolute value in the range [-32768, 32767].
                 let dead_zone = 10_000;
-                if val > dead_zone || val < -dead_zone {
-                    println!("Axis {axis_idx} moved to {val}");
+                if value > dead_zone || value < -dead_zone {
+                    println!("Axis {axis_index} moved to {value}");
                 }
             }
-            Event::JoyButtonDown { button_idx, .. } => {
-                println!("Button {button_idx} down");
-                if button_idx == 0 {
+            Event::Joystick(JoystickEvent::Button {
+                button_index,
+                state: JoyButtonState::Down,
+                ..
+            }) => {
+                println!("Button {button_index} down");
+                if button_index == 0 {
                     lo_freq = 65535;
-                } else if button_idx == 1 {
+                } else if button_index == 1 {
                     hi_freq = 65535;
                 }
-                if button_idx < 2 {
-                    if joystick.set_rumble(lo_freq, hi_freq, 15000) {
+                if button_index < 2 {
+                    if joystick.set_rumble(lo_freq, hi_freq, 15_000) {
                         println!("Set rumble to ({lo_freq}, {hi_freq})");
                     } else {
                         println!(
@@ -73,15 +73,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
             }
-            Event::JoyButtonUp { button_idx, .. } => {
-                println!("Button {button_idx} up");
-                if button_idx == 0 {
+            Event::Joystick(JoystickEvent::Button {
+                button_index,
+                state: JoyButtonState::Up,
+                ..
+            }) => {
+                println!("Button {button_index} up");
+                if button_index == 0 {
                     lo_freq = 0;
-                } else if button_idx == 1 {
+                } else if button_index == 1 {
                     hi_freq = 0;
                 }
-                if button_idx < 2 {
-                    if joystick.set_rumble(lo_freq, hi_freq, 15000) {
+                if button_index < 2 {
+                    if joystick.set_rumble(lo_freq, hi_freq, 15_000) {
                         println!("Set rumble to ({lo_freq}, {hi_freq})");
                     } else {
                         println!(
@@ -93,11 +97,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
             }
-            Event::JoyHatMotion { hat_idx, state, .. } => {
-                println!("Hat {hat_idx} moved to {state:?}")
+            Event::Joystick(JoystickEvent::Hat {
+                hat_index, state, ..
+            }) => {
+                println!("Hat {hat_index} moved to {state:?}");
             }
-            Event::Quit { .. } => break,
-            _ => (),
+            Event::Keyboard(KeyboardEvent {
+                keycode: Some(Keycode::Escape),
+                state: KeyState::Down,
+                ..
+            }) => break,
+            Event::Quit(_) => break,
+            _ => {}
         }
     }
 

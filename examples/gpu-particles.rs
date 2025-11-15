@@ -1,7 +1,10 @@
 use rand::Rng;
 use sdl3::gpu::*;
 use sdl3::pixels::Color;
-use sdl3::{event::Event, keyboard::Keycode};
+use sdl3::{
+    event::{Event, KeyState, KeyboardEvent},
+    keyboard::Keycode,
+};
 use std::mem::size_of;
 
 #[repr(C)]
@@ -119,11 +122,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     'running: loop {
         for e in events.poll_iter() {
             match e {
-                Event::Quit { .. }
-                | Event::KeyDown {
+                Event::Quit(_)
+                | Event::Keyboard(KeyboardEvent {
                     keycode: Some(Keycode::Escape),
+                    state: KeyState::Down,
                     ..
-                } => break 'running,
+                }) => break 'running,
                 _ => {}
             }
         }

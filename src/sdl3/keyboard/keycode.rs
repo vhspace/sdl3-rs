@@ -523,7 +523,7 @@ impl Keycode {
     }
 
     pub fn to_ll(self) -> SDL_Keycode {
-        unsafe { i32::cast_unsigned(self as i32) }
+        i32::cast_unsigned(self as i32)
     }
 }
 

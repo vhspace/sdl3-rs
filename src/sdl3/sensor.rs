@@ -96,6 +96,12 @@ impl SensorType {
             _ => SensorType::Unknown,
         }
     }
+
+    /// Convert the high-level SensorType into its low-level SDL_SensorType.
+    #[inline]
+    pub fn to_ll(self) -> SDL_SensorType {
+        self.into()
+    }
 }
 
 impl Into<SDL_SensorType> for SensorType {

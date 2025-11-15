@@ -1,6 +1,6 @@
 extern crate sdl3;
 
-use sdl3::event::Event;
+use sdl3::event::{Event, KeyState, KeyboardEvent, MouseButtonState, MouseEvent};
 use sdl3::keyboard::Keycode;
 use sdl3::pixels;
 
@@ -37,12 +37,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     'main: loop {
         for event in events.poll_iter() {
             match event {
-                Event::Quit { .. } => break 'main,
+                Event::Quit(_) => break 'main,
 
-                Event::KeyDown {
+                Event::Keyboard(KeyboardEvent {
                     keycode: Some(keycode),
+                    state: KeyState::Down,
                     ..
-                } => {
+                }) => {
                     if keycode == Keycode::Escape {
                         break 'main;
                     } else if keycode == Keycode::Space {
@@ -54,7 +55,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
 
-                Event::MouseButtonDown { x, y, .. } => {
+                Event::Mouse(MouseEvent::Button {
+                    x,
+                    y,
+                    state: MouseButtonState::Down,
+                    ..
+                }) => {
                     let color = pixels::Color::RGB(x as u8, y as u8, 255);
                     let _ = canvas.line(lastx, lasty, x as i16, y as i16, color);
                     lastx = x as i16;

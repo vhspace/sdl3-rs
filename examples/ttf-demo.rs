@@ -3,7 +3,7 @@ extern crate sdl3;
 use std::env;
 use std::path::Path;
 
-use sdl3::event::Event;
+use sdl3::event::{Event, KeyState, KeyboardEvent};
 use sdl3::keyboard::Keycode;
 use sdl3::pixels::Color;
 use sdl3::rect::Rect;
@@ -91,10 +91,11 @@ fn run(font_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
     'mainloop: loop {
         for event in sdl_context.event_pump()?.poll_iter() {
             match event {
-                Event::KeyDown {
+                Event::Keyboard(KeyboardEvent {
                     keycode: Some(Keycode::Escape),
+                    state: KeyState::Down,
                     ..
-                }
+                })
                 | Event::Quit { .. } => break 'mainloop,
                 _ => {}
             }

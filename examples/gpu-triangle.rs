@@ -1,7 +1,7 @@
 extern crate sdl3;
 
 use sdl3::{
-    event::Event,
+    event::{Event, KeyState, KeyboardEvent},
     gpu::{
         ColorTargetDescription, ColorTargetInfo, Device, FillMode, GraphicsPipelineTargetInfo,
         LoadOp, PrimitiveType, ShaderFormat, ShaderStage, StoreOp,
@@ -75,11 +75,12 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
+                Event::Quit(_)
+                | Event::Keyboard(KeyboardEvent {
                     keycode: Some(Keycode::Escape),
+                    state: KeyState::Down,
                     ..
-                } => break 'running,
+                }) => break 'running,
                 _ => {}
             }
         }

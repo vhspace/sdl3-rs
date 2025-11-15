@@ -1,7 +1,10 @@
 extern crate sdl3;
 use std::time::{Duration, Instant};
 
-use sdl3::{event::Event, sensor::SensorType};
+use sdl3::{
+    event::{ControllerEvent, Event},
+    sensor::SensorType,
+};
 
 fn main() -> Result<(), String> {
     let sdl_context = sdl3::init().unwrap();
@@ -79,11 +82,11 @@ fn main() -> Result<(), String> {
             println!("gyro: {:?}, accel: {:?}", gyro_data, accel_data);
         }
 
-        if let Event::ControllerSensorUpdated { .. } = event {
+        if let Event::Controller(ControllerEvent::Sensor { .. }) = event {
             println!("{:?}", event);
         }
 
-        if let Event::Quit { .. } = event {
+        if let Event::Quit(_) = event {
             break;
         }
     }

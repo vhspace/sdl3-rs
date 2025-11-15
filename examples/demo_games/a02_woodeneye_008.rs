@@ -1,6 +1,6 @@
 // original code : https://github.com/libsdl-org/SDL/tree/main/examples/demo/02-woodeneye-008
 
-use sdl3::event::Event;
+use sdl3::event::{Event, KeyState, KeyboardEvent, MouseButtonState, MouseEvent};
 use sdl3::keyboard::Keycode;
 use sdl3::pixels::Color;
 use sdl3::rect::Rect;
@@ -598,10 +598,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         for event in event_pump.poll_iter() {
             match event {
-                Event::Quit { .. } => break 'running,
-                Event::MouseMotion {
+                Event::Quit(_) => break 'running,
+                Event::Mouse(MouseEvent::Motion {
                     which, xrel, yrel, ..
-                } => {
+                }) => {
                     if let Some(index) =
                         whose_mouse(which, &app_state.players, app_state.player_count)
                     {
@@ -626,18 +626,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     }
                 }
 
-                Event::MouseButtonDown { which, .. } => {
+                Event::Mouse(MouseEvent::Button {
+                    which,
+                    state: MouseButtonState::Down,
+                    ..
+                }) => {
                     if let Some(index) =
                         whose_mouse(which, &app_state.players, app_state.player_count)
                     {
                         shoot(index, &mut app_state.players, app_state.player_count);
                     }
                 }
-                Event::KeyDown {
+                Event::Keyboard(KeyboardEvent {
                     keycode: Some(keycode),
                     which,
+                    state: KeyState::Down,
                     ..
-                } => {
+                }) => {
                     if let Some(index) =
                         whose_keyboard(which, &app_state.players, app_state.player_count)
                     {
@@ -659,11 +664,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }
                     }
                 }
-                Event::KeyUp {
+                Event::Keyboard(KeyboardEvent {
                     keycode: Some(keycode),
                     which,
+                    state: KeyState::Up,
                     ..
-                } => {
+                }) => {
                     if keycode == Keycode::Escape {
                         break 'running;
                     }

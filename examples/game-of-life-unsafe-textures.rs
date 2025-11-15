@@ -3,7 +3,8 @@ extern crate sdl3;
 #[cfg(feature = "unsafe_textures")]
 use game_of_life::{PLAYGROUND_HEIGHT, PLAYGROUND_WIDTH, SQUARE_SIZE};
 #[cfg(feature = "unsafe_textures")]
-use sdl3::event::Event;
+use sdl3::event::{Event, KeyState, KeyboardEvent, MouseButtonState, MouseEvent};
+
 #[cfg(feature = "unsafe_textures")]
 use sdl3::keyboard::Keycode;
 #[cfg(feature = "unsafe_textures")]
@@ -254,24 +255,27 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         // get the inputs here
         for event in event_pump.poll_iter() {
             match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
+                Event::Quit(_)
+                | Event::Keyboard(KeyboardEvent {
                     keycode: Some(Keycode::Escape),
+                    state: KeyState::Down,
                     ..
-                } => break 'running,
-                Event::KeyDown {
+                }) => break 'running,
+                Event::Keyboard(KeyboardEvent {
                     keycode: Some(Keycode::Space),
+                    state: KeyState::Down,
                     repeat: false,
                     ..
-                } => {
+                }) => {
                     game.toggle_state();
                 }
-                Event::MouseButtonDown {
+                Event::Mouse(MouseEvent::Button {
                     x,
                     y,
-                    mouse_btn: MouseButton::Left,
+                    button: MouseButton::Left,
+                    state: MouseButtonState::Down,
                     ..
-                } => {
+                }) => {
                     let x = (x as u32) / SQUARE_SIZE;
                     let y = (y as u32) / SQUARE_SIZE;
                     match game.get_mut(x as i32, y as i32) {

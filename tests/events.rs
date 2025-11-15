@@ -2,7 +2,7 @@ extern crate sdl3;
 #[macro_use]
 extern crate lazy_static;
 
-use sdl3::event;
+use sdl3::event::*;
 use std::sync::Mutex;
 
 // Since only one `Sdl` context instance can be created at a time, running tests in parallel causes
@@ -42,24 +42,24 @@ fn test1(ev: &sdl3::EventSubsystem) {
 fn test2(ev: &sdl3::EventSubsystem, ep: &mut sdl3::EventPump) {
     let user_event_id = unsafe { ev.register_event().unwrap() };
 
-    let event = event::Event::User {
+    let event = Event::User(UserEvent {
+        type_id: user_event_id,
         timestamp: 0,
         window_id: 0,
-        type_: user_event_id,
         code: 456,
         data1: 0x12_34 as *mut libc::c_void,
         data2: 0x56_78 as *mut libc::c_void,
-    };
+    });
 
     let (w1, t1, c1, a1, a2) = match event {
-        event::Event::User {
+        Event::User(UserEvent {
             window_id: w1,
-            type_: t1,
+            type_id: t1,
             code: c1,
             data1: a1,
             data2: a2,
             ..
-        } => (w1, t1, c1, a1, a2),
+        }) => (w1, t1, c1, a1, a2),
         _ => panic!("expected user event"),
     };
     ev.push_event(event.clone()).unwrap();
@@ -67,14 +67,14 @@ fn test2(ev: &sdl3::EventSubsystem, ep: &mut sdl3::EventPump) {
     // Do not check for timestamp here because it is always modified by
     // SDL_PushEvent.
     match &received {
-        &event::Event::User {
+        &Event::User(UserEvent {
             window_id: w2,
-            type_: t2,
+            type_id: t2,
             code: c2,
             data1: b1,
             data2: b2,
             ..
-        } => {
+        }) => {
             assert_eq!(w1, w2);
             assert_eq!(t1, t2);
             assert_eq!(c1, c2);
@@ -127,21 +127,21 @@ fn test_event_sender_no_subsystem() {
     let tx = ev.event_sender();
 
     assert!(tx
-        .push_event(sdl3::event::Event::Window {
+        .push_event(Event::Window(WindowEvent {
             timestamp: 0,
             window_id: 0,
-            win_event: sdl3::event::WindowEvent::Shown,
-        })
+            kind: WindowEventKind::Shown,
+        }))
         .is_ok());
 
     drop(ev);
 
     // Should return an error now the evet subsystem has been shut down
     assert!(tx
-        .push_event(sdl3::event::Event::Window {
+        .push_event(Event::Window(WindowEvent {
             timestamp: 0,
             window_id: 0,
-            win_event: sdl3::event::WindowEvent::Hidden,
-        })
+            kind: WindowEventKind::Hidden,
+        }))
         .is_err());
 }
