@@ -3,7 +3,7 @@ extern crate sdl3;
 use sdl3::dialog::{
     show_open_file_dialog, show_open_folder_dialog, show_save_file_dialog, DialogFileFilter,
 };
-use sdl3::event::Event;
+use sdl3::event::{Event, KeyState, KeyboardEvent};
 use sdl3::keyboard::Keycode;
 use sdl3::pixels::Color;
 use std::path::PathBuf;
@@ -47,17 +47,19 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
+                Event::Quit(_)
+                | Event::Keyboard(KeyboardEvent {
                     keycode: Some(Keycode::Escape),
+                    state: KeyState::Down,
                     ..
-                } => {
+                }) => {
                     break 'running;
                 }
-                Event::KeyDown {
+                Event::Keyboard(KeyboardEvent {
                     keycode: Some(Keycode::O),
+                    state: KeyState::Down,
                     ..
-                } => {
+                }) => {
                     show_open_file_dialog(
                         &filters,
                         None::<PathBuf>,
@@ -76,10 +78,11 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                     )
                     .unwrap_or_else(|e| panic!("Failed to show open file dialog: {e}"));
                 }
-                Event::KeyDown {
+                Event::Keyboard(KeyboardEvent {
                     keycode: Some(Keycode::D),
+                    state: KeyState::Down,
                     ..
-                } => {
+                }) => {
                     show_open_folder_dialog(
                         Some(&default_path_path),
                         false,
@@ -96,10 +99,11 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                         }),
                     );
                 }
-                Event::KeyDown {
+                Event::Keyboard(KeyboardEvent {
                     keycode: Some(Keycode::S),
+                    state: KeyState::Down,
                     ..
-                } => {
+                }) => {
                     show_save_file_dialog(
                         &filters,
                         Some("/home"),

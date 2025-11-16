@@ -3,7 +3,12 @@
 extern crate sdl3;
 
 use sdl3::{
-    event::Event, keyboard::Keycode, pixels::Color, rect::Point, render::Canvas, video::Window,
+    event::{Event, KeyState, KeyboardEvent},
+    keyboard::Keycode,
+    pixels::Color,
+    rect::Point,
+    render::Canvas,
+    video::Window,
 };
 
 use std::time::Duration;
@@ -94,11 +99,12 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     'running: loop {
         for event in event_pump.poll_iter() {
             match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
+                Event::Quit(_)
+                | Event::Keyboard(KeyboardEvent {
                     keycode: Some(Keycode::Escape),
+                    state: KeyState::Down,
                     ..
-                } => break 'running,
+                }) => break 'running,
                 _ => {}
             }
         }

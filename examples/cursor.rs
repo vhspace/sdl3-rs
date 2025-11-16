@@ -1,6 +1,6 @@
 extern crate sdl3;
 
-use sdl3::event::Event;
+use sdl3::event::{Event, KeyState, KeyboardEvent, MouseButtonState, MouseEvent};
 use sdl3::image::{InitFlag, LoadSurface};
 use sdl3::keyboard::Keycode;
 use sdl3::mouse::Cursor;
@@ -38,12 +38,18 @@ pub fn run(png: &Path) -> Result<(), Box<dyn std::error::Error>> {
     'mainloop: loop {
         for event in events.poll_iter() {
             match event {
-                Event::Quit { .. }
-                | Event::KeyDown {
-                    keycode: Option::Some(Keycode::Escape),
+                Event::Quit(_)
+                | Event::Keyboard(KeyboardEvent {
+                    keycode: Some(Keycode::Escape),
+                    state: KeyState::Down,
                     ..
-                } => break 'mainloop,
-                Event::MouseButtonDown { x, y, .. } => {
+                }) => break 'mainloop,
+                Event::Mouse(MouseEvent::Button {
+                    x,
+                    y,
+                    state: MouseButtonState::Down,
+                    ..
+                }) => {
                     canvas.fill_rect(Rect::new(x as i32, y as i32, 1, 1))?;
                     canvas.present();
                 }
