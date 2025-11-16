@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### <!-- 0 -->Added
+- Add bitflags type (`WindowFlags`) for SDL_WindowFlags ([#252](https://github.com/vhspace/sdl3-rs/pull/252))
+- Make draw_rect consistent with fill_rect generic parameter ([#253](https://github.com/vhspace/sdl3-rs/pull/253))
+
+### <!-- 1 -->Changed
+- 41:18.325143356Z INFO  sanzu::client_sdl2] Map video memory ([#257](https://github.com/vhspace/sdl3-rs/pull/257))
+
+### <!-- 2 -->Fixed
+- Correct previous attempt to fix EventWatch soundness hole ([#259](https://github.com/vhspace/sdl3-rs/pull/259))
+- Add Send + Sync bounds for EventWatch to avoid soundness hole ([#256](https://github.com/vhspace/sdl3-rs/pull/256))
+- Avoid segfault when device is drop after window ([#255](https://github.com/vhspace/sdl3-rs/pull/255))
+
+### <!-- 4 -->Dependencies
+- Bump bitflags from 2.9.4 to 2.10.0 ([#249](https://github.com/vhspace/sdl3-rs/pull/249))
+- Bump sdl3-sys from 0.5.7+SDL3-3.2.24 to 0.5.10+SDL3-3.2.26 ([#251](https://github.com/vhspace/sdl3-rs/pull/251))
+
 ## [0.16.1] - 2025-10-17
 
 ### <!-- 0 -->Added
@@ -76,6 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump bitflags from 2.9.0 to 2.9.1 ([#207](https://github.com/vhspace/sdl3-rs/pull/207))
 - Bump actions/cache from 3 to 4 ([#208](https://github.com/vhspace/sdl3-rs/pull/208))
 
+[unreleased]: https://github.com/vhspace/sdl3-rs/compare/v0.16.1...HEAD
 [0.16.1]: https://github.com/vhspace/sdl3-rs/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/vhspace/sdl3-rs/compare/v0.15.1...v0.16.0
 [0.15.1]: https://github.com/vhspace/sdl3-rs/compare/v0.14.42...v0.15.1
