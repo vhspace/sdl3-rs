@@ -28,7 +28,7 @@ jobs:
 
     steps:
       - name: checkout sources
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install Linux dependencies
         uses: ./.github/actions/install-linux-deps
@@ -73,7 +73,7 @@ jobs:
 
     steps:
       - name: checkout sources
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install Linux dependencies
         uses: ./.github/actions/install-linux-deps
@@ -103,7 +103,7 @@ jobs:
 
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@master
