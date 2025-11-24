@@ -572,7 +572,7 @@ impl Keycode {
                 Ok(name) => match sys::keyboard::SDL_GetKeyFromName(name.as_ptr() as *const c_char)
                 {
                     UNKNOWN => None,
-                    keycode_id => Some(Keycode::from_i32(keycode_id as i32).unwrap()),
+                    keycode_id => Keycode::from_i32(keycode_id as i32),
                 },
                 // string contains a nul byte - it won't match anything.
                 Err(_) => None,
