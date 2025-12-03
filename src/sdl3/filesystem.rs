@@ -19,6 +19,30 @@ pub enum FileSystemError {
     SdlError(Error),
 }
 
+impl fmt::Display for FileSystemError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::FileSystemError::*;
+
+        match *self {
+            InvalidPathError(ref path) => write!(f, "Invalid path: {}", path.display()),
+            NulError(ref e) => write!(f, "Nul: {e}"),
+            SdlError(ref e) => write!(f, "SDL error: {e}"),
+        }
+    }
+}
+
+impl error::Error for FileSystemError {
+    fn description(&self) -> &str {
+        use self::FileSystemError::*;
+
+        match *self {
+            InvalidPathError(_) => "invalid path",
+            NulError(_) => "nul",
+            SdlError(ref e) => &e.0,
+        }
+    }
+}
+
 /// Turn a AsRef<Path> into a CString so it can be passed to C
 macro_rules! path_cstring {
     ($pathref:ident) => {
