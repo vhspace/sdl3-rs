@@ -1166,6 +1166,17 @@ impl AudioStream {
         }
     }
 
+    /// Change the gain of an audio stream.
+    #[doc(alias = "SDL_SetAudioStreamGain")]
+    pub fn set_gain(&self, gain: f32) -> Result<(), Error> {
+        let result = unsafe { sys::audio::SDL_SetAudioStreamGain(self.stream, gain) };
+        if result {
+            Ok(())
+        } else {
+            Err(get_error())
+        }
+    }
+
     /// Pauses playback of the audio stream.
     #[doc(alias = "SDL_PauseAudioStream")]
     pub fn pause(&self) -> Result<(), Error> {
@@ -1461,6 +1472,14 @@ impl<CB> AudioStreamWithCallback<CB> {
         } else {
             None
         }
+    }
+
+    pub fn get_gain(&mut self) -> Result<f32, Error> {
+        self.base_stream.get_gain()
+    }
+
+    pub fn set_gain(&mut self, gain: f32) -> Result<(), Error> {
+        self.base_stream.set_gain(gain)
     }
 }
 
