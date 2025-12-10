@@ -770,7 +770,6 @@ impl HitTestResult {
     }
 }
 
-
 /// Represents the "shell" of a `Window`.
 ///
 /// You can set get and set many of the `SDL_Window` properties (i.e., border, size, `PixelFormat`, etc)
@@ -2330,32 +2329,34 @@ impl Window {
         } else {
             Err(get_error())
         }
-    } 
-    
+    }
+
     /// Sets a hit test function for the window.
     #[doc(alias = "SDL_SetWindowHitTest")]
     pub fn set_hit_test(
         &mut self,
-        hit_test: impl Fn (crate::rect::Point) -> HitTestResult,
+        hit_test: impl Fn(crate::rect::Point) -> HitTestResult,
     ) -> Result<(), Error> {
         // Box the closure to extend its lifetime and convert it to a raw pointer.
-        let boxed: Box<Box<dyn Fn(crate::rect::Point) -> HitTestResult>> = Box::new(Box::new(hit_test));
+        let boxed: Box<Box<dyn Fn(crate::rect::Point) -> HitTestResult>> =
+            Box::new(Box::new(hit_test));
         let userdata = Box::into_raw(boxed) as *mut c_void;
 
         unsafe extern "C" fn hit_test_sys(
             _: *mut sys::video::SDL_Window,
             point: *const sys::rect::SDL_Point,
-            data: *mut c_void
+            data: *mut c_void,
         ) -> sys::video::SDL_HitTestResult {
             // Reborrow the boxed closure.
-            let callback =data as *mut Box<dyn Fn(crate::rect::Point) -> HitTestResult>;
+            let callback = data as *mut Box<dyn Fn(crate::rect::Point) -> HitTestResult>;
             let point = crate::rect::Point::from_ll(*point);
 
             (*callback)(point).to_ll()
-        }        
+        }
 
         unsafe {
-            let result = sys::video::SDL_SetWindowHitTest(self.context.raw, Some(hit_test_sys), userdata);
+            let result =
+                sys::video::SDL_SetWindowHitTest(self.context.raw, Some(hit_test_sys), userdata);
             if result {
                 Ok(())
             } else {
@@ -2364,8 +2365,6 @@ impl Window {
         }
     }
 }
-
-
 
 #[derive(Copy, Clone)]
 #[doc(alias = "SDL_GetVideoDriver")]
