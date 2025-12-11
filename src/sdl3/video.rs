@@ -783,12 +783,14 @@ impl HitTestResult {
 #[derive(Clone)]
 pub struct Window {
     context: Arc<WindowContext>, // Arc may not be needed, added because wgpu expects Window to be send/sync, though even with Arc this technically still isn't send/sync
+    hit_test_callback: Option<*mut c_void>,
 }
 
 impl From<WindowContext> for Window {
     fn from(context: WindowContext) -> Window {
         Window {
             context: Arc::new(context),
+            hit_test_callback: None,
         }
     }
 }
@@ -1749,7 +1751,10 @@ impl Window {
     #[inline]
     /// Create a new `Window` without taking ownership of the `WindowContext`
     pub const unsafe fn from_ref(context: Arc<WindowContext>) -> Window {
-        Window { context }
+        Window {
+            context,
+            hit_test_callback: None,
+        }
     }
 
     #[inline]
@@ -2340,7 +2345,9 @@ impl Window {
         // Box the closure to extend its lifetime and convert it to a raw pointer.
         let boxed: Box<Box<dyn Fn(crate::rect::Point) -> HitTestResult>> =
             Box::new(Box::new(hit_test));
-        let userdata = Box::into_raw(boxed) as *mut c_void;
+        let _ = self
+            .hit_test_callback
+            .insert(Box::into_raw(boxed) as *mut c_void);
 
         unsafe extern "C" fn hit_test_sys(
             _: *mut sys::video::SDL_Window,
@@ -2355,8 +2362,11 @@ impl Window {
         }
 
         unsafe {
-            let result =
-                sys::video::SDL_SetWindowHitTest(self.context.raw, Some(hit_test_sys), userdata);
+            let result = sys::video::SDL_SetWindowHitTest(
+                self.context.raw,
+                Some(hit_test_sys),
+                self.hit_test_callback.unwrap(),
+            );
             if result {
                 Ok(())
             } else {
