@@ -721,7 +721,7 @@ impl FlashOperation {
     }
 }
 
-// Represents the result of a hit test.
+/// Represents the result of a hit test.
 #[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 #[repr(i32)]
 pub enum HitTestResult {
@@ -2335,7 +2335,7 @@ impl Window {
     #[doc(alias = "SDL_SetWindowHitTest")]
     pub fn set_hit_test(
         &mut self,
-        hit_test: impl Fn(crate::rect::Point) -> HitTestResult,
+        hit_test: impl (Fn(crate::rect::Point) -> HitTestResult) + 'static,
     ) -> Result<(), Error> {
         // Box the closure to extend its lifetime and convert it to a raw pointer.
         let boxed: Box<Box<dyn Fn(crate::rect::Point) -> HitTestResult>> =
