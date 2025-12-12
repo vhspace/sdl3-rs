@@ -32,7 +32,7 @@ jobs:
           OUTPUT: CHANGELOG.md
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           commit-message: 'chore: update CHANGELOG.md'
           author: changelog-updater <vhspace@users.noreply.github.com>
