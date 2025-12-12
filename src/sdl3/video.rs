@@ -721,6 +721,55 @@ impl FlashOperation {
     }
 }
 
+/// Represents the result of a hit test.
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+#[repr(i32)]
+pub enum HitTestResult {
+    Normal = sys::video::SDL_HITTEST_NORMAL.0,
+    Draggable = sys::video::SDL_HITTEST_DRAGGABLE.0,
+    ResizeTopLeft = sys::video::SDL_HITTEST_RESIZE_TOPLEFT.0,
+    ResizeTop = sys::video::SDL_HITTEST_RESIZE_TOP.0,
+    ResizeTopRight = sys::video::SDL_HITTEST_RESIZE_TOPRIGHT.0,
+    ResizeRight = sys::video::SDL_HITTEST_RESIZE_RIGHT.0,
+    ResizeBottomRight = sys::video::SDL_HITTEST_RESIZE_BOTTOMRIGHT.0,
+    ResizeBottom = sys::video::SDL_HITTEST_RESIZE_BOTTOM.0,
+    ResizeBottomLeft = sys::video::SDL_HITTEST_RESIZE_BOTTOMLEFT.0,
+    ResizeLeft = sys::video::SDL_HITTEST_RESIZE_LEFT.0,
+}
+
+impl HitTestResult {
+    pub fn from_ll(result: sys::video::SDL_HitTestResult) -> HitTestResult {
+        match result {
+            sys::video::SDL_HITTEST_NORMAL => HitTestResult::Normal,
+            sys::video::SDL_HITTEST_DRAGGABLE => HitTestResult::Draggable,
+            sys::video::SDL_HITTEST_RESIZE_TOPLEFT => HitTestResult::ResizeTopLeft,
+            sys::video::SDL_HITTEST_RESIZE_TOP => HitTestResult::ResizeTop,
+            sys::video::SDL_HITTEST_RESIZE_TOPRIGHT => HitTestResult::ResizeTopRight,
+            sys::video::SDL_HITTEST_RESIZE_RIGHT => HitTestResult::ResizeRight,
+            sys::video::SDL_HITTEST_RESIZE_BOTTOMRIGHT => HitTestResult::ResizeBottomRight,
+            sys::video::SDL_HITTEST_RESIZE_BOTTOM => HitTestResult::ResizeBottom,
+            sys::video::SDL_HITTEST_RESIZE_BOTTOMLEFT => HitTestResult::ResizeBottomLeft,
+            sys::video::SDL_HITTEST_RESIZE_LEFT => HitTestResult::ResizeLeft,
+            _ => HitTestResult::Normal,
+        }
+    }
+
+    pub fn to_ll(self) -> sys::video::SDL_HitTestResult {
+        match self {
+            HitTestResult::Normal => sys::video::SDL_HITTEST_NORMAL,
+            HitTestResult::Draggable => sys::video::SDL_HITTEST_DRAGGABLE,
+            HitTestResult::ResizeTopLeft => sys::video::SDL_HITTEST_RESIZE_TOPLEFT,
+            HitTestResult::ResizeTop => sys::video::SDL_HITTEST_RESIZE_TOP,
+            HitTestResult::ResizeTopRight => sys::video::SDL_HITTEST_RESIZE_TOPRIGHT,
+            HitTestResult::ResizeRight => sys::video::SDL_HITTEST_RESIZE_RIGHT,
+            HitTestResult::ResizeBottomRight => sys::video::SDL_HITTEST_RESIZE_BOTTOMRIGHT,
+            HitTestResult::ResizeBottom => sys::video::SDL_HITTEST_RESIZE_BOTTOM,
+            HitTestResult::ResizeBottomLeft => sys::video::SDL_HITTEST_RESIZE_BOTTOMLEFT,
+            HitTestResult::ResizeLeft => sys::video::SDL_HITTEST_RESIZE_LEFT,
+        }
+    }
+}
+
 /// Represents the "shell" of a `Window`.
 ///
 /// You can set get and set many of the `SDL_Window` properties (i.e., border, size, `PixelFormat`, etc)
@@ -734,12 +783,14 @@ impl FlashOperation {
 #[derive(Clone)]
 pub struct Window {
     context: Arc<WindowContext>, // Arc may not be needed, added because wgpu expects Window to be send/sync, though even with Arc this technically still isn't send/sync
+    hit_test_callback: Option<*mut c_void>,
 }
 
 impl From<WindowContext> for Window {
     fn from(context: WindowContext) -> Window {
         Window {
             context: Arc::new(context),
+            hit_test_callback: None,
         }
     }
 }
@@ -1700,7 +1751,10 @@ impl Window {
     #[inline]
     /// Create a new `Window` without taking ownership of the `WindowContext`
     pub const unsafe fn from_ref(context: Arc<WindowContext>) -> Window {
-        Window { context }
+        Window {
+            context,
+            hit_test_callback: None,
+        }
     }
 
     #[inline]
@@ -2279,6 +2333,45 @@ impl Window {
             Ok(())
         } else {
             Err(get_error())
+        }
+    }
+
+    /// Sets a hit test function for the window.
+    #[doc(alias = "SDL_SetWindowHitTest")]
+    pub fn set_hit_test(
+        &mut self,
+        hit_test: impl (Fn(crate::rect::Point) -> HitTestResult) + 'static,
+    ) -> Result<(), Error> {
+        // Box the closure to extend its lifetime and convert it to a raw pointer.
+        let boxed: Box<Box<dyn Fn(crate::rect::Point) -> HitTestResult>> =
+            Box::new(Box::new(hit_test));
+        let _ = self
+            .hit_test_callback
+            .insert(Box::into_raw(boxed) as *mut c_void);
+
+        unsafe extern "C" fn hit_test_sys(
+            _: *mut sys::video::SDL_Window,
+            point: *const sys::rect::SDL_Point,
+            data: *mut c_void,
+        ) -> sys::video::SDL_HitTestResult {
+            // Reborrow the boxed closure.
+            let callback = data as *mut Box<dyn Fn(crate::rect::Point) -> HitTestResult>;
+            let point = crate::rect::Point::from_ll(*point);
+
+            (*callback)(point).to_ll()
+        }
+
+        unsafe {
+            let result = sys::video::SDL_SetWindowHitTest(
+                self.context.raw,
+                Some(hit_test_sys),
+                self.hit_test_callback.unwrap(),
+            );
+            if result {
+                Ok(())
+            } else {
+                Err(get_error())
+            }
         }
     }
 }
