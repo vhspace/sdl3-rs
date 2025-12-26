@@ -120,7 +120,7 @@ fn pixel_format_details_basic() {
     assert_eq!(det.bytes_per_pixel, 3);
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Default)]
 pub struct Color {
     pub r: u8,
     pub g: u8,
