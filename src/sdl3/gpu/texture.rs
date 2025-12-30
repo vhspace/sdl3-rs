@@ -231,22 +231,23 @@ impl Sampler {
 
 #[repr(C)]
 #[derive(Default)]
-pub struct TextureSamplerBinding {
+pub struct TextureSamplerBinding<'a> {
     inner: SDL_GPUTextureSamplerBinding,
+    _phantom: PhantomData<(&'a Texture<'static>, &'a Sampler)>,
 }
-impl TextureSamplerBinding {
+impl<'a> TextureSamplerBinding<'a> {
     pub fn new() -> Self {
         Default::default()
     }
 
     /// The texture to bind. Must have been created with [`SDL_GPU_TEXTUREUSAGE_SAMPLER`].
-    pub fn with_texture(mut self, texture: &Texture<'static>) -> Self {
+    pub fn with_texture(mut self, texture: &'a Texture<'static>) -> Self {
         self.inner.texture = texture.raw();
         self
     }
 
     /// The sampler to bind.
-    pub fn with_sampler(mut self, sampler: &Sampler) -> Self {
+    pub fn with_sampler(mut self, sampler: &'a Sampler) -> Self {
         self.inner.sampler = sampler.raw();
         self
     }
