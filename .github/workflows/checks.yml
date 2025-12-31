@@ -122,7 +122,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends xvfb
-
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@master
         with:

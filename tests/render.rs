@@ -89,14 +89,14 @@ fn creating_a_named_renderer() {
             return;
         }
     };
-    let video = match sdl_context.video() {
-        Ok(video) => video,
+    let video_subsystem = match sdl_context.video() {
+        Ok(video_subsystem) => video_subsystem,
         Err(err) => {
             eprintln!("Skipping renderer test: no video device available: {err}");
             return;
         }
     };
-    let window = match video
+    let window = match video_subsystem
         .window("Hello, World!", 800, 600)
         .hidden()
         .metal_view()
