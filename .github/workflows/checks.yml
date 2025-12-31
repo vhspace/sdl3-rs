@@ -114,8 +114,12 @@ jobs:
       - name: checkout sources
         uses: actions/checkout@v6
 
-      - name: Install Linux dependencies
-        uses: ./.github/actions/install-linux-deps
+          - name: Install Linux dependencies
+            uses: ./.github/actions/install-linux-deps
+
+      - name: Install Xvfb
+        if: runner.os == 'Linux'
+        run: sudo apt-get install --no-install-recommends xvfb
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@master
@@ -126,15 +130,18 @@ jobs:
         run: cargo +stable fetch --locked
 
       - name: Test
+        env:
+          SDL_VIDEODRIVER: dummy
         run: |
           FEATURES="$(echo "$CI_BUILD_FEATURES ${{ matrix.features }}" | xargs)"
-          cargo +stable \
-            test \
-            --verbose \
-            --locked \
-            --offline \
-            --all-targets \
-            --features "$FEATURES"
+          xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" \
+            cargo +stable \
+              test \
+              --verbose \
+              --locked \
+              --offline \
+              --all-targets \
+              --features "$FEATURES"
 
   fmt:
     name: Formatting
