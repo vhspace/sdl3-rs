@@ -1273,6 +1273,24 @@ impl AudioStream {
         }
     }
 
+    /// Check whether the device bound to this stream is paused.
+    #[doc(alias = "SDL_AudioStreamDevicePaused")]
+    pub fn device_paused(&self) -> Result<bool, Error> {
+        unsafe {
+            clear_error();
+            if sys::audio::SDL_AudioStreamDevicePaused(self.stream) {
+                Ok(true)
+            } else {
+                let err = get_error();
+                if err.is_empty() {
+                    Ok(false)
+                } else {
+                    Err(err)
+                }
+            }
+        }
+    }
+
     /// Gets the number of converted/resampled bytes available.
     #[doc(alias = "SDL_GetAudioStreamAvailable")]
     pub fn available_bytes(&self) -> Result<i32, Error> {
