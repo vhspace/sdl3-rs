@@ -67,7 +67,6 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::path::Path;
-use std::ptr;
 use std::slice;
 use sys::audio::{SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, SDL_AUDIO_DEVICE_DEFAULT_RECORDING};
 use sys::stdinc::SDL_free;
@@ -385,17 +384,17 @@ impl AudioFormat {
     /// Signed 16-bit samples, native endian
     #[inline]
     pub const fn s16_sys() -> AudioFormat {
-        AudioFormat::S16BE
+        AudioFormat::S16MSB
     }
     /// Signed 32-bit samples, native endian
     #[inline]
     pub const fn s32_sys() -> AudioFormat {
-        AudioFormat::S32BE
+        AudioFormat::S32MSB
     }
     /// 32-bit floating point samples, native endian
     #[inline]
     pub const fn f32_sys() -> AudioFormat {
-        AudioFormat::F32BE
+        AudioFormat::F32MSB
     }
 }
 
@@ -758,6 +757,82 @@ impl AudioDevice {
         }
     }
 
+    /// Query the current audio format for this device.
+    #[doc(alias = "SDL_GetAudioDeviceFormat")]
+    pub fn format(&self) -> Result<(AudioSpec, Option<i32>), Error> {
+        let mut raw_spec = AudioSpec::default().into();
+        let mut sample_frames: c_int = 0;
+        let result = unsafe {
+            sys::audio::SDL_GetAudioDeviceFormat(
+                self.device_id.id(),
+                &mut raw_spec,
+                &mut sample_frames as *mut c_int,
+            )
+        };
+
+        if result {
+            let spec = AudioSpec::from(&raw_spec);
+            let frames = if sample_frames > 0 {
+                Some(sample_frames)
+            } else {
+                None
+            };
+            Ok((spec, frames))
+        } else {
+            Err(get_error())
+        }
+    }
+
+    /// Retrieve the device's channel map, if one is configured.
+    #[doc(alias = "SDL_GetAudioDeviceChannelMap")]
+    pub fn channel_map(&self) -> Result<Option<Vec<i32>>, Error> {
+        unsafe {
+            clear_error();
+            let mut count: c_int = 0;
+            let map_ptr = sys::audio::SDL_GetAudioDeviceChannelMap(self.device_id.id(), &mut count);
+            if map_ptr.is_null() {
+                let err = get_error();
+                if err.is_empty() {
+                    return Ok(None);
+                }
+                return Err(err);
+            }
+
+            if count < 0 {
+                SDL_free(map_ptr as *mut c_void);
+                return Err(Error(
+                    "SDL reported a negative device channel count".to_owned(),
+                ));
+            }
+
+            let entries = slice::from_raw_parts(map_ptr as *const c_int, count as usize).to_vec();
+            SDL_free(map_ptr as *mut c_void);
+            Ok(Some(entries))
+        }
+    }
+
+    /// Query the device gain.
+    #[doc(alias = "SDL_GetAudioDeviceGain")]
+    pub fn gain(&self) -> Result<f32, Error> {
+        let gain = unsafe { sys::audio::SDL_GetAudioDeviceGain(self.device_id.id()) };
+        if gain >= 0.0 {
+            Ok(gain)
+        } else {
+            Err(get_error())
+        }
+    }
+
+    /// Adjust the device gain.
+    #[doc(alias = "SDL_SetAudioDeviceGain")]
+    pub fn set_gain(&self, gain: f32) -> Result<(), Error> {
+        let result = unsafe { sys::audio::SDL_SetAudioDeviceGain(self.device_id.id(), gain) };
+        if result {
+            Ok(())
+        } else {
+            Err(get_error())
+        }
+    }
+
     /// Create an `AudioStream` for this device with the specified spec.
     /// This device will be closed when the stream is dropped.
     /// The device begins paused, so you must call `stream.resume()` to start playback.
@@ -805,15 +880,11 @@ impl AudioDevice {
     pub fn bind_streams(&self, streams: &[&AudioStream]) -> Result<(), Error> {
         let streams_ptrs: Vec<*mut sys::audio::SDL_AudioStream> =
             streams.iter().map(|s| s.stream).collect();
-        let stream_count: c_int = streams
-            .len()
-            .try_into()
-            .map_err(|_| Error("Too many audio streams to bind".to_owned()))?;
         let result = unsafe {
             sys::audio::SDL_BindAudioStreams(
                 self.device_id.id(),
                 streams_ptrs.as_ptr() as *mut _,
-                stream_count,
+                streams.len() as i32,
             )
         };
         if result {
@@ -1129,36 +1200,6 @@ impl AudioStream {
         self.device_id().and_then(|id| id.name().ok())
     }
 
-    /// Unbind this stream from the device it is attached to, if any.
-    #[doc(alias = "SDL_UnbindAudioStream")]
-    pub fn unbind_from_device(&self) {
-        unsafe {
-            sys::audio::SDL_UnbindAudioStream(self.stream);
-        }
-    }
-
-    /// Unbind multiple audio streams at once.
-    #[doc(alias = "SDL_UnbindAudioStreams")]
-    pub fn unbind_streams(streams: &[&AudioStream]) -> Result<(), Error> {
-        if streams.is_empty() {
-            return Ok(());
-        }
-
-        let count: c_int = streams
-            .len()
-            .try_into()
-            .map_err(|_| Error("Too many audio streams to unbind".to_owned()))?;
-
-        let ptrs: Vec<*mut sys::audio::SDL_AudioStream> =
-            streams.iter().map(|stream| stream.stream).collect();
-
-        unsafe {
-            sys::audio::SDL_UnbindAudioStreams(ptrs.as_ptr(), count);
-        }
-
-        Ok(())
-    }
-
     /// Retrieves the source and destination formats of the audio stream.
     ///
     /// Returns a tuple `(src_spec, dst_spec)` where each is an `Option<AudioSpec>`.
@@ -1181,29 +1222,6 @@ impl AudioStream {
                 None
             };
             Ok((src_spec, dst_spec))
-        } else {
-            Err(get_error())
-        }
-    }
-
-    /// Change the input and/or output format used by the stream.
-    #[doc(alias = "SDL_SetAudioStreamFormat")]
-    pub fn set_format(
-        &self,
-        src_spec: Option<&AudioSpec>,
-        dst_spec: Option<&AudioSpec>,
-    ) -> Result<(), Error> {
-        let src = src_spec.map(|spec| sys::audio::SDL_AudioSpec::from(spec));
-        let dst = dst_spec.map(|spec| sys::audio::SDL_AudioSpec::from(spec));
-        let result = unsafe {
-            sys::audio::SDL_SetAudioStreamFormat(
-                self.stream,
-                src.as_ref().map_or(ptr::null(), |spec| spec as *const _),
-                dst.as_ref().map_or(ptr::null(), |spec| spec as *const _),
-            )
-        };
-        if result {
-            Ok(())
         } else {
             Err(get_error())
         }
@@ -1233,141 +1251,8 @@ impl AudioStream {
         }
     }
 
-    /// Query the current frequency ratio applied to the stream.
-    #[doc(alias = "SDL_GetAudioStreamFrequencyRatio")]
-    pub fn frequency_ratio(&self) -> Result<f32, Error> {
-        unsafe {
-            clear_error();
-            let ratio = sys::audio::SDL_GetAudioStreamFrequencyRatio(self.stream);
-            if ratio == 0.0 {
-                let err = get_error();
-                if err.is_empty() {
-                    return Ok(0.0);
-                }
-                Err(err)
-            } else {
-                Ok(ratio)
-            }
-        }
-    }
-
-    /// Change the frequency ratio applied to the stream.
-    #[doc(alias = "SDL_SetAudioStreamFrequencyRatio")]
-    pub fn set_frequency_ratio(&self, ratio: f32) -> Result<(), Error> {
-        let result = unsafe { sys::audio::SDL_SetAudioStreamFrequencyRatio(self.stream, ratio) };
-        if result {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
-    }
-
-    /// Retrieve the current input channel map.
-    #[doc(alias = "SDL_GetAudioStreamInputChannelMap")]
-    pub fn input_channel_map(&self) -> Result<Option<Vec<i32>>, Error> {
-        unsafe {
-            clear_error();
-            let mut count: c_int = 0;
-            let map_ptr = sys::audio::SDL_GetAudioStreamInputChannelMap(self.stream, &mut count);
-            if map_ptr.is_null() {
-                let err = get_error();
-                if err.is_empty() {
-                    return Ok(None);
-                }
-                return Err(err);
-            }
-
-            if count < 0 {
-                SDL_free(map_ptr as *mut c_void);
-                return Err(Error(
-                    "SDL reported a negative input channel count".to_owned(),
-                ));
-            }
-
-            let entries = slice::from_raw_parts(map_ptr as *const c_int, count as usize).to_vec();
-            SDL_free(map_ptr as *mut c_void);
-            Ok(Some(entries))
-        }
-    }
-
-    /// Retrieve the current output channel map.
-    #[doc(alias = "SDL_GetAudioStreamOutputChannelMap")]
-    pub fn output_channel_map(&self) -> Result<Option<Vec<i32>>, Error> {
-        unsafe {
-            clear_error();
-            let mut count: c_int = 0;
-            let map_ptr = sys::audio::SDL_GetAudioStreamOutputChannelMap(self.stream, &mut count);
-            if map_ptr.is_null() {
-                let err = get_error();
-                if err.is_empty() {
-                    return Ok(None);
-                }
-                return Err(err);
-            }
-
-            if count < 0 {
-                SDL_free(map_ptr as *mut c_void);
-                return Err(Error(
-                    "SDL reported a negative output channel count".to_owned(),
-                ));
-            }
-
-            let entries = slice::from_raw_parts(map_ptr as *const c_int, count as usize).to_vec();
-            SDL_free(map_ptr as *mut c_void);
-            Ok(Some(entries))
-        }
-    }
-
-    /// Configure the input channel map for this stream. Pass `None` to reset.
-    #[doc(alias = "SDL_SetAudioStreamInputChannelMap")]
-    pub fn set_input_channel_map(&self, map: Option<&[i32]>) -> Result<(), Error> {
-        let (ptr, count) = match map {
-            Some(values) => {
-                let count: c_int = values
-                    .len()
-                    .try_into()
-                    .map_err(|_| Error("Channel map exceeds SDL limits".to_owned()))?;
-                (values.as_ptr(), count)
-            }
-            None => (ptr::null(), 0),
-        };
-
-        let result =
-            unsafe { sys::audio::SDL_SetAudioStreamInputChannelMap(self.stream, ptr, count) };
-
-        if result {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
-    }
-
-    /// Configure the output channel map for this stream. Pass `None` to reset.
-    #[doc(alias = "SDL_SetAudioStreamOutputChannelMap")]
-    pub fn set_output_channel_map(&self, map: Option<&[i32]>) -> Result<(), Error> {
-        let (ptr, count) = match map {
-            Some(values) => {
-                let count: c_int = values
-                    .len()
-                    .try_into()
-                    .map_err(|_| Error("Channel map exceeds SDL limits".to_owned()))?;
-                (values.as_ptr(), count)
-            }
-            None => (ptr::null(), 0),
-        };
-
-        let result =
-            unsafe { sys::audio::SDL_SetAudioStreamOutputChannelMap(self.stream, ptr, count) };
-
-        if result {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
-    }
-
     /// Pauses playback of the audio stream.
-    #[doc(alias = "SDL_PauseAudioStreamDevice")]
+    #[doc(alias = "SDL_PauseAudioStream")]
     pub fn pause(&self) -> Result<(), Error> {
         let result = unsafe { sys::audio::SDL_PauseAudioStreamDevice(self.stream) };
         if result {
@@ -1378,7 +1263,7 @@ impl AudioStream {
     }
 
     /// Resumes playback of the audio stream.
-    #[doc(alias = "SDL_ResumeAudioStreamDevice")]
+    #[doc(alias = "SDL_ResumeAudioStream")]
     pub fn resume(&self) -> Result<(), Error> {
         let result = unsafe { sys::audio::SDL_ResumeAudioStreamDevice(self.stream) };
         if result {
