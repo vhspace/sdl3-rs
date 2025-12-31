@@ -82,16 +82,32 @@ fn clipping_rect_intersect_rect() {
 
 #[test]
 fn creating_a_named_renderer() {
-    // hidden window
-    let window = sdl3::init()
-        .unwrap()
-        .video()
-        .unwrap()
+    let sdl_context = match sdl3::init() {
+        Ok(ctx) => ctx,
+        Err(err) => {
+            eprintln!("Skipping renderer test: failed to init SDL: {err}");
+            return;
+        }
+    };
+    let video_subsystem = match sdl_context.video() {
+        Ok(video_subsystem) => video_subsystem,
+        Err(err) => {
+            eprintln!("Skipping renderer test: no video device available: {err}");
+            return;
+        }
+    };
+    let window = match video_subsystem
         .window("Hello, World!", 800, 600)
         .hidden()
         .metal_view()
         .build()
-        .unwrap();
+    {
+        Ok(window) => window,
+        Err(err) => {
+            eprintln!("Skipping renderer test: couldn't create window: {err}");
+            return;
+        }
+    };
 
     // the software renderer should always be available
     create_renderer(window, Some(c"software")).unwrap();

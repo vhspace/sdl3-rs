@@ -97,6 +97,45 @@ jobs:
             --all-targets \
             --features "$CI_BUILD_FEATURES ${{ matrix.feature }}"
 
+  tests:
+    name: Tests - ${{ matrix.name }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: default
+            features: ""
+          - name: build-from-source-static
+            features: "build-from-source-static"
+
+    steps:
+      - name: checkout sources
+        uses: actions/checkout@v6
+
+      - name: Install Linux dependencies
+        uses: ./.github/actions/install-linux-deps
+
+      - name: Install toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Fetch dependencies
+        run: cargo +stable fetch --locked
+
+      - name: Test
+        run: |
+          FEATURES="$(echo "$CI_BUILD_FEATURES ${{ matrix.features }}" | xargs)"
+          cargo +stable \
+            test \
+            --verbose \
+            --locked \
+            --offline \
+            --all-targets \
+            --features "$FEATURES"
+
   fmt:
     name: Formatting
     runs-on: ubuntu-latest
