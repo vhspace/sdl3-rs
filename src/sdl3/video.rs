@@ -1532,9 +1532,9 @@ impl WindowBuilder {
         self
     }
 
-    /// Create a SDL_MetalView when constructing the window.
-    /// This is required when using the raw_window_handle feature on macOS.
-    /// Has no effect no other platforms.
+    /// Create an `SDL_MetalView` when constructing the window.
+    /// This is required when using the `raw-window-handle` feature on macOS.
+    /// Has no effect on other platforms.
     pub fn metal_view(&mut self) -> &mut WindowBuilder {
         self.create_metal_view = true;
         self
