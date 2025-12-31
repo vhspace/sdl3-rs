@@ -119,7 +119,9 @@ jobs:
 
       - name: Install Xvfb
         if: runner.os == 'Linux'
-        run: sudo apt-get install --no-install-recommends xvfb
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends xvfb
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@master
@@ -131,7 +133,8 @@ jobs:
 
       - name: Test
         env:
-          SDL_VIDEODRIVER: dummy
+          SDL_VIDEODRIVER: x11
+          SDL_AUDIODRIVER: dummy
         run: |
           FEATURES="$(echo "$CI_BUILD_FEATURES ${{ matrix.features }}" | xargs)"
           xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" \
