@@ -58,13 +58,17 @@ fn audio_stream_device_paused_state_transitions() {
 
     stream.resume().expect("resume failed");
     assert!(
-        !stream.device_paused().expect("device_paused failed after resume"),
+        !stream
+            .device_paused()
+            .expect("device_paused failed after resume"),
         "Device should report unpaused after resuming"
     );
 
     stream.pause().expect("pause failed");
     assert!(
-        stream.device_paused().expect("device_paused failed after pause"),
+        stream
+            .device_paused()
+            .expect("device_paused failed after pause"),
         "Device should report paused after pausing"
     );
 }
@@ -105,4 +109,42 @@ fn audio_stream_reports_format_and_queue() {
     stream.clear().expect("clear failed");
     stream.pause().expect("pause failed");
     stream.resume().expect("resume failed");
+}
+
+#[test]
+fn audio_stream_put_and_clear() {
+    let Some((_sdl, audio)) = init_audio_subsystem() else {
+        return;
+    };
+
+    let spec = sdl3::audio::AudioSpec {
+        freq: Some(48_000),
+        channels: Some(1),
+        format: Some(sdl3::audio::AudioFormat::F32LE),
+    };
+    let stream = match audio.new_stream(Some(&spec), Some(&spec)) {
+        Ok(stream) => stream,
+        Err(err) => {
+            eprintln!("Skipping stream buffer test: {err}");
+            return;
+        }
+    };
+
+    let samples = vec![0.0f32; 128];
+    stream.put_data_f32(&samples).expect("put_data_f32 failed");
+    let available = stream.available_bytes().expect("available_bytes failed");
+    assert!(
+        available >= (samples.len() * std::mem::size_of::<f32>()) as i32,
+        "available bytes should reflect queued samples"
+    );
+
+    stream.clear().expect("clear failed");
+    assert_eq!(
+        stream
+            .queued_bytes()
+            .expect("queued_bytes failed after clear"),
+        0,
+        "clear should drop queued data"
+    );
+    stream.flush().expect("flush failed");
 }

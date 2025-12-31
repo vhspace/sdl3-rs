@@ -1273,7 +1273,7 @@ impl AudioStream {
         }
     }
 
-    /// Check whether the device bound to this stream is paused.
+    /// Query whether the device associated with this stream is paused.
     #[doc(alias = "SDL_AudioStreamDevicePaused")]
     pub fn device_paused(&self) -> Result<bool, Error> {
         unsafe {
