@@ -138,7 +138,26 @@ pub fn get_base_path() -> Result<&'static Path, FileSystemError> {
     }
 }
 
-//TODO: Implement SDL_GetCurrentDirectory when sdl3-sys is updated to SDL 3.2.0.
+#[doc(alias = "SDL_GetCurrentDirectory")]
+pub fn get_current_directory() -> Result<PathBuf, FileSystemError> {
+    unsafe {
+        let path_ptr = sys::filesystem::SDL_GetCurrentDirectory();
+        if path_ptr.is_null() {
+            return Err(FileSystemError::SdlError(get_error()));
+        }
+
+        let path = match CStr::from_ptr(path_ptr).to_str() {
+            Ok(path) => PathBuf::from(path),
+            Err(_) => {
+                sys::stdinc::SDL_free(path_ptr as *mut c_void);
+                return Err(FileSystemError::SdlError(get_error()));
+            }
+        };
+
+        sys::stdinc::SDL_free(path_ptr as *mut c_void);
+        Ok(path)
+    }
+}
 
 pub use sys::filesystem::SDL_PathType as PathType;
 
