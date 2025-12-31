@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### <!-- 0 -->Added
+- Add lifetime to TextureSamplerBinding ([#273](https://github.com/vhspace/sdl3-rs/pull/273))
+
+### <!-- 2 -->Fixed
+- Align doctest examples with current API ([#274](https://github.com/vhspace/sdl3-rs/pull/274))
+
+### <!-- 4 -->Dependencies
+- Bump peter-evans/create-pull-request from 7 to 8 ([#269](https://github.com/vhspace/sdl3-rs/pull/269))
+- Bump libc from 0.2.177 to 0.2.178 ([#264](https://github.com/vhspace/sdl3-rs/pull/264))
+- Bump sdl3-sys from 0.5.10+SDL3-3.2.26 to 0.5.11+SDL3-3.2.28 ([#266](https://github.com/vhspace/sdl3-rs/pull/266))
+
+## [0.16.4] - 2025-12-28
+
+### <!-- 0 -->Added
+- Derive Default for Color ([#272](https://github.com/vhspace/sdl3-rs/pull/272))
+- Added SDL_SetWindowHitTest wrapper ([#268](https://github.com/vhspace/sdl3-rs/pull/268))
+- Add SDL_SetAudioStreamGain ([#267](https://github.com/vhspace/sdl3-rs/pull/267))
+
+### <!-- 2 -->Fixed
+- Implemented Error for FileSystemError ([#265](https://github.com/vhspace/sdl3-rs/pull/265))
+- Don't unwrap keycode and pass directly the Option. ([#263](https://github.com/vhspace/sdl3-rs/pull/263))
+
+### <!-- 4 -->Dependencies
+- Bump actions/cache from 4 to 5 ([#270](https://github.com/vhspace/sdl3-rs/pull/270))
+- Bump actions/checkout from 5 to 6 ([#261](https://github.com/vhspace/sdl3-rs/pull/261))
+
 ## [0.16.2] - 2025-11-16
 
 ### <!-- 0 -->Added
@@ -94,6 +122,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump bitflags from 2.9.0 to 2.9.1 ([#207](https://github.com/vhspace/sdl3-rs/pull/207))
 - Bump actions/cache from 3 to 4 ([#208](https://github.com/vhspace/sdl3-rs/pull/208))
 
+[unreleased]: https://github.com/vhspace/sdl3-rs/compare/v0.16.4...HEAD
+[0.16.4]: https://github.com/vhspace/sdl3-rs/compare/v0.16.2...v0.16.4
 [0.16.2]: https://github.com/vhspace/sdl3-rs/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/vhspace/sdl3-rs/compare/v0.16.0...v0.16.1
 [0.16.0]: https://github.com/vhspace/sdl3-rs/compare/v0.15.1...v0.16.0
