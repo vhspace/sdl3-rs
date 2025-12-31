@@ -527,19 +527,15 @@ pub trait AudioFormatNum: Copy + 'static {
     /// # Examples
     ///
     /// ```
-    /// // The AudioFormatNum trait has to be imported for the Channel::SILENCE part to work.
-    /// use sdl3::audio::{AudioCallback, AudioFormatNum};
+    /// use sdl3::audio::{AudioCallback, AudioFormatNum, AudioStream};
     ///
     /// struct Silence;
     ///
-    /// impl<Channel> AudioCallback<Channel> for Silence
-    /// where
-    ///     Channel: AudioFormatNum,
-    /// {
-    ///     fn callback(&mut self, out: &mut [Channel]) {
-    ///         for dst in out.iter_mut() {
-    ///             *dst = Channel::SILENCE;
-    ///        }
+    /// impl AudioCallback<f32> for Silence {
+    ///     fn callback(&mut self, stream: &mut AudioStream, requested: i32) {
+    ///         let len = requested.max(0) as usize;
+    ///         let samples = vec![<f32 as AudioFormatNum>::SILENCE; len];
+    ///         let _ = stream.put_data_f32(&samples);
     ///     }
     /// }
     /// ```
