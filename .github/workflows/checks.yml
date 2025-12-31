@@ -127,23 +127,14 @@ jobs:
 
       - name: Test
         run: |
-          FEATURES="${{ matrix.features }}"
-          if [ -n "$FEATURES" ]; then
-            cargo +stable \
-              test \
-              --verbose \
-              --locked \
-              --offline \
-              --all-targets \
-              --features "$FEATURES"
-          else
-            cargo +stable \
-              test \
-              --verbose \
-              --locked \
-              --offline \
-              --all-targets
-          fi
+          FEATURES="$(echo "$CI_BUILD_FEATURES ${{ matrix.features }}" | xargs)"
+          cargo +stable \
+            test \
+            --verbose \
+            --locked \
+            --offline \
+            --all-targets \
+            --features "$FEATURES"
 
   fmt:
     name: Formatting
