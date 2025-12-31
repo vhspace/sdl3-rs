@@ -114,8 +114,8 @@ jobs:
       - name: checkout sources
         uses: actions/checkout@v6
 
-          - name: Install Linux dependencies
-            uses: ./.github/actions/install-linux-deps
+      - name: Install Linux dependencies
+        uses: ./.github/actions/install-linux-deps
 
       - name: Install Xvfb
         if: runner.os == 'Linux'
