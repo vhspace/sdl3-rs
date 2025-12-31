@@ -51,6 +51,7 @@
 //! std::thread::sleep(Duration::from_millis(2000));
 //! ```
 
+use crate::clear_error;
 use crate::get_error;
 use crate::iostream::IOStream;
 use crate::sys;
@@ -1192,6 +1193,24 @@ impl AudioStream {
             Ok(())
         } else {
             Err(get_error())
+        }
+    }
+
+    /// Query whether the device associated with this stream is paused.
+    #[doc(alias = "SDL_AudioStreamDevicePaused")]
+    pub fn device_paused(&self) -> Result<bool, Error> {
+        unsafe {
+            clear_error();
+            if sys::audio::SDL_AudioStreamDevicePaused(self.stream) {
+                Ok(true)
+            } else {
+                let err = get_error();
+                if err.is_empty() {
+                    Ok(false)
+                } else {
+                    Err(err)
+                }
+            }
         }
     }
 
