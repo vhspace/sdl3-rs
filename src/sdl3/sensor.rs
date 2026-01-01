@@ -27,7 +27,7 @@ use std::ffi::{c_int, CStr};
 use sys::sensor::{SDL_GetSensorData, SDL_Sensor, SDL_SensorType};
 use sys::stdinc::SDL_free;
 
-type SensorId = u32;
+type SensorId = sys::sensor::SDL_SensorID;
 
 impl SensorSubsystem {
     /// Get a list of currently connected sensors.
@@ -42,7 +42,7 @@ impl SensorSubsystem {
             let ids = unsafe { std::slice::from_raw_parts(sensor_ids, count as usize) }
                 .iter()
                 .copied()
-                .collect();
+                .collect::<Vec<_>>();
             unsafe { SDL_free(sensor_ids as *mut _) };
             Ok(ids)
         }
@@ -137,11 +137,11 @@ impl Sensor {
     pub fn instance_id(&self) -> u32 {
         let result = unsafe { sys::sensor::SDL_GetSensorID(self.raw) };
 
-        if result == 0 {
+        if result == sys::sensor::SDL_SensorID(0) {
             // Should only fail if the joystick is NULL.
             panic!("{}", get_error())
         } else {
-            result as u32
+            result.0
         }
     }
 

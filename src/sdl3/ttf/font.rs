@@ -20,11 +20,11 @@ pub type Hinting = ttf::TTF_HintingFlags;
 bitflags! {
     /// The styling of a font.
     pub struct FontStyle: u32 {
-        const NORMAL        = ttf::TTF_STYLE_NORMAL as u32;
-        const BOLD          = ttf::TTF_STYLE_BOLD as u32;
-        const ITALIC        = ttf::TTF_STYLE_ITALIC as u32;
-        const UNDERLINE     = ttf::TTF_STYLE_UNDERLINE as u32;
-        const STRIKETHROUGH = ttf::TTF_STYLE_STRIKETHROUGH as u32;
+        const NORMAL        = ttf::TTF_STYLE_NORMAL.0 as u32;
+        const BOLD          = ttf::TTF_STYLE_BOLD.0 as u32;
+        const ITALIC        = ttf::TTF_STYLE_ITALIC.0 as u32;
+        const UNDERLINE     = ttf::TTF_STYLE_UNDERLINE.0 as u32;
+        const STRIKETHROUGH = ttf::TTF_STYLE_STRIKETHROUGH.0 as u32;
     }
 }
 
@@ -382,14 +382,14 @@ impl<'r> Font<'r> {
     pub fn get_style(&self) -> FontStyle {
         unsafe {
             let raw = ttf::TTF_GetFontStyle(self.raw);
-            FontStyle::from_bits_truncate(raw as u32)
+            FontStyle::from_bits_truncate(u32::from(raw))
         }
     }
 
     /// Sets the font's style flags.
     #[doc(alias = "TTF_SetFontStyle")]
     pub fn set_style(&mut self, styles: FontStyle) {
-        unsafe { ttf::TTF_SetFontStyle(self.raw, styles.bits()) }
+        unsafe { ttf::TTF_SetFontStyle(self.raw, ttf::TTF_FontStyleFlags(styles.bits())) }
     }
 
     /// Returns the width of the font's outline.

@@ -18,7 +18,6 @@ use crate::gamepad::{Axis, Button};
 use crate::get_error;
 use crate::joystick;
 use crate::joystick::HatState;
-use crate::keyboard;
 use crate::keyboard::Keycode;
 use crate::keyboard::Mod;
 use crate::keyboard::Scancode;
@@ -138,7 +137,7 @@ impl crate::EventSubsystem {
     /// See the [SDL documentation](https://wiki.libsdl.org/SDL_UserEvent) for more information.
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// let sdl = sdl3::init().unwrap();
     /// let ev = sdl.event().unwrap();
     ///
@@ -251,7 +250,7 @@ impl crate::EventSubsystem {
     /// longer needed.
     ///
     /// # Example: dump every event to stderr
-    /// ```
+    /// ```text
     /// let sdl = sdl3::init().unwrap();
     /// let ev = sdl.event().unwrap();
     ///
@@ -1090,6 +1089,86 @@ unsafe impl Sync for Event {}
 // This would honestly be nice if it took &self instead of self,
 // but Event::User's raw pointers kind of removes that possibility.
 impl Event {
+    #[inline]
+    fn window_id_to_ll(window_id: u32) -> sys::video::SDL_WindowID {
+        sys::video::SDL_WindowID(window_id)
+    }
+
+    #[inline]
+    fn keyboard_id_to_ll(id: u32) -> sys::keyboard::SDL_KeyboardID {
+        sys::keyboard::SDL_KeyboardID(id)
+    }
+
+    #[inline]
+    fn mouse_id_to_ll(id: u32) -> sys::mouse::SDL_MouseID {
+        sys::mouse::SDL_MouseID(id)
+    }
+
+    #[inline]
+    fn mouse_button_flags_to_ll(state: u32) -> sys::mouse::SDL_MouseButtonFlags {
+        sys::mouse::SDL_MouseButtonFlags(state)
+    }
+
+    #[inline]
+    fn mouse_button_flags_from_ll(flags: sys::mouse::SDL_MouseButtonFlags) -> u32 {
+        flags.0
+    }
+
+    #[inline]
+    fn keymod_to_ll(keymod: Mod) -> sys::keycode::SDL_Keymod {
+        sys::keycode::SDL_Keymod(keymod.bits())
+    }
+
+    #[inline]
+    fn joystick_id_to_ll(id: u32) -> sys::joystick::SDL_JoystickID {
+        sys::joystick::SDL_JoystickID(id)
+    }
+
+    #[inline]
+    fn window_id_from_ll(id: sys::video::SDL_WindowID) -> u32 {
+        id.0
+    }
+
+    #[inline]
+    fn keyboard_id_from_ll(id: sys::keyboard::SDL_KeyboardID) -> u32 {
+        id.0
+    }
+
+    #[inline]
+    fn mouse_id_from_ll(id: sys::mouse::SDL_MouseID) -> u32 {
+        id.0
+    }
+
+    #[inline]
+    fn joystick_id_from_ll(id: sys::joystick::SDL_JoystickID) -> u32 {
+        id.0
+    }
+
+    #[inline]
+    fn keymod_from_ll(ll: sys::keycode::SDL_Keymod) -> Mod {
+        Mod::from_bits_truncate(ll.0)
+    }
+
+    #[inline]
+    fn pen_id_from_ll(id: sys::pen::SDL_PenID) -> u32 {
+        id.0
+    }
+
+    #[inline]
+    fn touch_id_from_ll(id: sys::touch::SDL_TouchID) -> u64 {
+        id.0
+    }
+
+    #[inline]
+    fn finger_id_from_ll(id: sys::touch::SDL_FingerID) -> u64 {
+        id.0
+    }
+
+    #[inline]
+    fn audio_device_id_from_ll(id: sys::audio::SDL_AudioDeviceID) -> u32 {
+        id.0
+    }
+
     fn to_ll(&self) -> Option<sys::events::SDL_Event> {
         let mut ret = mem::MaybeUninit::uninit();
         match *self {
@@ -1104,7 +1183,7 @@ impl Event {
                 let event = sys::events::SDL_UserEvent {
                     r#type: type_,
                     timestamp,
-                    windowID: window_id,
+                    windowID: Self::window_id_to_ll(window_id),
                     code,
                     data1,
                     data2,
@@ -1145,7 +1224,7 @@ impl Event {
                 let event = sys::events::SDL_WindowEvent {
                     r#type: win_event_id.into(),
                     timestamp,
-                    windowID: window_id,
+                    windowID: Self::window_id_to_ll(window_id),
                     data1,
                     data2,
                     reserved: 0,
@@ -1173,14 +1252,14 @@ impl Event {
                 let event = SDL_KeyboardEvent {
                     r#type: sys::events::SDL_EVENT_KEY_DOWN,
                     timestamp,
-                    windowID: window_id,
+                    windowID: Self::window_id_to_ll(window_id),
                     repeat,
                     reserved: 0,
                     scancode: scancode?.into(),
-                    which,
+                    which: Self::keyboard_id_to_ll(which),
                     down: true,
                     key: keycode?.into(),
-                    r#mod: keymod.bits(),
+                    r#mod: Self::keymod_to_ll(keymod),
                     raw,
                 };
                 unsafe {
@@ -1205,14 +1284,14 @@ impl Event {
                 let event = SDL_KeyboardEvent {
                     r#type: sys::events::SDL_EVENT_KEY_UP,
                     timestamp,
-                    windowID: window_id,
+                    windowID: Self::window_id_to_ll(window_id),
                     repeat,
                     reserved: 0,
                     scancode: scancode?.into(),
-                    which,
+                    which: Self::keyboard_id_to_ll(which),
                     down: false,
                     key: keycode?.into(),
-                    r#mod: keymod.bits(),
+                    r#mod: Self::keymod_to_ll(keymod),
                     raw,
                 };
                 unsafe {
@@ -1238,9 +1317,9 @@ impl Event {
                 let event = SDL_MouseMotionEvent {
                     r#type: sys::events::SDL_EVENT_MOUSE_MOTION,
                     timestamp,
-                    windowID: window_id,
-                    which,
-                    state,
+                    windowID: Self::window_id_to_ll(window_id),
+                    which: Self::mouse_id_to_ll(which),
+                    state: Self::mouse_button_flags_to_ll(state),
                     x,
                     y,
                     xrel,
@@ -1268,15 +1347,14 @@ impl Event {
                 let event = SDL_MouseButtonEvent {
                     r#type: sys::events::SDL_EVENT_MOUSE_BUTTON_DOWN,
                     timestamp,
-                    windowID: window_id,
-                    which,
+                    windowID: Self::window_id_to_ll(window_id),
+                    which: Self::mouse_id_to_ll(which),
                     button: mouse_btn as u8,
                     down: true,
                     clicks,
                     x,
                     y,
-                    padding: 0,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1299,15 +1377,14 @@ impl Event {
                 let event = sys::events::SDL_MouseButtonEvent {
                     r#type: sys::events::SDL_EVENT_MOUSE_BUTTON_UP,
                     timestamp,
-                    windowID: window_id,
-                    which,
+                    windowID: Self::window_id_to_ll(window_id),
+                    which: Self::mouse_id_to_ll(which),
                     button: mouse_btn as u8,
                     clicks,
-                    padding: 0,
                     x,
                     y,
                     down: false,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1332,8 +1409,8 @@ impl Event {
                 let event = SDL_MouseWheelEvent {
                     r#type: sys::events::SDL_EVENT_MOUSE_WHEEL,
                     timestamp,
-                    windowID: window_id,
-                    which,
+                    windowID: Self::window_id_to_ll(window_id),
+                    which: Self::mouse_id_to_ll(which),
                     x,
                     y,
                     direction: direction.into(),
@@ -1361,14 +1438,10 @@ impl Event {
                 let event = SDL_JoyAxisEvent {
                     r#type: sys::events::SDL_EVENT_JOYSTICK_AXIS_MOTION,
                     timestamp,
-                    which,
+                    which: Self::joystick_id_to_ll(which),
                     axis: axis_idx,
                     value,
-                    padding1: 0,
-                    padding2: 0,
-                    padding3: 0,
-                    padding4: 0,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1389,12 +1462,10 @@ impl Event {
                 let event = SDL_JoyHatEvent {
                     r#type: sys::events::SDL_EVENT_JOYSTICK_HAT_MOTION,
                     timestamp,
-                    which,
+                    which: Self::joystick_id_to_ll(which),
                     hat: hat_idx,
                     value: hatvalue,
-                    padding1: 0,
-                    padding2: 0,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1413,12 +1484,10 @@ impl Event {
                 let event = SDL_JoyButtonEvent {
                     r#type: sys::events::SDL_EVENT_JOYSTICK_BUTTON_DOWN,
                     timestamp,
-                    which,
+                    which: Self::joystick_id_to_ll(which),
                     button: button_idx,
                     down: true,
-                    padding1: 0,
-                    padding2: 0,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1438,12 +1507,10 @@ impl Event {
                 let event = SDL_JoyButtonEvent {
                     r#type: sys::events::SDL_EVENT_JOYSTICK_BUTTON_UP,
                     timestamp,
-                    which,
+                    which: Self::joystick_id_to_ll(which),
                     button: button_idx,
                     down: false,
-                    padding1: 0,
-                    padding2: 0,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1459,7 +1526,7 @@ impl Event {
                 let event = SDL_JoyDeviceEvent {
                     r#type: sys::events::SDL_EVENT_JOYSTICK_ADDED,
                     timestamp,
-                    which,
+                    which: Self::joystick_id_to_ll(which),
                     reserved: 0,
                 };
                 unsafe {
@@ -1476,7 +1543,7 @@ impl Event {
                 let event = SDL_JoyDeviceEvent {
                     r#type: sys::events::SDL_EVENT_JOYSTICK_REMOVED,
                     timestamp,
-                    which,
+                    which: Self::joystick_id_to_ll(which),
                     reserved: 0,
                 };
                 unsafe {
@@ -1497,14 +1564,10 @@ impl Event {
                 let event = SDL_GamepadAxisEvent {
                     r#type: sys::events::SDL_EVENT_GAMEPAD_AXIS_MOTION,
                     timestamp,
-                    which,
+                    which: Self::joystick_id_to_ll(which),
                     axis: axis.into(),
                     value,
-                    padding1: 0,
-                    padding2: 0,
-                    padding3: 0,
-                    padding4: 0,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1523,14 +1586,12 @@ impl Event {
                 let event = SDL_GamepadButtonEvent {
                     r#type: sys::events::SDL_EVENT_GAMEPAD_BUTTON_DOWN,
                     timestamp,
-                    which,
+                    which: Self::joystick_id_to_ll(which),
                     // This conversion turns an i32 into a u8; signed-to-unsigned conversions
                     // are a bit of a code smell, but that appears to be how SDL defines it.
                     button: button.into(),
                     down: true,
-                    padding1: 0,
-                    padding2: 0,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1549,13 +1610,11 @@ impl Event {
             } => {
                 let event = SDL_GamepadButtonEvent {
                     r#type: sys::events::SDL_EVENT_GAMEPAD_BUTTON_UP,
-                    reserved: 0,
                     timestamp,
-                    which,
+                    which: Self::joystick_id_to_ll(which),
                     button: button.into(),
                     down: false,
-                    padding1: 0,
-                    padding2: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1571,7 +1630,7 @@ impl Event {
                 let event = SDL_GamepadDeviceEvent {
                     r#type: sys::events::SDL_EVENT_GAMEPAD_ADDED,
                     timestamp,
-                    which,
+                    which: Self::joystick_id_to_ll(which),
                     reserved: 0,
                 };
                 unsafe {
@@ -1588,7 +1647,7 @@ impl Event {
                 let event = SDL_GamepadDeviceEvent {
                     r#type: sys::events::SDL_EVENT_GAMEPAD_REMOVED,
                     timestamp,
-                    which,
+                    which: Self::joystick_id_to_ll(which),
                     reserved: 0,
                 };
                 unsafe {
@@ -1605,7 +1664,7 @@ impl Event {
                 let event = SDL_GamepadDeviceEvent {
                     r#type: sys::events::SDL_EVENT_GAMEPAD_REMAPPED,
                     timestamp,
-                    which,
+                    which: Self::joystick_id_to_ll(which),
                     reserved: 0,
                 };
                 unsafe {
@@ -1686,7 +1745,7 @@ impl Event {
                     let event = raw.window;
                     Event::Window {
                         timestamp: event.timestamp,
-                        window_id: event.windowID,
+                        window_id: Self::window_id_from_ll(event.windowID),
                         win_event: WindowEvent::from_ll(
                             event.r#type.into(),
                             event.data1,
@@ -1760,12 +1819,12 @@ impl Event {
 
                     Event::KeyDown {
                         timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        keycode: Keycode::from_i32(event.key as i32),
+                        window_id: Self::window_id_from_ll(event.windowID),
+                        keycode: Keycode::from_i32(event.key.0 as i32),
                         scancode: Scancode::from_i32(event.scancode.into()),
-                        keymod: keyboard::Mod::from_bits_truncate(event.r#mod),
+                        keymod: Self::keymod_from_ll(event.r#mod),
                         repeat: event.repeat,
-                        which: event.which,
+                        which: Self::keyboard_id_from_ll(event.which),
                         raw: event.raw,
                     }
                 }
@@ -1774,12 +1833,12 @@ impl Event {
 
                     Event::KeyUp {
                         timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        keycode: Keycode::from_i32(event.key as i32),
+                        window_id: Self::window_id_from_ll(event.windowID),
+                        keycode: Keycode::from_i32(event.key.0 as i32),
                         scancode: Scancode::from_i32(event.scancode.into()),
-                        keymod: keyboard::Mod::from_bits_truncate(event.r#mod),
+                        keymod: Self::keymod_from_ll(event.r#mod),
                         repeat: event.repeat,
-                        which: event.which,
+                        which: Self::keyboard_id_from_ll(event.which),
                         raw: event.raw,
                     }
                 }
@@ -1795,7 +1854,7 @@ impl Event {
 
                     Event::TextEditing {
                         timestamp: event.timestamp,
-                        window_id: event.windowID,
+                        window_id: Self::window_id_from_ll(event.windowID),
                         text,
                         start: event.start,
                         length: event.length,
@@ -1813,7 +1872,7 @@ impl Event {
 
                     Event::TextInput {
                         timestamp: event.timestamp,
-                        window_id: event.windowID,
+                        window_id: Self::window_id_from_ll(event.windowID),
                         text,
                     }
                 }
@@ -1823,9 +1882,11 @@ impl Event {
 
                     Event::MouseMotion {
                         timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        which: event.which,
-                        mousestate: mouse::MouseState::from_sdl_state(event.state),
+                        window_id: Self::window_id_from_ll(event.windowID),
+                        which: Self::mouse_id_from_ll(event.which),
+                        mousestate: mouse::MouseState::from_sdl_state(
+                            Self::mouse_button_flags_from_ll(event.state),
+                        ),
                         x: event.x,
                         y: event.y,
                         xrel: event.xrel,
@@ -1837,8 +1898,8 @@ impl Event {
 
                     Event::MouseButtonDown {
                         timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        which: event.which,
+                        window_id: Self::window_id_from_ll(event.windowID),
+                        which: Self::mouse_id_from_ll(event.which),
                         mouse_btn: mouse::MouseButton::from_ll(event.button),
                         clicks: event.clicks,
                         x: event.x,
@@ -1850,8 +1911,8 @@ impl Event {
 
                     Event::MouseButtonUp {
                         timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        which: event.which,
+                        window_id: Self::window_id_from_ll(event.windowID),
+                        which: Self::mouse_id_from_ll(event.which),
                         mouse_btn: mouse::MouseButton::from_ll(event.button),
                         clicks: event.clicks,
                         x: event.x,
@@ -1863,8 +1924,8 @@ impl Event {
 
                     Event::MouseWheel {
                         timestamp: event.timestamp,
-                        window_id: event.windowID,
-                        which: event.which,
+                        window_id: Self::window_id_from_ll(event.windowID),
+                        which: Self::mouse_id_from_ll(event.which),
                         x: event.x,
                         y: event.y,
                         direction: event.direction.into(),
@@ -1877,7 +1938,7 @@ impl Event {
                     let event = raw.jaxis;
                     Event::JoyAxisMotion {
                         timestamp: event.timestamp,
-                        which: event.which,
+                        which: Self::joystick_id_from_ll(event.which),
                         axis_idx: event.axis,
                         value: event.value,
                     }
@@ -1886,7 +1947,7 @@ impl Event {
                     let event = raw.jhat;
                     Event::JoyHatMotion {
                         timestamp: event.timestamp,
-                        which: event.which,
+                        which: Self::joystick_id_from_ll(event.which),
                         hat_idx: event.hat,
                         state: joystick::HatState::from_raw(event.value),
                     }
@@ -1895,7 +1956,7 @@ impl Event {
                     let event = raw.jbutton;
                     Event::JoyButtonDown {
                         timestamp: event.timestamp,
-                        which: event.which,
+                        which: Self::joystick_id_from_ll(event.which),
                         button_idx: event.button,
                     }
                 }
@@ -1903,7 +1964,7 @@ impl Event {
                     let event = raw.jbutton;
                     Event::JoyButtonUp {
                         timestamp: event.timestamp,
-                        which: event.which,
+                        which: Self::joystick_id_from_ll(event.which),
                         button_idx: event.button,
                     }
                 }
@@ -1911,14 +1972,14 @@ impl Event {
                     let event = raw.jdevice;
                     Event::JoyDeviceAdded {
                         timestamp: event.timestamp,
-                        which: event.which,
+                        which: Self::joystick_id_from_ll(event.which),
                     }
                 }
                 EventType::JoyDeviceRemoved => {
                     let event = raw.jdevice;
                     Event::JoyDeviceRemoved {
                         timestamp: event.timestamp,
-                        which: event.which,
+                        which: Self::joystick_id_from_ll(event.which),
                     }
                 }
 
@@ -1928,7 +1989,7 @@ impl Event {
 
                     Event::ControllerAxisMotion {
                         timestamp: event.timestamp,
-                        which: event.which,
+                        which: Self::joystick_id_from_ll(event.which),
                         axis,
                         value: event.value,
                     }
@@ -1939,7 +2000,7 @@ impl Event {
 
                     Event::ControllerButtonDown {
                         timestamp: event.timestamp,
-                        which: event.which,
+                        which: Self::joystick_id_from_ll(event.which),
                         button,
                     }
                 }
@@ -1949,7 +2010,7 @@ impl Event {
 
                     Event::ControllerButtonUp {
                         timestamp: event.timestamp,
-                        which: event.which,
+                        which: Self::joystick_id_from_ll(event.which),
                         button,
                     }
                 }
@@ -1957,28 +2018,28 @@ impl Event {
                     let event = raw.gdevice;
                     Event::ControllerDeviceAdded {
                         timestamp: event.timestamp,
-                        which: event.which,
+                        which: Self::joystick_id_from_ll(event.which),
                     }
                 }
                 EventType::ControllerDeviceRemoved => {
                     let event = raw.gdevice;
                     Event::ControllerDeviceRemoved {
                         timestamp: event.timestamp,
-                        which: event.which,
+                        which: Self::joystick_id_from_ll(event.which),
                     }
                 }
                 EventType::ControllerDeviceRemapped => {
                     let event = raw.gdevice;
                     Event::ControllerDeviceRemapped {
                         timestamp: event.timestamp,
-                        which: event.which,
+                        which: Self::joystick_id_from_ll(event.which),
                     }
                 }
                 EventType::ControllerTouchpadDown => {
                     let event = raw.gtouchpad;
                     Event::ControllerTouchpadDown {
                         timestamp: event.timestamp,
-                        which: event.which,
+                        which: Self::joystick_id_from_ll(event.which),
                         touchpad: event.touchpad,
                         finger: event.finger,
                         x: event.x,
@@ -1990,7 +2051,7 @@ impl Event {
                     let event = raw.gtouchpad;
                     Event::ControllerTouchpadMotion {
                         timestamp: event.timestamp,
-                        which: event.which,
+                        which: Self::joystick_id_from_ll(event.which),
                         touchpad: event.touchpad,
                         finger: event.finger,
                         x: event.x,
@@ -2002,7 +2063,7 @@ impl Event {
                     let event = raw.gtouchpad;
                     Event::ControllerTouchpadUp {
                         timestamp: event.timestamp,
-                        which: event.which,
+                        which: Self::joystick_id_from_ll(event.which),
                         touchpad: event.touchpad,
                         finger: event.finger,
                         x: event.x,
@@ -2015,7 +2076,7 @@ impl Event {
                     let event = raw.gsensor;
                     Event::ControllerSensorUpdated {
                         timestamp: event.timestamp,
-                        which: event.which,
+                        which: Self::joystick_id_from_ll(event.which),
                         sensor: crate::sensor::SensorType::from_ll(event.sensor),
                         data: event.data,
                     }
@@ -2025,8 +2086,8 @@ impl Event {
                     let event = raw.tfinger;
                     Event::FingerDown {
                         timestamp: event.timestamp,
-                        touch_id: event.touchID,
-                        finger_id: event.fingerID,
+                        touch_id: Self::touch_id_from_ll(event.touchID),
+                        finger_id: Self::finger_id_from_ll(event.fingerID),
                         x: event.x,
                         y: event.y,
                         dx: event.dx,
@@ -2038,8 +2099,8 @@ impl Event {
                     let event = raw.tfinger;
                     Event::FingerUp {
                         timestamp: event.timestamp,
-                        touch_id: event.touchID,
-                        finger_id: event.fingerID,
+                        touch_id: Self::touch_id_from_ll(event.touchID),
+                        finger_id: Self::finger_id_from_ll(event.fingerID),
                         x: event.x,
                         y: event.y,
                         dx: event.dx,
@@ -2051,8 +2112,8 @@ impl Event {
                     let event = raw.tfinger;
                     Event::FingerMotion {
                         timestamp: event.timestamp,
-                        touch_id: event.touchID,
-                        finger_id: event.fingerID,
+                        touch_id: Self::touch_id_from_ll(event.touchID),
+                        finger_id: Self::finger_id_from_ll(event.fingerID),
                         x: event.x,
                         y: event.y,
                         dx: event.dx,
@@ -2075,7 +2136,7 @@ impl Event {
 
                     Event::DropFile {
                         timestamp: event.timestamp,
-                        window_id: event.windowID,
+                        window_id: Self::window_id_from_ll(event.windowID),
                         filename: text,
                     }
                 }
@@ -2087,7 +2148,7 @@ impl Event {
 
                     Event::DropText {
                         timestamp: event.timestamp,
-                        window_id: event.windowID,
+                        window_id: Self::window_id_from_ll(event.windowID),
                         filename: text,
                     }
                 }
@@ -2096,7 +2157,7 @@ impl Event {
 
                     Event::DropBegin {
                         timestamp: event.timestamp,
-                        window_id: event.windowID,
+                        window_id: Self::window_id_from_ll(event.windowID),
                     }
                 }
                 EventType::DropComplete => {
@@ -2104,14 +2165,14 @@ impl Event {
 
                     Event::DropComplete {
                         timestamp: event.timestamp,
-                        window_id: event.windowID,
+                        window_id: Self::window_id_from_ll(event.windowID),
                     }
                 }
                 EventType::AudioDeviceAdded => {
                     let event = raw.adevice;
                     Event::AudioDeviceAdded {
                         timestamp: event.timestamp,
-                        which: event.which,
+                        which: Self::audio_device_id_from_ll(event.which),
                         // false if an audio output device, true if an audio capture device
                         iscapture: event.recording,
                     }
@@ -2120,7 +2181,7 @@ impl Event {
                     let event = raw.adevice;
                     Event::AudioDeviceRemoved {
                         timestamp: event.timestamp,
-                        which: event.which,
+                        which: Self::audio_device_id_from_ll(event.which),
                         // false if an audio output device, true if an audio capture device
                         iscapture: event.recording,
                     }
@@ -2130,24 +2191,24 @@ impl Event {
                     let event = raw.pproximity;
                     Event::PenProximityIn {
                         timestamp: event.timestamp,
-                        which: event.which,
-                        window: event.windowID,
+                        which: Self::pen_id_from_ll(event.which),
+                        window: Self::window_id_from_ll(event.windowID),
                     }
                 }
                 EventType::PenProximityOut => {
                     let event = raw.pproximity;
                     Event::PenProximityOut {
                         timestamp: event.timestamp,
-                        which: event.which,
-                        window: event.windowID,
+                        which: Self::pen_id_from_ll(event.which),
+                        window: Self::window_id_from_ll(event.windowID),
                     }
                 }
                 EventType::PenDown => {
                     let event = raw.ptouch;
                     Event::PenDown {
                         timestamp: event.timestamp,
-                        which: event.which,
-                        window: event.windowID,
+                        which: Self::pen_id_from_ll(event.which),
+                        window: Self::window_id_from_ll(event.windowID),
                         x: event.x,
                         y: event.y,
                         eraser: event.eraser,
@@ -2157,8 +2218,8 @@ impl Event {
                     let event = raw.ptouch;
                     Event::PenUp {
                         timestamp: event.timestamp,
-                        which: event.which,
-                        window: event.windowID,
+                        which: Self::pen_id_from_ll(event.which),
+                        window: Self::window_id_from_ll(event.windowID),
                         x: event.x,
                         y: event.y,
                         eraser: event.eraser,
@@ -2168,8 +2229,8 @@ impl Event {
                     let event = raw.pmotion;
                     Event::PenMotion {
                         timestamp: event.timestamp,
-                        which: event.which,
-                        window: event.windowID,
+                        which: Self::pen_id_from_ll(event.which),
+                        window: Self::window_id_from_ll(event.windowID),
                         x: event.x,
                         y: event.y,
                     }
@@ -2179,8 +2240,8 @@ impl Event {
                     let event = raw.pbutton;
                     Event::PenButtonUp {
                         timestamp: event.timestamp,
-                        which: event.which,
-                        window: event.windowID,
+                        which: Self::pen_id_from_ll(event.which),
+                        window: Self::window_id_from_ll(event.windowID),
                         x: event.x,
                         y: event.y,
                         button: event.button,
@@ -2190,8 +2251,8 @@ impl Event {
                     let event = raw.pbutton;
                     Event::PenButtonDown {
                         timestamp: event.timestamp,
-                        which: event.which,
-                        window: event.windowID,
+                        which: Self::pen_id_from_ll(event.which),
+                        window: Self::window_id_from_ll(event.windowID),
                         x: event.x,
                         y: event.y,
                         button: event.button,
@@ -2201,8 +2262,8 @@ impl Event {
                     let event = raw.paxis;
                     Event::PenAxis {
                         timestamp: event.timestamp,
-                        which: event.which,
-                        window: event.windowID,
+                        which: Self::pen_id_from_ll(event.which),
+                        window: Self::window_id_from_ll(event.windowID),
                         x: event.x,
                         y: event.y,
                         axis: PenAxis::from_ll(event.axis),
@@ -2237,7 +2298,7 @@ impl Event {
 
                         Event::User {
                             timestamp: event.timestamp,
-                            window_id: event.windowID,
+                            window_id: Self::window_id_from_ll(event.windowID),
                             type_: raw_type,
                             code: event.code,
                             data1: event.data1,
@@ -3210,6 +3271,7 @@ impl<F: FnMut(Event) + Send + 'static> EventWatchCallback for F {
 
 #[cfg(test)]
 mod test {
+    use crate::sys;
     use crate::video::Display;
 
     use super::super::gamepad::{Axis, Button};
@@ -3233,7 +3295,7 @@ mod test {
         {
             let e = Event::Display {
                 timestamp: 0,
-                display: Display::from_ll(1),
+                display: Display::from_ll(sys::video::SDL_DisplayID(1)),
                 display_event: DisplayEvent::Orientation(Orientation::LandscapeFlipped),
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
@@ -3455,7 +3517,7 @@ mod test {
 
         // Simulate SDL setting bits unknown to us, see PR #780
         unsafe {
-            raw_event.key.r#mod = 0xffff;
+            raw_event.key.r#mod = sys::keycode::SDL_Keymod(0xffff);
         }
 
         if let Event::KeyDown { keymod, .. } = Event::from_ll(raw_event) {
@@ -3482,7 +3544,7 @@ mod test {
 
         // Simulate SDL setting bits unknown to us, see PR #780
         unsafe {
-            raw_event.key.r#mod = 0xffff;
+            raw_event.key.r#mod = sys::keycode::SDL_Keymod(0xffff);
         }
 
         if let Event::KeyUp { keymod, .. } = Event::from_ll(raw_event) {

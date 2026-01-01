@@ -27,14 +27,15 @@ libc = "0.2.178"
 lazy_static = "1.4.0"
 
 [dependencies.sdl3-sys]
-version = "0.5"
+version = "0.6"
+features = ["metadata"]
 
 [dependencies.sdl3-image-sys]
-version = "0.2"
+version = "0.6"
 optional = true
 
 [dependencies.sdl3-ttf-sys]
-version = "0.2"
+version = "0.6"
 optional = true
 
 [dependencies.c_vec]
@@ -56,6 +57,9 @@ wgpu = { version = "24.0.0", features = ["spirv"] }
 pollster = "0.4.0"
 env_logger = "0.11.6"
 
+[build-dependencies]
+sdl3-sys = { version = "0.6", features = ["only-metadata"] }
+
 
 [features]
 
@@ -73,14 +77,14 @@ build-from-source = [
 build-from-source-static = [
     "sdl3-sys/build-from-source-static",
     "sdl3-image-sys?/build-from-source-static",
-    "sdl3-ttf-sys?/build-from-source-static",
+    "sdl3-ttf-sys?/build-static-vendored",
 ]
 build-from-source-unix-console = ["sdl3-sys/sdl-unix-console-build"]
 ash = ["sdl3-sys/use-ash-v0-38"]
 default = []
 unsafe_textures = []
 gfx = ["c_vec"] #, "sdl3-sys/gfx"]
-#mixer = ["sdl3-sys/mixer"]
+mixer = []
 image = ["dep:sdl3-image-sys"]
 ttf = ["dep:sdl3-ttf-sys"]
 # Use hidapi support in SDL. Only 2.0.12 and after

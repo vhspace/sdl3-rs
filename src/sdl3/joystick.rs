@@ -161,7 +161,7 @@ impl Joystick {
             // Should only fail if the joystick is NULL.
             panic!("{}", get_error())
         } else {
-            result as u32
+            u32::from(result)
         }
     }
 

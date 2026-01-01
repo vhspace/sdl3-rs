@@ -18,7 +18,7 @@ impl RelativeMouseState {
         let mut y = 0.;
         let mouse_state = unsafe {
             // This call is the only difference between MouseState
-            sys::mouse::SDL_GetRelativeMouseState(&mut x, &mut y)
+            sys::mouse::SDL_GetRelativeMouseState(&mut x, &mut y).0
         };
 
         RelativeMouseState { mouse_state, x, y }

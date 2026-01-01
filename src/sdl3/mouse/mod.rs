@@ -210,7 +210,7 @@ impl MouseState {
     pub fn new(_e: &EventPump) -> MouseState {
         let mut x = 0.;
         let mut y = 0.;
-        let mouse_state: u32 = unsafe { sys::mouse::SDL_GetMouseState(&mut x, &mut y) };
+        let mouse_state: u32 = unsafe { sys::mouse::SDL_GetMouseState(&mut x, &mut y).0 };
 
         MouseState { mouse_state, x, y }
     }
@@ -406,7 +406,7 @@ impl MouseUtil {
             None
         } else {
             let id = unsafe { SDL_GetWindowID(raw) };
-            Some(id)
+            Some(id.into())
         }
     }
 

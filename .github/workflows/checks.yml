@@ -3,8 +3,6 @@ name: Checks
 env:
   CARGO_INCREMENTAL: 0
   CARGO_TERM_COLOR: "always"
-  # Add this feature by default, to easily install SDL3
-  CI_BUILD_FEATURES: "build-from-source"
 
 on:
   push:
@@ -13,18 +11,22 @@ on:
 
 jobs:
   clippy-version-features:
-    name: Clippy - feature ${{ matrix.feature }}
+    name: Clippy - ${{ matrix.build_mode }} - feature ${{ matrix.feature }}
     runs-on: ubuntu-latest
     
     strategy:
       fail-fast: false
       matrix:
+        build_mode:
+          - build-from-source
+          - build-from-source-static
         feature:
           - ash
           - unsafe_textures
           - ttf
           - hidapi
           - raw-window-handle
+          - image
 
     steps:
       - name: checkout sources
@@ -51,25 +53,29 @@ jobs:
             --locked \
             --offline \
             --all-targets \
-            --features "$CI_BUILD_FEATURES ${{ matrix.feature }}" \
+            --features "${{ matrix.build_mode }} ${{ matrix.feature }}" \
             -- \
             -A warnings \
             -W clippy::not_unsafe_ptr_arg_deref
 
   build-version-features:
-    name: Build - ${{ matrix.os }} - feature ${{ matrix.feature }}
+    name: Build - ${{ matrix.os }} - ${{ matrix.build_mode }} - feature ${{ matrix.feature }}
     runs-on: ${{ matrix.os }}
     
     strategy:
       fail-fast: false
       matrix:
         os: [macos-latest, ubuntu-latest]
+        build_mode:
+          - build-from-source
+          - build-from-source-static
         feature:
           - ash
           - unsafe_textures
           - ttf
           - hidapi
           - raw-window-handle
+          - image
 
     steps:
       - name: checkout sources
@@ -95,7 +101,7 @@ jobs:
             --offline \
             --examples \
             --all-targets \
-            --features "$CI_BUILD_FEATURES ${{ matrix.feature }}"
+            --features "${{ matrix.build_mode }} ${{ matrix.feature }}"
 
   tests:
     name: Tests - ${{ matrix.name }}
@@ -105,10 +111,18 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: default
+          - name: default (build-from-source)
+            build_mode: build-from-source
             features: ""
-          - name: build-from-source-static
-            features: "build-from-source-static"
+          - name: default (build-from-source-static)
+            build_mode: build-from-source-static
+            features: ""
+          - name: image (build-from-source)
+            build_mode: build-from-source
+            features: "image"
+          - name: image (build-from-source-static)
+            build_mode: build-from-source-static
+            features: "image"
 
     steps:
       - name: checkout sources
@@ -121,7 +135,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install --no-install-recommends xvfb
+          sudo apt-get install --no-install-recommends -y xvfb
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@master
         with:
@@ -135,14 +149,16 @@ jobs:
           SDL_VIDEODRIVER: x11
           SDL_AUDIODRIVER: dummy
         run: |
-          FEATURES="$(echo "$CI_BUILD_FEATURES ${{ matrix.features }}" | xargs)"
+          FEATURES="$(echo "${{ matrix.build_mode }} ${{ matrix.features }}" | xargs)"
           xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" \
             cargo +stable \
               test \
               --verbose \
               --locked \
               --offline \
-              --all-targets \
+              --lib \
+              --tests \
+              --examples \
               --features "$FEATURES"
 
   fmt:

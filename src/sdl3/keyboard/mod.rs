@@ -80,6 +80,7 @@ impl<'a> KeyboardState<'a> {
     /// # Example
     /// ```no_run
     /// use sdl3::keyboard::{Keycode, Mod, Scancode};
+    /// use sdl3::sys::keycode::SDL_Keymod;
     /// use std::collections::HashSet;
     ///
     /// fn pressed_scancode_set(e: &sdl3::EventPump) -> HashSet<Scancode> {
@@ -88,7 +89,7 @@ impl<'a> KeyboardState<'a> {
     ///
     /// fn pressed_keycode_set(e: &sdl3::EventPump) -> HashSet<Keycode> {
     ///     e.keyboard_state().pressed_scancodes()
-    ///         .filter_map(|scancode| Keycode::from_scancode(scancode, Mod::NOMOD.bits(), false))
+    ///         .filter_map(|scancode| Keycode::from_scancode(scancode, SDL_Keymod(Mod::NOMOD.bits()), false))
     ///         .collect()
     /// }
     ///
@@ -186,19 +187,19 @@ impl KeyboardUtil {
             None
         } else {
             let id = unsafe { SDL_GetWindowID(raw) };
-            Some(id)
+            Some(id.into())
         }
     }
 
     #[doc(alias = "SDL_GetModState")]
     pub fn mod_state(&self) -> Mod {
-        unsafe { Mod::from_bits(sys::keyboard::SDL_GetModState() as u16).unwrap() }
+        unsafe { Mod::from_bits(sys::keyboard::SDL_GetModState().0).unwrap() }
     }
 
     #[doc(alias = "SDL_SetModState")]
     pub fn set_mod_state(&self, flags: Mod) {
         unsafe {
-            sys::keyboard::SDL_SetModState(flags.bits());
+            sys::keyboard::SDL_SetModState(sys::keycode::SDL_Keymod(flags.bits()));
         }
     }
 }

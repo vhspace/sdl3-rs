@@ -905,15 +905,15 @@ dependencies = [
 
 [[package]]
 name = "sdl3-image-src"
-version = "3.2.4"
+version = "3.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4d0c6070f236297a8e7931cbe5f652e3f0e5a8a214b12984357bd4904874cc7"
+checksum = "936d4dc07e63daea9725d5aa764fd1c5db4dde5d94ee956d20e193bdd592a40d"
 
 [[package]]
 name = "sdl3-image-sys"
-version = "0.2.0+SDL3-image-3.2.4"
+version = "0.6.0+SDL-image-3.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d92bd93ce75ca9b027474f90c788daf3b5ced8410ee3c1dcb478a10030bf162"
+checksum = "ec4d62a0bdf51c83383f9ae409be02436eef48bfb750f1744facfa06eada28e6"
 dependencies = [
  "cmake",
  "rpkg-config",
@@ -923,15 +923,15 @@ dependencies = [
 
 [[package]]
 name = "sdl3-src"
-version = "3.2.28"
+version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c77e0ceda907b4b335bc34191538ba538b30bd30a90daedc575f6e347c4605c2"
+checksum = "8d75184862d20bd48bdfeb7a6ee00d67c211e6a7301dc8011f7db1ed8e78fbf3"
 
 [[package]]
 name = "sdl3-sys"
-version = "0.5.11+SDL3-3.2.28"
+version = "0.6.0+SDL-3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "73979b5f78819ede7fb6b7534161fe70f3d7a56cc09e7e29c7b58c2b525abfa6"
+checksum = "8361b0312462d2cf9c115fcbdf9cfceceef79d53faec3b50efd6447ac903eb23"
 dependencies = [
  "ash",
  "cc",
@@ -950,9 +950,9 @@ checksum = "f28923d2ce72ff317d8eb7cec97ddfb8f351c330d7bcbf8c76e91332122c93b3"
 
 [[package]]
 name = "sdl3-ttf-sys"
-version = "0.2.0+SDL3-ttf-3.2.2"
+version = "0.6.0+SDL-ttf-3.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d1d8477496fa2b081fb8f63cf8d0a9a9ba6a7a8f2a21b87e7d13d2ab6d73582"
+checksum = "c30da3dcd7e062f19350b47a532f7629c42801b801687535fd31e8ba2adfd71d"
 dependencies = [
  "cmake",
  "rpkg-config",

@@ -1,7 +1,7 @@
 extern crate sdl3;
 
 use sdl3::event::Event;
-use sdl3::image::{InitFlag, LoadSurface};
+use sdl3::image::LoadSurface;
 use sdl3::keyboard::Keycode;
 use sdl3::mouse::Cursor;
 use sdl3::pixels::Color;
@@ -13,7 +13,6 @@ use std::path::Path;
 pub fn run(png: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
-    let _image_context = sdl3::image::init(InitFlag::PNG | InitFlag::JPG)?;
     let window = video_subsystem
         .window("rust-sdl3 demo: Cursor", 800, 600)
         .position_centered()

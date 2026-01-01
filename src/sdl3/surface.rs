@@ -14,7 +14,6 @@ use crate::sys;
 use crate::Error;
 use libc::c_int;
 use std::convert::TryFrom;
-use std::mem::transmute;
 use std::ptr;
 use sys::blendmode::SDL_BLENDMODE_NONE;
 use sys::surface::{SDL_ScaleMode, SDL_MUSTLOCK, SDL_SCALEMODE_LINEAR};
@@ -593,7 +592,7 @@ impl SurfaceRef {
     /// The function will fail if the blend mode is not supported by SDL.
     #[doc(alias = "SDL_SetSurfaceBlendMode")]
     pub fn set_blend_mode(&mut self, mode: BlendMode) -> Result<(), Error> {
-        let result = unsafe { sys::surface::SDL_SetSurfaceBlendMode(self.raw(), transmute(mode)) };
+        let result = unsafe { sys::surface::SDL_SetSurfaceBlendMode(self.raw(), mode.into()) };
 
         match result {
             true => Ok(()),
