@@ -58,7 +58,7 @@ pollster = "0.4.0"
 env_logger = "0.11.6"
 
 [build-dependencies]
-sdl3-sys = { version = "0.6", features = ["metadata"] }
+sdl3-sys = { version = "0.6", features = ["only-metadata"] }
 
 
 [features]
@@ -77,7 +77,7 @@ build-from-source = [
 build-from-source-static = [
     "sdl3-sys/build-from-source-static",
     "sdl3-image-sys?/build-from-source-static",
-    "sdl3-ttf-sys?/build-from-source-static",
+    "sdl3-ttf-sys?/build-static-vendored",
 ]
 build-from-source-unix-console = ["sdl3-sys/sdl-unix-console-build"]
 ash = ["sdl3-sys/use-ash-v0-38"]
