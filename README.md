@@ -26,7 +26,7 @@ Feel free to create issues or work on them yourself.
 - [ ] Add [new features](https://wiki.libsdl.org/SDL3/NewFeatures) from SDL3.
 - [ ] Update documentation.
 
-Please refer to the [sdl3-rs](https://github.com/revmischa/sdl3-rs) repository for the latest updates.
+Please refer to the [sdl3-rs](https://github.com/vhspace/sdl3-rs) repository for the latest updates.
 
 The low-level bindings are being worked on in the [sdl3-sys](https://github.com/maia-s/sdl3-sys-rs) repository.
 
