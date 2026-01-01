@@ -16,14 +16,14 @@ fn main() -> Result<(), String> {
     // Iterate over all available joysticks and look for game controllers.
     let controller = (0..available.len())
         .find_map(|id| {
-            if !game_controller_subsystem.is_gamepad(id as u32) {
+            if !game_controller_subsystem.is_gamepad(id.0) {
                 println!("{} is not a game controller", id);
                 return None;
             }
 
             println!("Attempting to open controller {}", id);
 
-            match game_controller_subsystem.open(id as u32) {
+            match game_controller_subsystem.open(id.0) {
                 Ok(c) => {
                     // We managed to find and open a game controller,
                     // exit the loop
