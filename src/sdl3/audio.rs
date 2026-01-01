@@ -67,6 +67,7 @@ use std::marker::PhantomData;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::path::Path;
+use std::slice;
 use sys::audio::{SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, SDL_AUDIO_DEVICE_DEFAULT_RECORDING};
 use sys::stdinc::SDL_free;
 
@@ -753,6 +754,82 @@ impl AudioDevice {
                 return Err(get_error());
             }
             Ok(CStr::from_ptr(name_ptr).to_str().unwrap().to_owned())
+        }
+    }
+
+    /// Query the current audio format for this device.
+    #[doc(alias = "SDL_GetAudioDeviceFormat")]
+    pub fn format(&self) -> Result<(AudioSpec, Option<i32>), Error> {
+        let mut raw_spec = AudioSpec::default().into();
+        let mut sample_frames: c_int = 0;
+        let result = unsafe {
+            sys::audio::SDL_GetAudioDeviceFormat(
+                self.device_id.id(),
+                &mut raw_spec,
+                &mut sample_frames as *mut c_int,
+            )
+        };
+
+        if result {
+            let spec = AudioSpec::from(&raw_spec);
+            let frames = if sample_frames > 0 {
+                Some(sample_frames)
+            } else {
+                None
+            };
+            Ok((spec, frames))
+        } else {
+            Err(get_error())
+        }
+    }
+
+    /// Retrieve the device's channel map, if one is configured.
+    #[doc(alias = "SDL_GetAudioDeviceChannelMap")]
+    pub fn channel_map(&self) -> Result<Option<Vec<i32>>, Error> {
+        unsafe {
+            clear_error();
+            let mut count: c_int = 0;
+            let map_ptr = sys::audio::SDL_GetAudioDeviceChannelMap(self.device_id.id(), &mut count);
+            if map_ptr.is_null() {
+                let err = get_error();
+                if err.is_empty() {
+                    return Ok(None);
+                }
+                return Err(err);
+            }
+
+            if count < 0 {
+                SDL_free(map_ptr as *mut c_void);
+                return Err(Error(
+                    "SDL reported a negative device channel count".to_owned(),
+                ));
+            }
+
+            let entries = slice::from_raw_parts(map_ptr as *const c_int, count as usize).to_vec();
+            SDL_free(map_ptr as *mut c_void);
+            Ok(Some(entries))
+        }
+    }
+
+    /// Query the device gain.
+    #[doc(alias = "SDL_GetAudioDeviceGain")]
+    pub fn gain(&self) -> Result<f32, Error> {
+        let gain = unsafe { sys::audio::SDL_GetAudioDeviceGain(self.device_id.id()) };
+        if gain >= 0.0 {
+            Ok(gain)
+        } else {
+            Err(get_error())
+        }
+    }
+
+    /// Adjust the device gain.
+    #[doc(alias = "SDL_SetAudioDeviceGain")]
+    pub fn set_gain(&self, gain: f32) -> Result<(), Error> {
+        let result = unsafe { sys::audio::SDL_SetAudioDeviceGain(self.device_id.id(), gain) };
+        if result {
+            Ok(())
+        } else {
+            Err(get_error())
         }
     }
 

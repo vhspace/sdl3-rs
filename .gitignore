@@ -24,3 +24,4 @@ target/
 .idea/
 .vscode/
 .aider*
+AGENTS.override.md
