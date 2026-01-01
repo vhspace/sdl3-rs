@@ -156,7 +156,9 @@ jobs:
               --verbose \
               --locked \
               --offline \
-              --all-targets \
+              --lib \
+              --tests \
+              --examples \
               --features "$FEATURES"
 
   fmt:

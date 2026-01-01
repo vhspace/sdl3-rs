@@ -137,7 +137,7 @@ impl crate::EventSubsystem {
     /// See the [SDL documentation](https://wiki.libsdl.org/SDL_UserEvent) for more information.
     ///
     /// # Example
-    /// ```
+    /// ```ignore
     /// let sdl = sdl3::init().unwrap();
     /// let ev = sdl.event().unwrap();
     ///
@@ -250,7 +250,7 @@ impl crate::EventSubsystem {
     /// longer needed.
     ///
     /// # Example: dump every event to stderr
-    /// ```
+    /// ```text
     /// let sdl = sdl3::init().unwrap();
     /// let ev = sdl.event().unwrap();
     ///

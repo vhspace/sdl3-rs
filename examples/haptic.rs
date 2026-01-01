@@ -27,7 +27,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("Couldn't open any joystick");
 
     let mut haptic = haptic_subsystem
-        .open_from_joystick_id(joystick_id)
+        .open_from_joystick_id(joystick_id.into())
         .map_err(|e| e.to_string())?;
 
     for event in sdl_context.event_pump()?.wait_iter() {
