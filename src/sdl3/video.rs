@@ -463,71 +463,68 @@ impl DisplayMode {
     }
 
     pub fn to_ll(&self) -> SDL_DisplayMode {
-        SDL_DisplayMode {
-            displayID: self.display.id,
-            format: self.format.into(),
-            w: self.w,
-            h: self.h,
-            pixel_density: self.pixel_density,
-            refresh_rate: self.refresh_rate,
-            refresh_rate_numerator: self.refresh_rate_numerator,
-            refresh_rate_denominator: self.refresh_rate_denominator,
-            internal: self.internal,
-        }
+        let mut mode: SDL_DisplayMode = unsafe { mem::zeroed() };
+        mode.displayID = self.display.id;
+        mode.format = self.format.into();
+        mode.w = self.w;
+        mode.h = self.h;
+        mode.pixel_density = self.pixel_density;
+        mode.refresh_rate = self.refresh_rate;
+        mode.refresh_rate_numerator = self.refresh_rate_numerator;
+        mode.refresh_rate_denominator = self.refresh_rate_denominator;
+        mode.internal = self.internal;
+        mode
     }
 }
 
-/// Flags controlling various on/off state on a window. Bitflags wrapper around
-/// [`SDL_WindowFlags`].
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
-pub struct WindowFlags(pub SDL_WindowFlags);
+bitflags! {
+    #[doc = "Flags controlling various on/off state on a window. Bitflags wrapper around [`SDL_WindowFlags`]."]
+    #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+    pub struct WindowFlags: u64 {
+        const FULLSCREEN = sys::video::SDL_WINDOW_FULLSCREEN.0 as u64;
+        const OPENGL = sys::video::SDL_WINDOW_OPENGL.0 as u64;
+        const OCCLUDED = sys::video::SDL_WINDOW_OCCLUDED.0 as u64;
+        const HIDDEN = sys::video::SDL_WINDOW_HIDDEN.0 as u64;
+        const BORDERLESS = sys::video::SDL_WINDOW_BORDERLESS.0 as u64;
+        const RESIZABLE = sys::video::SDL_WINDOW_RESIZABLE.0 as u64;
+        const MINIMIZED = sys::video::SDL_WINDOW_MINIMIZED.0 as u64;
+        const MAXIMIZED = sys::video::SDL_WINDOW_MAXIMIZED.0 as u64;
+        const MOUSE_GRABBED = sys::video::SDL_WINDOW_MOUSE_GRABBED.0 as u64;
+        const INPUT_FOCUS = sys::video::SDL_WINDOW_INPUT_FOCUS.0 as u64;
+        const MOUSE_FOCUS = sys::video::SDL_WINDOW_MOUSE_FOCUS.0 as u64;
+        const EXTERNAL = sys::video::SDL_WINDOW_EXTERNAL.0 as u64;
+        const MODAL = sys::video::SDL_WINDOW_MODAL.0 as u64;
+        const HIGH_PIXEL_DENSITY = sys::video::SDL_WINDOW_HIGH_PIXEL_DENSITY.0 as u64;
+        const MOUSE_CAPTURE = sys::video::SDL_WINDOW_MOUSE_CAPTURE.0 as u64;
+        const MOUSE_RELATIVE_MODE = sys::video::SDL_WINDOW_MOUSE_RELATIVE_MODE.0 as u64;
+        const ALWAYS_ON_TOP = sys::video::SDL_WINDOW_ALWAYS_ON_TOP.0 as u64;
+        const UTILITY = sys::video::SDL_WINDOW_UTILITY.0 as u64;
+        const TOOLTIP = sys::video::SDL_WINDOW_TOOLTIP.0 as u64;
+        const POPUP_MENU = sys::video::SDL_WINDOW_POPUP_MENU.0 as u64;
+        const KEYBOARD_GRABBED = sys::video::SDL_WINDOW_KEYBOARD_GRABBED.0 as u64;
+        const FILL_DOCUMENT = sys::video::SDL_WINDOW_FILL_DOCUMENT.0 as u64;
+        const VULKAN = sys::video::SDL_WINDOW_VULKAN.0 as u64;
+        const METAL = sys::video::SDL_WINDOW_METAL.0 as u64;
+        const TRANSPARENT = sys::video::SDL_WINDOW_TRANSPARENT.0 as u64;
+        const NOT_FOCUSABLE = sys::video::SDL_WINDOW_NOT_FOCUSABLE.0 as u64;
+    }
+}
 
 impl WindowFlags {
     pub const fn as_u32(self) -> u32 {
-        self.0 as u32
+        self.bits() as u32
     }
 }
 
 impl From<SDL_WindowFlags> for WindowFlags {
     fn from(value: SDL_WindowFlags) -> Self {
-        WindowFlags(value)
+        WindowFlags::from_bits_truncate(value.0)
     }
 }
 
 impl From<WindowFlags> for SDL_WindowFlags {
     fn from(value: WindowFlags) -> Self {
-        value.0
-    }
-}
-
-bitflags! {
-    impl WindowFlags: SDL_WindowFlags {
-        const FULLSCREEN = sys::video::SDL_WINDOW_FULLSCREEN;
-        const OPENGL = sys::video::SDL_WINDOW_OPENGL;
-        const OCCLUDED = sys::video::SDL_WINDOW_OCCLUDED;
-        const HIDDEN = sys::video::SDL_WINDOW_HIDDEN;
-        const BORDERLESS = sys::video::SDL_WINDOW_BORDERLESS;
-        const RESIZABLE = sys::video::SDL_WINDOW_RESIZABLE;
-        const MINIMIZED = sys::video::SDL_WINDOW_MINIMIZED;
-        const MAXIMIZED = sys::video::SDL_WINDOW_MAXIMIZED;
-        const MOUSE_GRABBED = sys::video::SDL_WINDOW_MOUSE_GRABBED;
-        const INPUT_FOCUS = sys::video::SDL_WINDOW_INPUT_FOCUS;
-        const MOUSE_FOCUS = sys::video::SDL_WINDOW_MOUSE_FOCUS;
-        const EXTERNAL = sys::video::SDL_WINDOW_EXTERNAL;
-        const MODAL = sys::video::SDL_WINDOW_MODAL;
-        const HIGH_PIXEL_DENSITY = sys::video::SDL_WINDOW_HIGH_PIXEL_DENSITY;
-        const MOUSE_CAPTURE = sys::video::SDL_WINDOW_MOUSE_CAPTURE;
-        const MOUSE_RELATIVE_MODE = sys::video::SDL_WINDOW_MOUSE_RELATIVE_MODE;
-        const ALWAYS_ON_TOP = sys::video::SDL_WINDOW_ALWAYS_ON_TOP;
-        const UTILITY = sys::video::SDL_WINDOW_UTILITY;
-        const TOOLTIP = sys::video::SDL_WINDOW_TOOLTIP;
-        const POPUP_MENU = sys::video::SDL_WINDOW_POPUP_MENU;
-        const KEYBOARD_GRABBED = sys::video::SDL_WINDOW_KEYBOARD_GRABBED;
-        const VULKAN = sys::video::SDL_WINDOW_VULKAN;
-        const METAL = sys::video::SDL_WINDOW_METAL;
-        const TRANSPARENT = sys::video::SDL_WINDOW_TRANSPARENT;
-        const NOT_FOCUSABLE = sys::video::SDL_WINDOW_NOT_FOCUSABLE;
-        const _ = !0;
+        SDL_WindowFlags(value.bits() as Uint64)
     }
 }
 
@@ -539,10 +536,11 @@ pub enum FullscreenType {
 }
 
 impl FullscreenType {
-    pub fn from_window_flags(window_flags: u32) -> FullscreenType {
-        if window_flags & FullscreenType::Desktop as u32 == FullscreenType::Desktop as u32 {
+    pub fn from_window_flags(window_flags: WindowFlags) -> FullscreenType {
+        let bits = window_flags.bits();
+        if bits & FullscreenType::Desktop as u64 == FullscreenType::Desktop as u64 {
             FullscreenType::Desktop
-        } else if window_flags & FullscreenType::True as u32 == FullscreenType::True as u32 {
+        } else if bits & FullscreenType::True as u64 == FullscreenType::True as u64 {
             FullscreenType::True
         } else {
             FullscreenType::Off
@@ -809,9 +807,15 @@ pub enum SystemTheme {
     Dark,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Display {
     pub(crate) id: SDL_DisplayID,
+}
+
+impl fmt::Debug for Display {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Display").field("id", &self.id.0).finish()
+    }
 }
 
 impl Display {
@@ -990,7 +994,7 @@ impl VideoSubsystem {
                 title.as_ptr(),
                 width as c_int,
                 height as c_int,
-                0,
+                SDL_WindowFlags::default(),
                 &mut sdl_window,
                 &mut renderer,
             )
@@ -1013,7 +1017,7 @@ impl VideoSubsystem {
     /// A solution to make this safe would be to store the [WindowContext]s in the [VideoSubsystem]
     /// and correctly refcount the contexts.
     pub unsafe fn window_from_id(&self, id: u32) -> Result<ManuallyDrop<Window>, Error> {
-        let raw = unsafe { sys::video::SDL_GetWindowFromID(id) };
+        let raw = unsafe { sys::video::SDL_GetWindowFromID(sys::video::SDL_WindowID(id)) };
         if raw.is_null() {
             Err(get_error())
         } else {
@@ -1183,7 +1187,7 @@ impl VideoSubsystem {
             Err(get_error())
         } else {
             let id = unsafe { sys::video::SDL_GetWindowID(raw) };
-            Ok(id)
+            Ok(id.into())
         }
     }
 
@@ -1274,7 +1278,7 @@ impl VideoSubsystem {
     /// Vulkan function. This function can be called to retrieve the address of other Vulkan
     /// functions.
     #[doc(alias = "SDL_Vulkan_GetVkGetInstanceProcAddr")]
-    pub fn vulkan_get_proc_address_function(&self) -> SDL_FunctionPointer {
+    pub fn vulkan_get_proc_address_function(&self) -> sys::vulkan::VkGetInstanceProcAddr {
         unsafe { sys::vulkan::SDL_Vulkan_GetVkGetInstanceProcAddr() }
     }
 
@@ -1350,7 +1354,7 @@ impl WindowBuilder {
             height,
             x: WindowPos::Undefined,
             y: WindowPos::Undefined,
-            window_flags: WindowFlags(0),
+            window_flags: WindowFlags::empty(),
             subsystem: v.clone(),
             create_metal_view: false,
         }
@@ -1410,7 +1414,7 @@ impl WindowBuilder {
             SDL_SetNumberProperty(
                 props,
                 flags_cstr.as_ptr(),
-                self.window_flags.0 as sys::stdinc::Sint64,
+                self.window_flags.bits() as sys::stdinc::Sint64,
             );
 
             let raw = sys::video::SDL_CreateWindowWithProperties(props);
@@ -1447,7 +1451,7 @@ impl WindowBuilder {
     /// Sets the underlying window flags.
     /// This will effectively undo any previous build operations, excluding window size and position.
     pub fn set_window_flags(&mut self, flags: u32) -> &mut WindowBuilder {
-        self.window_flags = WindowFlags(flags as SDL_WindowFlags);
+        self.window_flags = WindowFlags::from_bits_truncate(flags as u64);
         self
     }
 
@@ -1569,7 +1573,7 @@ impl PopupWindowBuilder {
             height,
             offset_x: 0,
             offset_y: 0,
-            window_flags: WindowFlags(0),
+            window_flags: WindowFlags::empty(),
             subsystem: v.clone(),
             create_metal_view: false,
         }
@@ -1642,7 +1646,7 @@ impl PopupWindowBuilder {
     /// Sets the underlying window flags.
     /// This will effectively undo any previous build operations, excluding window size and position.
     pub fn set_window_flags(&mut self, flags: u32) -> &mut PopupWindowBuilder {
-        self.window_flags = WindowFlags(flags as SDL_WindowFlags);
+        self.window_flags = WindowFlags::from_bits_truncate(flags as u64);
         self
     }
 
@@ -1773,7 +1777,7 @@ impl Window {
 
     #[doc(alias = "SDL_GetWindowID")]
     pub fn id(&self) -> u32 {
-        unsafe { sys::video::SDL_GetWindowID(self.context.raw) }
+        unsafe { sys::video::SDL_GetWindowID(self.context.raw).into() }
     }
 
     #[doc(alias = "SDL_GL_CreateContext")]
@@ -1954,27 +1958,27 @@ impl Window {
 
     /// Does the window have input focus?
     pub fn has_input_focus(&self) -> bool {
-        0 != self.window_flags() & sys::video::SDL_WINDOW_INPUT_FOCUS as Uint64
+        WindowFlags::from(self.window_flags()).contains(WindowFlags::INPUT_FOCUS)
     }
 
     /// Has the window grabbed input focus?
     pub fn has_input_grabbed(&self) -> bool {
-        0 != self.window_flags() & sys::video::SDL_WINDOW_MOUSE_GRABBED as Uint64
+        WindowFlags::from(self.window_flags()).contains(WindowFlags::MOUSE_GRABBED)
     }
 
     /// Does the window have mouse focus?
     pub fn has_mouse_focus(&self) -> bool {
-        0 != self.window_flags() & sys::video::SDL_WINDOW_MOUSE_FOCUS as Uint64
+        WindowFlags::from(self.window_flags()).contains(WindowFlags::MOUSE_FOCUS)
     }
 
     /// Is the window maximized?
     pub fn is_maximized(&self) -> bool {
-        0 != self.window_flags() & sys::video::SDL_WINDOW_MAXIMIZED as Uint64
+        WindowFlags::from(self.window_flags()).contains(WindowFlags::MAXIMIZED)
     }
 
     /// Is the window minimized?
     pub fn is_minimized(&self) -> bool {
-        0 != self.window_flags() & sys::video::SDL_WINDOW_MINIMIZED as Uint64
+        WindowFlags::from(self.window_flags()).contains(WindowFlags::MINIMIZED)
     }
 
     #[doc(alias = "SDL_SetWindowTitle")]
@@ -2200,7 +2204,7 @@ impl Window {
     }
 
     pub fn fullscreen_state(&self) -> FullscreenType {
-        FullscreenType::from_window_flags(self.window_flags() as u32)
+        FullscreenType::from_window_flags(WindowFlags::from(self.window_flags()))
     }
 
     #[doc(alias = "SDL_SetWindowFullscreen")]

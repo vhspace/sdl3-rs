@@ -186,19 +186,19 @@ impl KeyboardUtil {
             None
         } else {
             let id = unsafe { SDL_GetWindowID(raw) };
-            Some(id)
+            Some(id.into())
         }
     }
 
     #[doc(alias = "SDL_GetModState")]
     pub fn mod_state(&self) -> Mod {
-        unsafe { Mod::from_bits(sys::keyboard::SDL_GetModState() as u16).unwrap() }
+        unsafe { Mod::from_bits(sys::keyboard::SDL_GetModState().0).unwrap() }
     }
 
     #[doc(alias = "SDL_SetModState")]
     pub fn set_mod_state(&self, flags: Mod) {
         unsafe {
-            sys::keyboard::SDL_SetModState(flags.bits());
+            sys::keyboard::SDL_SetModState(sys::keycode::SDL_Keymod(flags.bits()));
         }
     }
 }

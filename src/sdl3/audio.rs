@@ -203,7 +203,7 @@ impl AudioSubsystem {
     #[doc(alias = "SDL_GetAudioDeviceName")]
     pub fn audio_playback_device_name(&self, index: u32) -> Result<String, Error> {
         unsafe {
-            let dev_name = sys::audio::SDL_GetAudioDeviceName(index);
+            let dev_name = sys::audio::SDL_GetAudioDeviceName(sys::audio::SDL_AudioDeviceID(index));
             if dev_name.is_null() {
                 Err(get_error())
             } else {
@@ -216,7 +216,7 @@ impl AudioSubsystem {
     #[doc(alias = "SDL_GetAudioDeviceName")]
     pub fn audio_recording_device_name(&self, index: u32) -> Result<String, Error> {
         unsafe {
-            let dev_name = sys::audio::SDL_GetAudioDeviceName(index);
+            let dev_name = sys::audio::SDL_GetAudioDeviceName(sys::audio::SDL_AudioDeviceID(index));
             if dev_name.is_null() {
                 Err(get_error())
             } else {
@@ -677,12 +677,16 @@ impl Default for AudioSpec {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum AudioDeviceID {
     Device(sys::audio::SDL_AudioDeviceID),
 }
 
-impl Copy for AudioDeviceID {}
+impl fmt::Debug for AudioDeviceID {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("AudioDeviceID").field(&self.id().0).finish()
+    }
+}
 
 impl AudioDeviceID {
     pub fn id(&self) -> sys::audio::SDL_AudioDeviceID {
@@ -701,13 +705,6 @@ impl AudioDeviceID {
         }
     }
 }
-
-impl PartialEq for AudioDeviceID {
-    fn eq(&self, other: &Self) -> bool {
-        self.id() == other.id()
-    }
-}
-impl Eq for AudioDeviceID {}
 
 /// Represents an open audio device (playback or recording).
 #[derive(Clone)]
@@ -920,13 +917,12 @@ impl AudioDevice {
                 }
             };
             let device_id = sys::audio::SDL_OpenAudioDevice(sdl_device, &desired);
-            match device_id {
-                0 => Err(get_error()),
-                id => {
-                    let device_id = AudioDeviceID::Device(id);
+            if device_id.0 == 0 {
+                Err(get_error())
+            } else {
+                let device_id = AudioDeviceID::Device(device_id);
 
-                    Ok(AudioDevice::new(device_id, audio_subsystem.clone()))
-                }
+                Ok(AudioDevice::new(device_id, audio_subsystem.clone()))
             }
         }
     }
@@ -1128,7 +1124,7 @@ impl Debug for AudioStream {
         let device_name = format!(
             "{} [{}]",
             device_name,
-            self.device_id().map(|id| id.id()).unwrap_or(0)
+            self.device_id().map(|id| id.id().0).unwrap_or(0)
         );
 
         // Get the audio specs

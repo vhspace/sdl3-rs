@@ -11,25 +11,49 @@ use crate::Error;
 use crate::sys;
 
 bitflags! {
-    #[derive(Debug)]
+    #[derive(Debug, Copy, Clone)]
     pub struct MessageBoxFlag: u32 {
         const ERROR =
-            sys::messagebox::SDL_MESSAGEBOX_ERROR ;
+            sys::messagebox::SDL_MESSAGEBOX_ERROR.0 as u32;
         const WARNING =
-            sys::messagebox::SDL_MESSAGEBOX_WARNING ;
+            sys::messagebox::SDL_MESSAGEBOX_WARNING.0 as u32;
         const INFORMATION =
-            sys::messagebox::SDL_MESSAGEBOX_INFORMATION ;
+            sys::messagebox::SDL_MESSAGEBOX_INFORMATION.0 as u32;
+    }
+}
+
+impl From<MessageBoxFlag> for sys::messagebox::SDL_MessageBoxFlags {
+    fn from(flags: MessageBoxFlag) -> Self {
+        sys::messagebox::SDL_MessageBoxFlags(flags.bits() as sys::stdinc::Uint32)
+    }
+}
+
+impl From<sys::messagebox::SDL_MessageBoxFlags> for MessageBoxFlag {
+    fn from(flags: sys::messagebox::SDL_MessageBoxFlags) -> Self {
+        MessageBoxFlag::from_bits_truncate(flags.0)
     }
 }
 
 bitflags! {
-    #[derive(Debug)]
+    #[derive(Debug, Copy, Clone)]
     pub struct MessageBoxButtonFlag: u32 {
         const ESCAPEKEY_DEFAULT =
-            sys::messagebox::SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
+            sys::messagebox::SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT.0 as u32;
         const RETURNKEY_DEFAULT =
-            sys::messagebox::SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
+            sys::messagebox::SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT.0 as u32;
         const NOTHING = 0;
+    }
+}
+
+impl From<MessageBoxButtonFlag> for sys::messagebox::SDL_MessageBoxButtonFlags {
+    fn from(flags: MessageBoxButtonFlag) -> Self {
+        sys::messagebox::SDL_MessageBoxButtonFlags(flags.bits() as sys::stdinc::Uint32)
+    }
+}
+
+impl From<sys::messagebox::SDL_MessageBoxButtonFlags> for MessageBoxButtonFlag {
+    fn from(flags: sys::messagebox::SDL_MessageBoxButtonFlags) -> Self {
+        MessageBoxButtonFlag::from_bits_truncate(flags.0)
     }
 }
 
@@ -167,8 +191,9 @@ where
             Ok(s) => s,
             Err(err) => return Err(InvalidMessage(err)),
         };
+        let sys_flags: sys::messagebox::SDL_MessageBoxFlags = flags.into();
         sys::messagebox::SDL_ShowSimpleMessageBox(
-            flags.bits(),
+            sys_flags,
             title.as_ptr() as *const c_char,
             message.as_ptr() as *const c_char,
             window.into().map_or(ptr::null_mut(), |win| win.raw()),
@@ -229,14 +254,14 @@ where
         .iter()
         .zip(button_texts.iter())
         .map(|(b, b_text)| sys::messagebox::SDL_MessageBoxButtonData {
-            flags: b.flags.bits(),
+            flags: b.flags.into(),
             buttonID: b.button_id as c_int,
             text: b_text.as_ptr(),
         })
         .collect();
     let result = unsafe {
         let msg_box_data = sys::messagebox::SDL_MessageBoxData {
-            flags: flags.bits(),
+            flags: flags.into(),
             window: window.map_or(ptr::null_mut(), |win| win.raw()),
             title: title.as_ptr() as *const c_char,
             message: message.as_ptr() as *const c_char,

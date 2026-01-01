@@ -256,42 +256,48 @@ pub struct RendererInfo {
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub enum BlendMode {
     /// no blending (replace destination with source).
-    None = sys::blendmode::SDL_BLENDMODE_NONE as i32,
+    None = sys::blendmode::SDL_BLENDMODE_NONE.0 as i32,
     /// Alpha blending
     ///
     /// dstRGB = (srcRGB * srcA) + (dstRGB * (1-srcA))
     ///
     /// dstA = srcA + (dstA * (1-srcA))
-    Blend = sys::blendmode::SDL_BLENDMODE_BLEND as i32,
+    Blend = sys::blendmode::SDL_BLENDMODE_BLEND.0 as i32,
     /// Additive blending
     ///
     /// dstRGB = (srcRGB * srcA) + dstRGB
     ///
     /// dstA = dstA (keep original alpha)
-    Add = sys::blendmode::SDL_BLENDMODE_ADD as i32,
+    Add = sys::blendmode::SDL_BLENDMODE_ADD.0 as i32,
     /// Color modulate
     ///
     /// dstRGB = srcRGB * dstRGB
-    Mod = sys::blendmode::SDL_BLENDMODE_MOD as i32,
+    Mod = sys::blendmode::SDL_BLENDMODE_MOD.0 as i32,
     /// Color multiply
-    Mul = sys::blendmode::SDL_BLENDMODE_MUL as i32,
+    Mul = sys::blendmode::SDL_BLENDMODE_MUL.0 as i32,
     /// Invalid blending mode (indicates error)
-    Invalid = sys::blendmode::SDL_BLENDMODE_INVALID as i32,
+    Invalid = sys::blendmode::SDL_BLENDMODE_INVALID.0 as i32,
 }
 
-impl TryFrom<u32> for BlendMode {
+impl From<BlendMode> for SDL_BlendMode {
+    fn from(value: BlendMode) -> Self {
+        SDL_BlendMode(value as u32)
+    }
+}
+
+impl TryFrom<SDL_BlendMode> for BlendMode {
     type Error = ();
 
-    fn try_from(n: u32) -> Result<Self, Self::Error> {
+    fn try_from(n: SDL_BlendMode) -> Result<Self, Self::Error> {
         use self::BlendMode::*;
 
         Ok(match n {
-            sys::blendmode::SDL_BLENDMODE_NONE => None,
-            sys::blendmode::SDL_BLENDMODE_BLEND => Blend,
-            sys::blendmode::SDL_BLENDMODE_ADD => Add,
-            sys::blendmode::SDL_BLENDMODE_MOD => Mod,
-            sys::blendmode::SDL_BLENDMODE_MUL => Mul,
-            sys::blendmode::SDL_BLENDMODE_INVALID => Invalid,
+            x if x == sys::blendmode::SDL_BLENDMODE_NONE => None,
+            x if x == sys::blendmode::SDL_BLENDMODE_BLEND => Blend,
+            x if x == sys::blendmode::SDL_BLENDMODE_ADD => Add,
+            x if x == sys::blendmode::SDL_BLENDMODE_MOD => Mod,
+            x if x == sys::blendmode::SDL_BLENDMODE_MUL => Mul,
+            x if x == sys::blendmode::SDL_BLENDMODE_INVALID => Invalid,
             _ => return Err(()),
         })
     }
@@ -1134,7 +1140,7 @@ impl<T: RenderTarget> Canvas<T> {
     #[doc(alias = "SDL_SetRenderDrawBlendMode")]
     pub fn set_blend_mode(&mut self, blend: BlendMode) {
         let ret =
-            unsafe { sys::render::SDL_SetRenderDrawBlendMode(self.context.raw, blend as u32) };
+            unsafe { sys::render::SDL_SetRenderDrawBlendMode(self.context.raw, blend.into()) };
         // Should only fail on an invalid renderer
         if !ret {
             panic!("{}", get_error())
@@ -2387,7 +2393,7 @@ impl InternalTexture {
 
     #[doc(alias = "SDL_SetTextureBlendMode")]
     pub fn set_blend_mode(&mut self, blend: BlendMode) {
-        let ret = unsafe { sys::render::SDL_SetTextureBlendMode(self.raw, blend as u32) };
+        let ret = unsafe { sys::render::SDL_SetTextureBlendMode(self.raw, blend.into()) };
 
         if !ret {
             panic!("Error setting blend: {}", get_error())

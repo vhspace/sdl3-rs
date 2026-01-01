@@ -300,9 +300,22 @@ pub fn get_user_folder(folder: Folder) -> Result<&'static Path, FileSystemError>
 }
 
 bitflags! {
-    pub struct GlobFlags: sys::filesystem::SDL_GlobFlags {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+    pub struct GlobFlags: u32 {
         const NONE = 0;
-        const CASEINSENSITIVE = sys::filesystem::SDL_GLOB_CASEINSENSITIVE;
+        const CASEINSENSITIVE = sys::filesystem::SDL_GLOB_CASEINSENSITIVE.0 as u32;
+    }
+}
+
+impl From<GlobFlags> for sys::filesystem::SDL_GlobFlags {
+    fn from(flags: GlobFlags) -> Self {
+        sys::filesystem::SDL_GlobFlags(flags.bits() as sys::stdinc::Uint32)
+    }
+}
+
+impl From<sys::filesystem::SDL_GlobFlags> for GlobFlags {
+    fn from(flags: sys::filesystem::SDL_GlobFlags) -> Self {
+        GlobFlags::from_bits_truncate(flags.0)
     }
 }
 
@@ -392,10 +405,11 @@ pub fn glob_directory(
     let mut count = 0;
 
     let results = unsafe {
+        let sys_flags: sys::filesystem::SDL_GlobFlags = flags.into();
         let paths = sys::filesystem::SDL_GlobDirectory(
             path.as_ptr(),
             pattern_ptr,
-            flags.bits(),
+            sys_flags,
             &mut count as *mut i32,
         );
         if paths.is_null() {

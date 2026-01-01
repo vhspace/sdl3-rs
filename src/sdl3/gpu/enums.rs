@@ -1,4 +1,5 @@
 use crate::sys;
+use std::fmt;
 use std::ops::{BitAnd, BitOr};
 use sys::gpu::{SDL_GPUBlendFactor, SDL_GPUBlendOp};
 
@@ -133,7 +134,7 @@ pub enum TextureFormat {
     Astc12x12Float = sys::gpu::SDL_GPU_TEXTUREFORMAT_ASTC_12x12_FLOAT.0 as u32,
 }
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct ShaderFormat(pub sys::gpu::SDL_GPUShaderFormat);
 impl ShaderFormat {
     pub const INVALID: Self = Self(sys::gpu::SDL_GPU_SHADERFORMAT_INVALID);
@@ -145,10 +146,21 @@ impl ShaderFormat {
     pub const SPIRV: Self = Self(sys::gpu::SDL_GPU_SHADERFORMAT_SPIRV);
 }
 impl_with!(bitwise_and_or ShaderFormat u32);
+impl Default for ShaderFormat {
+    fn default() -> Self {
+        Self::INVALID
+    }
+}
+impl fmt::Debug for ShaderFormat {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("ShaderFormat").field(&(self.0).0).finish()
+    }
+}
 
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct TextureUsage(pub sys::gpu::SDL_GPUTextureUsageFlags);
 impl TextureUsage {
-    pub const INVALID: Self = Self(0);
+    pub const INVALID: Self = Self(sys::gpu::SDL_GPUTextureUsageFlags(0));
     pub const COMPUTE_STORAGE_WRITE: Self =
         Self(sys::gpu::SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_WRITE);
     pub const COMPUTE_STORAGE_READ: Self =
@@ -163,6 +175,16 @@ impl TextureUsage {
     pub const COLOR_TARGET: Self = Self(sys::gpu::SDL_GPU_TEXTUREUSAGE_COLOR_TARGET);
 }
 impl_with!(bitwise_and_or TextureUsage u32);
+impl Default for TextureUsage {
+    fn default() -> Self {
+        Self::INVALID
+    }
+}
+impl fmt::Debug for TextureUsage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("TextureUsage").field(&(self.0).0).finish()
+    }
+}
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]
@@ -331,7 +353,7 @@ pub enum VertexInputRate {
     Instance = sys::gpu::SDL_GPUVertexInputRate::INSTANCE.0 as u32,
 }
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct BufferUsageFlags(pub sys::gpu::SDL_GPUBufferUsageFlags);
 impl BufferUsageFlags {
     pub const VERTEX: Self = Self(sys::gpu::SDL_GPU_BUFFERUSAGE_VERTEX);
@@ -344,6 +366,13 @@ impl BufferUsageFlags {
         Self(sys::gpu::SDL_GPU_BUFFERUSAGE_COMPUTE_STORAGE_WRITE);
 }
 impl_with!(bitwise_and_or BufferUsageFlags u32);
+impl fmt::Debug for BufferUsageFlags {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("BufferUsageFlags")
+            .field(&(self.0).0)
+            .finish()
+    }
+}
 
 pub type TransferBufferUsage = sys::gpu::SDL_GPUTransferBufferUsage;
 
@@ -379,7 +408,7 @@ pub enum BlendOp {
     Max = SDL_GPUBlendOp::MAX.0 as u32,
 }
 
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct ColorComponentFlags(pub sys::gpu::SDL_GPUColorComponentFlags);
 
 impl ColorComponentFlags {
@@ -389,6 +418,13 @@ impl ColorComponentFlags {
     pub const A: Self = Self(sys::gpu::SDL_GPU_COLORCOMPONENT_A);
 }
 impl_with!(bitwise_and_or ColorComponentFlags u8);
+impl fmt::Debug for ColorComponentFlags {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("ColorComponentFlags")
+            .field(&(self.0).0)
+            .finish()
+    }
+}
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u32)]

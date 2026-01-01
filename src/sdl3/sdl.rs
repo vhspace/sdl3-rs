@@ -90,7 +90,7 @@ impl Sdl {
             let result;
 
             unsafe {
-                result = sys::init::SDL_Init(0);
+                result = sys::init::SDL_Init(sys::init::SDL_InitFlags::default());
             }
 
             if !result {

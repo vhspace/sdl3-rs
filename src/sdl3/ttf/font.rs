@@ -20,11 +20,11 @@ pub type Hinting = ttf::TTF_HintingFlags;
 bitflags! {
     /// The styling of a font.
     pub struct FontStyle: u32 {
-        const NORMAL        = ttf::TTF_STYLE_NORMAL as u32;
-        const BOLD          = ttf::TTF_STYLE_BOLD as u32;
-        const ITALIC        = ttf::TTF_STYLE_ITALIC as u32;
-        const UNDERLINE     = ttf::TTF_STYLE_UNDERLINE as u32;
-        const STRIKETHROUGH = ttf::TTF_STYLE_STRIKETHROUGH as u32;
+        const NORMAL        = ttf::TTF_STYLE_NORMAL.0 as u32;
+        const BOLD          = ttf::TTF_STYLE_BOLD.0 as u32;
+        const ITALIC        = ttf::TTF_STYLE_ITALIC.0 as u32;
+        const UNDERLINE     = ttf::TTF_STYLE_UNDERLINE.0 as u32;
+        const STRIKETHROUGH = ttf::TTF_STYLE_STRIKETHROUGH.0 as u32;
     }
 }
 
