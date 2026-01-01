@@ -1,5 +1,9 @@
 //!
-//! A binding for the library `SDL2_gfx`
+//! Bindings for the (currently legacy) `SDL_gfx` primitives.
+//!
+//! SDL3 does not yet ship an `SDL3_gfx` release, so the `gfx` feature is blocked
+//! until upstream provides compatible headers and libraries. These bindings stay
+//! here as a reference for when that work lands.
 //!
 //!
 //! Note that you need to build with the
@@ -14,7 +18,7 @@
 //! crate, you will need to add this in your Cargo.toml
 //!
 //! ```toml
-//! [dependencies.sdl2]
+//! [dependencies.sdl3]
 //! version = ...
 //! default-features = false
 //! features = ["gfx"]

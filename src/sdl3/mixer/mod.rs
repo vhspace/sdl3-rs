@@ -1,5 +1,9 @@
 //!
-//! A binding for the library `SDL2_mixer`
+//! Bindings for the `SDL_mixer` extension library.
+//!
+//! SDL3_mixer has not been released yet, so the `mixer` Cargo feature is kept
+//! disabled to avoid build breakage. The module remains in-tree so we can re-enable
+//! it as soon as an upstream `sdl3-mixer-sys` crate becomes available.
 //!
 //!
 //! Note that you need to build with the
@@ -14,7 +18,7 @@
 //! crate, you will need to add this in your Cargo.toml
 //!
 //! ```toml
-//! [dependencies.sdl2]
+//! [dependencies.sdl3]
 //! version = ...
 //! default-features = false
 //! features = ["mixer"]
@@ -131,7 +135,7 @@ impl ToString for InitFlag {
     }
 }
 
-/// Context manager for `sdl2_mixer` to manage init and quit
+/// Context manager for `SDL_mixer` to manage init and quit
 pub struct Sdl2MixerContext;
 
 /// Cleans up all dynamically loaded library handles, freeing memory.
@@ -961,7 +965,7 @@ impl<'a> Music<'a> {
     ///     println!("Music has ended");
     /// }
     ///
-    /// sdl2::mixer::Music::hook_finished(after_music);
+    /// sdl3::mixer::Music::hook_finished(after_music);
     /// ```
     pub fn hook_finished(f: fn()) {
         unsafe {

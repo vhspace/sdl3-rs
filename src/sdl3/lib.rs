@@ -61,7 +61,7 @@
 //! |----------------------------------|----------------------------------------------------------------|
 //! | `build-from-source`              | Fetch and build the library from source                        |
 //! | `build-from-source-static`       | Fetch and build the library from source and link it statically |
-//! | `build-from-source-unix-console` | TODO                                                           |
+//! | `build-from-source-unix-console` | Build SDL3 from source but skip the X11/Wayland dependencies for console targets |
 //! | `use-pkg-config`                 | Use `pkg-config` to find the library                           |
 //! | `use-vcpkg`                      | Use `vcpkg` to find the library                                |
 //! | `static-link`                    | Link the library statically                                    |
@@ -75,12 +75,12 @@
 //! | Name                | Description                                                            | Implementation Status |
 //! |---------------------|------------------------------------------------------------------------|-----------------------|
 //! | `ash`               | Use Vulkan types from the ash crate                                    | Implemented           |
-//! | `unsafe_textures`   | TODO                                                                   | TODO                  |
-//! | `gfx`               | TODO                                                                   | TODO                  |
-//! | `mixer`             | TODO                                                                   | Not Implemented?      |
-//! | `image`             | TODO                                                                   | TODO                  |
-//! | `ttf`               | TODO                                                                   | TODO                  |
-//! | `hidapi`            | Use hidapi support in SDL                                              | TODO                  |
+//! | `unsafe_textures`   | Skip lifetime tracking for textures; you must manage destruction safety yourself | Implemented (unsafe opt-in) |
+//! | `gfx`               | Legacy SDL_gfx drawing helpers; blocked on an SDL3_gfx C library       | Blocked               |
+//! | `mixer`             | SDL_mixer bindings (needs upstream SDL3_mixer and `sdl3-mixer-sys`)    | Blocked               |
+//! | `image`             | Enable SDL_image helpers for loading/saving surfaces and textures      | Implemented           |
+//! | `ttf`               | Enable SDL_ttf font/text rendering APIs                                | Implemented           |
+//! | `hidapi`            | Use SDL's hidapi backend for sensors and controllers                   | Implemented           |
 //! | `test-mode`         | Allows SDL to be initialised from a thread that is not the main thread | Implemented           |
 //! | `raw-window-handle` | Enables integrations with the [`wgpu`] crate                           | Implemented           |
 //!
