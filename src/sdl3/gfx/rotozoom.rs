@@ -6,7 +6,7 @@ pub use std::f64::consts::PI;
 use surface::Surface;
 use sys::gfx::rotozoom;
 
-/// `RotozoomSurface` for work with rust-sdl2 Surface type
+/// `RotozoomSurface` helpers for the `sdl3` `Surface` type
 pub trait RotozoomSurface {
     /// Rotates and zooms a surface and optional anti-aliasing.
     fn rotozoom(&self, angle: f64, zoom: f64, smooth: bool) -> Result<Surface, String>;

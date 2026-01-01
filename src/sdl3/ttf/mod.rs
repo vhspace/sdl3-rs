@@ -1,5 +1,5 @@
 //!
-//! A binding for the library `SDL2_ttf`
+//! Bindings for the `SDL3_ttf` extension library.
 //!
 //!
 //! Note that you need to build with the
@@ -14,7 +14,7 @@
 //! crate, you will need to add this in your Cargo.toml
 //!
 //! ```toml
-//! [dependencies.sdl2]
+//! [dependencies.sdl3]
 //! version = ...
 //! default-features = false
 //! features = ["ttf"]

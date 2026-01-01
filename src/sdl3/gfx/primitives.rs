@@ -64,7 +64,7 @@ impl ToColor for isize {
     }
 }
 
-/// For drawing with rust-sdl2 Renderer
+/// For drawing with the `sdl3` renderer
 pub trait DrawRenderer {
     fn pixel<C: ToColor>(&self, x: i16, y: i16, color: C) -> Result<(), String>;
     fn hline<C: ToColor>(&self, x1: i16, x2: i16, y: i16, color: C) -> Result<(), String>;
