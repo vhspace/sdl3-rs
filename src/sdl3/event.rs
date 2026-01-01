@@ -1150,11 +1150,6 @@ impl Event {
     }
 
     #[inline]
-    fn pen_id_to_ll(id: u32) -> sys::pen::SDL_PenID {
-        sys::pen::SDL_PenID(id)
-    }
-
-    #[inline]
     fn pen_id_from_ll(id: sys::pen::SDL_PenID) -> u32 {
         id.0
     }
