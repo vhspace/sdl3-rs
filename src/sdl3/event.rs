@@ -3271,6 +3271,7 @@ impl<F: FnMut(Event) + Send + 'static> EventWatchCallback for F {
 
 #[cfg(test)]
 mod test {
+    use crate::sys;
     use crate::video::Display;
 
     use super::super::gamepad::{Axis, Button};
@@ -3294,7 +3295,7 @@ mod test {
         {
             let e = Event::Display {
                 timestamp: 0,
-                display: Display::from_ll(1),
+                display: Display::from_ll(sys::video::SDL_DisplayID(1)),
                 display_event: DisplayEvent::Orientation(Orientation::LandscapeFlipped),
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
@@ -3516,7 +3517,7 @@ mod test {
 
         // Simulate SDL setting bits unknown to us, see PR #780
         unsafe {
-            raw_event.key.r#mod = 0xffff;
+            raw_event.key.r#mod = sys::keycode::SDL_Keymod(0xffff);
         }
 
         if let Event::KeyDown { keymod, .. } = Event::from_ll(raw_event) {
@@ -3543,7 +3544,7 @@ mod test {
 
         // Simulate SDL setting bits unknown to us, see PR #780
         unsafe {
-            raw_event.key.r#mod = 0xffff;
+            raw_event.key.r#mod = sys::keycode::SDL_Keymod(0xffff);
         }
 
         if let Event::KeyUp { keymod, .. } = Event::from_ll(raw_event) {
