@@ -25,6 +25,7 @@ jobs:
           - ttf
           - hidapi
           - raw-window-handle
+          - image
 
     steps:
       - name: checkout sources
@@ -70,6 +71,7 @@ jobs:
           - ttf
           - hidapi
           - raw-window-handle
+          - image
 
     steps:
       - name: checkout sources
@@ -109,6 +111,8 @@ jobs:
             features: ""
           - name: build-from-source-static
             features: "build-from-source-static"
+          - name: image
+            features: "image"
 
     steps:
       - name: checkout sources
