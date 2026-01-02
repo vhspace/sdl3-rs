@@ -348,10 +348,6 @@ impl GlobResults<'_> {
         }
     }
 
-    fn len(&self) -> usize {
-        self.count as usize
-    }
-
     fn get<I>(&self, index: I) -> Option<&Path>
     where
         I: Into<isize>,
@@ -392,7 +388,7 @@ pub fn glob_directory(
     path: impl AsRef<Path>,
     pattern: Option<&str>,
     flags: GlobFlags,
-) -> Result<GlobResults, FileSystemError> {
+) -> Result<GlobResults<'_>, FileSystemError> {
     path_cstring!(path);
     let pattern = match pattern {
         Some(pattern) => match CString::new(pattern) {
