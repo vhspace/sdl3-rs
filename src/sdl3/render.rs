@@ -984,7 +984,7 @@ impl<T> TextureCreator<T> {
         access: TextureAccess,
         width: u32,
         height: u32,
-    ) -> Result<Texture, TextureValueError>
+    ) -> Result<Texture<'_>, TextureValueError>
     where
         F: Into<Option<PixelFormat>>,
     {
@@ -1005,7 +1005,7 @@ impl<T> TextureCreator<T> {
         format: F,
         width: u32,
         height: u32,
-    ) -> Result<Texture, TextureValueError>
+    ) -> Result<Texture<'_>, TextureValueError>
     where
         F: Into<Option<PixelFormat>>,
     {
@@ -1019,7 +1019,7 @@ impl<T> TextureCreator<T> {
         format: F,
         width: u32,
         height: u32,
-    ) -> Result<Texture, TextureValueError>
+    ) -> Result<Texture<'_>, TextureValueError>
     where
         F: Into<Option<PixelFormat>>,
     {
@@ -1033,7 +1033,7 @@ impl<T> TextureCreator<T> {
         format: F,
         width: u32,
         height: u32,
-    ) -> Result<Texture, TextureValueError>
+    ) -> Result<Texture<'_>, TextureValueError>
     where
         F: Into<Option<PixelFormat>>,
     {
@@ -1087,7 +1087,7 @@ impl<T> TextureCreator<T> {
     /// Create a texture from its raw `SDL_Texture`.
     #[cfg(not(feature = "unsafe_textures"))]
     #[inline]
-    pub const unsafe fn raw_create_texture(&self, raw: *mut sys::render::SDL_Texture) -> Texture {
+    pub const unsafe fn raw_create_texture(&self, raw: *mut sys::render::SDL_Texture) -> Texture<'_> {
         Texture {
             raw,
             _marker: PhantomData,
@@ -1625,7 +1625,7 @@ impl<T: RenderTarget> Canvas<T> {
         &self,
         rect: R,
         // format: pixels::PixelFormat,
-    ) -> Result<Surface, Error> {
+    ) -> Result<Surface<'static>, Error> {
         unsafe {
             let rect = rect.into();
             let (actual_rect, _w, _h) = match rect {
@@ -1755,7 +1755,7 @@ impl<T: RenderTarget> Canvas<T> {
     pub fn create_texture_from_surface<S: AsRef<SurfaceRef>>(
         &self,
         surface: S,
-    ) -> Result<Texture, TextureValueError> {
+    ) -> Result<Texture<'_>, TextureValueError> {
         use self::TextureValueError::*;
         let result = unsafe {
             sys::render::SDL_CreateTextureFromSurface(self.context.raw, surface.as_ref().raw())
