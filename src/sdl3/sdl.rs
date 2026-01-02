@@ -148,6 +148,12 @@ impl Sdl {
         VideoSubsystem::new(self)
     }
 
+    /// Initializes the camera subsystem.
+    #[inline]
+    pub fn camera(&self) -> Result<CameraSubsystem, Error> {
+        CameraSubsystem::new(self)
+    }
+
     /// Obtains the SDL event pump.
     ///
     /// At most one `EventPump` is allowed to be alive during the program's execution.
@@ -406,7 +412,5 @@ pub fn set_error(err: &str) -> Result<(), NulError> {
 
 #[doc(alias = "SDL_ClearError")]
 pub fn clear_error() {
-    unsafe {
-        sys::error::SDL_ClearError();
-    }
+    sys::error::SDL_ClearError();
 }

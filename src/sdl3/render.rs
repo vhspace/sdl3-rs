@@ -55,7 +55,6 @@ use std::sync::Arc;
 use sys::blendmode::SDL_BlendMode;
 use sys::everything::SDL_PropertiesID;
 use sys::render::{SDL_GetTextureProperties, SDL_TextureAccess};
-use sys::stdinc::Sint64;
 use sys::surface::{SDL_FLIP_HORIZONTAL, SDL_FLIP_NONE, SDL_FLIP_VERTICAL};
 
 /// Possible errors returned by targeting a `Canvas` to render to a `Texture`
@@ -955,6 +954,7 @@ impl TryFrom<sdl3_sys::everything::SDL_ScaleMode> for ScaleMode {
 }
 
 /// Texture-creating methods for the renderer
+#[cfg_attr(not(feature = "unsafe_textures"), allow(elided_lifetimes_in_paths))]
 impl<T> TextureCreator<T> {
     // this can prevent introducing UB until
     // https://github.com/rust-lang/rust-clippy/issues/5953 is fixed
@@ -984,7 +984,7 @@ impl<T> TextureCreator<T> {
         access: TextureAccess,
         width: u32,
         height: u32,
-    ) -> Result<Texture<'_>, TextureValueError>
+    ) -> Result<Texture, TextureValueError>
     where
         F: Into<Option<PixelFormat>>,
     {
@@ -1005,7 +1005,7 @@ impl<T> TextureCreator<T> {
         format: F,
         width: u32,
         height: u32,
-    ) -> Result<Texture<'_>, TextureValueError>
+    ) -> Result<Texture, TextureValueError>
     where
         F: Into<Option<PixelFormat>>,
     {
@@ -1019,7 +1019,7 @@ impl<T> TextureCreator<T> {
         format: F,
         width: u32,
         height: u32,
-    ) -> Result<Texture<'_>, TextureValueError>
+    ) -> Result<Texture, TextureValueError>
     where
         F: Into<Option<PixelFormat>>,
     {
@@ -1033,7 +1033,7 @@ impl<T> TextureCreator<T> {
         format: F,
         width: u32,
         height: u32,
-    ) -> Result<Texture<'_>, TextureValueError>
+    ) -> Result<Texture, TextureValueError>
     where
         F: Into<Option<PixelFormat>>,
     {
@@ -1087,7 +1087,10 @@ impl<T> TextureCreator<T> {
     /// Create a texture from its raw `SDL_Texture`.
     #[cfg(not(feature = "unsafe_textures"))]
     #[inline]
-    pub const unsafe fn raw_create_texture(&self, raw: *mut sys::render::SDL_Texture) -> Texture<'_> {
+    pub const unsafe fn raw_create_texture(
+        &self,
+        raw: *mut sys::render::SDL_Texture,
+    ) -> Texture<'_> {
         Texture {
             raw,
             _marker: PhantomData,
@@ -1755,7 +1758,7 @@ impl<T: RenderTarget> Canvas<T> {
     pub fn create_texture_from_surface<S: AsRef<SurfaceRef>>(
         &self,
         surface: S,
-    ) -> Result<Texture<'_>, TextureValueError> {
+    ) -> Result<Texture, TextureValueError> {
         use self::TextureValueError::*;
         let result = unsafe {
             sys::render::SDL_CreateTextureFromSurface(self.context.raw, surface.as_ref().raw())
@@ -2674,18 +2677,6 @@ impl InternalTexture {
                 Ok(result)
             }
             Err(e) => Err(e),
-        }
-    }
-
-    // not really sure about this!
-    unsafe fn get_gl_texture_id(&self) -> Sint64 {
-        let props_id = unsafe { SDL_GetTextureProperties(self.raw) };
-        unsafe {
-            sys::properties::SDL_GetNumberProperty(
-                props_id,
-                sys::render::SDL_PROP_TEXTURE_OPENGL_TEXTURE_NUMBER,
-                0,
-            )
         }
     }
 
