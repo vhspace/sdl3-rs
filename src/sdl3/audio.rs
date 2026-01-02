@@ -1548,7 +1548,7 @@ impl<CB> AudioStreamWithCallback<CB> {
         self.base_stream.queued_bytes()
     }
 
-    pub fn lock(&mut self) -> Option<AudioStreamLockGuard<CB>> {
+    pub fn lock(&mut self) -> Option<AudioStreamLockGuard<'_, CB>> {
         let raw_stream = self.base_stream.stream;
         let result = unsafe { sys::audio::SDL_LockAudioStream(raw_stream) };
 

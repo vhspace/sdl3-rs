@@ -392,7 +392,7 @@ pub fn glob_directory(
     path: impl AsRef<Path>,
     pattern: Option<&str>,
     flags: GlobFlags,
-) -> Result<GlobResults, FileSystemError> {
+) -> Result<GlobResults<'_>, FileSystemError> {
     path_cstring!(path);
     let pattern = match pattern {
         Some(pattern) => match CString::new(pattern) {
