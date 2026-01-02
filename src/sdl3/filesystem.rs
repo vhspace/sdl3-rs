@@ -348,10 +348,6 @@ impl GlobResults<'_> {
         }
     }
 
-    fn len(&self) -> usize {
-        self.count as usize
-    }
-
     fn get<I>(&self, index: I) -> Option<&Path>
     where
         I: Into<isize>,
