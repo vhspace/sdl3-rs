@@ -406,7 +406,5 @@ pub fn set_error(err: &str) -> Result<(), NulError> {
 
 #[doc(alias = "SDL_ClearError")]
 pub fn clear_error() {
-    unsafe {
-        sys::error::SDL_ClearError();
-    }
+    sys::error::SDL_ClearError();
 }

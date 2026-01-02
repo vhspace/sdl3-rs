@@ -2678,6 +2678,8 @@ impl InternalTexture {
     }
 
     // not really sure about this!
+    // TODO: This method is for OpenGL texture integration but not yet fully implemented
+    #[allow(dead_code)]
     unsafe fn get_gl_texture_id(&self) -> Sint64 {
         let props_id = unsafe { SDL_GetTextureProperties(self.raw) };
         unsafe {

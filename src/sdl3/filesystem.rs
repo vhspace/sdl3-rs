@@ -348,6 +348,7 @@ impl GlobResults<'_> {
         }
     }
 
+    #[allow(dead_code)] // May be exposed as public API in the future
     fn len(&self) -> usize {
         self.count as usize
     }
