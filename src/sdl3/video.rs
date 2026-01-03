@@ -768,6 +768,43 @@ impl HitTestResult {
     }
 }
 
+/// Window progress state
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
+#[repr(i32)]
+pub enum ProgressState {
+    Invalid = sys::video::SDL_PROGRESS_STATE_INVALID.0,
+    None = sys::video::SDL_PROGRESS_STATE_NONE.0,
+    Indeterminate = sys::video::SDL_PROGRESS_STATE_INDETERMINATE.0,
+    Normal = sys::video::SDL_PROGRESS_STATE_NORMAL.0,
+    Paused = sys::video::SDL_PROGRESS_STATE_PAUSED.0,
+    Error = sys::video::SDL_PROGRESS_STATE_ERROR.0,
+}
+
+impl ProgressState {
+    pub fn from_ll(state: sys::video::SDL_ProgressState) -> ProgressState {
+        match state {
+            sys::video::SDL_PROGRESS_STATE_NONE => ProgressState::None,
+            sys::video::SDL_PROGRESS_STATE_INDETERMINATE => ProgressState::Indeterminate,
+            sys::video::SDL_PROGRESS_STATE_NORMAL => ProgressState::Normal,
+            sys::video::SDL_PROGRESS_STATE_PAUSED => ProgressState::Paused,
+            sys::video::SDL_PROGRESS_STATE_ERROR => ProgressState::Error,
+            sys::video::SDL_PROGRESS_STATE_INVALID => ProgressState::Invalid,
+            _ => ProgressState::Invalid,
+        }
+    }
+
+    pub fn to_ll(self) -> sys::video::SDL_ProgressState {
+        match self {
+            ProgressState::None => sys::video::SDL_PROGRESS_STATE_NONE,
+            ProgressState::Indeterminate => sys::video::SDL_PROGRESS_STATE_INDETERMINATE,
+            ProgressState::Normal => sys::video::SDL_PROGRESS_STATE_NORMAL,
+            ProgressState::Paused => sys::video::SDL_PROGRESS_STATE_PAUSED,
+            ProgressState::Error => sys::video::SDL_PROGRESS_STATE_ERROR,
+            ProgressState::Invalid => sys::video::SDL_PROGRESS_STATE_INVALID,
+        }
+    }
+}
+
 /// Represents the "shell" of a `Window`.
 ///
 /// You can set get and set many of the `SDL_Window` properties (i.e., border, size, `PixelFormat`, etc)
@@ -2375,6 +2412,60 @@ impl Window {
                 Ok(())
             } else {
                 Err(get_error())
+            }
+        }
+    }
+
+    /// Sets the state of the progress bar for the given window’s taskbar icon.
+    #[doc(alias = "SDL_SetWindowProgressState")]
+    pub fn set_progress_state(&mut self, state: ProgressState) -> Result<(), Error> {
+        unsafe {
+            let result = sys::video::SDL_SetWindowProgressState(self.context.raw, state.to_ll());
+
+            if result {
+                Ok(())
+            } else {
+                Err(get_error())
+            }
+        }
+    }
+
+    /// Sets the value of the progress bar for the given window’s taskbar icon.
+    #[doc(alias = "SDL_SetWindowProgressValue")]
+    pub fn set_progress_value(&mut self, value: f32) -> Result<(), Error> {
+        unsafe {
+            let result = sys::video::SDL_SetWindowProgressValue(self.context.raw, value);
+
+            if result {
+                Ok(())
+            } else {
+                Err(get_error())
+            }
+        }
+    }
+
+    /// Get the state of the progress bar for the given window’s taskbar icon.
+    #[doc(alias = "SDL_GetWindowProgressState")]
+    pub fn progress_state(&self) -> Result<ProgressState, Error> {
+        unsafe {
+            let state = sys::video::SDL_GetWindowProgressState(self.context.raw);
+
+            match state {
+                sys::video::SDL_PROGRESS_STATE_INVALID => Err(get_error()),
+                _ => Ok(ProgressState::from_ll(state)),
+            }
+        }
+    }
+
+    /// Get the value of the progress bar for the given window’s taskbar icon.
+    #[doc(alias = "SDL_GetWindowProgressValue")]
+    pub fn progress_value(&self) -> Result<f32, Error> {
+        unsafe {
+            let value = sys::video::SDL_GetWindowProgressValue(self.context.raw);
+
+            match value {
+                0.0..=1.0 => Ok(value),
+                _ => Err(get_error()),
             }
         }
     }
