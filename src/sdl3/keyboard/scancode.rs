@@ -543,13 +543,14 @@ use crate::keyboard::Keycode;
 
 impl Scancode {
     /// Gets the scancode from a virtual key. Returns None if there is no corresponding scancode.
+    ///
+    /// # Safety
+    /// `modstate` must be either null or a valid pointer to an SDL_Keymod.
     #[doc(alias = "SDL_GetScancodeFromKey")]
-    pub fn from_keycode(keycode: Keycode, modstate: *mut SDL_Keymod) -> Option<Scancode> {
-        unsafe {
-            match sys::keyboard::SDL_GetScancodeFromKey(keycode.into(), modstate) {
-                SDL_SCANCODE_UNKNOWN => None,
-                scancode_id => Scancode::from_i32(scancode_id.0),
-            }
+    pub unsafe fn from_keycode(keycode: Keycode, modstate: *mut SDL_Keymod) -> Option<Scancode> {
+        match sys::keyboard::SDL_GetScancodeFromKey(keycode.into(), modstate) {
+            SDL_SCANCODE_UNKNOWN => None,
+            scancode_id => Scancode::from_i32(scancode_id.0),
         }
     }
 

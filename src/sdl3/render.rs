@@ -594,21 +594,21 @@ impl Canvas<Window> {
         self.window().window_pixel_format()
     }
 
-    pub fn from_window_and_renderer(
+    /// # Safety
+    /// `renderer` must be a valid pointer to an SDL_Renderer.
+    pub unsafe fn from_window_and_renderer(
         window: Window,
         renderer: *mut sys::render::SDL_Renderer,
     ) -> Self {
-        let context = Rc::new(unsafe { RendererContext::from_ll(renderer, window.context()) });
+        let context = Rc::new(RendererContext::from_ll(renderer, window.context()));
         let default_pixel_format = window.window_pixel_format();
         Canvas::<Window> {
             context,
             target: window,
             default_pixel_format,
-            renderer_name: unsafe {
-                CStr::from_ptr(sys::render::SDL_GetRendererName(renderer))
-                    .to_string_lossy()
-                    .into_owned()
-            },
+            renderer_name: CStr::from_ptr(sys::render::SDL_GetRendererName(renderer))
+                .to_string_lossy()
+                .into_owned(),
         }
     }
 
@@ -842,7 +842,8 @@ pub fn create_renderer(
     if raw.is_null() {
         Err(SdlError(get_error()))
     } else {
-        Ok(Canvas::from_window_and_renderer(window, raw))
+        // SAFETY: raw is a valid non-null renderer pointer we just created from SDL_CreateRenderer
+        Ok(unsafe { Canvas::from_window_and_renderer(window, raw) })
     }
 }
 
