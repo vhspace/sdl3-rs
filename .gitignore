@@ -27,4 +27,5 @@ target/
 AGENTS.override.md
 .claude-flow/
 .hive-mind/
+CLAUDE.local.md
 .CLAUDE.local.md
