@@ -2997,7 +2997,7 @@ impl crate::EventPump {
     ///     }
     /// }
     /// ```
-    pub fn poll_iter(&mut self) -> EventPollIterator {
+    pub fn poll_iter(&mut self) -> EventPollIterator<'_> {
         EventPollIterator {
             _marker: PhantomData,
         }
@@ -3024,7 +3024,7 @@ impl crate::EventPump {
     /// Returns a waiting iterator that calls `wait_event()`.
     ///
     /// Note: The iterator will never terminate.
-    pub fn wait_iter(&mut self) -> EventWaitIterator {
+    pub fn wait_iter(&mut self) -> EventWaitIterator<'_> {
         EventWaitIterator {
             _marker: PhantomData,
         }
@@ -3034,7 +3034,7 @@ impl crate::EventPump {
     ///
     /// Note: The iterator will never terminate, unless waiting for an event
     /// exceeds the specified timeout.
-    pub fn wait_timeout_iter(&mut self, timeout: u32) -> EventWaitTimeoutIterator {
+    pub fn wait_timeout_iter(&mut self, timeout: u32) -> EventWaitTimeoutIterator<'_> {
         EventWaitTimeoutIterator {
             _marker: PhantomData,
             timeout,
@@ -3042,7 +3042,7 @@ impl crate::EventPump {
     }
 
     #[inline]
-    pub fn keyboard_state(&self) -> crate::keyboard::KeyboardState {
+    pub fn keyboard_state(&self) -> crate::keyboard::KeyboardState<'_> {
         crate::keyboard::KeyboardState::new(self)
     }
 

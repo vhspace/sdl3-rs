@@ -38,8 +38,6 @@ impl fmt::Display for Version {
 /// Get the version of SDL that is linked against your program.
 #[doc(alias = "SDL_GetVersion")]
 pub fn version() -> Version {
-    unsafe {
-        let version = sys::version::SDL_GetVersion();
-        Version::from_ll(version)
-    }
+    let version = sys::version::SDL_GetVersion();
+    Version::from_ll(version)
 }

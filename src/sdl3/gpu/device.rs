@@ -116,17 +116,17 @@ impl Device {
         }
     }
 
-    pub fn create_shader(&self) -> ShaderBuilder {
+    pub fn create_shader(&self) -> ShaderBuilder<'_> {
         ShaderBuilder::new(self)
     }
 
     #[doc(alias = "SDL_CreateGPUBuffer")]
-    pub fn create_buffer(&self) -> BufferBuilder {
+    pub fn create_buffer(&self) -> BufferBuilder<'_> {
         BufferBuilder::new(self)
     }
 
     #[doc(alias = "SDL_CreateGPUTransferBuffer")]
-    pub fn create_transfer_buffer(&self) -> TransferBufferBuilder {
+    pub fn create_transfer_buffer(&self) -> TransferBufferBuilder<'_> {
         TransferBufferBuilder::new(self)
     }
 
