@@ -8,15 +8,64 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### <!-- 0 -->Added
-- Add lifetime to TextureSamplerBinding ([#273](https://github.com/vhspace/sdl3-rs/pull/273))
+- Added support for window progress value API ([#294](https://github.com/vhspace/sdl3-rs/pull/294))
+
+### <!-- 1 -->Changed
+- Add CLAUDE.local.md to gitignore
 
 ### <!-- 2 -->Fixed
+- Align Keycode with SDL3's u32 representation ([#296](https://github.com/vhspace/sdl3-rs/pull/296))
+- Add explicit lifetime annotations ([#293](https://github.com/vhspace/sdl3-rs/pull/293))
+
+## [0.17.0] - 2026-01-01
+
+### <!-- 0 -->Added
+- Add AudioStream::device_paused tests
+- Expand AudioStream tests
+- Add AudioStream::device_paused
+- Surface SDL audio device info
+- Expose SDL3 audio stream controls
+- Expose SDL_GetCurrentDirectory ([#278](https://github.com/vhspace/sdl3-rs/pull/278))
+- Add lifetime to TextureSamplerBinding ([#273](https://github.com/vhspace/sdl3-rs/pull/273))
+
+### <!-- 1 -->Changed
+- Ignores
+- Update to sdl3-sys 0.6 ([#286](https://github.com/vhspace/sdl3-rs/pull/286))
+- Merge pull request #284 from vhspace/test/audio-device-dummy
+- Merge remote-tracking branch 'origin/master' into test/audio-device-dummy
+- Merge
+- Run tests under xvfb x11 driver
+- Fix tests job indentation
+- Run tests under xvfb with dummy video
+- Ensure tests use bundled SDL
+- Merge remote-tracking branch 'origin/master' into ci-test-matrix
+- Add feature-specific tests
+- Revert "ci: build image feature"
+- Build image feature
+- Merge pull request #283 from vhspace/feature/audio-stream-tests
+- Merge pull request #282 from vhspace/doc/fix-metal-view-doc
+- Merge pull request #281 from vhspace/feature/audio-stream-device-paused
+- Merge pull request #280 from vhspace/feature/audio-device-query
+- Merge pull request #279 from vhspace/feature/audio-stream-extras
+- Run tests under xvfb ([#276](https://github.com/vhspace/sdl3-rs/pull/276))
+- CI tests ([#275](https://github.com/vhspace/sdl3-rs/pull/275))
+
+### <!-- 2 -->Fixed
+- Allow window test to skip in headless env
+- Skip renderer test without video device
+- Skip clipboard when video device missing
+- Align doctest examples with current API
 - Align doctest examples with current API ([#274](https://github.com/vhspace/sdl3-rs/pull/274))
 
 ### <!-- 4 -->Dependencies
 - Bump peter-evans/create-pull-request from 7 to 8 ([#269](https://github.com/vhspace/sdl3-rs/pull/269))
 - Bump libc from 0.2.177 to 0.2.178 ([#264](https://github.com/vhspace/sdl3-rs/pull/264))
 - Bump sdl3-sys from 0.5.10+SDL3-3.2.26 to 0.5.11+SDL3-3.2.28 ([#266](https://github.com/vhspace/sdl3-rs/pull/266))
+
+### <!-- 5 -->Documentation
+- Fix repository link in README ([#290](https://github.com/vhspace/sdl3-rs/pull/290))
+- Clarify feature flags ([#285](https://github.com/vhspace/sdl3-rs/pull/285))
+- Fix metal_view documentation typo
 
 ## [0.16.4] - 2025-12-28
 
@@ -122,7 +171,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump bitflags from 2.9.0 to 2.9.1 ([#207](https://github.com/vhspace/sdl3-rs/pull/207))
 - Bump actions/cache from 3 to 4 ([#208](https://github.com/vhspace/sdl3-rs/pull/208))
 
-[unreleased]: https://github.com/vhspace/sdl3-rs/compare/v0.16.4...HEAD
+[unreleased]: https://github.com/vhspace/sdl3-rs/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/vhspace/sdl3-rs/compare/v0.16.4...v0.17.0
 [0.16.4]: https://github.com/vhspace/sdl3-rs/compare/v0.16.2...v0.16.4
 [0.16.2]: https://github.com/vhspace/sdl3-rs/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/vhspace/sdl3-rs/compare/v0.16.0...v0.16.1
