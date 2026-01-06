@@ -1043,7 +1043,8 @@ impl VideoSubsystem {
         let window =
             unsafe { Window::from_ll(self.clone(), sdl_window, 0 as sys::metal::SDL_MetalView) };
 
-        Ok(WindowCanvas::from_window_and_renderer(window, renderer))
+        // SAFETY: renderer is a valid non-null pointer we just created from SDL_CreateWindowAndRenderer
+        Ok(unsafe { WindowCanvas::from_window_and_renderer(window, renderer) })
     }
 
     /// Get window from its ID
@@ -1902,19 +1903,21 @@ impl Window {
 
     /// Create a Vulkan rendering surface for a window.
     ///
-    /// The `VkInstance` must be created using a prior call to the
+    /// # Safety
+    /// The `VkInstance` must be a valid Vulkan instance created using a prior call to the
     /// [`vkCreateInstance`](https://www.khronos.org/registry/vulkan/specs/1.1-extensions/man/html/vkCreateInstance.html)
     /// function in the Vulkan library.
     #[doc(alias = "SDL_Vulkan_CreateSurface")]
-    pub fn vulkan_create_surface(&self, instance: VkInstance) -> Result<VkSurfaceKHR, Error> {
+    pub unsafe fn vulkan_create_surface(
+        &self,
+        instance: VkInstance,
+    ) -> Result<VkSurfaceKHR, Error> {
         #[cfg(feature = "ash")]
         let mut surface: VkSurfaceKHR = VkSurfaceKHR::default();
 
         #[cfg(not(feature = "ash"))]
         let mut surface: VkSurfaceKHR = 0 as _;
-        if unsafe {
-            sys::vulkan::SDL_Vulkan_CreateSurface(self.context.raw, instance, null(), &mut surface)
-        } {
+        if sys::vulkan::SDL_Vulkan_CreateSurface(self.context.raw, instance, null(), &mut surface) {
             Ok(surface)
         } else {
             Err(get_error())

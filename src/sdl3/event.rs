@@ -1820,7 +1820,7 @@ impl Event {
                     Event::KeyDown {
                         timestamp: event.timestamp,
                         window_id: Self::window_id_from_ll(event.windowID),
-                        keycode: Keycode::from_i32(event.key.0 as i32),
+                        keycode: Keycode::from_u32(event.key.0),
                         scancode: Scancode::from_i32(event.scancode.into()),
                         keymod: Self::keymod_from_ll(event.r#mod),
                         repeat: event.repeat,
@@ -1834,7 +1834,7 @@ impl Event {
                     Event::KeyUp {
                         timestamp: event.timestamp,
                         window_id: Self::window_id_from_ll(event.windowID),
-                        keycode: Keycode::from_i32(event.key.0 as i32),
+                        keycode: Keycode::from_u32(event.key.0),
                         scancode: Scancode::from_i32(event.scancode.into()),
                         keymod: Self::keymod_from_ll(event.r#mod),
                         repeat: event.repeat,

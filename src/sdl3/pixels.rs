@@ -389,30 +389,26 @@ pub struct PixelFormatDetails {
 }
 
 impl PixelFormatDetails {
-    // This space intentionally left blank
-}
-
-impl From<*const pixels::SDL_PixelFormatDetails> for PixelFormatDetails {
-    fn from(details: *const pixels::SDL_PixelFormatDetails) -> Self {
-        unsafe {
-            let d = *details;
-            PixelFormatDetails {
-                format: PixelFormat::from_ll(d.format),
-                bits_per_pixel: d.bits_per_pixel,
-                bytes_per_pixel: d.bytes_per_pixel,
-                r_mask: d.Rmask,
-                g_mask: d.Gmask,
-                b_mask: d.Bmask,
-                a_mask: d.Amask,
-                r_bits: d.Rbits,
-                g_bits: d.Gbits,
-                b_bits: d.Bbits,
-                a_bits: d.Abits,
-                r_shift: d.Rshift,
-                g_shift: d.Gshift,
-                b_shift: d.Bshift,
-                a_shift: d.Ashift,
-            }
+    /// # Safety
+    /// `details` must be a valid pointer to an SDL_PixelFormatDetails.
+    pub unsafe fn from_ll(details: *const pixels::SDL_PixelFormatDetails) -> Self {
+        let d = *details;
+        PixelFormatDetails {
+            format: PixelFormat::from_ll(d.format),
+            bits_per_pixel: d.bits_per_pixel,
+            bytes_per_pixel: d.bytes_per_pixel,
+            r_mask: d.Rmask,
+            g_mask: d.Gmask,
+            b_mask: d.Bmask,
+            a_mask: d.Amask,
+            r_bits: d.Rbits,
+            g_bits: d.Gbits,
+            b_bits: d.Bbits,
+            a_bits: d.Abits,
+            r_shift: d.Rshift,
+            g_shift: d.Gshift,
+            b_shift: d.Bshift,
+            a_shift: d.Ashift,
         }
     }
 }
