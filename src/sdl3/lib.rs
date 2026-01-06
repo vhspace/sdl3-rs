@@ -150,6 +150,9 @@ pub mod mixer;
 #[cfg(feature = "ttf")]
 pub mod ttf;
 
+#[cfg(feature = "main")]
+mod sdlmain; // this just implements traits, so it doesn't have to be public
+
 mod common;
 // Export return types and such from the common module.
 pub use crate::common::IntegerOrSdlError;

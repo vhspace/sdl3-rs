@@ -898,6 +898,7 @@ dependencies = [
  "rand",
  "raw-window-handle",
  "sdl3-image-sys",
+ "sdl3-main",
  "sdl3-sys",
  "sdl3-ttf-sys",
  "wgpu",
@@ -920,6 +921,22 @@ dependencies = [
  "sdl3-image-src",
  "sdl3-sys",
 ]
+
+[[package]]
+name = "sdl3-main"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63ab4145c2d0aed1f1187f2cacd71329b6c238b89dc47db465be436ddf22c27a"
+dependencies = [
+ "sdl3-main-macros",
+ "sdl3-sys",
+]
+
+[[package]]
+name = "sdl3-main-macros"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8ea7f98211e1fefceafb264fb5638798fb26eca12b194dbc1eff7c6127ea4a6"
 
 [[package]]
 name = "sdl3-src"
