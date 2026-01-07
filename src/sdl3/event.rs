@@ -3516,9 +3516,7 @@ mod test {
         .unwrap();
 
         // Simulate SDL setting bits unknown to us, see PR #780
-        unsafe {
-            raw_event.key.r#mod = sys::keycode::SDL_Keymod(0xffff);
-        }
+        raw_event.key.r#mod = sys::keycode::SDL_Keymod(0xffff);
 
         if let Event::KeyDown { keymod, .. } = Event::from_ll(raw_event) {
             assert_eq!(keymod, Mod::all());
@@ -3543,9 +3541,7 @@ mod test {
         .unwrap();
 
         // Simulate SDL setting bits unknown to us, see PR #780
-        unsafe {
-            raw_event.key.r#mod = sys::keycode::SDL_Keymod(0xffff);
-        }
+        raw_event.key.r#mod = sys::keycode::SDL_Keymod(0xffff);
 
         if let Event::KeyUp { keymod, .. } = Event::from_ll(raw_event) {
             assert_eq!(keymod, Mod::all());

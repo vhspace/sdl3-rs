@@ -985,7 +985,7 @@ impl<T> TextureCreator<T> {
         access: TextureAccess,
         width: u32,
         height: u32,
-    ) -> Result<Texture, TextureValueError>
+    ) -> Result<Texture<'_>, TextureValueError>
     where
         F: Into<Option<PixelFormat>>,
     {
@@ -1006,7 +1006,7 @@ impl<T> TextureCreator<T> {
         format: F,
         width: u32,
         height: u32,
-    ) -> Result<Texture, TextureValueError>
+    ) -> Result<Texture<'_>, TextureValueError>
     where
         F: Into<Option<PixelFormat>>,
     {
@@ -1020,7 +1020,7 @@ impl<T> TextureCreator<T> {
         format: F,
         width: u32,
         height: u32,
-    ) -> Result<Texture, TextureValueError>
+    ) -> Result<Texture<'_>, TextureValueError>
     where
         F: Into<Option<PixelFormat>>,
     {
@@ -1034,7 +1034,7 @@ impl<T> TextureCreator<T> {
         format: F,
         width: u32,
         height: u32,
-    ) -> Result<Texture, TextureValueError>
+    ) -> Result<Texture<'_>, TextureValueError>
     where
         F: Into<Option<PixelFormat>>,
     {
@@ -1073,7 +1073,7 @@ impl<T> TextureCreator<T> {
     pub fn create_texture_from_surface<S: AsRef<SurfaceRef>>(
         &self,
         surface: S,
-    ) -> Result<Texture, TextureValueError> {
+    ) -> Result<Texture<'_>, TextureValueError> {
         use self::TextureValueError::*;
         let result = unsafe {
             sys::render::SDL_CreateTextureFromSurface(self.context.raw, surface.as_ref().raw())
@@ -1759,7 +1759,7 @@ impl<T: RenderTarget> Canvas<T> {
     pub fn create_texture_from_surface<S: AsRef<SurfaceRef>>(
         &self,
         surface: S,
-    ) -> Result<Texture, TextureValueError> {
+    ) -> Result<Texture<'_>, TextureValueError> {
         use self::TextureValueError::*;
         let result = unsafe {
             sys::render::SDL_CreateTextureFromSurface(self.context.raw, surface.as_ref().raw())
