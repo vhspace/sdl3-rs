@@ -24,6 +24,11 @@
 //! features = ["gfx"]
 //! ```
 
+compile_error!(
+    "The 'gfx' feature is non-functional. SDL_gfx has not been ported to SDL3 yet. \
+     See: https://github.com/vhspace/sdl3-rs/issues/160"
+);
+
 pub mod framerate;
 pub mod imagefilter;
 pub mod primitives;
