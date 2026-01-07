@@ -979,6 +979,31 @@ impl<T> TextureCreator<T> {
     /// You should prefer the default format if possible to have performance gains and to avoid
     /// unsupported Pixel Formats that can cause errors. However, be careful with the default
     /// `PixelFormat` if you want to create transparent textures.
+    #[cfg(not(feature = "unsafe_textures"))]
+    pub fn create_texture<F>(
+        &self,
+        format: F,
+        access: TextureAccess,
+        width: u32,
+        height: u32,
+    ) -> Result<Texture<'_>, TextureValueError>
+    where
+        F: Into<Option<PixelFormat>>,
+    {
+        use self::TextureValueError::*;
+        let format: PixelFormat = format.into().unwrap_or(self.default_pixel_format);
+        let result = ll_create_texture(self.context.raw(), format, access, width, height)?;
+        if result.is_null() {
+            Err(SdlError(get_error()))
+        } else {
+            unsafe { Ok(self.raw_create_texture(result)) }
+        }
+    }
+
+    /// You should prefer the default format if possible to have performance gains and to avoid
+    /// unsupported Pixel Formats that can cause errors. However, be careful with the default
+    /// `PixelFormat` if you want to create transparent textures.
+    #[cfg(feature = "unsafe_textures")]
     pub fn create_texture<F>(
         &self,
         format: F,
@@ -1001,6 +1026,22 @@ impl<T> TextureCreator<T> {
 
     #[inline]
     /// Shorthand for `create_texture(format, TextureAccess::Static, width, height)`
+    #[cfg(not(feature = "unsafe_textures"))]
+    pub fn create_texture_static<F>(
+        &self,
+        format: F,
+        width: u32,
+        height: u32,
+    ) -> Result<Texture<'_>, TextureValueError>
+    where
+        F: Into<Option<PixelFormat>>,
+    {
+        self.create_texture(format, TextureAccess::Static, width, height)
+    }
+
+    #[inline]
+    /// Shorthand for `create_texture(format, TextureAccess::Static, width, height)`
+    #[cfg(feature = "unsafe_textures")]
     pub fn create_texture_static<F>(
         &self,
         format: F,
@@ -1015,6 +1056,22 @@ impl<T> TextureCreator<T> {
 
     #[inline]
     /// Shorthand for `create_texture(format, TextureAccess::Streaming, width, height)`
+    #[cfg(not(feature = "unsafe_textures"))]
+    pub fn create_texture_streaming<F>(
+        &self,
+        format: F,
+        width: u32,
+        height: u32,
+    ) -> Result<Texture<'_>, TextureValueError>
+    where
+        F: Into<Option<PixelFormat>>,
+    {
+        self.create_texture(format, TextureAccess::Streaming, width, height)
+    }
+
+    #[inline]
+    /// Shorthand for `create_texture(format, TextureAccess::Streaming, width, height)`
+    #[cfg(feature = "unsafe_textures")]
     pub fn create_texture_streaming<F>(
         &self,
         format: F,
@@ -1029,6 +1086,22 @@ impl<T> TextureCreator<T> {
 
     #[inline]
     /// Shorthand for `create_texture(format, TextureAccess::Target, width, height)`
+    #[cfg(not(feature = "unsafe_textures"))]
+    pub fn create_texture_target<F>(
+        &self,
+        format: F,
+        width: u32,
+        height: u32,
+    ) -> Result<Texture<'_>, TextureValueError>
+    where
+        F: Into<Option<PixelFormat>>,
+    {
+        self.create_texture(format, TextureAccess::Target, width, height)
+    }
+
+    #[inline]
+    /// Shorthand for `create_texture(format, TextureAccess::Target, width, height)`
+    #[cfg(feature = "unsafe_textures")]
     pub fn create_texture_target<F>(
         &self,
         format: F,
@@ -1070,6 +1143,25 @@ impl<T> TextureCreator<T> {
     /// let texture = texture_creator.create_texture_from_surface(surface).unwrap();
     /// ```
     #[doc(alias = "SDL_CreateTextureFromSurface")]
+    #[cfg(not(feature = "unsafe_textures"))]
+    pub fn create_texture_from_surface<S: AsRef<SurfaceRef>>(
+        &self,
+        surface: S,
+    ) -> Result<Texture<'_>, TextureValueError> {
+        use self::TextureValueError::*;
+        let result = unsafe {
+            sys::render::SDL_CreateTextureFromSurface(self.context.raw, surface.as_ref().raw())
+        };
+        if result.is_null() {
+            Err(SdlError(get_error()))
+        } else {
+            unsafe { Ok(self.raw_create_texture(result)) }
+        }
+    }
+
+    /// Creates a texture from an existing surface.
+    #[doc(alias = "SDL_CreateTextureFromSurface")]
+    #[cfg(feature = "unsafe_textures")]
     pub fn create_texture_from_surface<S: AsRef<SurfaceRef>>(
         &self,
         surface: S,
