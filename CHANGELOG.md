@@ -5,9 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.17.2] - 2026-01-08
+
+### <!-- 1 -->Changed
+- Make Event::to_ll public ([#304](https://github.com/vhspace/sdl3-rs/pull/304))
+
+### <!-- 2 -->Fixed
+- Add compile error for non-functional gfx feature ([#303](https://github.com/vhspace/sdl3-rs/pull/303))
+- Add explicit lifetimes to Texture return types ([#302](https://github.com/vhspace/sdl3-rs/pull/302))
+
+## [0.17.1] - 2026-01-07
 
 ### <!-- 0 -->Added
+- Add support for sdl3-main ([#298](https://github.com/vhspace/sdl3-rs/pull/298))
 - Added support for window progress value API ([#294](https://github.com/vhspace/sdl3-rs/pull/294))
 
 ### <!-- 1 -->Changed
@@ -16,6 +26,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <!-- 2 -->Fixed
 - Align Keycode with SDL3's u32 representation ([#296](https://github.com/vhspace/sdl3-rs/pull/296))
 - Add explicit lifetime annotations ([#293](https://github.com/vhspace/sdl3-rs/pull/293))
+
+### <!-- 4 -->Dependencies
+- Bump libc from 0.2.178 to 0.2.179 ([#299](https://github.com/vhspace/sdl3-rs/pull/299))
 
 ## [0.17.0] - 2026-01-01
 
@@ -171,7 +184,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump bitflags from 2.9.0 to 2.9.1 ([#207](https://github.com/vhspace/sdl3-rs/pull/207))
 - Bump actions/cache from 3 to 4 ([#208](https://github.com/vhspace/sdl3-rs/pull/208))
 
-[unreleased]: https://github.com/vhspace/sdl3-rs/compare/v0.17.0...HEAD
+[0.17.2]: https://github.com/vhspace/sdl3-rs/compare/v0.17.1...v0.17.2
+[0.17.1]: https://github.com/vhspace/sdl3-rs/compare/v0.17.0...v0.17.1
 [0.17.0]: https://github.com/vhspace/sdl3-rs/compare/v0.16.4...v0.17.0
 [0.16.4]: https://github.com/vhspace/sdl3-rs/compare/v0.16.2...v0.16.4
 [0.16.2]: https://github.com/vhspace/sdl3-rs/compare/v0.16.1...v0.16.2
