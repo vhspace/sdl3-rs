@@ -68,6 +68,7 @@ Not all [SDL3 extension libraries](https://wiki.libsdl.org/SDL3/Libraries) have 
 | SDL_ttf  | ✅ Supported  |
 | SDL_net  | 🟨 Awaiting a stable C release  |
 | SDL_shadercross  | ❌ Not currently supported  |
+| sdl3-main | ✅ Supported  |
 
 # Contributing
 

@@ -83,8 +83,10 @@
 //! | `hidapi`            | Use SDL's hidapi backend for sensors and controllers                   | Implemented           |
 //! | `test-mode`         | Allows SDL to be initialised from a thread that is not the main thread | Implemented           |
 //! | `raw-window-handle` | Enables integrations with the [`wgpu`] crate                           | Implemented           |
+//! | `main`              | Enables integrations with the [`sdl3-main`] crate (main callbacks api) | Implemented           |
 //!
 //! [`wgpu`]: https://docs.rs/wgpu/latest/wgpu/
+//! [`sdl3-main`]: https://docs.rs/sdl3-main/latest/sdl3_main/
 
 #![crate_name = "sdl3"]
 #![crate_type = "lib"]
