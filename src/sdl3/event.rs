@@ -1169,7 +1169,9 @@ impl Event {
         id.0
     }
 
-    fn to_ll(&self) -> Option<sys::events::SDL_Event> {
+    // Required to be public since this is a wrapper on FFI and access to low level
+    // data types might be required for other dependencies
+    pub fn to_ll(&self) -> Option<sys::events::SDL_Event> {
         let mut ret = mem::MaybeUninit::uninit();
         match *self {
             Event::User {
