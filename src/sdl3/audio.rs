@@ -274,7 +274,7 @@ impl AudioSubsystem {
     ///
     /// * `app_spec` - The format of audio data the application will provide.
     /// * `device_spec` - The format of audio data the audio device expects.
-    ///                   If `None`, SDL will choose an appropriate format.
+    ///   If `None`, SDL will choose an appropriate format.
     pub fn new_playback_stream(
         &self,
         app_spec: &AudioSpec,
@@ -288,7 +288,7 @@ impl AudioSubsystem {
     /// # Arguments
     ///
     /// * `device_spec` - The format of audio data the audio device provides.
-    ///                   If `None`, SDL will choose an appropriate format.
+    ///   If `None`, SDL will choose an appropriate format.
     /// * `app_spec` - The format of audio data the application wants to receive.
     pub fn new_recording_stream(
         &self,

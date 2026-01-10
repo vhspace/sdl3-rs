@@ -130,7 +130,7 @@ impl From<MouseWheelDirection> for SDL_MouseWheelDirection {
 // 0 and 1 are not fixed values in the SDL source code.  This value is defined as an enum which is then cast to a Uint32.
 // The enum in C is defined as such:
 
-/**
+/*
  * \brief Scroll direction types for the Scroll event
  */
 //typedef enum

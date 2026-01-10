@@ -14,11 +14,11 @@ bitflags! {
     #[derive(Debug, Copy, Clone)]
     pub struct MessageBoxFlag: u32 {
         const ERROR =
-            sys::messagebox::SDL_MESSAGEBOX_ERROR.0 as u32;
+            sys::messagebox::SDL_MESSAGEBOX_ERROR.0;
         const WARNING =
-            sys::messagebox::SDL_MESSAGEBOX_WARNING.0 as u32;
+            sys::messagebox::SDL_MESSAGEBOX_WARNING.0;
         const INFORMATION =
-            sys::messagebox::SDL_MESSAGEBOX_INFORMATION.0 as u32;
+            sys::messagebox::SDL_MESSAGEBOX_INFORMATION.0;
     }
 }
 
@@ -38,9 +38,9 @@ bitflags! {
     #[derive(Debug, Copy, Clone)]
     pub struct MessageBoxButtonFlag: u32 {
         const ESCAPEKEY_DEFAULT =
-            sys::messagebox::SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT.0 as u32;
+            sys::messagebox::SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT.0;
         const RETURNKEY_DEFAULT =
-            sys::messagebox::SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT.0 as u32;
+            sys::messagebox::SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT.0;
         const NOTHING = 0;
     }
 }
