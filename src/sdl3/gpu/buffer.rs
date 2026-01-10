@@ -142,6 +142,11 @@ impl Buffer {
     pub fn len(&self) -> u32 {
         self.len
     }
+
+    /// Returns true if the buffer has zero length.
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
+    }
 }
 
 pub struct BufferBuilder<'a> {
@@ -250,6 +255,11 @@ impl TransferBuffer {
     /// The length of this buffer in bytes.
     pub fn len(&self) -> u32 {
         self.len
+    }
+
+    /// Returns true if the buffer has zero length.
+    pub fn is_empty(&self) -> bool {
+        self.len == 0
     }
 }
 

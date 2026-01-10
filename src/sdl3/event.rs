@@ -1704,17 +1704,7 @@ impl Event {
                 }
             }
 
-            Event::FingerDown { .. }
-            | Event::FingerUp { .. }
-            | Event::FingerMotion { .. }
-            | Event::DollarRecord { .. }
-            | Event::MultiGesture { .. }
-            | Event::ClipboardUpdate { .. }
-            | Event::DropFile { .. }
-            | Event::TextEditing { .. }
-            | Event::TextInput { .. }
-            | Event::Unknown { .. }
-            | _ => {
+            _ => {
                 // don't know how to convert!
                 None
             }

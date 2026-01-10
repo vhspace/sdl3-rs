@@ -481,32 +481,32 @@ bitflags! {
     #[doc = "Flags controlling various on/off state on a window. Bitflags wrapper around [`SDL_WindowFlags`]."]
     #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
     pub struct WindowFlags: u64 {
-        const FULLSCREEN = sys::video::SDL_WINDOW_FULLSCREEN.0 as u64;
-        const OPENGL = sys::video::SDL_WINDOW_OPENGL.0 as u64;
-        const OCCLUDED = sys::video::SDL_WINDOW_OCCLUDED.0 as u64;
-        const HIDDEN = sys::video::SDL_WINDOW_HIDDEN.0 as u64;
-        const BORDERLESS = sys::video::SDL_WINDOW_BORDERLESS.0 as u64;
-        const RESIZABLE = sys::video::SDL_WINDOW_RESIZABLE.0 as u64;
-        const MINIMIZED = sys::video::SDL_WINDOW_MINIMIZED.0 as u64;
-        const MAXIMIZED = sys::video::SDL_WINDOW_MAXIMIZED.0 as u64;
-        const MOUSE_GRABBED = sys::video::SDL_WINDOW_MOUSE_GRABBED.0 as u64;
-        const INPUT_FOCUS = sys::video::SDL_WINDOW_INPUT_FOCUS.0 as u64;
-        const MOUSE_FOCUS = sys::video::SDL_WINDOW_MOUSE_FOCUS.0 as u64;
-        const EXTERNAL = sys::video::SDL_WINDOW_EXTERNAL.0 as u64;
-        const MODAL = sys::video::SDL_WINDOW_MODAL.0 as u64;
-        const HIGH_PIXEL_DENSITY = sys::video::SDL_WINDOW_HIGH_PIXEL_DENSITY.0 as u64;
-        const MOUSE_CAPTURE = sys::video::SDL_WINDOW_MOUSE_CAPTURE.0 as u64;
-        const MOUSE_RELATIVE_MODE = sys::video::SDL_WINDOW_MOUSE_RELATIVE_MODE.0 as u64;
-        const ALWAYS_ON_TOP = sys::video::SDL_WINDOW_ALWAYS_ON_TOP.0 as u64;
-        const UTILITY = sys::video::SDL_WINDOW_UTILITY.0 as u64;
-        const TOOLTIP = sys::video::SDL_WINDOW_TOOLTIP.0 as u64;
-        const POPUP_MENU = sys::video::SDL_WINDOW_POPUP_MENU.0 as u64;
-        const KEYBOARD_GRABBED = sys::video::SDL_WINDOW_KEYBOARD_GRABBED.0 as u64;
-        const FILL_DOCUMENT = sys::video::SDL_WINDOW_FILL_DOCUMENT.0 as u64;
-        const VULKAN = sys::video::SDL_WINDOW_VULKAN.0 as u64;
-        const METAL = sys::video::SDL_WINDOW_METAL.0 as u64;
-        const TRANSPARENT = sys::video::SDL_WINDOW_TRANSPARENT.0 as u64;
-        const NOT_FOCUSABLE = sys::video::SDL_WINDOW_NOT_FOCUSABLE.0 as u64;
+        const FULLSCREEN = sys::video::SDL_WINDOW_FULLSCREEN.0;
+        const OPENGL = sys::video::SDL_WINDOW_OPENGL.0;
+        const OCCLUDED = sys::video::SDL_WINDOW_OCCLUDED.0;
+        const HIDDEN = sys::video::SDL_WINDOW_HIDDEN.0;
+        const BORDERLESS = sys::video::SDL_WINDOW_BORDERLESS.0;
+        const RESIZABLE = sys::video::SDL_WINDOW_RESIZABLE.0;
+        const MINIMIZED = sys::video::SDL_WINDOW_MINIMIZED.0;
+        const MAXIMIZED = sys::video::SDL_WINDOW_MAXIMIZED.0;
+        const MOUSE_GRABBED = sys::video::SDL_WINDOW_MOUSE_GRABBED.0;
+        const INPUT_FOCUS = sys::video::SDL_WINDOW_INPUT_FOCUS.0;
+        const MOUSE_FOCUS = sys::video::SDL_WINDOW_MOUSE_FOCUS.0;
+        const EXTERNAL = sys::video::SDL_WINDOW_EXTERNAL.0;
+        const MODAL = sys::video::SDL_WINDOW_MODAL.0;
+        const HIGH_PIXEL_DENSITY = sys::video::SDL_WINDOW_HIGH_PIXEL_DENSITY.0;
+        const MOUSE_CAPTURE = sys::video::SDL_WINDOW_MOUSE_CAPTURE.0;
+        const MOUSE_RELATIVE_MODE = sys::video::SDL_WINDOW_MOUSE_RELATIVE_MODE.0;
+        const ALWAYS_ON_TOP = sys::video::SDL_WINDOW_ALWAYS_ON_TOP.0;
+        const UTILITY = sys::video::SDL_WINDOW_UTILITY.0;
+        const TOOLTIP = sys::video::SDL_WINDOW_TOOLTIP.0;
+        const POPUP_MENU = sys::video::SDL_WINDOW_POPUP_MENU.0;
+        const KEYBOARD_GRABBED = sys::video::SDL_WINDOW_KEYBOARD_GRABBED.0;
+        const FILL_DOCUMENT = sys::video::SDL_WINDOW_FILL_DOCUMENT.0;
+        const VULKAN = sys::video::SDL_WINDOW_VULKAN.0;
+        const METAL = sys::video::SDL_WINDOW_METAL.0;
+        const TRANSPARENT = sys::video::SDL_WINDOW_TRANSPARENT.0;
+        const NOT_FOCUSABLE = sys::video::SDL_WINDOW_NOT_FOCUSABLE.0;
     }
 }
 

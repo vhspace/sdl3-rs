@@ -660,7 +660,7 @@ impl<T: RenderTarget> Canvas<T> {
     /// # Errors
     ///
     /// * returns `TargetRenderError::NotSupported` if the renderer does not support the use of
-    /// render targets
+    ///   render targets
     /// * returns `TargetRenderError::SdlError` if SDL2 returned with an error code.
     ///
     /// The texture *must* be created with the texture access:

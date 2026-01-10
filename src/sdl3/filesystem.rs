@@ -303,7 +303,7 @@ bitflags! {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
     pub struct GlobFlags: u32 {
         const NONE = 0;
-        const CASEINSENSITIVE = sys::filesystem::SDL_GLOB_CASEINSENSITIVE.0 as u32;
+        const CASEINSENSITIVE = sys::filesystem::SDL_GLOB_CASEINSENSITIVE.0;
     }
 }
 
