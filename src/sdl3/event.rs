@@ -12,6 +12,7 @@ use std::mem;
 use std::mem::transmute;
 use std::ptr;
 use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 use crate::gamepad;
 use crate::gamepad::{Axis, Button};
@@ -3032,15 +3033,45 @@ impl crate::EventPump {
         }
     }
 
+    /// Returns an iterator that waits for events up to the specified timeout.
+    ///
+    /// The iterator yields events until the total time since the iterator was
+    /// created exceeds the timeout duration. This means the iterator will
+    /// terminate after the timeout even if events are continuously available.
+    ///
+    /// # Example
+    ///
+    /// ```no_run
+    /// use std::time::Duration;
+    ///
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// let sdl = sdl3::init()?;
+    /// let mut event_pump = sdl.event_pump()?;
+    ///
+    /// // Collect events for up to 100ms
+    /// for event in event_pump.wait_timeout_iter(Duration::from_millis(100)) {
+    ///     // handle event
+    /// }
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub fn wait_timeout_iter(&mut self, timeout: Duration) -> EventWaitTimeoutIterator<'_> {
+        EventWaitTimeoutIterator {
+            _marker: PhantomData,
+            deadline: Instant::now() + timeout,
+        }
+    }
+
     /// Returns a waiting iterator that calls `wait_event_timeout()`.
     ///
     /// Note: The iterator will never terminate, unless waiting for an event
     /// exceeds the specified timeout.
-    pub fn wait_timeout_iter(&mut self, timeout: u32) -> EventWaitTimeoutIterator<'_> {
-        EventWaitTimeoutIterator {
-            _marker: PhantomData,
-            timeout,
-        }
+    #[deprecated(
+        since = "0.18.0",
+        note = "Use wait_timeout_iter(Duration) instead, which correctly tracks total elapsed time"
+    )]
+    pub fn wait_timeout_iter_ms(&mut self, timeout_ms: u32) -> EventWaitTimeoutIterator<'_> {
+        self.wait_timeout_iter(Duration::from_millis(timeout_ms as u64))
     }
 
     #[inline]
@@ -3086,17 +3117,31 @@ impl Iterator for EventWaitIterator<'_> {
     }
 }
 
-/// An iterator that calls `EventPump::wait_event_timeout()`.
+/// An iterator that waits for events until a deadline is reached.
+///
+/// Created by [`EventPump::wait_timeout_iter`].
+///
+/// The iterator yields events until the current time exceeds the deadline.
+/// The timeout is applied to the total iteration time, not per-event,
+/// ensuring the iterator terminates after the specified duration even if
+/// events are continuously available.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct EventWaitTimeoutIterator<'a> {
     _marker: PhantomData<&'a ()>,
-    timeout: u32,
+    deadline: Instant,
 }
 
 impl Iterator for EventWaitTimeoutIterator<'_> {
     type Item = Event;
     fn next(&mut self) -> Option<Event> {
-        unsafe { wait_event_timeout(self.timeout) }
+        let now = Instant::now();
+        if now >= self.deadline {
+            return None;
+        }
+        let remaining = self.deadline - now;
+        // Convert to milliseconds, clamping to i32::MAX for SDL
+        let timeout_ms = remaining.as_millis().min(i32::MAX as u128) as u32;
+        unsafe { wait_event_timeout(timeout_ms) }
     }
 }
 
