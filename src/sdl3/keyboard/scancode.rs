@@ -1,7 +1,6 @@
 #![allow(unreachable_patterns)]
 
 use std::ffi::{CStr, CString};
-use std::mem::transmute;
 
 use crate::sys;
 use crate::sys::scancode::*;
@@ -263,9 +262,8 @@ pub enum Scancode {
 impl Scancode {
     pub fn from_i32(n: i32) -> Option<Scancode> {
         use self::Scancode::*;
-        let n = n as u32;
 
-        Some(match unsafe { transmute::<u32, SDL_Scancode>(n) } {
+        Some(match SDL_Scancode(n) {
             SDL_SCANCODE_UNKNOWN => Unknown,
             SDL_SCANCODE_A => A,
             SDL_SCANCODE_B => B,
@@ -526,7 +524,7 @@ impl Scancode {
 
 impl From<Scancode> for SDL_Scancode {
     fn from(scancode: Scancode) -> SDL_Scancode {
-        unsafe { transmute(scancode as u32) }
+        SDL_Scancode(scancode as i32)
     }
 }
 
@@ -573,8 +571,7 @@ impl Scancode {
         // The name string pointer lives in static, read-only memory.
         // Knowing this, we can always return a string slice.
         unsafe {
-            let buf =
-                sys::keyboard::SDL_GetScancodeName(transmute::<u32, SDL_Scancode>(self as u32));
+            let buf = sys::keyboard::SDL_GetScancodeName(SDL_Scancode(self as i32));
             ::std::str::from_utf8(CStr::from_ptr(buf as *const _).to_bytes()).unwrap()
         }
     }

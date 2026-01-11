@@ -638,13 +638,16 @@ pub enum SwapInterval {
     LateSwapTearing = -1,
 }
 
-impl From<i32> for SwapInterval {
-    fn from(i: i32) -> Self {
+impl SwapInterval {
+    /// Converts an i32 to a SwapInterval if valid.
+    ///
+    /// Returns `None` for values other than -1, 0, or 1.
+    pub fn from_i32(i: i32) -> Option<Self> {
         match i {
-            -1 => SwapInterval::LateSwapTearing,
-            0 => SwapInterval::Immediate,
-            1 => SwapInterval::VSync,
-            other => panic!("Invalid value for SwapInterval: {other}; valid values are -1, 0, 1"),
+            -1 => Some(SwapInterval::LateSwapTearing),
+            0 => Some(SwapInterval::Immediate),
+            1 => Some(SwapInterval::VSync),
+            _ => None,
         }
     }
 }
@@ -1257,7 +1260,8 @@ impl VideoSubsystem {
             let mut interval = 0;
             let result = sys::video::SDL_GL_GetSwapInterval(&mut interval);
             if result {
-                Ok(SwapInterval::from(interval))
+                SwapInterval::from_i32(interval)
+                    .ok_or_else(|| Error(format!("Invalid swap interval value: {interval}")))
             } else {
                 Err(get_error())
             }
