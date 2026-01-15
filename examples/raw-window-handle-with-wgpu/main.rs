@@ -5,7 +5,7 @@ extern crate sdl3;
 extern crate wgpu;
 
 use std::borrow::Cow;
-use wgpu::{InstanceDescriptor, SurfaceError};
+use wgpu::{ExperimentalFeatures, InstanceDescriptor, SurfaceError};
 
 use sdl3::event::{Event, WindowEvent};
 use sdl3::keyboard::Keycode;
@@ -32,19 +32,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         force_fallback_adapter: false,
         compatible_surface: Some(&surface),
     }));
-    let Some(adapter) = adapter_opt else {
+    let Ok(adapter) = adapter_opt else {
         return Err("No adapter found".into());
     };
 
-    let (device, queue) = pollster::block_on(adapter.request_device(
-        &wgpu::DeviceDescriptor {
-            required_limits: wgpu::Limits::default(),
-            label: Some("device"),
-            required_features: wgpu::Features::empty(),
-            memory_hints: wgpu::MemoryHints::Performance,
-        },
-        None,
-    ))?;
+    let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+        required_limits: wgpu::Limits::default(),
+        label: Some("device"),
+        required_features: wgpu::Features::empty(),
+        memory_hints: wgpu::MemoryHints::Performance,
+        experimental_features: ExperimentalFeatures::disabled(),
+        trace: wgpu::Trace::Off,
+    }))?;
 
     let capabilities = surface.get_capabilities(&adapter);
     let mut formats = capabilities.formats;
@@ -70,7 +69,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         bind_group_layouts: &[&bind_group_layout],
         label: None,
-        push_constant_ranges: &[],
+        immediate_size: 0,
     });
 
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -107,7 +106,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             mask: !0,
             alpha_to_coverage_enabled: false,
         },
-        multiview: None,
+        multiview_mask: None,
         cache: None,
     });
 
@@ -181,11 +180,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                         load: wgpu::LoadOp::Clear(wgpu::Color::GREEN),
                         store: wgpu::StoreOp::Store,
                     },
+                    depth_slice: None,
                 })],
                 depth_stencil_attachment: None,
                 label: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             rpass.set_pipeline(&render_pipeline);
             rpass.set_bind_group(0, &bind_group, &[]);
