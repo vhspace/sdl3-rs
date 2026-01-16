@@ -3009,9 +3009,18 @@ impl crate::EventPump {
         unsafe { wait_event() }
     }
 
-    /// Waits until the specified timeout (in milliseconds) for the next available event.
-    pub fn wait_event_timeout(&mut self, timeout: u32) -> Option<Event> {
-        unsafe { wait_event_timeout(timeout) }
+    /// Waits until the specified timeout for the next available event.
+    ///
+    /// Returns `None` if no event is available within the timeout.
+    pub fn wait_event_timeout(&mut self, timeout: Duration) -> Option<Event> {
+        let timeout_ms = timeout.as_millis().min(i32::MAX as u128) as u32;
+        unsafe { wait_event_timeout(timeout_ms) }
+    }
+
+    /// Convenience method that calls [`wait_event_timeout`](Self::wait_event_timeout)
+    /// with a timeout in milliseconds.
+    pub fn wait_event_timeout_ms(&mut self, timeout_ms: u32) -> Option<Event> {
+        unsafe { wait_event_timeout(timeout_ms) }
     }
 
     /// Returns a waiting iterator that calls `wait_event()`.
@@ -3049,17 +3058,12 @@ impl crate::EventPump {
         EventWaitTimeoutIterator {
             _marker: PhantomData,
             deadline: Instant::now() + timeout,
+            has_polled: false,
         }
     }
 
-    /// Returns a waiting iterator that calls `wait_event_timeout()`.
-    ///
-    /// Note: The iterator will never terminate, unless waiting for an event
-    /// exceeds the specified timeout.
-    #[deprecated(
-        since = "0.18.0",
-        note = "Use wait_timeout_iter(Duration) instead, which correctly tracks total elapsed time"
-    )]
+    /// Convenience method that calls [`wait_timeout_iter`](Self::wait_timeout_iter)
+    /// with a timeout in milliseconds.
     pub fn wait_timeout_iter_ms(&mut self, timeout_ms: u32) -> EventWaitTimeoutIterator<'_> {
         self.wait_timeout_iter(Duration::from_millis(timeout_ms as u64))
     }
@@ -3119,16 +3123,20 @@ impl Iterator for EventWaitIterator<'_> {
 pub struct EventWaitTimeoutIterator<'a> {
     _marker: PhantomData<&'a ()>,
     deadline: Instant,
+    has_polled: bool,
 }
 
 impl Iterator for EventWaitTimeoutIterator<'_> {
     type Item = Event;
     fn next(&mut self) -> Option<Event> {
         let now = Instant::now();
-        if now >= self.deadline {
+        // If deadline passed and we've polled at least once, stop.
+        // This ensures Duration::ZERO still polls for pending events.
+        if now >= self.deadline && self.has_polled {
             return None;
         }
-        let remaining = self.deadline - now;
+        self.has_polled = true;
+        let remaining = self.deadline.saturating_duration_since(now);
         // Convert to milliseconds, clamping to i32::MAX for SDL
         let timeout_ms = remaining.as_millis().min(i32::MAX as u128) as u32;
         unsafe { wait_event_timeout(timeout_ms) }
