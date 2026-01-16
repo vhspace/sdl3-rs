@@ -7,7 +7,6 @@ use libc::c_void;
 use libc::{c_char, c_int};
 use std::convert::TryFrom;
 use std::ffi::CString;
-use std::mem;
 use std::ptr;
 
 /// generic Color type
@@ -16,7 +15,8 @@ pub trait ToColor {
 
     #[inline]
     fn as_u32(&self) -> u32 {
-        unsafe { mem::transmute(self.as_rgba()) }
+        let (r, g, b, a) = self.as_rgba();
+        u32::from_ne_bytes([r, g, b, a])
     }
 }
 
@@ -35,14 +35,15 @@ impl ToColor for (u8, u8, u8, u8) {
 
     #[inline]
     fn as_u32(&self) -> u32 {
-        unsafe { mem::transmute(*self) }
+        u32::from_ne_bytes([self.0, self.1, self.2, self.3])
     }
 }
 
 impl ToColor for u32 {
     #[inline]
     fn as_rgba(&self) -> (u8, u8, u8, u8) {
-        unsafe { mem::transmute(*self) }
+        let bytes = self.to_ne_bytes();
+        (bytes[0], bytes[1], bytes[2], bytes[3])
     }
 
     #[inline]
@@ -55,7 +56,9 @@ impl ToColor for u32 {
 impl ToColor for isize {
     #[inline]
     fn as_rgba(&self) -> (u8, u8, u8, u8) {
-        unsafe { mem::transmute(u32::try_from(*self).expect("Can't convert to Color Type")) }
+        let val = u32::try_from(*self).expect("Can't convert to Color Type");
+        let bytes = val.to_ne_bytes();
+        (bytes[0], bytes[1], bytes[2], bytes[3])
     }
 
     #[inline]

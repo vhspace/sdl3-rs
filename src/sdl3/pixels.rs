@@ -121,6 +121,7 @@ fn pixel_format_details_basic() {
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Default)]
+#[repr(C)]
 pub struct Color {
     pub r: u8,
     pub g: u8,
@@ -235,6 +236,7 @@ impl From<(u8, u8, u8, u8)> for Color {
 }
 
 #[derive(Copy, Clone, PartialEq, Debug)]
+#[repr(C)]
 pub struct FColor {
     pub r: f32,
     pub g: f32,

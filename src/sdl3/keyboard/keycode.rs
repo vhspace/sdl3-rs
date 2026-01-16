@@ -2,7 +2,6 @@
 
 use libc::c_char;
 use std::ffi::{CStr, CString};
-use std::mem::transmute;
 
 use crate::sys;
 use sys::keycode::*;
@@ -568,7 +567,7 @@ impl Keycode {
     ) -> Option<Keycode> {
         unsafe {
             let keycode_id = sys::keyboard::SDL_GetKeyFromScancode(
-                transmute::<u32, sys::scancode::SDL_Scancode>(scancode as u32),
+                sys::scancode::SDL_Scancode(scancode as i32),
                 modstate,
                 key_event,
             );
