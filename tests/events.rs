@@ -1,6 +1,4 @@
 extern crate sdl3;
-#[macro_use]
-extern crate lazy_static;
 
 use sdl3::event;
 use std::sync::Mutex;
@@ -8,9 +6,7 @@ use std::sync::Mutex;
 // Since only one `Sdl` context instance can be created at a time, running tests in parallel causes
 // 'Cannot initialize `Sdl` more than once at a time' error. To avoid it, run tests in serial by
 // locking this mutex.
-lazy_static! {
-    static ref CONTEXT_MUTEX: Mutex<()> = Mutex::new(());
-}
+static CONTEXT_MUTEX: Mutex<()> = Mutex::new(());
 
 #[test]
 fn test_events() {

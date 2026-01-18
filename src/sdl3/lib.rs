@@ -101,8 +101,6 @@
 extern crate bitflags;
 #[cfg(feature = "gfx")]
 extern crate c_vec;
-#[macro_use]
-extern crate lazy_static;
 pub extern crate libc;
 pub extern crate sdl3_sys as sys;
 // use sdl3_sys as sys;
