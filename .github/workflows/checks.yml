@@ -76,6 +76,12 @@ jobs:
           - hidapi
           - raw-window-handle
           - image
+        exclude:
+          # harfbuzz has CRT linking issues on Windows static builds
+          # https://github.com/libsdl-org/SDL_ttf/issues/289
+          - os: windows-latest
+            build_mode: build-from-source-static
+            feature: ttf
 
     steps:
       - name: checkout sources
