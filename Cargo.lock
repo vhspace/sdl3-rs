@@ -899,15 +899,15 @@ dependencies = [
 
 [[package]]
 name = "sdl3-image-src"
-version = "3.2.6"
+version = "3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "936d4dc07e63daea9725d5aa764fd1c5db4dde5d94ee956d20e193bdd592a40d"
+checksum = "7a9520b8d17e6acb983f3be2042275e7cf573ec473f46db13d5bfa2629eb7572"
 
 [[package]]
 name = "sdl3-image-sys"
-version = "0.6.0+SDL-image-3.2.6"
+version = "0.6.1+SDL-image-3.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec4d62a0bdf51c83383f9ae409be02436eef48bfb750f1744facfa06eada28e6"
+checksum = "f61a8cc9c72e2cab2e500752f513f65043ff1d36f994b90c7b423abcb796330d"
 dependencies = [
  "cmake",
  "rpkg-config",
