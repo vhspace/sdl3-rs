@@ -70,6 +70,29 @@ Not all [SDL3 extension libraries](https://wiki.libsdl.org/SDL3/Libraries) have 
 | SDL_shadercross  | ❌ Not currently supported  |
 | sdl3-main | ✅ Supported  |
 
+# Feature Flags
+
+## `ffi-safe`
+
+Enables FFI-safe subsystem handles for hot-reloading scenarios.
+
+```toml
+[dependencies]
+sdl3 = { version = "0", features = ["ffi-safe"] }
+```
+
+By default, subsystem handles (like `VideoSubsystem`) use static reference counters.
+This is efficient but breaks when handles are passed across DLL/shared library boundaries
+during hot-reloading, because each compilation unit gets its own copy of the static.
+
+With `ffi-safe` enabled, subsystem handles use heap-allocated reference counters and
+`#[repr(C)]` layout, making them safe to pass across FFI boundaries.
+
+**Limitations:**
+- The main `Sdl` context still uses static counters and must remain in the host binary
+- Only subsystem handles should be passed to hot-reloaded code
+- The `Sdl` context must outlive all subsystems
+
 # Contributing
 
 We're looking for people to help get SDL3 support in Rust built, tested, and completed. You can help out!
