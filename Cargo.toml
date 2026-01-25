@@ -37,6 +37,10 @@ optional = true
 version = "0.6"
 optional = true
 
+[dependencies.sdl3-mixer-sys]
+version = "0.6.0-pre-1"
+optional = true
+
 [dependencies.sdl3-main]
 version = "0.6"
 optional = true
@@ -76,11 +80,13 @@ build-from-source = [
     "sdl3-sys/build-from-source",
     "sdl3-image-sys?/build-from-source",
     "sdl3-ttf-sys?/build-from-source",
+    "sdl3-mixer-sys?/build-from-source",
 ]
 build-from-source-static = [
     "sdl3-sys/build-from-source-static",
     "sdl3-image-sys?/build-from-source-static",
     "sdl3-ttf-sys?/build-static-vendored",
+    "sdl3-mixer-sys?/build-from-source-static",
 ]
 build-from-source-unix-console = ["sdl3-sys/sdl-unix-console-build"]
 ash = ["sdl3-sys/use-ash-v0-38"]
@@ -89,7 +95,7 @@ unsafe_textures = []
 # DEPRECATED: gfx feature is non-functional - SDL_gfx has not been ported to SDL3 yet.
 # See: https://github.com/vhspace/sdl3-rs/issues/160
 gfx = ["c_vec"] #, "sdl3-sys/gfx"]
-mixer = []
+mixer = ["dep:sdl3-mixer-sys"]
 image = ["dep:sdl3-image-sys"]
 ttf = ["dep:sdl3-ttf-sys"]
 # Use hidapi support in SDL. Only 2.0.12 and after

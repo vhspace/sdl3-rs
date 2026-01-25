@@ -77,7 +77,7 @@
 //! | `ash`               | Use Vulkan types from the ash crate                                    | Implemented           |
 //! | `unsafe_textures`   | Skip lifetime tracking for textures; you must manage destruction safety yourself | Implemented (unsafe opt-in) |
 //! | `gfx`               | Legacy SDL_gfx drawing helpers; blocked on an SDL3_gfx C library       | Blocked               |
-//! | `mixer`             | SDL_mixer bindings (needs upstream SDL3_mixer and `sdl3-mixer-sys`)    | Blocked               |
+//! | `mixer`             | SDL3_mixer audio mixing and music playback                             | Prerelease            |
 //! | `image`             | Enable SDL_image helpers for loading/saving surfaces and textures      | Implemented           |
 //! | `ttf`               | Enable SDL_ttf font/text rendering APIs                                | Implemented           |
 //! | `hidapi`            | Use SDL's hidapi backend for sensors and controllers                   | Implemented           |
