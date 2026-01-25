@@ -52,6 +52,19 @@ use std::ptr;
 use sys::audio::{SDL_AudioSpec, SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK};
 use sys::properties::SDL_PropertiesID;
 
+// Helper functions for common error types
+fn invalid_path_error() -> Error {
+    Error("Invalid path".to_owned())
+}
+
+fn invalid_tag_error() -> Error {
+    Error("Invalid tag string".to_owned())
+}
+
+// TODO: Expose AudioDecoder type for custom audio decoding
+// SDL3_mixer provides MIX_AudioDecoder for implementing custom decoders,
+// but this requires careful lifetime management and callback handling.
+
 /// The version of SDL_mixer linked to this build.
 pub fn get_version() -> i32 {
     mixer::MIX_Version()
@@ -257,7 +270,7 @@ impl Mixer {
 
     /// Stop all tracks with a specific tag.
     pub fn stop_tag(&self, tag: &str, fade_out_ms: i64) -> Result<(), Error> {
-        let c_tag = CString::new(tag).map_err(|_| Error("Invalid tag string".to_owned()))?;
+        let c_tag = CString::new(tag).map_err(|_| invalid_tag_error())?;
         let success = unsafe { mixer::MIX_StopTag(self.raw, c_tag.as_ptr(), fade_out_ms) };
         if success {
             Ok(())
@@ -268,7 +281,7 @@ impl Mixer {
 
     /// Pause all tracks with a specific tag.
     pub fn pause_tag(&self, tag: &str) -> Result<(), Error> {
-        let c_tag = CString::new(tag).map_err(|_| Error("Invalid tag string".to_owned()))?;
+        let c_tag = CString::new(tag).map_err(|_| invalid_tag_error())?;
         let success = unsafe { mixer::MIX_PauseTag(self.raw, c_tag.as_ptr()) };
         if success {
             Ok(())
@@ -279,7 +292,7 @@ impl Mixer {
 
     /// Resume all tracks with a specific tag.
     pub fn resume_tag(&self, tag: &str) -> Result<(), Error> {
-        let c_tag = CString::new(tag).map_err(|_| Error("Invalid tag string".to_owned()))?;
+        let c_tag = CString::new(tag).map_err(|_| invalid_tag_error())?;
         let success = unsafe { mixer::MIX_ResumeTag(self.raw, c_tag.as_ptr()) };
         if success {
             Ok(())
@@ -290,7 +303,7 @@ impl Mixer {
 
     /// Play all tracks with a specific tag using default options.
     pub fn play_tag(&self, tag: &str) -> Result<(), Error> {
-        let c_tag = CString::new(tag).map_err(|_| Error("Invalid tag string".to_owned()))?;
+        let c_tag = CString::new(tag).map_err(|_| invalid_tag_error())?;
         // Use 0 for SDL_PropertiesID to use default options
         let success = unsafe { mixer::MIX_PlayTag(self.raw, c_tag.as_ptr(), SDL_PropertiesID(0)) };
         if success {
@@ -302,7 +315,7 @@ impl Mixer {
 
     /// Set gain for all tracks with a specific tag.
     pub fn set_tag_gain(&self, tag: &str, gain: f32) -> Result<(), Error> {
-        let c_tag = CString::new(tag).map_err(|_| Error("Invalid tag string".to_owned()))?;
+        let c_tag = CString::new(tag).map_err(|_| invalid_tag_error())?;
         let success = unsafe { mixer::MIX_SetTagGain(self.raw, c_tag.as_ptr(), gain as c_float) };
         if success {
             Ok(())
@@ -337,12 +350,8 @@ impl Audio {
     /// The mixer is used to hint at the optimal format, but the audio can be
     /// used with any mixer.
     pub fn from_file<P: AsRef<Path>>(mixer: &Mixer, path: P) -> Result<Audio, Error> {
-        let c_path = CString::new(
-            path.as_ref()
-                .to_str()
-                .ok_or(Error("Invalid path".to_owned()))?,
-        )
-        .map_err(|_| Error("Invalid path".to_owned()))?;
+        let c_path = CString::new(path.as_ref().to_str().ok_or_else(invalid_path_error)?)
+            .map_err(|_| invalid_path_error())?;
         let raw = unsafe { mixer::MIX_LoadAudio(mixer.raw, c_path.as_ptr(), false) };
         if raw.is_null() {
             Err(get_error())
@@ -355,12 +364,8 @@ impl Audio {
     ///
     /// This uses more memory but reduces CPU usage during playback.
     pub fn from_file_predecoded<P: AsRef<Path>>(mixer: &Mixer, path: P) -> Result<Audio, Error> {
-        let c_path = CString::new(
-            path.as_ref()
-                .to_str()
-                .ok_or(Error("Invalid path".to_owned()))?,
-        )
-        .map_err(|_| Error("Invalid path".to_owned()))?;
+        let c_path = CString::new(path.as_ref().to_str().ok_or_else(invalid_path_error)?)
+            .map_err(|_| invalid_path_error())?;
         let raw = unsafe { mixer::MIX_LoadAudio(mixer.raw, c_path.as_ptr(), true) };
         if raw.is_null() {
             Err(get_error())
@@ -565,7 +570,7 @@ impl<'mixer> Track<'mixer> {
     /// Tags can be used to control multiple tracks at once with `Mixer::play_tag()`,
     /// `Mixer::stop_tag()`, etc.
     pub fn tag(&self, tag: &str) -> Result<(), Error> {
-        let c_tag = CString::new(tag).map_err(|_| Error("Invalid tag string".to_owned()))?;
+        let c_tag = CString::new(tag).map_err(|_| invalid_tag_error())?;
         let success = unsafe { mixer::MIX_TagTrack(self.raw, c_tag.as_ptr()) };
         if success {
             Ok(())
@@ -576,7 +581,7 @@ impl<'mixer> Track<'mixer> {
 
     /// Remove a tag from this track.
     pub fn untag(&self, tag: &str) -> Result<(), Error> {
-        let c_tag = CString::new(tag).map_err(|_| Error("Invalid tag string".to_owned()))?;
+        let c_tag = CString::new(tag).map_err(|_| invalid_tag_error())?;
         unsafe { mixer::MIX_UntagTrack(self.raw, c_tag.as_ptr()) };
         Ok(())
     }
@@ -662,6 +667,10 @@ impl<'mixer> Track<'mixer> {
     }
 }
 
+// Safety: MIX_Track can be sent between threads. The PhantomData ensures
+// the track cannot outlive its mixer.
+unsafe impl Send for Track<'_> {}
+
 /// A group of tracks that can be processed together.
 ///
 /// Groups allow you to apply effects or callbacks to a subset of tracks
@@ -685,3 +694,7 @@ impl<'mixer> Group<'mixer> {
         self.raw
     }
 }
+
+// Safety: MIX_Group can be sent between threads. The PhantomData ensures
+// the group cannot outlive its mixer.
+unsafe impl Send for Group<'_> {}
