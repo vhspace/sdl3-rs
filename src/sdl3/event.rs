@@ -1130,7 +1130,7 @@ impl Event {
 
     #[inline]
     fn joystick_id_to_ll(id: JoystickId) -> sys::joystick::SDL_JoystickID {
-        id
+        id.into()
     }
 
     #[inline]
@@ -1150,7 +1150,7 @@ impl Event {
 
     #[inline]
     fn joystick_id_from_ll(id: sys::joystick::SDL_JoystickID) -> JoystickId {
-        id
+        JoystickId::from(id)
     }
 
     #[inline]
