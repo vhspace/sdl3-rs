@@ -331,17 +331,17 @@ pub enum EventType {
     JoyDeviceAdded = sys::events::SDL_EVENT_JOYSTICK_ADDED.0,
     JoyDeviceRemoved = sys::events::SDL_EVENT_JOYSTICK_REMOVED.0,
 
-    ControllerAxisMotion = sys::events::SDL_EVENT_GAMEPAD_AXIS_MOTION.0,
-    ControllerButtonDown = sys::events::SDL_EVENT_GAMEPAD_BUTTON_DOWN.0,
-    ControllerButtonUp = sys::events::SDL_EVENT_GAMEPAD_BUTTON_UP.0,
-    ControllerDeviceAdded = sys::events::SDL_EVENT_GAMEPAD_ADDED.0,
-    ControllerDeviceRemoved = sys::events::SDL_EVENT_GAMEPAD_REMOVED.0,
-    ControllerDeviceRemapped = sys::events::SDL_EVENT_GAMEPAD_REMAPPED.0,
-    ControllerTouchpadDown = sys::events::SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN.0,
-    ControllerTouchpadMotion = sys::events::SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION.0,
-    ControllerTouchpadUp = sys::events::SDL_EVENT_GAMEPAD_TOUCHPAD_UP.0,
+    GamepadAxisMotion = sys::events::SDL_EVENT_GAMEPAD_AXIS_MOTION.0,
+    GamepadButtonDown = sys::events::SDL_EVENT_GAMEPAD_BUTTON_DOWN.0,
+    GamepadButtonUp = sys::events::SDL_EVENT_GAMEPAD_BUTTON_UP.0,
+    GamepadAdded = sys::events::SDL_EVENT_GAMEPAD_ADDED.0,
+    GamepadRemoved = sys::events::SDL_EVENT_GAMEPAD_REMOVED.0,
+    GamepadRemapped = sys::events::SDL_EVENT_GAMEPAD_REMAPPED.0,
+    GamepadTouchpadDown = sys::events::SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN.0,
+    GamepadTouchpadMotion = sys::events::SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION.0,
+    GamepadTouchpadUp = sys::events::SDL_EVENT_GAMEPAD_TOUCHPAD_UP.0,
     #[cfg(feature = "hidapi")]
-    ControllerSensorUpdated = sys::events::SDL_EVENT_GAMEPAD_SENSOR_UPDATE.0,
+    GamepadSensorUpdated = sys::events::SDL_EVENT_GAMEPAD_SENSOR_UPDATE.0,
 
     FingerDown = sys::events::SDL_EVENT_FINGER_DOWN.0,
     FingerUp = sys::events::SDL_EVENT_FINGER_UP.0,
@@ -441,17 +441,17 @@ impl TryFrom<u32> for EventType {
             SDL_EVENT_JOYSTICK_ADDED => JoyDeviceAdded,
             SDL_EVENT_JOYSTICK_REMOVED => JoyDeviceRemoved,
 
-            SDL_EVENT_GAMEPAD_AXIS_MOTION => ControllerAxisMotion,
-            SDL_EVENT_GAMEPAD_BUTTON_DOWN => ControllerButtonDown,
-            SDL_EVENT_GAMEPAD_BUTTON_UP => ControllerButtonUp,
-            SDL_EVENT_GAMEPAD_ADDED => ControllerDeviceAdded,
-            SDL_EVENT_GAMEPAD_REMOVED => ControllerDeviceRemoved,
-            SDL_EVENT_GAMEPAD_REMAPPED => ControllerDeviceRemapped,
-            SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN => ControllerTouchpadDown,
-            SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION => ControllerTouchpadMotion,
-            SDL_EVENT_GAMEPAD_TOUCHPAD_UP => ControllerTouchpadUp,
+            SDL_EVENT_GAMEPAD_AXIS_MOTION => GamepadAxisMotion,
+            SDL_EVENT_GAMEPAD_BUTTON_DOWN => GamepadButtonDown,
+            SDL_EVENT_GAMEPAD_BUTTON_UP => GamepadButtonUp,
+            SDL_EVENT_GAMEPAD_ADDED => GamepadAdded,
+            SDL_EVENT_GAMEPAD_REMOVED => GamepadRemoved,
+            SDL_EVENT_GAMEPAD_REMAPPED => GamepadRemapped,
+            SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN => GamepadTouchpadDown,
+            SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION => GamepadTouchpadMotion,
+            SDL_EVENT_GAMEPAD_TOUCHPAD_UP => GamepadTouchpadUp,
             #[cfg(feature = "hidapi")]
-            SDL_EVENT_GAMEPAD_SENSOR_UPDATE => ControllerSensorUpdated,
+            SDL_EVENT_GAMEPAD_SENSOR_UPDATE => GamepadSensorUpdated,
 
             SDL_EVENT_FINGER_DOWN => FingerDown,
             SDL_EVENT_FINGER_UP => FingerUp,
@@ -807,7 +807,7 @@ pub enum Event {
         which: JoystickId,
     },
 
-    ControllerAxisMotion {
+    GamepadAxisMotion {
         timestamp: u64,
         /// The controller's joystick `id`
         which: JoystickId,
@@ -815,36 +815,36 @@ pub enum Event {
         value: i16,
     },
 
-    ControllerButtonDown {
+    GamepadButtonDown {
         timestamp: u64,
         /// The controller's joystick `id`
         which: JoystickId,
         button: Button,
     },
-    ControllerButtonUp {
+    GamepadButtonUp {
         timestamp: u64,
         /// The controller's joystick `id`
         which: JoystickId,
         button: Button,
     },
 
-    ControllerDeviceAdded {
+    GamepadAdded {
         timestamp: u64,
         /// The newly added controller's `joystick_index`
         which: JoystickId,
     },
-    ControllerDeviceRemoved {
+    GamepadRemoved {
         timestamp: u64,
         /// The controller's joystick `id`
         which: JoystickId,
     },
-    ControllerDeviceRemapped {
+    GamepadRemapped {
         timestamp: u64,
         /// The controller's joystick `id`
         which: JoystickId,
     },
 
-    ControllerTouchpadDown {
+    GamepadTouchpadDown {
         timestamp: u64,
         /// The joystick instance id
         which: JoystickId,
@@ -859,7 +859,7 @@ pub enum Event {
         /// Normalized in the range 0...1
         pressure: f32,
     },
-    ControllerTouchpadMotion {
+    GamepadTouchpadMotion {
         timestamp: u64,
         /// The joystick instance id
         which: JoystickId,
@@ -874,7 +874,7 @@ pub enum Event {
         /// Normalized in the range 0...1
         pressure: f32,
     },
-    ControllerTouchpadUp {
+    GamepadTouchpadUp {
         timestamp: u64,
         /// The joystick instance id
         which: JoystickId,
@@ -892,7 +892,7 @@ pub enum Event {
 
     /// Triggered when the gyroscope or accelerometer is updated
     #[cfg(feature = "hidapi")]
-    ControllerSensorUpdated {
+    GamepadSensorUpdated {
         timestamp: u64,
         which: JoystickId,
         sensor: crate::sensor::SensorType,
@@ -1556,7 +1556,7 @@ impl Event {
                     Some(ret.assume_init())
                 }
             }
-            Event::ControllerAxisMotion {
+            Event::GamepadAxisMotion {
                 timestamp,
                 which,
                 axis,
@@ -1579,7 +1579,7 @@ impl Event {
                     Some(ret.assume_init())
                 }
             }
-            Event::ControllerButtonDown {
+            Event::GamepadButtonDown {
                 timestamp,
                 which,
                 button,
@@ -1604,7 +1604,7 @@ impl Event {
                 }
             }
 
-            Event::ControllerButtonUp {
+            Event::GamepadButtonUp {
                 timestamp,
                 which,
                 button,
@@ -1627,7 +1627,7 @@ impl Event {
                 }
             }
 
-            Event::ControllerDeviceAdded { timestamp, which } => {
+            Event::GamepadAdded { timestamp, which } => {
                 let event = SDL_GamepadDeviceEvent {
                     r#type: sys::events::SDL_EVENT_GAMEPAD_ADDED,
                     timestamp,
@@ -1644,7 +1644,7 @@ impl Event {
                 }
             }
 
-            Event::ControllerDeviceRemoved { timestamp, which } => {
+            Event::GamepadRemoved { timestamp, which } => {
                 let event = SDL_GamepadDeviceEvent {
                     r#type: sys::events::SDL_EVENT_GAMEPAD_REMOVED,
                     timestamp,
@@ -1661,7 +1661,7 @@ impl Event {
                 }
             }
 
-            Event::ControllerDeviceRemapped { timestamp, which } => {
+            Event::GamepadRemapped { timestamp, which } => {
                 let event = SDL_GamepadDeviceEvent {
                     r#type: sys::events::SDL_EVENT_GAMEPAD_REMAPPED,
                     timestamp,
@@ -1974,61 +1974,61 @@ impl Event {
                     }
                 }
 
-                EventType::ControllerAxisMotion => {
+                EventType::GamepadAxisMotion => {
                     let event = raw.gaxis;
                     let axis = gamepad::Axis::from_ll(transmute(event.axis as i32)).unwrap();
 
-                    Event::ControllerAxisMotion {
+                    Event::GamepadAxisMotion {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                         axis,
                         value: event.value,
                     }
                 }
-                EventType::ControllerButtonDown => {
+                EventType::GamepadButtonDown => {
                     let event = raw.gbutton;
                     let button = gamepad::Button::from_ll(transmute(event.button as i32)).unwrap();
 
-                    Event::ControllerButtonDown {
+                    Event::GamepadButtonDown {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                         button,
                     }
                 }
-                EventType::ControllerButtonUp => {
+                EventType::GamepadButtonUp => {
                     let event = raw.gbutton;
                     let button = gamepad::Button::from_ll(transmute(event.button as i32)).unwrap();
 
-                    Event::ControllerButtonUp {
+                    Event::GamepadButtonUp {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                         button,
                     }
                 }
-                EventType::ControllerDeviceAdded => {
+                EventType::GamepadAdded => {
                     let event = raw.gdevice;
-                    Event::ControllerDeviceAdded {
+                    Event::GamepadAdded {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                     }
                 }
-                EventType::ControllerDeviceRemoved => {
+                EventType::GamepadRemoved => {
                     let event = raw.gdevice;
-                    Event::ControllerDeviceRemoved {
+                    Event::GamepadRemoved {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                     }
                 }
-                EventType::ControllerDeviceRemapped => {
+                EventType::GamepadRemapped => {
                     let event = raw.gdevice;
-                    Event::ControllerDeviceRemapped {
+                    Event::GamepadRemapped {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                     }
                 }
-                EventType::ControllerTouchpadDown => {
+                EventType::GamepadTouchpadDown => {
                     let event = raw.gtouchpad;
-                    Event::ControllerTouchpadDown {
+                    Event::GamepadTouchpadDown {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                         touchpad: event.touchpad,
@@ -2038,9 +2038,9 @@ impl Event {
                         pressure: event.pressure,
                     }
                 }
-                EventType::ControllerTouchpadMotion => {
+                EventType::GamepadTouchpadMotion => {
                     let event = raw.gtouchpad;
-                    Event::ControllerTouchpadMotion {
+                    Event::GamepadTouchpadMotion {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                         touchpad: event.touchpad,
@@ -2050,9 +2050,9 @@ impl Event {
                         pressure: event.pressure,
                     }
                 }
-                EventType::ControllerTouchpadUp => {
+                EventType::GamepadTouchpadUp => {
                     let event = raw.gtouchpad;
-                    Event::ControllerTouchpadUp {
+                    Event::GamepadTouchpadUp {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                         touchpad: event.touchpad,
@@ -2063,9 +2063,9 @@ impl Event {
                     }
                 }
                 #[cfg(feature = "hidapi")]
-                EventType::ControllerSensorUpdated => {
+                EventType::GamepadSensorUpdated => {
                     let event = raw.gsensor;
-                    Event::ControllerSensorUpdated {
+                    Event::GamepadSensorUpdated {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                         sensor: crate::sensor::SensorType::from_ll(event.sensor),
@@ -2379,12 +2379,12 @@ impl Event {
             | (Self::JoyButtonUp { .. }, Self::JoyButtonUp { .. })
             | (Self::JoyDeviceAdded { .. }, Self::JoyDeviceAdded { .. })
             | (Self::JoyDeviceRemoved { .. }, Self::JoyDeviceRemoved { .. })
-            | (Self::ControllerAxisMotion { .. }, Self::ControllerAxisMotion { .. })
-            | (Self::ControllerButtonDown { .. }, Self::ControllerButtonDown { .. })
-            | (Self::ControllerButtonUp { .. }, Self::ControllerButtonUp { .. })
-            | (Self::ControllerDeviceAdded { .. }, Self::ControllerDeviceAdded { .. })
-            | (Self::ControllerDeviceRemoved { .. }, Self::ControllerDeviceRemoved { .. })
-            | (Self::ControllerDeviceRemapped { .. }, Self::ControllerDeviceRemapped { .. })
+            | (Self::GamepadAxisMotion { .. }, Self::GamepadAxisMotion { .. })
+            | (Self::GamepadButtonDown { .. }, Self::GamepadButtonDown { .. })
+            | (Self::GamepadButtonUp { .. }, Self::GamepadButtonUp { .. })
+            | (Self::GamepadAdded { .. }, Self::GamepadAdded { .. })
+            | (Self::GamepadRemoved { .. }, Self::GamepadRemoved { .. })
+            | (Self::GamepadRemapped { .. }, Self::GamepadRemapped { .. })
             | (Self::FingerDown { .. }, Self::FingerDown { .. })
             | (Self::FingerUp { .. }, Self::FingerUp { .. })
             | (Self::FingerMotion { .. }, Self::FingerMotion { .. })
@@ -2402,7 +2402,7 @@ impl Event {
             | (Self::User { .. }, Self::User { .. })
             | (Self::Unknown { .. }, Self::Unknown { .. }) => true,
             #[cfg(feature = "hidapi")]
-            (Self::ControllerSensorUpdated { .. }, Self::ControllerSensorUpdated { .. }) => true,
+            (Self::GamepadSensorUpdated { .. }, Self::GamepadSensorUpdated { .. }) => true,
             _ => false,
         }
     }
@@ -2447,17 +2447,17 @@ impl Event {
             Self::JoyButtonUp { timestamp, .. } => timestamp,
             Self::JoyDeviceAdded { timestamp, .. } => timestamp,
             Self::JoyDeviceRemoved { timestamp, .. } => timestamp,
-            Self::ControllerAxisMotion { timestamp, .. } => timestamp,
-            Self::ControllerButtonDown { timestamp, .. } => timestamp,
-            Self::ControllerButtonUp { timestamp, .. } => timestamp,
-            Self::ControllerDeviceAdded { timestamp, .. } => timestamp,
-            Self::ControllerDeviceRemoved { timestamp, .. } => timestamp,
-            Self::ControllerDeviceRemapped { timestamp, .. } => timestamp,
-            Self::ControllerTouchpadDown { timestamp, .. } => timestamp,
-            Self::ControllerTouchpadMotion { timestamp, .. } => timestamp,
-            Self::ControllerTouchpadUp { timestamp, .. } => timestamp,
+            Self::GamepadAxisMotion { timestamp, .. } => timestamp,
+            Self::GamepadButtonDown { timestamp, .. } => timestamp,
+            Self::GamepadButtonUp { timestamp, .. } => timestamp,
+            Self::GamepadAdded { timestamp, .. } => timestamp,
+            Self::GamepadRemoved { timestamp, .. } => timestamp,
+            Self::GamepadRemapped { timestamp, .. } => timestamp,
+            Self::GamepadTouchpadDown { timestamp, .. } => timestamp,
+            Self::GamepadTouchpadMotion { timestamp, .. } => timestamp,
+            Self::GamepadTouchpadUp { timestamp, .. } => timestamp,
             #[cfg(feature = "hidapi")]
-            Self::ControllerSensorUpdated { timestamp, .. } => timestamp,
+            Self::GamepadSensorUpdated { timestamp, .. } => timestamp,
             Self::FingerDown { timestamp, .. } => timestamp,
             Self::FingerUp { timestamp, .. } => timestamp,
             Self::FingerMotion { timestamp, .. } => timestamp,
@@ -2651,7 +2651,7 @@ impl Event {
         )
     }
 
-    /// Returns `true` if this is a controller event.
+    /// Returns `true` if this is a gamepad event.
     ///
     /// # Example
     ///
@@ -2659,27 +2659,35 @@ impl Event {
     /// use sdl3::event::Event;
     /// use sdl3::joystick::JoystickId;
     ///
-    /// let ev = Event::ControllerDeviceAdded {
+    /// let ev = Event::GamepadAdded {
     ///     timestamp: 0,
     ///     which: JoystickId::new(0),
     /// };
-    /// assert!(ev.is_controller());
+    /// assert!(ev.is_gamepad());
     ///
     /// let another_ev = Event::Quit {
     ///     timestamp: 0,
     /// };
-    /// assert!(another_ev.is_controller() == false); // Not a controller event!
+    /// assert!(another_ev.is_gamepad() == false); // Not a gamepad event!
     /// ```
-    pub fn is_controller(&self) -> bool {
+    pub fn is_gamepad(&self) -> bool {
         matches!(
             self,
-            Self::ControllerAxisMotion { .. }
-                | Self::ControllerButtonDown { .. }
-                | Self::ControllerButtonUp { .. }
-                | Self::ControllerDeviceAdded { .. }
-                | Self::ControllerDeviceRemoved { .. }
-                | Self::ControllerDeviceRemapped { .. }
+            Self::GamepadAxisMotion { .. }
+                | Self::GamepadButtonDown { .. }
+                | Self::GamepadButtonUp { .. }
+                | Self::GamepadAdded { .. }
+                | Self::GamepadRemoved { .. }
+                | Self::GamepadRemapped { .. }
         )
+    }
+
+    /// Returns `true` if this is a gamepad event.
+    ///
+    /// **Deprecated**: Use [`is_gamepad()`](Self::is_gamepad) instead.
+    #[deprecated(since = "0.18.0", note = "renamed to is_gamepad()")]
+    pub fn is_controller(&self) -> bool {
+        self.is_gamepad()
     }
 
     /// Returns `true` if this is a joy event.
@@ -3495,7 +3503,7 @@ mod test {
             assert_eq!(e, e2);
         }
         {
-            let e = Event::ControllerAxisMotion {
+            let e = Event::GamepadAxisMotion {
                 timestamp: 53,
                 which: JoystickId::new(0),
                 axis: Axis::LeftX,
@@ -3505,7 +3513,7 @@ mod test {
             assert_eq!(e, e2);
         }
         {
-            let e = Event::ControllerButtonDown {
+            let e = Event::GamepadButtonDown {
                 timestamp: 0,
                 which: JoystickId::new(1),
                 button: Button::Guide,
@@ -3514,7 +3522,7 @@ mod test {
             assert_eq!(e, e2);
         }
         {
-            let e = Event::ControllerButtonUp {
+            let e = Event::GamepadButtonUp {
                 timestamp: 654214,
                 which: JoystickId::new(0),
                 button: Button::DPadRight,
@@ -3523,7 +3531,7 @@ mod test {
             assert_eq!(e, e2);
         }
         {
-            let e = Event::ControllerDeviceAdded {
+            let e = Event::GamepadAdded {
                 timestamp: 543,
                 which: JoystickId::new(3),
             };
@@ -3531,7 +3539,7 @@ mod test {
             assert_eq!(e, e2);
         }
         {
-            let e = Event::ControllerDeviceRemoved {
+            let e = Event::GamepadRemoved {
                 timestamp: 555,
                 which: JoystickId::new(3),
             };
@@ -3539,7 +3547,7 @@ mod test {
             assert_eq!(e, e2);
         }
         {
-            let e = Event::ControllerDeviceRemapped {
+            let e = Event::GamepadRemapped {
                 timestamp: 654,
                 which: JoystickId::new(0),
             };

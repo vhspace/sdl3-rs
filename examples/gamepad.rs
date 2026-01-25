@@ -50,7 +50,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         use sdl3::gamepad::Axis;
 
         match event {
-            Event::ControllerAxisMotion {
+            Event::GamepadAxisMotion {
                 axis: Axis::TriggerLeft,
                 value: val,
                 ..
@@ -62,7 +62,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Err(e) => println!("Error setting rumble to ({lo_freq}, {hi_freq}): {e:?}"),
                 }
             }
-            Event::ControllerAxisMotion {
+            Event::GamepadAxisMotion {
                 axis: Axis::TriggerRight,
                 value: val,
                 ..
@@ -74,7 +74,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Err(e) => println!("Error setting rumble to ({lo_freq}, {hi_freq}): {e:?}"),
                 }
             }
-            Event::ControllerAxisMotion {
+            Event::GamepadAxisMotion {
                 axis, value: val, ..
             } => {
                 // Axis motion is an absolute value in the range
@@ -85,23 +85,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     println!("Axis {axis:?} moved to {val}");
                 }
             }
-            Event::ControllerButtonDown { button, .. } => println!("Button {button:?} down"),
-            Event::ControllerButtonUp { button, .. } => println!("Button {button:?} up"),
-            Event::ControllerTouchpadDown {
+            Event::GamepadButtonDown { button, .. } => println!("Button {button:?} down"),
+            Event::GamepadButtonUp { button, .. } => println!("Button {button:?} up"),
+            Event::GamepadTouchpadDown {
                 touchpad,
                 finger,
                 x,
                 y,
                 ..
             } => println!("Touchpad {touchpad} down finger:{finger} x:{x} y:{y}"),
-            Event::ControllerTouchpadMotion {
+            Event::GamepadTouchpadMotion {
                 touchpad,
                 finger,
                 x,
                 y,
                 ..
             } => println!("Touchpad {touchpad} move finger:{finger} x:{x} y:{y}"),
-            Event::ControllerTouchpadUp {
+            Event::GamepadTouchpadUp {
                 touchpad,
                 finger,
                 x,
