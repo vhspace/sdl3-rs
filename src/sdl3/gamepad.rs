@@ -69,7 +69,7 @@ impl GamepadSubsystem {
                 let mut instances = Vec::new();
                 for i in 0..num_gamepads {
                     let id = *gamepad_ids.offset(i as isize);
-                    instances.push(id);
+                    instances.push(JoystickId::from(id));
                 }
                 sys::stdinc::SDL_free(gamepad_ids as *mut c_void);
                 Ok(instances)
@@ -81,7 +81,7 @@ impl GamepadSubsystem {
     #[inline]
     #[doc(alias = "SDL_IsGamepad")]
     pub fn is_gamepad(&self, joystick_id: JoystickId) -> bool {
-        unsafe { sys::gamepad::SDL_IsGamepad(joystick_id) }
+        unsafe { sys::gamepad::SDL_IsGamepad(joystick_id.into()) }
     }
 
     /// Return true if there's any gamepad connected
@@ -96,7 +96,7 @@ impl GamepadSubsystem {
     /// be retrieved using the `SDL_GetJoysticks` function.
     #[doc(alias = "SDL_OpenGamepad")]
     pub fn open(&self, joystick_id: JoystickId) -> Result<Gamepad, Error> {
-        let gamepad = unsafe { sys::gamepad::SDL_OpenGamepad(joystick_id) };
+        let gamepad = unsafe { sys::gamepad::SDL_OpenGamepad(joystick_id.into()) };
 
         if gamepad.is_null() {
             Err(get_error())
@@ -111,7 +111,7 @@ impl GamepadSubsystem {
     /// Attempt to get the opened gamepad at index `joystick_id` and return it.
     #[doc(alias = "SDL_GetGamepad")]
     pub fn get(&self, joystick_id: JoystickId) -> Result<Gamepad, Error> {
-        let gamepad = unsafe { sys::gamepad::SDL_GetGamepadFromID(joystick_id) };
+        let gamepad = unsafe { sys::gamepad::SDL_GetGamepadFromID(joystick_id.into()) };
 
         if gamepad.is_null() {
             Err(get_error())
@@ -143,7 +143,7 @@ impl GamepadSubsystem {
     #[doc(alias = "SDL_GetGamepadNameForID")]
     pub fn name_for_id(&self, joystick_id: JoystickId) -> Result<String, IntegerOrSdlError> {
         use crate::common::IntegerOrSdlError::*;
-        let c_str = unsafe { sys::gamepad::SDL_GetGamepadNameForID(joystick_id) };
+        let c_str = unsafe { sys::gamepad::SDL_GetGamepadNameForID(joystick_id.into()) };
 
         if c_str.is_null() {
             Err(SdlError(get_error()))
@@ -161,7 +161,7 @@ impl GamepadSubsystem {
     /// This can be called before any gamepads are opened.
     #[doc(alias = "SDL_GetGamepadPathForID")]
     pub fn path_for_id(&self, joystick_id: JoystickId) -> Result<String, Error> {
-        let c_str = unsafe { sys::gamepad::SDL_GetGamepadPathForID(joystick_id) };
+        let c_str = unsafe { sys::gamepad::SDL_GetGamepadPathForID(joystick_id.into()) };
         c_str_to_string_or_err(c_str)
     }
 
@@ -169,7 +169,8 @@ impl GamepadSubsystem {
     /// This can be called before any gamepads are opened.
     #[doc(alias = "SDL_GetGamepadPlayerForID")]
     pub fn player_index_for_id(&self, joystick_id: JoystickId) -> Option<u16> {
-        let player_index = unsafe { sys::gamepad::SDL_GetGamepadPlayerIndexForID(joystick_id) };
+        let player_index =
+            unsafe { sys::gamepad::SDL_GetGamepadPlayerIndexForID(joystick_id.into()) };
 
         if player_index == -1 {
             None
@@ -182,7 +183,7 @@ impl GamepadSubsystem {
     /// This can be called before any gamepads are opened.
     #[doc(alias = "SDL_GetGamepadGUIDForID")]
     pub fn guid_for_id(&self, joystick_id: JoystickId) -> Guid {
-        let guid = unsafe { sys::gamepad::SDL_GetGamepadGUIDForID(joystick_id) };
+        let guid = unsafe { sys::gamepad::SDL_GetGamepadGUIDForID(joystick_id.into()) };
         Guid { raw: guid }
     }
 
@@ -190,7 +191,7 @@ impl GamepadSubsystem {
     /// This can be called before any gamepads are opened.
     #[doc(alias = "SDL_GetGamepadVendorForID")]
     pub fn vendor_for_id(&self, joystick_id: JoystickId) -> Option<u16> {
-        let vendor_id = unsafe { sys::gamepad::SDL_GetGamepadVendorForID(joystick_id) };
+        let vendor_id = unsafe { sys::gamepad::SDL_GetGamepadVendorForID(joystick_id.into()) };
         if vendor_id == 0 {
             None
         } else {
@@ -202,7 +203,7 @@ impl GamepadSubsystem {
     /// This can be called before any gamepads are opened.
     #[doc(alias = "SDL_GetGamepadProductForID")]
     pub fn product_for_id(&self, joystick_id: JoystickId) -> Option<u16> {
-        let product_id = unsafe { sys::gamepad::SDL_GetGamepadProductForID(joystick_id) };
+        let product_id = unsafe { sys::gamepad::SDL_GetGamepadProductForID(joystick_id.into()) };
         if product_id == 0 {
             None
         } else {
@@ -214,7 +215,8 @@ impl GamepadSubsystem {
     /// This can be called before any gamepads are opened.
     #[doc(alias = "SDL_GetGamepadProductForID")]
     pub fn product_version_for_id(&self, joystick_id: JoystickId) -> Option<u16> {
-        let version = unsafe { sys::gamepad::SDL_GetGamepadProductVersionForID(joystick_id) };
+        let version =
+            unsafe { sys::gamepad::SDL_GetGamepadProductVersionForID(joystick_id.into()) };
         if version == 0 {
             None
         } else {
@@ -226,7 +228,7 @@ impl GamepadSubsystem {
     /// This can be called before any gamepads are opened.
     #[doc(alias = "SDL_GetGamepadTypeForID")]
     pub fn type_for_id(&self, joystick_id: JoystickId) -> GamepadType {
-        let raw_type = unsafe { sys::gamepad::SDL_GetGamepadTypeForID(joystick_id) };
+        let raw_type = unsafe { sys::gamepad::SDL_GetGamepadTypeForID(joystick_id.into()) };
         GamepadType::from_ll(raw_type)
     }
 
@@ -234,7 +236,7 @@ impl GamepadSubsystem {
     /// This can be called before any gamepads are opened.
     #[doc(alias = "SDL_GetRealGamepadTypeForID")]
     pub fn real_type_for_id(&self, joystick_id: JoystickId) -> GamepadType {
-        let raw_type = unsafe { sys::gamepad::SDL_GetRealGamepadTypeForID(joystick_id) };
+        let raw_type = unsafe { sys::gamepad::SDL_GetRealGamepadTypeForID(joystick_id.into()) };
         GamepadType::from_ll(raw_type)
     }
 
@@ -242,7 +244,7 @@ impl GamepadSubsystem {
     /// This can be called before any gamepads are opened.
     #[doc(alias = "SDL_GetGamepadMappingForID")]
     pub fn mapping_for_id(&self, joystick_id: JoystickId) -> Option<String> {
-        let c_str = unsafe { sys::gamepad::SDL_GetGamepadMappingForID(joystick_id) };
+        let c_str = unsafe { sys::gamepad::SDL_GetGamepadMappingForID(joystick_id.into()) };
         c_str_to_string_or_none(c_str)
     }
 
@@ -259,7 +261,10 @@ impl GamepadSubsystem {
         };
 
         let result = unsafe {
-            sys::gamepad::SDL_SetGamepadMapping(joystick_id, mapping.as_ptr() as *const c_char)
+            sys::gamepad::SDL_SetGamepadMapping(
+                joystick_id.into(),
+                mapping.as_ptr() as *const c_char,
+            )
         };
 
         if !result {
@@ -911,7 +916,10 @@ impl Gamepad {
         };
 
         let result = unsafe {
-            sys::gamepad::SDL_SetGamepadMapping(joystick_id, mapping.as_ptr() as *const c_char)
+            sys::gamepad::SDL_SetGamepadMapping(
+                joystick_id.into(),
+                mapping.as_ptr() as *const c_char,
+            )
         };
 
         if !result {
@@ -932,10 +940,10 @@ impl Gamepad {
     #[doc(alias = "SDL_GetGamepadID")]
     pub fn id(&self) -> Result<JoystickId, Error> {
         let result = unsafe { sys::gamepad::SDL_GetGamepadID(self.raw) };
-        if result == 0 {
+        if result.0 == 0 {
             Err(get_error())
         } else {
-            Ok(result)
+            Ok(JoystickId::from(result))
         }
     }
 
