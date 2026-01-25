@@ -935,7 +935,7 @@ impl Gamepad {
     #[doc(alias = "SDL_GetGamepadID")]
     pub fn id(&self) -> Result<JoystickId, Error> {
         let result = unsafe { sys::gamepad::SDL_GetGamepadID(self.raw) };
-        if result == 0 {
+        if result.0 == 0 {
             Err(get_error())
         } else {
             Ok(result)

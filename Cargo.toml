@@ -27,7 +27,7 @@ libc = "0.2.186"
 
 [dependencies.sdl3-sys]
 version = "0.6.6"
-features = ["metadata"]
+features = ["metadata", "debug-impls", "display-impls"]
 
 [dependencies.sdl3-image-sys]
 version = "0.6.4"
