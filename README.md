@@ -72,26 +72,28 @@ Not all [SDL3 extension libraries](https://wiki.libsdl.org/SDL3/Libraries) have 
 
 # Feature Flags
 
-## `ffi-safe`
+## `ffi-safe-subsystems`
 
 Enables FFI-safe subsystem handles for hot-reloading scenarios.
 
 ```toml
 [dependencies]
-sdl3 = { version = "0", features = ["ffi-safe"] }
+sdl3 = { version = "0", features = ["ffi-safe-subsystems"] }
 ```
 
-By default, subsystem handles (like `VideoSubsystem`) use static reference counters.
-This is efficient but breaks when handles are passed across DLL/shared library boundaries
-during hot-reloading, because each compilation unit gets its own copy of the static.
+By default, subsystem handles (like `VideoSubsystem`) use static reference counters
+accessed directly. This breaks when handles are passed across DLL/shared library
+boundaries during hot-reloading, because each compilation unit gets its own copy
+of the static and `clone()`/`drop()` access the wrong one.
 
-With `ffi-safe` enabled, subsystem handles use heap-allocated reference counters and
-`#[repr(C)]` layout, making them safe to pass across FFI boundaries.
+With `ffi-safe-subsystems` enabled, subsystem handles store a pointer to the static
+counter and use `#[repr(C)]` layout. The pointer travels with the struct across DLL
+boundaries, so `clone()` and `drop()` always access the correct counter in the
+original binary.
 
 **Limitations:**
-- The main `Sdl` context still uses static counters and must remain in the host binary
-- Only subsystem handles should be passed to hot-reloaded code
-- The `Sdl` context must outlive all subsystems
+- Subsystems must be created in the host binary, not the hot-reloaded DLL
+- The `Sdl` context still uses static counters directly and must remain in the host binary
 
 # Contributing
 

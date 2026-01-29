@@ -86,8 +86,8 @@ build-from-source-unix-console = ["sdl3-sys/sdl-unix-console-build"]
 ash = ["sdl3-sys/use-ash-v0-38"]
 default = []
 unsafe_textures = []
-# FFI-safe subsystems for hot-reloading across DLL boundaries
-ffi-safe = []
+# FFI-safe subsystem handles for hot-reloading across DLL boundaries
+ffi-safe-subsystems = []
 # DEPRECATED: gfx feature is non-functional - SDL_gfx has not been ported to SDL3 yet.
 # See: https://github.com/vhspace/sdl3-rs/issues/160
 gfx = ["c_vec"] #, "sdl3-sys/gfx"]

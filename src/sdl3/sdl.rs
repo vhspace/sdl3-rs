@@ -226,26 +226,20 @@ impl Drop for SdlDrop {
 // Some subsystems have functions designed to be thread-safe, such as adding a timer or accessing
 // the event queue. These subsystems implement `Sync`.
 
-/// FFI-safe subsystem macro variant.
-///
-/// When the `ffi-safe` feature is enabled, subsystem structs use heap-allocated
-/// reference counters instead of static counters. This makes them safe to pass
-/// across DLL/shared library boundaries during hot-reloading scenarios.
-///
-/// The key difference is that each subsystem instance carries a pointer to a
-/// shared heap-allocated counter, rather than relying on a static variable
-/// that would be duplicated in each compilation unit.
-#[cfg(feature = "ffi-safe")]
 macro_rules! subsystem {
     ($name:ident, $flag:expr, $counter:ident, nosync) => {
-        /// Subsystem handle that can be safely passed across FFI boundaries.
+        static $counter: AtomicU32 = AtomicU32::new(0);
+
+        /// Subsystem handle.
         ///
-        /// This variant uses heap-allocated reference counting instead of static
-        /// counters, making it safe for hot-reloading scenarios where the subsystem
-        /// handle may cross DLL boundaries.
-        #[repr(C)]
+        /// With the `ffi-safe-subsystems` feature enabled, this struct uses `#[repr(C)]`
+        /// and stores a pointer to the reference counter, making it safe to pass across
+        /// DLL/shared library boundaries during hot-reloading scenarios.
+        #[cfg_attr(feature = "ffi-safe-subsystems", repr(C))]
         pub struct $name {
-            /// Pointer to the shared reference counter on the heap.
+            /// Pointer to the static reference counter. With `ffi-safe-subsystems`,
+            /// this pointer travels with the struct across DLL boundaries.
+            #[cfg(feature = "ffi-safe-subsystems")]
             counter: *const AtomicU32,
             /// This field makes sure [`Send`] and [`Sync`] are not implemented by default.
             marker: PhantomData<*mut ()>,
@@ -253,111 +247,8 @@ macro_rules! subsystem {
 
         impl std::fmt::Debug for $name {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                f.debug_struct(stringify!($name))
-                    .field("counter", &self.counter)
-                    .finish()
+                f.debug_struct(stringify!($name)).finish()
             }
-        }
-
-        impl $name {
-            #[inline]
-            #[doc(alias = "SDL_InitSubSystem")]
-            fn new(sdl: &Sdl) -> Result<Self, Error> {
-                // Allocate the counter on the heap with initial count of 1
-                let counter = Box::into_raw(Box::new(AtomicU32::new(1)));
-
-                let result;
-                unsafe {
-                    result = sys::init::SDL_InitSubSystem($flag);
-                }
-
-                if !result {
-                    // Clean up the allocated counter on failure
-                    unsafe {
-                        drop(Box::from_raw(counter as *mut AtomicU32));
-                    }
-                    return Err(get_error());
-                }
-
-                // "Store" an SdlDrop to keep SDL alive
-                mem::forget(sdl.sdldrop.clone());
-
-                Ok(Self {
-                    counter,
-                    marker: PhantomData,
-                })
-            }
-
-            #[doc = concat!("Create a [`", stringify!($name), "`] out of thin air.")]
-            #[doc = ""]
-            #[doc = concat!("This is probably not what you are looking for. To initialize the subsystem use [`", stringify!($name), "::new`].")]
-            #[doc = ""]
-            #[doc = "# Safety"]
-            #[doc = ""]
-            #[doc = concat!("For each time this is called, previously a [`", stringify!($name), "`] must have been passed to [`mem::forget`].")]
-            #[allow(dead_code)]
-            pub(crate) unsafe fn new_unchecked() -> Self {
-                // Create a counter that will never reach zero (starts at u32::MAX / 2)
-                let counter = Box::into_raw(Box::new(AtomicU32::new(u32::MAX / 2)));
-                Self {
-                    counter,
-                    marker: PhantomData,
-                }
-            }
-        }
-
-        impl Clone for $name {
-            fn clone(&self) -> Self {
-                let prev_count = unsafe { (*self.counter).fetch_add(1, Ordering::Relaxed) };
-                assert!(prev_count > 0);
-                Self {
-                    counter: self.counter,
-                    marker: PhantomData,
-                }
-            }
-        }
-
-        impl Drop for $name {
-            #[inline]
-            #[doc(alias = "SDL_QuitSubSystem")]
-            fn drop(&mut self) {
-                let prev_count = unsafe { (*self.counter).fetch_sub(1, Ordering::Relaxed) };
-                assert!(prev_count > 0);
-                if prev_count == 1 {
-                    unsafe {
-                        // Deallocate the counter
-                        drop(Box::from_raw(self.counter as *mut AtomicU32));
-                        // Quit the subsystem
-                        sys::init::SDL_QuitSubSystem($flag);
-                        // "Retrieve" an SdlDrop and drop it
-                        let _ = SdlDrop::new();
-                    }
-                }
-            }
-        }
-    };
-    ($name:ident, $flag:expr, $counter:ident, sync) => {
-        subsystem!($name, $flag, $counter, nosync);
-        unsafe impl Sync for $name {}
-    };
-}
-
-/// Standard subsystem macro using static reference counters.
-///
-/// This is the default implementation that uses static atomic counters for
-/// reference counting. It's more efficient but not safe to use across DLL
-/// boundaries during hot-reloading.
-#[cfg(not(feature = "ffi-safe"))]
-macro_rules! subsystem {
-    ($name:ident, $flag:expr, $counter:ident, nosync) => {
-        static $counter: AtomicU32 = AtomicU32::new(0);
-
-        #[derive(Debug)]
-        pub struct $name {
-            // Per subsystem all instances together keep one [`SdlDrop`].
-            // Subsystems cannot be moved or (usually) used on non-main threads.
-            /// This field makes sure [`Send`] and [`Sync`] are not implemented by default.
-            marker: PhantomData<*mut ()>,
         }
 
         impl $name {
@@ -381,6 +272,8 @@ macro_rules! subsystem {
                 }
 
                 Ok(Self {
+                    #[cfg(feature = "ffi-safe-subsystems")]
+                    counter: &$counter as *const AtomicU32,
                     marker: PhantomData,
                 })
             }
@@ -395,12 +288,26 @@ macro_rules! subsystem {
             #[allow(dead_code)]
             pub(crate) unsafe fn new_unchecked() -> Self {
                 Self {
+                    #[cfg(feature = "ffi-safe-subsystems")]
+                    counter: &$counter as *const AtomicU32,
                     marker: PhantomData,
                 }
             }
         }
 
         impl Clone for $name {
+            #[cfg(feature = "ffi-safe-subsystems")]
+            fn clone(&self) -> Self {
+                // Use the pointer to access the counter - this works across DLL boundaries
+                let prev_count = unsafe { (*self.counter).fetch_add(1, Ordering::Relaxed) };
+                assert!(prev_count > 0);
+                Self {
+                    counter: self.counter,
+                    marker: PhantomData,
+                }
+            }
+
+            #[cfg(not(feature = "ffi-safe-subsystems"))]
             fn clone(&self) -> Self {
                 let prev_count = $counter.fetch_add(1, Ordering::Relaxed);
                 assert!(prev_count > 0);
@@ -413,6 +320,23 @@ macro_rules! subsystem {
         impl Drop for $name {
             #[inline]
             #[doc(alias = "SDL_QuitSubSystem")]
+            #[cfg(feature = "ffi-safe-subsystems")]
+            fn drop(&mut self) {
+                // Use the pointer to access the counter - this works across DLL boundaries
+                let prev_count = unsafe { (*self.counter).fetch_sub(1, Ordering::Relaxed) };
+                assert!(prev_count > 0);
+                if prev_count == 1 {
+                    unsafe {
+                        sys::init::SDL_QuitSubSystem($flag);
+                        // The last dropped subsystem instance "retrieves" an SdlDrop and drops it.
+                        let _ = SdlDrop::new();
+                    }
+                }
+            }
+
+            #[inline]
+            #[doc(alias = "SDL_QuitSubSystem")]
+            #[cfg(not(feature = "ffi-safe-subsystems"))]
             fn drop(&mut self) {
                 let prev_count = $counter.fetch_sub(1, Ordering::Relaxed);
                 assert!(prev_count > 0);
