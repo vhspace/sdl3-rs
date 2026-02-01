@@ -1524,6 +1524,11 @@ impl<CB> Drop for AudioStreamWithCallback<CB> {
 }
 
 impl<CB> AudioStreamWithCallback<CB> {
+    /// Get the SDL_AudioStream pointer.
+    pub fn stream(&mut self) -> *mut sys::audio::SDL_AudioStream {
+        self.base_stream.stream
+    }
+
     /// Pauses the audio stream.
     pub fn pause(&self) -> Result<(), Error> {
         self.base_stream.pause()
@@ -1546,6 +1551,10 @@ impl<CB> AudioStreamWithCallback<CB> {
 
     pub fn queued_bytes(&self) -> Result<i32, Error> {
         self.base_stream.queued_bytes()
+    }
+
+    pub fn available_bytes(&self) -> Result<i32, Error> {
+        self.base_stream.available_bytes()
     }
 
     pub fn lock(&mut self) -> Option<AudioStreamLockGuard<'_, CB>> {
