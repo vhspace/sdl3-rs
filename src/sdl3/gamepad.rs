@@ -748,6 +748,27 @@ pub struct Gamepad {
 }
 
 impl Gamepad {
+    /// Returns the raw SDL_Gamepad pointer.
+    ///
+    /// This can be used to call raw SDL functions that aren't wrapped by this crate.
+    #[doc(alias = "SDL_Gamepad")]
+    pub fn raw(&self) -> *mut sys::gamepad::SDL_Gamepad {
+        self.raw
+    }
+
+    /// Creates a `Gamepad` from a raw SDL_Gamepad pointer.
+    ///
+    /// # Safety
+    ///
+    /// - `raw` must be a valid, non-null pointer to an `SDL_Gamepad`
+    /// - The pointer must not be owned by another wrapper (to avoid double-free)
+    /// - The caller must ensure the pointer remains valid for the wrapper's lifetime
+    #[doc(alias = "SDL_Gamepad")]
+    pub unsafe fn from_raw(raw: *mut sys::gamepad::SDL_Gamepad, subsystem: GamepadSubsystem) -> Self {
+        debug_assert!(!raw.is_null(), "from_raw called with null pointer");
+        Self { subsystem, raw }
+    }
+
     #[inline]
     pub fn subsystem(&self) -> &GamepadSubsystem {
         &self.subsystem
