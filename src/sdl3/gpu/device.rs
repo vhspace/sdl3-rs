@@ -97,7 +97,7 @@ impl Device {
 
     #[doc(alias = "SDL_CreateGPUDeviceWithProperties")]
     pub fn new_with_properties(properties : Properties) -> Result<Self, Error> {
-        let raw_device = unsafe { SDL_CreateGPUDeviceWithProperties(properties.as_sys()) };
+        let raw_device = unsafe { SDL_CreateGPUDeviceWithProperties(properties.raw()) };
         if raw_device.is_null() {
             Err(get_error())
         } else {
