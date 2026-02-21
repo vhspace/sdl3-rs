@@ -135,6 +135,10 @@ impl Properties {
         }
     }
 
+    pub(crate) fn raw(&self) -> sys::properties::SDL_PropertiesID {
+        self.internal
+    }
+
     pub fn from_ll(props: SDL_PropertiesID) -> Self {
         Self {
             internal: props,
