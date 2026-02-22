@@ -6,6 +6,7 @@ use crate::{
         ShaderBuilder, ShaderFormat, SwapchainComposition, Texture, TextureCreateInfo,
         TextureFormat, TransferBufferBuilder,
     },
+    properties::Properties,
     sys,
     video::Window,
     Error,
@@ -13,9 +14,9 @@ use crate::{
 use std::sync::{Arc, Weak};
 use sys::gpu::{
     SDL_BeginGPUComputePass, SDL_BeginGPUCopyPass, SDL_BeginGPURenderPass, SDL_CreateGPUDevice,
-    SDL_CreateGPUSampler, SDL_CreateGPUTexture, SDL_DestroyGPUDevice, SDL_GPUColorTargetInfo,
-    SDL_GPUDepthStencilTargetInfo, SDL_GPUDevice, SDL_GPUViewport,
-    SDL_GetGPUSwapchainTextureFormat, SDL_SetGPUViewport,
+    SDL_CreateGPUDeviceWithProperties, SDL_CreateGPUSampler, SDL_CreateGPUTexture,
+    SDL_DestroyGPUDevice, SDL_GPUColorTargetInfo, SDL_GPUDepthStencilTargetInfo, SDL_GPUDevice,
+    SDL_GPUViewport, SDL_GetGPUSwapchainTextureFormat, SDL_SetGPUViewport,
 };
 
 use super::{
@@ -84,6 +85,19 @@ impl Device {
     #[doc(alias = "SDL_CreateGPUDevice")]
     pub fn new(flags: ShaderFormat, debug_mode: bool) -> Result<Self, Error> {
         let raw_device = unsafe { SDL_CreateGPUDevice(flags.0, debug_mode, std::ptr::null()) };
+        if raw_device.is_null() {
+            Err(get_error())
+        } else {
+            Ok(Self {
+                inner: Arc::new(DeviceContainer(raw_device)),
+                subsystem: None,
+            })
+        }
+    }
+
+    #[doc(alias = "SDL_CreateGPUDeviceWithProperties")]
+    pub fn new_with_properties(properties: Properties) -> Result<Self, Error> {
+        let raw_device = unsafe { SDL_CreateGPUDeviceWithProperties(properties.raw()) };
         if raw_device.is_null() {
             Err(get_error())
         } else {
