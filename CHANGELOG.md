@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### <!-- 0 -->Added
+- Added SDL_CreateGPUDeviceWithProperties support. ([#335](https://github.com/vhspace/sdl3-rs/pull/335))
+
+### <!-- 1 -->Changed
+- Expose 'available_bytes' from base_stream in AudioStreamWithCallback as well as the underlying sdl sys stream ([#327](https://github.com/vhspace/sdl3-rs/pull/327))
+- Add Windows to build matrix ([#317](https://github.com/vhspace/sdl3-rs/pull/317))
+- Bump wgpu from 24.0.5 to 28.0.0 ([#313](https://github.com/vhspace/sdl3-rs/pull/313)) ([#318](https://github.com/vhspace/sdl3-rs/pull/318))
+- Replace lazy_static with std ([#315](https://github.com/vhspace/sdl3-rs/pull/315))
+
+### <!-- 2 -->Fixed
+- Remove unsafe transmutes and improve type safety ([#311](https://github.com/vhspace/sdl3-rs/pull/311))
+- Address wait_timeout_iter feedback from #310 ([#312](https://github.com/vhspace/sdl3-rs/pull/312))
+
+### <!-- 4 -->Dependencies
+- Bump wgpu from 24.0.5 to 28.0.0 ([#313](https://github.com/vhspace/sdl3-rs/pull/313))
+
+## [0.17.3] - 2026-01-11
+
+### <!-- 1 -->Changed
+- Document the `main` feature ([#305](https://github.com/vhspace/sdl3-rs/pull/305))
+
+### <!-- 2 -->Fixed
+- Resolve clippy warnings across codebase ([#309](https://github.com/vhspace/sdl3-rs/pull/309))
+- Use Duration for wait_timeout_iter and track total elapsed time ([#310](https://github.com/vhspace/sdl3-rs/pull/310))
+- Restore audio-queue-squarewave and audio-wav examples ([#308](https://github.com/vhspace/sdl3-rs/pull/308))
+
+### <!-- 4 -->Dependencies
+- Bump libc from 0.2.179 to 0.2.180 ([#307](https://github.com/vhspace/sdl3-rs/pull/307))
+
 ## [0.17.2] - 2026-01-08
 
 ### <!-- 1 -->Changed
@@ -184,6 +215,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump bitflags from 2.9.0 to 2.9.1 ([#207](https://github.com/vhspace/sdl3-rs/pull/207))
 - Bump actions/cache from 3 to 4 ([#208](https://github.com/vhspace/sdl3-rs/pull/208))
 
+[unreleased]: https://github.com/vhspace/sdl3-rs/compare/v0.17.3...HEAD
+[0.17.3]: https://github.com/vhspace/sdl3-rs/compare/v0.17.2...v0.17.3
 [0.17.2]: https://github.com/vhspace/sdl3-rs/compare/v0.17.1...v0.17.2
 [0.17.1]: https://github.com/vhspace/sdl3-rs/compare/v0.17.0...v0.17.1
 [0.17.0]: https://github.com/vhspace/sdl3-rs/compare/v0.16.4...v0.17.0
