@@ -305,9 +305,7 @@ impl Setter<bool> for Properties {
         if name.ty != PropertyType::BOOLEAN {
             return Err(PropertiesError::TypeMismatch);
         }
-        if unsafe {
-            sys::properties::SDL_SetBooleanProperty(self.internal, name.as_ptr(), value)
-        } {
+        if unsafe { sys::properties::SDL_SetBooleanProperty(self.internal, name.as_ptr(), value) } {
             Ok(())
         } else {
             Err(PropertiesError::SdlError(get_error()))
@@ -321,9 +319,7 @@ impl Setter<f32> for Properties {
         if name.ty != PropertyType::FLOAT {
             return Err(PropertiesError::TypeMismatch);
         }
-        if unsafe {
-            sys::properties::SDL_SetFloatProperty(self.internal, name.as_ptr(), value)
-        } {
+        if unsafe { sys::properties::SDL_SetFloatProperty(self.internal, name.as_ptr(), value) } {
             Ok(())
         } else {
             Err(PropertiesError::SdlError(get_error()))
@@ -337,9 +333,7 @@ impl Setter<i64> for Properties {
         if name.ty != PropertyType::NUMBER {
             return Err(PropertiesError::TypeMismatch);
         }
-        if unsafe {
-            sys::properties::SDL_SetNumberProperty(self.internal, name.as_ptr(), value)
-        } {
+        if unsafe { sys::properties::SDL_SetNumberProperty(self.internal, name.as_ptr(), value) } {
             Ok(())
         } else {
             Err(PropertiesError::SdlError(get_error()))
