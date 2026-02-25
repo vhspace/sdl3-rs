@@ -13,7 +13,67 @@ use std::fmt;
 use sys::power::{SDL_PowerState, SDL_POWERSTATE_UNKNOWN};
 use sys::stdinc::SDL_free;
 
-pub type JoystickId = sys::joystick::SDL_JoystickID;
+/// A unique identifier for a joystick device.
+///
+/// This is returned by [`Joystick::id()`] and appears in joystick and gamepad events
+/// to identify which device generated the event.
+#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
+pub struct JoystickId(sys::joystick::SDL_JoystickID);
+
+impl JoystickId {
+    /// Creates a new `JoystickId` from a raw value.
+    #[inline]
+    pub const fn new(id: u32) -> Self {
+        Self(sys::joystick::SDL_JoystickID(id))
+    }
+
+    /// Returns the raw numeric value of this joystick ID.
+    #[inline]
+    pub const fn raw(self) -> u32 {
+        self.0 .0
+    }
+}
+
+impl fmt::Debug for JoystickId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("JoystickId").field(&self.raw()).finish()
+    }
+}
+
+impl fmt::Display for JoystickId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.raw())
+    }
+}
+
+impl From<u32> for JoystickId {
+    #[inline]
+    fn from(id: u32) -> Self {
+        Self::new(id)
+    }
+}
+
+impl From<JoystickId> for u32 {
+    #[inline]
+    fn from(id: JoystickId) -> Self {
+        id.raw()
+    }
+}
+
+impl From<sys::joystick::SDL_JoystickID> for JoystickId {
+    #[inline]
+    fn from(id: sys::joystick::SDL_JoystickID) -> Self {
+        Self(id)
+    }
+}
+
+impl From<JoystickId> for sys::joystick::SDL_JoystickID {
+    #[inline]
+    fn from(id: JoystickId) -> Self {
+        id.0
+    }
+}
 
 impl JoystickSubsystem {
     /// Get joystick instance IDs and names.
@@ -28,7 +88,7 @@ impl JoystickSubsystem {
                 let mut instances = Vec::new();
                 for i in 0..num_joysticks {
                     let id = *joystick_ids.offset(i as isize);
-                    instances.push(id);
+                    instances.push(JoystickId::from(id));
                 }
                 SDL_free(joystick_ids as *mut c_void);
                 Ok(instances)
@@ -40,7 +100,7 @@ impl JoystickSubsystem {
     #[doc(alias = "SDL_OpenJoystick")]
     pub fn open(&self, joystick_id: JoystickId) -> Result<Joystick, IntegerOrSdlError> {
         use crate::common::IntegerOrSdlError::*;
-        let joystick = unsafe { sys::joystick::SDL_OpenJoystick(joystick_id) };
+        let joystick = unsafe { sys::joystick::SDL_OpenJoystick(joystick_id.into()) };
 
         if joystick.is_null() {
             Err(SdlError(get_error()))
@@ -154,14 +214,14 @@ impl Joystick {
     }
 
     #[doc(alias = "SDL_GetJoystickID")]
-    pub fn id(&self) -> u32 {
+    pub fn id(&self) -> JoystickId {
         let result = unsafe { sys::joystick::SDL_GetJoystickID(self.raw) };
 
-        if result == 0 {
+        if result.0 == 0 {
             // Should only fail if the joystick is NULL.
             panic!("{}", get_error())
         } else {
-            u32::from(result)
+            JoystickId::from(result)
         }
     }
 

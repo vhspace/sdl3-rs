@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut controller = gamepad_joysticks_ids
         .into_iter()
         .find_map(|id| {
-            println!("Attempting to open gamepad {}", id.0);
+            println!("Attempting to open gamepad {}", id);
 
             match gamepad_subsystem.open(id) {
                 Ok(c) => {
