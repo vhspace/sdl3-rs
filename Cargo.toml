@@ -58,7 +58,7 @@ optional = true
 rand = "0.8.5"
 wgpu = { version = "24.0.0", features = ["spirv"] }
 pollster = "0.4.0"
-env_logger = "0.11.6"
+env_logger = "0.11.9"
 
 [build-dependencies]
 sdl3-sys = { version = "0.6", features = ["only-metadata"] }
