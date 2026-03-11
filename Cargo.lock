@@ -917,9 +917,9 @@ dependencies = [
 
 [[package]]
 name = "sdl3-main"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63ab4145c2d0aed1f1187f2cacd71329b6c238b89dc47db465be436ddf22c27a"
+checksum = "4eadaeb31e611521220fd76261ef2aa01fdf6e5196bc1c8e48bbfc6839ec3642"
 dependencies = [
  "sdl3-main-macros",
  "sdl3-sys",
@@ -927,9 +927,9 @@ dependencies = [
 
 [[package]]
 name = "sdl3-main-macros"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8ea7f98211e1fefceafb264fb5638798fb26eca12b194dbc1eff7c6127ea4a6"
+checksum = "e1b20e5c5f198fd250edc72a1e7916099b9bd5c25e5fbc4aa7da958840d399f4"
 
 [[package]]
 name = "sdl3-src"
