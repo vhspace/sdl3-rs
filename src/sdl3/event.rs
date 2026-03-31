@@ -911,6 +911,7 @@ pub enum Event {
         dx: f32,
         dy: f32,
         pressure: f32,
+        window_id: u32,
     },
     FingerUp {
         timestamp: u64,
@@ -921,6 +922,7 @@ pub enum Event {
         dx: f32,
         dy: f32,
         pressure: f32,
+        window_id: u32,
     },
     FingerMotion {
         timestamp: u64,
@@ -931,6 +933,7 @@ pub enum Event {
         dx: f32,
         dy: f32,
         pressure: f32,
+        window_id: u32,
     },
 
     DollarRecord {
@@ -2084,6 +2087,7 @@ impl Event {
                         dx: event.dx,
                         dy: event.dy,
                         pressure: event.pressure,
+                        window_id: Self::window_id_from_ll(event.windowID),
                     }
                 }
                 EventType::FingerUp => {
@@ -2097,6 +2101,7 @@ impl Event {
                         dx: event.dx,
                         dy: event.dy,
                         pressure: event.pressure,
+                        window_id: Self::window_id_from_ll(event.windowID),
                     }
                 }
                 EventType::FingerMotion => {
@@ -2110,6 +2115,7 @@ impl Event {
                         dx: event.dx,
                         dy: event.dy,
                         pressure: event.pressure,
+                        window_id: Self::window_id_from_ll(event.windowID),
                     }
                 }
 
@@ -2725,6 +2731,7 @@ impl Event {
     ///     dx: 0.,
     ///     dy: 0.,
     ///     pressure: 0.,
+    ///     window_id: 0,
     /// };
     /// assert!(ev.is_finger());
     ///
