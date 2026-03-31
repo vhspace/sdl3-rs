@@ -303,6 +303,7 @@ pub enum EventType {
     WindowPixelSizeChanged = sys::events::SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED.0,
     WindowMinimized = sys::events::SDL_EVENT_WINDOW_MINIMIZED.0,
     WindowMaximized = sys::events::SDL_EVENT_WINDOW_MAXIMIZED.0,
+    WindowOccluded = sys::events::SDL_EVENT_WINDOW_OCCLUDED.0,
     WindowRestored = sys::events::SDL_EVENT_WINDOW_RESTORED.0,
     WindowMouseEnter = sys::events::SDL_EVENT_WINDOW_MOUSE_ENTER.0,
     WindowMouseLeave = sys::events::SDL_EVENT_WINDOW_MOUSE_LEAVE.0,
@@ -572,6 +573,7 @@ pub enum WindowEvent {
     PixelSizeChanged(i32, i32),
     Minimized,
     Maximized,
+    Occluded,
     Restored,
     MouseEnter,
     MouseLeave,
@@ -596,6 +598,7 @@ impl WindowEvent {
                 EventType::WindowPixelSizeChanged => WindowEvent::PixelSizeChanged(data1, data2),
                 EventType::WindowMinimized => WindowEvent::Minimized,
                 EventType::WindowMaximized => WindowEvent::Maximized,
+                EventType::WindowOccluded => WindowEvent::Occluded,
                 EventType::WindowRestored => WindowEvent::Restored,
                 EventType::WindowMouseEnter => WindowEvent::MouseEnter,
                 EventType::WindowMouseLeave => WindowEvent::MouseLeave,
@@ -622,6 +625,7 @@ impl WindowEvent {
             WindowEvent::PixelSizeChanged(d1, d2) => (EventType::WindowPixelSizeChanged, d1, d2),
             WindowEvent::Minimized => (EventType::WindowMinimized, 0, 0),
             WindowEvent::Maximized => (EventType::WindowMaximized, 0, 0),
+            WindowEvent::Occluded => (EventType::WindowOccluded, 0, 0),
             WindowEvent::Restored => (EventType::WindowRestored, 0, 0),
             WindowEvent::MouseEnter => (EventType::WindowMouseEnter, 0, 0),
             WindowEvent::MouseLeave => (EventType::WindowMouseLeave, 0, 0),
@@ -1724,6 +1728,7 @@ impl Event {
                 | EventType::WindowPixelSizeChanged
                 | EventType::WindowMinimized
                 | EventType::WindowMaximized
+                | EventType::WindowOccluded
                 | EventType::WindowRestored
                 | EventType::WindowMouseEnter
                 | EventType::WindowMouseLeave
