@@ -1,7 +1,4 @@
 // https://github.com/tsoding/midpoint-circle-visualization
-
-extern crate sdl3;
-
 use sdl3::{
     event::Event, keyboard::Keycode, pixels::Color, rect::Point, render::Canvas, video::Window,
 };

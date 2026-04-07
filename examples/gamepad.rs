@@ -1,5 +1,3 @@
-extern crate sdl3;
-
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     // This is required for certain controllers to work on Windows without the
     // video subsystem enabled:

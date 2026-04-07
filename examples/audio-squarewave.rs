@@ -1,5 +1,3 @@
-extern crate sdl3;
-
 use sdl3::audio::{AudioCallback, AudioFormat, AudioSpec, AudioStream};
 use std::time::Duration;
 

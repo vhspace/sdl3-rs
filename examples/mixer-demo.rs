@@ -1,6 +1,4 @@
 /// Demonstrates the simultaneous mixing of music and sound effects.
-extern crate sdl3;
-
 use sdl3::mixer::{InitFlag, AUDIO_S16LSB, DEFAULT_CHANNELS};
 use std::env;
 use std::path::Path;

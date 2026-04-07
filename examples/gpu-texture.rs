@@ -17,8 +17,6 @@ use sdl3::{
 };
 use std::path::Path;
 
-extern crate sdl3;
-
 #[repr(packed)]
 #[derive(Copy, Clone)]
 pub struct Vertex {

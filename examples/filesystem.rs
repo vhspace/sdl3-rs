@@ -1,5 +1,3 @@
-extern crate sdl3;
-
 use sdl3::filesystem::*;
 
 pub fn main() -> Result<(), Box<dyn std::error::Error>> {

@@ -1,5 +1,3 @@
-extern crate sdl3;
-
 use sdl3::audio::{AudioCallback, AudioFormat, AudioRecordingCallback, AudioSpec, AudioStream};
 use sdl3::AudioSubsystem;
 use std::i16;

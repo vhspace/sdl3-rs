@@ -1,5 +1,3 @@
-extern crate sdl3;
-
 #[cfg(feature = "unsafe_textures")]
 use game_of_life::{PLAYGROUND_HEIGHT, PLAYGROUND_WIDTH, SQUARE_SIZE};
 #[cfg(feature = "unsafe_textures")]

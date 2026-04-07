@@ -1,5 +1,3 @@
-extern crate sdl3;
-
 use sdl3::event::Event;
 use sdl3::render::FRect;
 use sdl3::render::{Canvas, Texture};
