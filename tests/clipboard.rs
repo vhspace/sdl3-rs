@@ -1,5 +1,3 @@
-extern crate sdl3;
-
 #[test]
 fn test_clipboard() {
     let sdl_context = match sdl3::init() {
