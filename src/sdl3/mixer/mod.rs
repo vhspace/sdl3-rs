@@ -37,34 +37,40 @@ pub use self::track::{Point3D, StereoGains, Track};
 
 use crate::{get_error, Error};
 use std::ffi::CStr;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::marker::PhantomData;
 
 /// A context manager for `SDL3_mixer` to manage library init and quit.
 ///
 /// SDL3_mixer is reference-counted internally, so multiple contexts can exist.
-/// The library is only deinitialized when the last context is dropped.
+/// The library is only deinitialized when `MIX_Quit()` has been called a
+/// matching number of times.
+///
+/// `MIX_Init` and `MIX_Quit` are not thread-safe, so this type is `!Send`
+/// and `!Sync`.
 #[must_use]
-pub struct MixerContext;
-
-static MIXER_COUNT: AtomicU32 = AtomicU32::new(0);
+pub struct MixerContext {
+    _marker: PhantomData<*mut ()>, // !Send + !Sync
+}
 
 impl Clone for MixerContext {
     fn clone(&self) -> Self {
-        MIXER_COUNT.fetch_add(1, Ordering::Relaxed);
-        MixerContext
+        // MIX_Init is safe to call multiple times; the C library ref-counts internally.
+        unsafe { sys::MIX_Init() };
+        MixerContext {
+            _marker: PhantomData,
+        }
     }
 }
 
 impl MixerContext {
     fn new() -> Result<Self, Error> {
-        if MIXER_COUNT.fetch_add(1, Ordering::Relaxed) == 0 {
-            let result = unsafe { sys::MIX_Init() };
-            if !result {
-                MIXER_COUNT.store(0, Ordering::Relaxed);
-                return Err(get_error());
-            }
+        let result = unsafe { sys::MIX_Init() };
+        if !result {
+            return Err(get_error());
         }
-        Ok(Self)
+        Ok(MixerContext {
+            _marker: PhantomData,
+        })
     }
 }
 
@@ -79,13 +85,7 @@ fn bool_result(ok: bool) -> Result<(), Error> {
 
 impl Drop for MixerContext {
     fn drop(&mut self) {
-        let prev_count = MIXER_COUNT.fetch_sub(1, Ordering::Relaxed);
-        assert!(prev_count > 0);
-        if prev_count == 1 {
-            unsafe {
-                sys::MIX_Quit();
-            }
-        }
+        unsafe { sys::MIX_Quit() };
     }
 }
 

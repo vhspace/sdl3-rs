@@ -290,7 +290,11 @@ impl<'mixer> Track<'mixer> {
     pub fn tags(&self) -> Vec<String> {
         let mut count: std::ffi::c_int = 0;
         let tags_ptr = unsafe { sys::MIX_GetTrackTags(self.raw, &mut count) };
-        if tags_ptr.is_null() || count <= 0 {
+        if tags_ptr.is_null() {
+            return Vec::new();
+        }
+        if count <= 0 {
+            unsafe { sdl3_sys::stdinc::SDL_free(tags_ptr as *mut _) };
             return Vec::new();
         }
         let mut result = Vec::with_capacity(count as usize);
