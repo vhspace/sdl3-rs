@@ -27,6 +27,7 @@ jobs:
           - hidapi
           - raw-window-handle
           - image
+          - mixer
 
     steps:
       - name: checkout sources
@@ -61,7 +62,7 @@ jobs:
   build-version-features:
     name: Build - ${{ matrix.os }} - ${{ matrix.build_mode }} - feature ${{ matrix.feature }}
     runs-on: ${{ matrix.os }}
-    
+
     strategy:
       fail-fast: false
       matrix:
@@ -76,6 +77,7 @@ jobs:
           - hidapi
           - raw-window-handle
           - image
+          - mixer
         exclude:
           # harfbuzz has CRT linking issues on Windows static builds
           # https://github.com/libsdl-org/SDL_ttf/issues/289
@@ -130,6 +132,12 @@ jobs:
           - name: image (build-from-source-static)
             build_mode: build-from-source-static
             features: "image"
+          - name: mixer (build-from-source)
+            build_mode: build-from-source
+            features: "mixer"
+          - name: mixer (build-from-source-static)
+            build_mode: build-from-source-static
+            features: "mixer"
 
     steps:
       - name: checkout sources
