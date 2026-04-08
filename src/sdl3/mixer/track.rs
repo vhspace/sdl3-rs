@@ -1,4 +1,4 @@
-use std::ffi::{CStr, CString};
+use std::ffi::CStr;
 use std::marker::PhantomData;
 use std::ptr;
 
@@ -8,7 +8,7 @@ use sdl3_sys::stdinc::Sint64;
 
 use super::audio::Audio;
 use super::device::Mixer;
-use super::{bool_result, sys};
+use super::{bool_result, sys, to_cstring};
 
 /// 3D coordinates for positional audio.
 ///
@@ -98,8 +98,7 @@ impl<'mixer> Track<'mixer> {
 
     /// Start (or restart) playing this track.
     ///
-    /// For advanced options (fade-in, start position, loops, etc.), use
-    /// `play_with_options`.
+    /// This uses the default playback properties.
     #[doc(alias = "MIX_PlayTrack")]
     pub fn play(&self) -> Result<(), Error> {
         bool_result(unsafe { sys::MIX_PlayTrack(self.raw, SDL_PropertiesID(0)) })
@@ -265,7 +264,7 @@ impl<'mixer> Track<'mixer> {
     /// Add a tag to this track for batch operations.
     #[doc(alias = "MIX_TagTrack")]
     pub fn tag(&self, tag: &str) -> Result<(), Error> {
-        let c_tag = CString::new(tag).unwrap();
+        let c_tag = to_cstring(tag)?;
         bool_result(unsafe { sys::MIX_TagTrack(self.raw, c_tag.as_ptr()) })
     }
 
@@ -273,16 +272,17 @@ impl<'mixer> Track<'mixer> {
     ///
     /// Pass `None` to remove all tags.
     #[doc(alias = "MIX_UntagTrack")]
-    pub fn untag(&self, tag: Option<&str>) {
+    pub fn untag(&self, tag: Option<&str>) -> Result<(), Error> {
         match tag {
             Some(t) => {
-                let c_tag = CString::new(t).unwrap();
+                let c_tag = to_cstring(t)?;
                 unsafe { sys::MIX_UntagTrack(self.raw, c_tag.as_ptr()) };
             }
             None => {
                 unsafe { sys::MIX_UntagTrack(self.raw, ptr::null()) };
             }
         }
+        Ok(())
     }
 
     /// Get all tags currently associated with this track.

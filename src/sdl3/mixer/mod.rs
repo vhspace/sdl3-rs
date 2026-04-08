@@ -36,7 +36,7 @@ pub use self::group::Group;
 pub use self::track::{Point3D, StereoGains, Track};
 
 use crate::{get_error, Error};
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
 use std::marker::PhantomData;
 
 /// A context manager for `SDL3_mixer` to manage library init and quit.
@@ -55,7 +55,12 @@ pub struct MixerContext {
 impl Clone for MixerContext {
     fn clone(&self) -> Self {
         // MIX_Init is safe to call multiple times; the C library ref-counts internally.
-        unsafe { sys::MIX_Init() };
+        // After the first successful init, subsequent calls always succeed.
+        let ok = unsafe { sys::MIX_Init() };
+        assert!(
+            ok,
+            "MIX_Init failed during clone: this should not happen after initial init succeeded"
+        );
         MixerContext {
             _marker: PhantomData,
         }
@@ -81,6 +86,11 @@ fn bool_result(ok: bool) -> Result<(), Error> {
     } else {
         Err(get_error())
     }
+}
+
+/// Create a CString from a &str, returning an Error on invalid input.
+fn to_cstring(s: &str) -> Result<CString, Error> {
+    CString::new(s).map_err(|e| Error(e.to_string()))
 }
 
 impl Drop for MixerContext {

@@ -1,4 +1,3 @@
-use std::ffi::CString;
 use std::marker::PhantomData;
 use std::path::Path;
 use std::ptr;
@@ -10,7 +9,7 @@ use sdl3_sys::stdinc::Sint64;
 use super::audio::Audio;
 use super::group::Group;
 use super::track::Track;
-use super::{bool_result, sys, MixerContext};
+use super::{bool_result, sys, to_cstring, MixerContext};
 
 /// A mixer device that plays sound to an audio device.
 ///
@@ -126,7 +125,11 @@ impl Mixer {
     /// Otherwise it will be decoded on the fly during playback.
     #[doc(alias = "MIX_LoadAudio")]
     pub fn load_audio<P: AsRef<Path>>(&self, path: P, predecode: bool) -> Result<Audio, Error> {
-        let c_path = CString::new(path.as_ref().to_str().unwrap()).unwrap();
+        let path_str = path
+            .as_ref()
+            .to_str()
+            .ok_or_else(|| Error("path contains invalid UTF-8".into()))?;
+        let c_path = to_cstring(path_str)?;
         let raw = unsafe { sys::MIX_LoadAudio(self.raw, c_path.as_ptr(), predecode) };
         if raw.is_null() {
             Err(get_error())
@@ -180,21 +183,21 @@ impl Mixer {
     /// Stop all tracks with a specific tag, with optional fade-out in milliseconds.
     #[doc(alias = "MIX_StopTag")]
     pub fn stop_tag(&self, tag: &str, fade_out_ms: i64) -> Result<(), Error> {
-        let c_tag = CString::new(tag).unwrap();
+        let c_tag = to_cstring(tag)?;
         bool_result(unsafe { sys::MIX_StopTag(self.raw, c_tag.as_ptr(), fade_out_ms as Sint64) })
     }
 
     /// Pause all tracks with a specific tag.
     #[doc(alias = "MIX_PauseTag")]
     pub fn pause_tag(&self, tag: &str) -> Result<(), Error> {
-        let c_tag = CString::new(tag).unwrap();
+        let c_tag = to_cstring(tag)?;
         bool_result(unsafe { sys::MIX_PauseTag(self.raw, c_tag.as_ptr()) })
     }
 
     /// Resume all tracks with a specific tag.
     #[doc(alias = "MIX_ResumeTag")]
     pub fn resume_tag(&self, tag: &str) -> Result<(), Error> {
-        let c_tag = CString::new(tag).unwrap();
+        let c_tag = to_cstring(tag)?;
         bool_result(unsafe { sys::MIX_ResumeTag(self.raw, c_tag.as_ptr()) })
     }
 }
