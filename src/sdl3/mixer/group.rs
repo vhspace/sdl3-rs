@@ -51,7 +51,8 @@ impl<'mixer> Group<'mixer> {
 
     /// Get the properties associated with this group.
     ///
-    /// The returned properties object is read-only.
+    /// The returned `Properties` is borrowed from SDL and will not be
+    /// destroyed when dropped.
     #[doc(alias = "MIX_GetGroupProperties")]
     pub fn properties(&self) -> Properties {
         let id = unsafe { sys::MIX_GetGroupProperties(self.raw) };

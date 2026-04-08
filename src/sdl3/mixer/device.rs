@@ -250,12 +250,16 @@ impl Mixer {
     /// specific tracks. The returned pointers are borrowed from the mixer and
     /// must not be destroyed.
     #[doc(alias = "MIX_GetTaggedTracks")]
-    pub fn tagged_tracks(&self, tag: &str) -> Vec<*mut sys::MIX_Track> {
-        let c_tag = to_cstring(tag).unwrap_or_default();
+    pub fn tagged_tracks(&self, tag: &str) -> Result<Vec<*mut sys::MIX_Track>, Error> {
+        let c_tag = to_cstring(tag)?;
         let mut count: std::ffi::c_int = 0;
         let ptr = unsafe { sys::MIX_GetTaggedTracks(self.raw, c_tag.as_ptr(), &mut count) };
-        if ptr.is_null() || count <= 0 {
-            return Vec::new();
+        if ptr.is_null() {
+            return Ok(Vec::new());
+        }
+        if count <= 0 {
+            unsafe { sdl3_sys::stdinc::SDL_free(ptr as *mut _) };
+            return Ok(Vec::new());
         }
         let mut result = Vec::with_capacity(count as usize);
         for i in 0..count as isize {
@@ -267,14 +271,12 @@ impl Mixer {
             }
         }
         unsafe { sdl3_sys::stdinc::SDL_free(ptr as *mut _) };
-        result
+        Ok(result)
     }
 
     // -- Properties --
 
     /// Get the properties associated with this mixer.
-    ///
-    /// The returned properties object is read-only.
     #[doc(alias = "MIX_GetMixerProperties")]
     pub fn properties(&self) -> Properties {
         let id = unsafe { sys::MIX_GetMixerProperties(self.raw) };
@@ -353,7 +355,8 @@ impl Mixer {
     /// Returns the number of bytes written, or a negative value on error.
     #[doc(alias = "MIX_Generate")]
     pub fn generate(&self, buffer: &mut [u8]) -> i32 {
-        unsafe { sys::MIX_Generate(self.raw, buffer.as_mut_ptr() as *mut _, buffer.len() as i32) }
+        let len = buffer.len().min(i32::MAX as usize) as i32;
+        unsafe { sys::MIX_Generate(self.raw, buffer.as_mut_ptr() as *mut _, len) }
     }
 }
 

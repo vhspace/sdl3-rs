@@ -296,17 +296,15 @@ impl<'mixer> Track<'mixer> {
         if map.is_empty() {
             bool_result(unsafe { sys::MIX_SetTrackOutputChannelMap(self.raw, ptr::null(), 0) })
         } else {
-            bool_result(unsafe {
-                sys::MIX_SetTrackOutputChannelMap(self.raw, map.as_ptr(), map.len() as i32)
-            })
+            let count =
+                i32::try_from(map.len()).map_err(|_| Error("channel map too large".into()))?;
+            bool_result(unsafe { sys::MIX_SetTrackOutputChannelMap(self.raw, map.as_ptr(), count) })
         }
     }
 
     // -- Properties --
 
     /// Get the properties associated with this track.
-    ///
-    /// The returned properties object is read-only.
     #[doc(alias = "MIX_GetTrackProperties")]
     pub fn properties(&self) -> Properties {
         let id = unsafe { sys::MIX_GetTrackProperties(self.raw) };
