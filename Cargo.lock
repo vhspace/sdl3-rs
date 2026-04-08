@@ -892,6 +892,7 @@ dependencies = [
  "raw-window-handle",
  "sdl3-image-sys",
  "sdl3-main",
+ "sdl3-mixer-sys",
  "sdl3-sys",
  "sdl3-ttf-sys",
  "wgpu",
@@ -930,6 +931,24 @@ name = "sdl3-main-macros"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8ea7f98211e1fefceafb264fb5638798fb26eca12b194dbc1eff7c6127ea4a6"
+
+[[package]]
+name = "sdl3-mixer-src"
+version = "3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1eadf2552e54f487570e82454e325358f8f4ce1b602ce5837206659805c9f2b8"
+
+[[package]]
+name = "sdl3-mixer-sys"
+version = "0.6.1+SDL-mixer-3.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f493bd0cf6f2ba15ab5e40dea89ca16fee6e1a6a7926a549a60225ccc033cfee"
+dependencies = [
+ "cmake",
+ "rpkg-config",
+ "sdl3-mixer-src",
+ "sdl3-sys",
+]
 
 [[package]]
 name = "sdl3-src"
