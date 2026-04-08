@@ -8,7 +8,7 @@ use sdl3_sys::stdinc::Sint64;
 
 use super::audio::Audio;
 use super::device::Mixer;
-use super::sys;
+use super::{bool_result, sys};
 
 /// 3D coordinates for positional audio.
 ///
@@ -21,6 +21,26 @@ pub struct Point3D {
     pub x: f32,
     pub y: f32,
     pub z: f32,
+}
+
+impl From<sys::MIX_Point3D> for Point3D {
+    fn from(p: sys::MIX_Point3D) -> Self {
+        Point3D {
+            x: p.x,
+            y: p.y,
+            z: p.z,
+        }
+    }
+}
+
+impl From<Point3D> for sys::MIX_Point3D {
+    fn from(p: Point3D) -> Self {
+        sys::MIX_Point3D {
+            x: p.x,
+            y: p.y,
+            z: p.z,
+        }
+    }
 }
 
 /// Per-channel gain for stereo panning.
@@ -62,26 +82,16 @@ impl<'mixer> Track<'mixer> {
     /// Set the audio data for this track.
     ///
     /// The track holds an internal reference to the audio, so it's safe to drop
-    /// the `Audio` object after this call — the track will keep it alive.
+    /// the `Audio` object after this call -- the track will keep it alive.
     #[doc(alias = "MIX_SetTrackAudio")]
     pub fn set_audio(&self, audio: &Audio) -> Result<(), Error> {
-        let ok = unsafe { sys::MIX_SetTrackAudio(self.raw, audio.raw()) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_SetTrackAudio(self.raw, audio.raw()) })
     }
 
     /// Remove the audio input from this track.
     #[doc(alias = "MIX_SetTrackAudio")]
     pub fn clear_audio(&self) -> Result<(), Error> {
-        let ok = unsafe { sys::MIX_SetTrackAudio(self.raw, ptr::null_mut()) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_SetTrackAudio(self.raw, ptr::null_mut()) })
     }
 
     // -- Playback control --
@@ -92,12 +102,7 @@ impl<'mixer> Track<'mixer> {
     /// `play_with_options`.
     #[doc(alias = "MIX_PlayTrack")]
     pub fn play(&self) -> Result<(), Error> {
-        let ok = unsafe { sys::MIX_PlayTrack(self.raw, SDL_PropertiesID(0)) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_PlayTrack(self.raw, SDL_PropertiesID(0)) })
     }
 
     /// Stop this track, with optional fade-out in sample frames.
@@ -106,34 +111,19 @@ impl<'mixer> Track<'mixer> {
     /// Pass 0 for immediate stop.
     #[doc(alias = "MIX_StopTrack")]
     pub fn stop(&self, fade_out_frames: i64) -> Result<(), Error> {
-        let ok = unsafe { sys::MIX_StopTrack(self.raw, fade_out_frames as Sint64) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_StopTrack(self.raw, fade_out_frames as Sint64) })
     }
 
     /// Pause this track.
     #[doc(alias = "MIX_PauseTrack")]
     pub fn pause(&self) -> Result<(), Error> {
-        let ok = unsafe { sys::MIX_PauseTrack(self.raw) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_PauseTrack(self.raw) })
     }
 
     /// Resume this track if paused.
     #[doc(alias = "MIX_ResumeTrack")]
     pub fn resume(&self) -> Result<(), Error> {
-        let ok = unsafe { sys::MIX_ResumeTrack(self.raw) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_ResumeTrack(self.raw) })
     }
 
     /// Check if this track is currently playing.
@@ -155,12 +145,7 @@ impl<'mixer> Track<'mixer> {
     /// A gain of 0.0 is silence, 1.0 is unchanged, >1.0 amplifies.
     #[doc(alias = "MIX_SetTrackGain")]
     pub fn set_gain(&self, gain: f32) -> Result<(), Error> {
-        let ok = unsafe { sys::MIX_SetTrackGain(self.raw, gain) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_SetTrackGain(self.raw, gain) })
     }
 
     /// Get the current gain (volume) for this track.
@@ -178,12 +163,7 @@ impl<'mixer> Track<'mixer> {
     /// - -1: loop forever
     #[doc(alias = "MIX_SetTrackLoops")]
     pub fn set_loops(&self, loops: i32) -> Result<(), Error> {
-        let ok = unsafe { sys::MIX_SetTrackLoops(self.raw, loops) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_SetTrackLoops(self.raw, loops) })
     }
 
     /// Get the current loop count for this track.
@@ -197,12 +177,7 @@ impl<'mixer> Track<'mixer> {
     /// Set the playback position in sample frames.
     #[doc(alias = "MIX_SetTrackPlaybackPosition")]
     pub fn set_playback_position(&self, frames: i64) -> Result<(), Error> {
-        let ok = unsafe { sys::MIX_SetTrackPlaybackPosition(self.raw, frames as Sint64) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_SetTrackPlaybackPosition(self.raw, frames as Sint64) })
     }
 
     /// Get the current playback position in sample frames.
@@ -246,17 +221,8 @@ impl<'mixer> Track<'mixer> {
     /// can move around the listener.
     #[doc(alias = "MIX_SetTrack3DPosition")]
     pub fn set_3d_position(&self, pos: Point3D) -> Result<(), Error> {
-        let c_pos = sys::MIX_Point3D {
-            x: pos.x,
-            y: pos.y,
-            z: pos.z,
-        };
-        let ok = unsafe { sys::MIX_SetTrack3DPosition(self.raw, &c_pos) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        let c_pos: sys::MIX_Point3D = pos.into();
+        bool_result(unsafe { sys::MIX_SetTrack3DPosition(self.raw, &c_pos) })
     }
 
     /// Get this track's current 3D position.
@@ -269,11 +235,7 @@ impl<'mixer> Track<'mixer> {
         };
         let ok = unsafe { sys::MIX_GetTrack3DPosition(self.raw, &mut c_pos) };
         if ok {
-            Ok(Point3D {
-                x: c_pos.x,
-                y: c_pos.y,
-                z: c_pos.z,
-            })
+            Ok(c_pos.into())
         } else {
             Err(get_error())
         }
@@ -295,11 +257,7 @@ impl<'mixer> Track<'mixer> {
             }
             None => unsafe { sys::MIX_SetTrackStereo(self.raw, ptr::null()) },
         };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(ok)
     }
 
     // -- Tagging --
@@ -308,12 +266,7 @@ impl<'mixer> Track<'mixer> {
     #[doc(alias = "MIX_TagTrack")]
     pub fn tag(&self, tag: &str) -> Result<(), Error> {
         let c_tag = CString::new(tag).unwrap();
-        let ok = unsafe { sys::MIX_TagTrack(self.raw, c_tag.as_ptr()) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_TagTrack(self.raw, c_tag.as_ptr()) })
     }
 
     /// Remove a tag from this track.

@@ -10,7 +10,7 @@ use sdl3_sys::stdinc::Sint64;
 use super::audio::Audio;
 use super::group::Group;
 use super::track::Track;
-use super::{sys, MixerContext};
+use super::{bool_result, sys, MixerContext};
 
 /// A mixer device that plays sound to an audio device.
 ///
@@ -80,12 +80,7 @@ impl Mixer {
     /// A gain of 0.0 is silence, 1.0 is unchanged, >1.0 amplifies.
     #[doc(alias = "MIX_SetMixerGain")]
     pub fn set_gain(&self, gain: f32) -> Result<(), Error> {
-        let ok = unsafe { sys::MIX_SetMixerGain(self.raw, gain) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_SetMixerGain(self.raw, gain) })
     }
 
     /// Get the master gain (volume) for the entire mix.
@@ -161,81 +156,46 @@ impl Mixer {
     /// when done.
     #[doc(alias = "MIX_PlayAudio")]
     pub fn play_audio(&self, audio: &Audio) -> Result<(), Error> {
-        let ok = unsafe { sys::MIX_PlayAudio(self.raw, audio.raw()) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_PlayAudio(self.raw, audio.raw()) })
     }
 
     /// Stop all tracks on this mixer, with optional fade-out in milliseconds.
     #[doc(alias = "MIX_StopAllTracks")]
     pub fn stop_all(&self, fade_out_ms: i64) -> Result<(), Error> {
-        let ok = unsafe { sys::MIX_StopAllTracks(self.raw, fade_out_ms as Sint64) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_StopAllTracks(self.raw, fade_out_ms as Sint64) })
     }
 
     /// Pause all tracks on this mixer.
     #[doc(alias = "MIX_PauseAllTracks")]
     pub fn pause_all(&self) -> Result<(), Error> {
-        let ok = unsafe { sys::MIX_PauseAllTracks(self.raw) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_PauseAllTracks(self.raw) })
     }
 
     /// Resume all paused tracks on this mixer.
     #[doc(alias = "MIX_ResumeAllTracks")]
     pub fn resume_all(&self) -> Result<(), Error> {
-        let ok = unsafe { sys::MIX_ResumeAllTracks(self.raw) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_ResumeAllTracks(self.raw) })
     }
 
     /// Stop all tracks with a specific tag, with optional fade-out in milliseconds.
     #[doc(alias = "MIX_StopTag")]
     pub fn stop_tag(&self, tag: &str, fade_out_ms: i64) -> Result<(), Error> {
         let c_tag = CString::new(tag).unwrap();
-        let ok = unsafe { sys::MIX_StopTag(self.raw, c_tag.as_ptr(), fade_out_ms as Sint64) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_StopTag(self.raw, c_tag.as_ptr(), fade_out_ms as Sint64) })
     }
 
     /// Pause all tracks with a specific tag.
     #[doc(alias = "MIX_PauseTag")]
     pub fn pause_tag(&self, tag: &str) -> Result<(), Error> {
         let c_tag = CString::new(tag).unwrap();
-        let ok = unsafe { sys::MIX_PauseTag(self.raw, c_tag.as_ptr()) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_PauseTag(self.raw, c_tag.as_ptr()) })
     }
 
     /// Resume all tracks with a specific tag.
     #[doc(alias = "MIX_ResumeTag")]
     pub fn resume_tag(&self, tag: &str) -> Result<(), Error> {
         let c_tag = CString::new(tag).unwrap();
-        let ok = unsafe { sys::MIX_ResumeTag(self.raw, c_tag.as_ptr()) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_ResumeTag(self.raw, c_tag.as_ptr()) })
     }
 }
 

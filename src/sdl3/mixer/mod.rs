@@ -44,10 +44,16 @@ use std::sync::atomic::{AtomicU32, Ordering};
 /// SDL3_mixer is reference-counted internally, so multiple contexts can exist.
 /// The library is only deinitialized when the last context is dropped.
 #[must_use]
-#[derive(Clone)]
 pub struct MixerContext;
 
 static MIXER_COUNT: AtomicU32 = AtomicU32::new(0);
+
+impl Clone for MixerContext {
+    fn clone(&self) -> Self {
+        MIXER_COUNT.fetch_add(1, Ordering::Relaxed);
+        MixerContext
+    }
+}
 
 impl MixerContext {
     fn new() -> Result<Self, Error> {
@@ -59,6 +65,15 @@ impl MixerContext {
             }
         }
         Ok(Self)
+    }
+}
+
+/// Convert an SDL bool return to a Rust Result.
+fn bool_result(ok: bool) -> Result<(), Error> {
+    if ok {
+        Ok(())
+    } else {
+        Err(get_error())
     }
 }
 

@@ -1,10 +1,10 @@
 use std::marker::PhantomData;
 
-use crate::{get_error, Error};
+use crate::Error;
 
 use super::device::Mixer;
-use super::sys;
 use super::track::Track;
+use super::{bool_result, sys};
 
 /// A group for organizing tracks.
 ///
@@ -39,23 +39,13 @@ impl<'mixer> Group<'mixer> {
     /// removes it from its previous group.
     #[doc(alias = "MIX_SetTrackGroup")]
     pub fn assign_track(&self, track: &Track) -> Result<(), Error> {
-        let ok = unsafe { sys::MIX_SetTrackGroup(track.raw(), self.raw) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_SetTrackGroup(track.raw(), self.raw) })
     }
 
-    /// Remove a track from this group (return it to the default group).
+    /// Remove a track from any group (return it to the default group).
     #[doc(alias = "MIX_SetTrackGroup")]
     pub fn remove_track(&self, track: &Track) -> Result<(), Error> {
-        let ok = unsafe { sys::MIX_SetTrackGroup(track.raw(), std::ptr::null_mut()) };
-        if ok {
-            Ok(())
-        } else {
-            Err(get_error())
-        }
+        bool_result(unsafe { sys::MIX_SetTrackGroup(track.raw(), std::ptr::null_mut()) })
     }
 }
 
