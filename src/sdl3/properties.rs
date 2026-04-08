@@ -18,6 +18,7 @@ pub enum PropertiesError {
     StringError(Utf8Error),
     NullPointer,
     SdlError(Error),
+    TypeMismatch,
 }
 
 #[derive(Clone)]
@@ -281,7 +282,7 @@ impl Properties {
     }
 
     #[doc(alias = "SDL_GetPointerProperty")]
-    pub fn with<T>(&mut self, name: &str, with: fn(&T)) -> Result<(), PropertiesError> {
+    pub fn with<T>(&mut self, name: &PropertyName, with: fn(&T)) -> Result<(), PropertiesError> {
         self.lock()?;
         let pointer: *mut T = self.get(name, ptr::null_mut())?;
         if pointer.is_null() {
@@ -295,13 +296,15 @@ impl Properties {
 }
 
 pub trait Setter<T> {
-    fn set(&self, name: &str, value: T) -> Result<(), PropertiesError>;
+    fn set(&self, name: &PropertyName, value: T) -> Result<(), PropertiesError>;
 }
 
 impl Setter<bool> for Properties {
     #[doc(alias = "SDL_SetBooleanProperty")]
-    fn set(&self, name: &str, value: bool) -> Result<(), PropertiesError> {
-        cstring!(name);
+    fn set(&self, name: &PropertyName, value: bool) -> Result<(), PropertiesError> {
+        if name.ty != PropertyType::BOOLEAN {
+            return Err(PropertiesError::TypeMismatch);
+        }
         if unsafe { sys::properties::SDL_SetBooleanProperty(self.internal, name.as_ptr(), value) } {
             Ok(())
         } else {
@@ -312,8 +315,10 @@ impl Setter<bool> for Properties {
 
 impl Setter<f32> for Properties {
     #[doc(alias = "SDL_SetFloatProperty")]
-    fn set(&self, name: &str, value: f32) -> Result<(), PropertiesError> {
-        cstring!(name);
+    fn set(&self, name: &PropertyName, value: f32) -> Result<(), PropertiesError> {
+        if name.ty != PropertyType::FLOAT {
+            return Err(PropertiesError::TypeMismatch);
+        }
         if unsafe { sys::properties::SDL_SetFloatProperty(self.internal, name.as_ptr(), value) } {
             Ok(())
         } else {
@@ -324,8 +329,10 @@ impl Setter<f32> for Properties {
 
 impl Setter<i64> for Properties {
     #[doc(alias = "SDL_SetNumberProperty")]
-    fn set(&self, name: &str, value: i64) -> Result<(), PropertiesError> {
-        cstring!(name);
+    fn set(&self, name: &PropertyName, value: i64) -> Result<(), PropertiesError> {
+        if name.ty != PropertyType::NUMBER {
+            return Err(PropertiesError::TypeMismatch);
+        }
         if unsafe { sys::properties::SDL_SetNumberProperty(self.internal, name.as_ptr(), value) } {
             Ok(())
         } else {
@@ -336,8 +343,10 @@ impl Setter<i64> for Properties {
 
 impl Setter<&str> for Properties {
     #[doc(alias = "SDL_SetStringProperty")]
-    fn set(&self, name: &str, value: &str) -> Result<(), PropertiesError> {
-        cstring!(name);
+    fn set(&self, name: &PropertyName, value: &str) -> Result<(), PropertiesError> {
+        if name.ty != PropertyType::STRING {
+            return Err(PropertiesError::TypeMismatch);
+        }
         // Have to transform the value into a cstring, SDL makes an internal copy
         cstring!(value);
         if unsafe {
@@ -352,8 +361,10 @@ impl Setter<&str> for Properties {
 
 impl<T> Setter<*mut T> for Properties {
     #[doc(alias = "SDL_SetPointerProperty")]
-    fn set(&self, name: &str, value: *mut T) -> Result<(), PropertiesError> {
-        cstring!(name);
+    fn set(&self, name: &PropertyName, value: *mut T) -> Result<(), PropertiesError> {
+        if name.ty != PropertyType::POINTER {
+            return Err(PropertiesError::TypeMismatch);
+        }
         if unsafe {
             sys::properties::SDL_SetPointerProperty(
                 self.internal,
@@ -370,8 +381,10 @@ impl<T> Setter<*mut T> for Properties {
 
 impl<T> Setter<Box<T>> for Properties {
     #[doc(alias = "SDL_SetPointerPropertyWithCleanup")]
-    fn set(&self, name: &str, value: Box<T>) -> Result<(), PropertiesError> {
-        cstring!(name);
+    fn set(&self, name: &PropertyName, value: Box<T>) -> Result<(), PropertiesError> {
+        if name.ty != PropertyType::POINTER {
+            return Err(PropertiesError::TypeMismatch);
+        }
         let value_ptr: *mut c_void = Box::into_raw(value) as *mut c_void;
         let cleanup: CleanupBox = |value: *mut c_void| {
             let value = value as *mut T;
@@ -397,13 +410,15 @@ impl<T> Setter<Box<T>> for Properties {
 }
 
 pub trait Getter<T> {
-    fn get(&self, name: &str, default: T) -> Result<T, PropertiesError>;
+    fn get(&self, name: &PropertyName, default: T) -> Result<T, PropertiesError>;
 }
 
 impl Getter<bool> for Properties {
     #[doc(alias = "SDL_GetBooleanProperty")]
-    fn get(&self, name: &str, default: bool) -> Result<bool, PropertiesError> {
-        cstring!(name);
+    fn get(&self, name: &PropertyName, default: bool) -> Result<bool, PropertiesError> {
+        if name.ty != PropertyType::BOOLEAN {
+            return Err(PropertiesError::TypeMismatch);
+        }
         unsafe {
             Ok(sys::properties::SDL_GetBooleanProperty(
                 self.internal,
@@ -416,8 +431,10 @@ impl Getter<bool> for Properties {
 
 impl Getter<f32> for Properties {
     #[doc(alias = "SDL_GetFloatProperty")]
-    fn get(&self, name: &str, default: f32) -> Result<f32, PropertiesError> {
-        cstring!(name);
+    fn get(&self, name: &PropertyName, default: f32) -> Result<f32, PropertiesError> {
+        if name.ty != PropertyType::FLOAT {
+            return Err(PropertiesError::TypeMismatch);
+        }
         unsafe {
             Ok(sys::properties::SDL_GetFloatProperty(
                 self.internal,
@@ -430,8 +447,10 @@ impl Getter<f32> for Properties {
 
 impl Getter<i64> for Properties {
     #[doc(alias = "SDL_GetNumberProperty")]
-    fn get(&self, name: &str, default: i64) -> Result<i64, PropertiesError> {
-        cstring!(name);
+    fn get(&self, name: &PropertyName, default: i64) -> Result<i64, PropertiesError> {
+        if name.ty != PropertyType::NUMBER {
+            return Err(PropertiesError::TypeMismatch);
+        }
         unsafe {
             Ok(sys::properties::SDL_GetNumberProperty(
                 self.internal,
@@ -444,8 +463,10 @@ impl Getter<i64> for Properties {
 
 impl<T> Getter<*mut T> for Properties {
     #[doc(alias = "SDL_GetPointerProperty")]
-    fn get(&self, name: &str, default: *mut T) -> Result<*mut T, PropertiesError> {
-        cstring!(name);
+    fn get(&self, name: &PropertyName, default: *mut T) -> Result<*mut T, PropertiesError> {
+        if name.ty != PropertyType::POINTER {
+            return Err(PropertiesError::TypeMismatch);
+        }
         let pointer = unsafe {
             sys::properties::SDL_GetPointerProperty(
                 self.internal,
