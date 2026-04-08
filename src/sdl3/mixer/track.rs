@@ -2,6 +2,7 @@ use std::ffi::CStr;
 use std::marker::PhantomData;
 use std::ptr;
 
+use crate::properties::Properties;
 use crate::{get_error, Error};
 use sdl3_sys::properties::SDL_PropertiesID;
 use sdl3_sys::stdinc::Sint64;
@@ -102,6 +103,15 @@ impl<'mixer> Track<'mixer> {
     #[doc(alias = "MIX_PlayTrack")]
     pub fn play(&self) -> Result<(), Error> {
         bool_result(unsafe { sys::MIX_PlayTrack(self.raw, SDL_PropertiesID(0)) })
+    }
+
+    /// Start (or restart) playing this track with advanced options.
+    ///
+    /// Create a `Properties` object and set `MIX_PROP_PLAY_*` keys for
+    /// fade-in, start position, max duration, loop points, etc.
+    #[doc(alias = "MIX_PlayTrack")]
+    pub fn play_with_options(&self, options: &Properties) -> Result<(), Error> {
+        bool_result(unsafe { sys::MIX_PlayTrack(self.raw, options.raw()) })
     }
 
     /// Stop this track, with optional fade-out in sample frames.
@@ -257,6 +267,111 @@ impl<'mixer> Track<'mixer> {
             None => unsafe { sys::MIX_SetTrackStereo(self.raw, ptr::null()) },
         };
         bool_result(ok)
+    }
+
+    // -- Frequency ratio --
+
+    /// Set the frequency ratio (playback speed) for this track.
+    ///
+    /// 1.0 is normal speed, 2.0 is double speed, 0.5 is half speed.
+    #[doc(alias = "MIX_SetTrackFrequencyRatio")]
+    pub fn set_frequency_ratio(&self, ratio: f32) -> Result<(), Error> {
+        bool_result(unsafe { sys::MIX_SetTrackFrequencyRatio(self.raw, ratio) })
+    }
+
+    /// Get the frequency ratio (playback speed) for this track.
+    #[doc(alias = "MIX_GetTrackFrequencyRatio")]
+    pub fn frequency_ratio(&self) -> f32 {
+        unsafe { sys::MIX_GetTrackFrequencyRatio(self.raw) }
+    }
+
+    // -- Channel mapping --
+
+    /// Set the output channel map for this track.
+    ///
+    /// Each element maps an output channel index to an input channel index.
+    /// Pass an empty slice to reset to the default mapping.
+    #[doc(alias = "MIX_SetTrackOutputChannelMap")]
+    pub fn set_output_channel_map(&self, map: &[i32]) -> Result<(), Error> {
+        if map.is_empty() {
+            bool_result(unsafe { sys::MIX_SetTrackOutputChannelMap(self.raw, ptr::null(), 0) })
+        } else {
+            bool_result(unsafe {
+                sys::MIX_SetTrackOutputChannelMap(self.raw, map.as_ptr(), map.len() as i32)
+            })
+        }
+    }
+
+    // -- Properties --
+
+    /// Get the properties associated with this track.
+    ///
+    /// The returned properties object is read-only.
+    #[doc(alias = "MIX_GetTrackProperties")]
+    pub fn properties(&self) -> Properties {
+        let id = unsafe { sys::MIX_GetTrackProperties(self.raw) };
+        Properties::const_from_ll(id)
+    }
+
+    // -- Track queries --
+
+    /// Get the raw pointer to the audio currently assigned to this track.
+    ///
+    /// Returns null if no audio is assigned. The pointer is borrowed from
+    /// the track and must not be destroyed.
+    #[doc(alias = "MIX_GetTrackAudio")]
+    pub fn audio_raw(&self) -> *mut sys::MIX_Audio {
+        unsafe { sys::MIX_GetTrackAudio(self.raw) }
+    }
+
+    /// Get the raw pointer to this track's audio stream.
+    ///
+    /// Returns null if there is no active audio stream.
+    #[doc(alias = "MIX_GetTrackAudioStream")]
+    pub fn audio_stream_raw(&self) -> *mut sdl3_sys::audio::SDL_AudioStream {
+        unsafe { sys::MIX_GetTrackAudioStream(self.raw) }
+    }
+
+    /// Get the raw pointer to this track's parent mixer.
+    #[doc(alias = "MIX_GetTrackMixer")]
+    pub fn mixer_raw(&self) -> *mut sys::MIX_Mixer {
+        unsafe { sys::MIX_GetTrackMixer(self.raw) }
+    }
+
+    // -- Streaming input --
+
+    /// Set an SDL audio stream as input for this track.
+    ///
+    /// The track will pull audio from the stream during mixing.
+    ///
+    /// # Safety
+    ///
+    /// The caller must ensure `stream` is a valid, non-null `SDL_AudioStream`
+    /// pointer that remains valid for the lifetime of the track.
+    #[doc(alias = "MIX_SetTrackAudioStream")]
+    pub unsafe fn set_audio_stream(
+        &self,
+        stream: *mut sdl3_sys::audio::SDL_AudioStream,
+    ) -> Result<(), Error> {
+        bool_result(unsafe { sys::MIX_SetTrackAudioStream(self.raw, stream) })
+    }
+
+    /// Set an IOStream as input for this track (encoded audio).
+    ///
+    /// The mixer will decode the stream on the fly during playback.
+    #[doc(alias = "MIX_SetTrackIOStream")]
+    pub fn set_iostream(&self, io: &crate::iostream::IOStream) -> Result<(), Error> {
+        bool_result(unsafe { sys::MIX_SetTrackIOStream(self.raw, io.raw(), false) })
+    }
+
+    /// Set an IOStream as input for this track (raw PCM audio).
+    #[doc(alias = "MIX_SetTrackRawIOStream")]
+    pub fn set_raw_iostream(
+        &self,
+        io: &crate::iostream::IOStream,
+        spec: &sdl3_sys::audio::SDL_AudioSpec,
+    ) -> Result<(), Error> {
+        bool_result(unsafe { sys::MIX_SetTrackRawIOStream(self.raw, io.raw(), spec, false) })
     }
 
     // -- Tagging --
