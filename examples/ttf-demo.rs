@@ -1,5 +1,3 @@
-extern crate sdl3;
-
 use std::env;
 use std::path::Path;
 

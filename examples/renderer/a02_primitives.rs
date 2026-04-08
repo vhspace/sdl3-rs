@@ -1,6 +1,4 @@
 // https://github.com/libsdl-org/SDL/tree/main/examples/renderer
-extern crate sdl3;
-
 use rand::Rng;
 use sdl3::rect::Rect;
 use sdl3::render::FRect;

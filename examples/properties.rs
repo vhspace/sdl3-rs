@@ -1,4 +1,3 @@
-extern crate sdl3;
 use std::ptr;
 
 use sdl3::properties::*;

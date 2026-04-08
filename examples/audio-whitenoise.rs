@@ -1,6 +1,3 @@
-extern crate rand;
-extern crate sdl3;
-
 use sdl3::audio::{AudioCallback, AudioFormat, AudioSpec, AudioStream};
 use std::time::Duration;
 
@@ -10,7 +7,7 @@ struct MyCallback {
 }
 impl AudioCallback<f32> for MyCallback {
     fn callback(&mut self, stream: &mut AudioStream, requested: i32) {
-        use self::rand::{thread_rng, Rng};
+        use rand::{thread_rng, Rng};
         let mut rng = thread_rng();
 
         self.buffer.resize(requested as usize, 0.0);

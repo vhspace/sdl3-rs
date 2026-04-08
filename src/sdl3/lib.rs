@@ -1,8 +1,6 @@
 //! # Getting started
 //!
 //! ```rust,no_run
-//! extern crate sdl3;
-//!
 //! use sdl3::pixels::Color;
 //! use sdl3::event::Event;
 //! use sdl3::keyboard::Keycode;

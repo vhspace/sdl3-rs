@@ -1,6 +1,3 @@
-extern crate rand;
-extern crate sdl3;
-
 use rand::Rng;
 use sdl3::event::Event;
 use sdl3::pixels::Color;

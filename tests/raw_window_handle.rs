@@ -1,12 +1,11 @@
 #[cfg(feature = "raw-window-handle")]
 mod raw_window_handle_test {
     extern crate raw_window_handle;
-    extern crate sdl3;
 
     use self::raw_window_handle::{
         HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle,
     };
-    use self::sdl3::video::Window;
+    use sdl3::video::Window;
 
     #[cfg(target_os = "windows")]
     #[test]
