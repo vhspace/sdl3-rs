@@ -7,7 +7,7 @@ use crate::{
     },
     sys, Error,
 };
-use std::{ffi::CStr, sync::Arc};
+use std::{ffi::CStr, marker::PhantomData, sync::Arc};
 use sys::gpu::{
     SDL_GPUBlendFactor, SDL_GPUBlendOp, SDL_GPUColorTargetBlendState,
     SDL_GPUColorTargetDescription, SDL_GPUCompareOp, SDL_GPUComputePipeline,
@@ -99,7 +99,7 @@ impl<'a> GraphicsPipelineBuilder<'a> {
         self
     }
 
-    pub fn with_vertex_input_state(mut self, value: VertexInputState) -> Self {
+    pub fn with_vertex_input_state(mut self, value: VertexInputState<'_>) -> Self {
         self.inner.vertex_input_state = value.inner;
         self
     }
@@ -186,23 +186,31 @@ impl VertexAttribute {
 }
 
 #[repr(C)]
-#[derive(Default)]
-pub struct VertexInputState {
+pub struct VertexInputState<'a> {
     inner: SDL_GPUVertexInputState,
+    _marker: PhantomData<&'a ()>,
 }
-impl VertexInputState {
+impl Default for VertexInputState<'_> {
+    fn default() -> Self {
+        Self {
+            inner: Default::default(),
+            _marker: PhantomData,
+        }
+    }
+}
+impl<'a> VertexInputState<'a> {
     pub fn new() -> Self {
         Default::default()
     }
 
-    pub fn with_vertex_buffer_descriptions(mut self, value: &[VertexBufferDescription]) -> Self {
+    pub fn with_vertex_buffer_descriptions(mut self, value: &'a [VertexBufferDescription]) -> Self {
         self.inner.vertex_buffer_descriptions =
             value.as_ptr() as *const SDL_GPUVertexBufferDescription;
         self.inner.num_vertex_buffers = value.len() as u32;
         self
     }
 
-    pub fn with_vertex_attributes(mut self, value: &[VertexAttribute]) -> Self {
+    pub fn with_vertex_attributes(mut self, value: &'a [VertexAttribute]) -> Self {
         self.inner.vertex_attributes = value.as_ptr() as *const SDL_GPUVertexAttribute;
         self.inner.num_vertex_attributes = value.len() as u32;
         self
