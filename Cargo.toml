@@ -3,7 +3,7 @@ name = "sdl3"
 description = "Bindings to SDL3, a cross-platform library to abstract the platform-specific details for building applications."
 repository = "https://github.com/vhspace/sdl3-rs"
 documentation = "https://docs.rs/sdl3/latest/sdl3/"
-version = "0.17.3"
+version = "0.18.0"
 license = "MIT"
 authors = [
     "Tony Aldridge <tony@angry-lawyer.com>",
