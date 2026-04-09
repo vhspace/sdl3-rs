@@ -35,7 +35,27 @@ pub use self::device::{Mixer, MixerLock};
 pub use self::group::Group;
 pub use self::track::{Point3D, StereoGains, Track};
 
+// Re-export property key constants for play options, audio loading, and metadata.
+pub use sys::{
+    MIX_DURATION_INFINITE, MIX_DURATION_UNKNOWN, MIX_PROP_AUDIO_DECODER_STRING,
+    MIX_PROP_AUDIO_LOAD_CLOSEIO_BOOLEAN, MIX_PROP_AUDIO_LOAD_IOSTREAM_POINTER,
+    MIX_PROP_AUDIO_LOAD_PREDECODE_BOOLEAN, MIX_PROP_AUDIO_LOAD_PREFERRED_MIXER_POINTER,
+    MIX_PROP_AUDIO_LOAD_SKIP_METADATA_TAGS_BOOLEAN, MIX_PROP_METADATA_ALBUM_STRING,
+    MIX_PROP_METADATA_ARTIST_STRING, MIX_PROP_METADATA_COPYRIGHT_STRING,
+    MIX_PROP_METADATA_DURATION_FRAMES_NUMBER, MIX_PROP_METADATA_DURATION_INFINITE_BOOLEAN,
+    MIX_PROP_METADATA_TITLE_STRING, MIX_PROP_METADATA_TOTAL_TRACKS_NUMBER,
+    MIX_PROP_METADATA_TRACK_NUMBER, MIX_PROP_METADATA_YEAR_NUMBER, MIX_PROP_MIXER_DEVICE_NUMBER,
+    MIX_PROP_PLAY_APPEND_SILENCE_FRAMES_NUMBER, MIX_PROP_PLAY_APPEND_SILENCE_MILLISECONDS_NUMBER,
+    MIX_PROP_PLAY_FADE_IN_FRAMES_NUMBER, MIX_PROP_PLAY_FADE_IN_MILLISECONDS_NUMBER,
+    MIX_PROP_PLAY_FADE_IN_START_GAIN_FLOAT, MIX_PROP_PLAY_HALT_WHEN_EXHAUSTED_BOOLEAN,
+    MIX_PROP_PLAY_LOOPS_NUMBER, MIX_PROP_PLAY_LOOP_START_FRAME_NUMBER,
+    MIX_PROP_PLAY_LOOP_START_MILLISECOND_NUMBER, MIX_PROP_PLAY_MAX_FRAME_NUMBER,
+    MIX_PROP_PLAY_MAX_MILLISECONDS_NUMBER, MIX_PROP_PLAY_START_FRAME_NUMBER,
+    MIX_PROP_PLAY_START_MILLISECOND_NUMBER,
+};
+
 use crate::{get_error, Error};
+use sdl3_sys::stdinc::Sint64;
 use std::ffi::{CStr, CString};
 use std::marker::PhantomData;
 
@@ -138,4 +158,20 @@ pub fn get_audio_decoder(index: i32) -> Option<String> {
             )
         }
     }
+}
+
+/// Convert milliseconds to sample frames at a given sample rate.
+///
+/// This is a standalone helper that doesn't require a track or audio object.
+#[doc(alias = "MIX_MSToFrames")]
+pub fn ms_to_frames(sample_rate: i32, ms: i64) -> i64 {
+    unsafe { sys::MIX_MSToFrames(sample_rate, ms as Sint64) as i64 }
+}
+
+/// Convert sample frames to milliseconds at a given sample rate.
+///
+/// This is a standalone helper that doesn't require a track or audio object.
+#[doc(alias = "MIX_FramesToMS")]
+pub fn frames_to_ms(sample_rate: i32, frames: i64) -> i64 {
+    unsafe { sys::MIX_FramesToMS(sample_rate, frames as Sint64) as i64 }
 }

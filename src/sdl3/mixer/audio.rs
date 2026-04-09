@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 
+use crate::properties::Properties;
 use crate::{get_error, Error};
 use sdl3_sys::audio::SDL_AudioSpec;
 use sdl3_sys::stdinc::Sint64;
@@ -65,6 +66,16 @@ impl Audio {
     #[doc(alias = "MIX_AudioFramesToMS")]
     pub fn frames_to_ms(&self, frames: i64) -> i64 {
         unsafe { sys::MIX_AudioFramesToMS(self.raw, frames as Sint64) as i64 }
+    }
+
+    /// Get the properties associated with this audio.
+    ///
+    /// Properties include metadata (title, artist, album, etc.) if the
+    /// audio format supports it. Use `MIX_PROP_METADATA_*` constants as keys.
+    #[doc(alias = "MIX_GetAudioProperties")]
+    pub fn properties(&self) -> Properties {
+        let id = unsafe { sys::MIX_GetAudioProperties(self.raw) };
+        Properties::const_from_ll(id)
     }
 }
 

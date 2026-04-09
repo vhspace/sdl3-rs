@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 
+use crate::properties::Properties;
 use crate::Error;
 
 use super::device::Mixer;
@@ -46,6 +47,16 @@ impl<'mixer> Group<'mixer> {
     #[doc(alias = "MIX_SetTrackGroup")]
     pub fn remove_track(&self, track: &Track) -> Result<(), Error> {
         bool_result(unsafe { sys::MIX_SetTrackGroup(track.raw(), std::ptr::null_mut()) })
+    }
+
+    /// Get the properties associated with this group.
+    ///
+    /// The returned `Properties` is borrowed from SDL and will not be
+    /// destroyed when dropped.
+    #[doc(alias = "MIX_GetGroupProperties")]
+    pub fn properties(&self) -> Properties {
+        let id = unsafe { sys::MIX_GetGroupProperties(self.raw) };
+        Properties::const_from_ll(id)
     }
 }
 

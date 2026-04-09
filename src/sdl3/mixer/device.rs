@@ -2,8 +2,11 @@ use std::marker::PhantomData;
 use std::path::Path;
 use std::ptr;
 
+use crate::iostream::IOStream;
+use crate::properties::Properties;
 use crate::{get_error, Error};
 use sdl3_sys::audio::{SDL_AudioDeviceID, SDL_AudioSpec, SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK};
+use sdl3_sys::properties::SDL_PropertiesID;
 use sdl3_sys::stdinc::Sint64;
 
 use super::audio::Audio;
@@ -199,6 +202,161 @@ impl Mixer {
     pub fn resume_tag(&self, tag: &str) -> Result<(), Error> {
         let c_tag = to_cstring(tag)?;
         bool_result(unsafe { sys::MIX_ResumeTag(self.raw, c_tag.as_ptr()) })
+    }
+
+    // -- Frequency ratio --
+
+    /// Set the master frequency ratio for the entire mix.
+    ///
+    /// 1.0 is normal speed, 2.0 is double speed, 0.5 is half speed.
+    #[doc(alias = "MIX_SetMixerFrequencyRatio")]
+    pub fn set_frequency_ratio(&self, ratio: f32) -> Result<(), Error> {
+        bool_result(unsafe { sys::MIX_SetMixerFrequencyRatio(self.raw, ratio) })
+    }
+
+    /// Get the master frequency ratio for the entire mix.
+    #[doc(alias = "MIX_GetMixerFrequencyRatio")]
+    pub fn frequency_ratio(&self) -> f32 {
+        unsafe { sys::MIX_GetMixerFrequencyRatio(self.raw) }
+    }
+
+    // -- Tag-based gain --
+
+    /// Set the gain for all tracks with a specific tag.
+    #[doc(alias = "MIX_SetTagGain")]
+    pub fn set_tag_gain(&self, tag: &str, gain: f32) -> Result<(), Error> {
+        let c_tag = to_cstring(tag)?;
+        bool_result(unsafe { sys::MIX_SetTagGain(self.raw, c_tag.as_ptr(), gain) })
+    }
+
+    // -- Tag-based playback --
+
+    /// Start playing all tracks with a specific tag.
+    ///
+    /// Pass `None` for options to use default playback properties, or create
+    /// a `Properties` object and set `MIX_PROP_PLAY_*` keys for advanced control.
+    #[doc(alias = "MIX_PlayTag")]
+    pub fn play_tag(&self, tag: &str, options: Option<&Properties>) -> Result<(), Error> {
+        let c_tag = to_cstring(tag)?;
+        let props = options.map_or(SDL_PropertiesID(0), |p| p.raw());
+        bool_result(unsafe { sys::MIX_PlayTag(self.raw, c_tag.as_ptr(), props) })
+    }
+
+    // -- Tag queries --
+
+    /// Get the raw track pointers for all tracks with a specific tag.
+    ///
+    /// Returns raw pointers that can be compared with `track.raw()` to identify
+    /// specific tracks. The returned pointers are borrowed from the mixer and
+    /// must not be destroyed.
+    #[doc(alias = "MIX_GetTaggedTracks")]
+    pub fn tagged_tracks(&self, tag: &str) -> Result<Vec<*mut sys::MIX_Track>, Error> {
+        let c_tag = to_cstring(tag)?;
+        let mut count: std::ffi::c_int = 0;
+        let ptr = unsafe { sys::MIX_GetTaggedTracks(self.raw, c_tag.as_ptr(), &mut count) };
+        if ptr.is_null() {
+            return Ok(Vec::new());
+        }
+        if count <= 0 {
+            unsafe { sdl3_sys::stdinc::SDL_free(ptr as *mut _) };
+            return Ok(Vec::new());
+        }
+        let mut result = Vec::with_capacity(count as usize);
+        for i in 0..count as isize {
+            unsafe {
+                let track = *ptr.offset(i);
+                if !track.is_null() {
+                    result.push(track);
+                }
+            }
+        }
+        unsafe { sdl3_sys::stdinc::SDL_free(ptr as *mut _) };
+        Ok(result)
+    }
+
+    // -- Properties --
+
+    /// Get the properties associated with this mixer.
+    #[doc(alias = "MIX_GetMixerProperties")]
+    pub fn properties(&self) -> Properties {
+        let id = unsafe { sys::MIX_GetMixerProperties(self.raw) };
+        Properties::const_from_ll(id)
+    }
+
+    // -- IOStream loading --
+
+    /// Load audio from an IOStream.
+    ///
+    /// If `predecode` is true, the audio will be fully decompressed into memory.
+    /// Otherwise it will be decoded on the fly during playback.
+    #[doc(alias = "MIX_LoadAudio_IO")]
+    pub fn load_audio_io(&self, io: &IOStream, predecode: bool) -> Result<Audio, Error> {
+        let raw = unsafe { sys::MIX_LoadAudio_IO(self.raw, io.raw(), predecode, false) };
+        if raw.is_null() {
+            Err(get_error())
+        } else {
+            Ok(Audio::from_raw(raw))
+        }
+    }
+
+    /// Load raw PCM audio data from a byte slice.
+    ///
+    /// The data is copied internally, so the slice does not need to outlive
+    /// the returned `Audio`.
+    #[doc(alias = "MIX_LoadRawAudio")]
+    pub fn load_raw_audio(&self, data: &[u8], spec: &SDL_AudioSpec) -> Result<Audio, Error> {
+        let raw =
+            unsafe { sys::MIX_LoadRawAudio(self.raw, data.as_ptr() as *const _, data.len(), spec) };
+        if raw.is_null() {
+            Err(get_error())
+        } else {
+            Ok(Audio::from_raw(raw))
+        }
+    }
+
+    /// Load raw PCM audio from an IOStream.
+    #[doc(alias = "MIX_LoadRawAudio_IO")]
+    pub fn load_raw_audio_io(&self, io: &IOStream, spec: &SDL_AudioSpec) -> Result<Audio, Error> {
+        let raw = unsafe { sys::MIX_LoadRawAudio_IO(self.raw, io.raw(), spec, false) };
+        if raw.is_null() {
+            Err(get_error())
+        } else {
+            Ok(Audio::from_raw(raw))
+        }
+    }
+
+    // -- Memory-only mixer --
+
+    /// Create a mixer that renders to memory instead of an audio device.
+    ///
+    /// Use `generate` to pull mixed audio into a buffer. Pass `None` for `spec`
+    /// to let SDL choose the best format.
+    #[doc(alias = "MIX_CreateMixer")]
+    pub fn create_memory(spec: Option<&SDL_AudioSpec>) -> Result<Mixer, Error> {
+        let context = MixerContext::new()?;
+        let spec_ptr = spec
+            .map(|s| s as *const SDL_AudioSpec)
+            .unwrap_or(ptr::null());
+        let raw = unsafe { sys::MIX_CreateMixer(spec_ptr) };
+        if raw.is_null() {
+            Err(get_error())
+        } else {
+            Ok(Mixer {
+                raw,
+                _context: context,
+                _marker: PhantomData,
+            })
+        }
+    }
+
+    /// Generate mixed audio into a buffer.
+    ///
+    /// Only valid for memory-only mixers created with `create_memory`.
+    /// Returns the number of bytes written, or a negative value on error.
+    #[doc(alias = "MIX_Generate")]
+    pub fn generate(&self, buffer: &mut [u8]) -> i32 {
+        let len = buffer.len().min(i32::MAX as usize) as i32;
+        unsafe { sys::MIX_Generate(self.raw, buffer.as_mut_ptr() as *mut _, len) }
     }
 }
 
