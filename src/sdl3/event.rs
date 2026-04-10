@@ -769,6 +769,8 @@ pub enum Event {
         direction: MouseWheelDirection,
         mouse_x: f32,
         mouse_y: f32,
+        integer_x: i32,
+        integer_y: i32,
     },
 
     JoyAxisMotion {
@@ -1413,6 +1415,8 @@ impl Event {
                 direction,
                 mouse_x,
                 mouse_y,
+                integer_x,
+                integer_y,
             } => {
                 let event = SDL_MouseWheelEvent {
                     r#type: sys::events::SDL_EVENT_MOUSE_WHEEL,
@@ -1424,8 +1428,8 @@ impl Event {
                     direction: direction.into(),
                     mouse_x,
                     mouse_y,
-                    integer_x: 0,
-                    integer_y: 0,
+                    integer_x,
+                    integer_y,
                     reserved: 0,
                 };
                 unsafe {
@@ -1930,6 +1934,8 @@ impl Event {
                         direction: event.direction.into(),
                         mouse_x: event.mouse_x,
                         mouse_y: event.mouse_y,
+                        integer_x: event.integer_x,
+                        integer_y: event.integer_y,
                     }
                 }
 
@@ -2639,11 +2645,13 @@ impl Event {
     ///     timestamp: 0,
     ///     window_id: 0,
     ///     which: 0,
-    ///     mouse_x: 0.0,
-    ///     mouse_y: 0.0,
     ///     x: 0.0,
     ///     y: 0.0,
     ///     direction: MouseWheelDirection::Normal,
+    ///     mouse_x: 0.0,
+    ///     mouse_y: 0.0,
+    ///     integer_x: 0,
+    ///     integer_y: 0,
     /// };
     /// assert!(ev.is_mouse());
     ///
@@ -3446,6 +3454,8 @@ mod test {
                 direction: MouseWheelDirection::Flipped,
                 mouse_x: 2.,
                 mouse_y: 3.,
+                integer_x: -3,
+                integer_y: 5,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
