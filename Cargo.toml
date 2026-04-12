@@ -46,8 +46,7 @@ version = "0.6"
 optional = true
 
 [dependencies.c_vec]
-# allow both 1.* and 2.0 versions
-version = ">= 1.0"
+version = "2"
 optional = true
 
 [dependencies.raw-window-handle]
