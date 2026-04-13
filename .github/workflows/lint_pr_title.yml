@@ -12,7 +12,10 @@ jobs:
     name: Validate PR title
     runs-on: ubuntu-latest
     steps:
-      - uses: amannn/action-semantic-pull-request@v6
+      # WARNING: This workflow uses pull_request_target. Never add a checkout
+      # or code execution step here — it would run attacker-controlled code
+      # with write access to the repo.
+      - uses: amannn/action-semantic-pull-request@48f256284bd46cdaab1048c3721360e808335d50 # v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
