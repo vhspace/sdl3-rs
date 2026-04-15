@@ -7,7 +7,7 @@ use crate::{
     },
     sys, Error,
 };
-use std::{ffi::CStr, sync::Arc};
+use std::{ffi::CStr, marker::PhantomData, sync::Arc};
 use sys::gpu::{
     SDL_GPUBlendFactor, SDL_GPUBlendOp, SDL_GPUColorTargetBlendState,
     SDL_GPUColorTargetDescription, SDL_GPUCompareOp, SDL_GPUComputePipeline,
@@ -22,17 +22,25 @@ use sys::gpu::{
 
 use super::{Buffer, ShaderFormat, Texture};
 
-#[derive(Default)]
-pub struct GraphicsPipelineTargetInfo {
+pub struct GraphicsPipelineTargetInfo<'a> {
     inner: SDL_GPUGraphicsPipelineTargetInfo,
+    _marker: PhantomData<&'a ()>,
 }
-impl GraphicsPipelineTargetInfo {
+impl Default for GraphicsPipelineTargetInfo<'_> {
+    fn default() -> Self {
+        Self {
+            inner: Default::default(),
+            _marker: PhantomData,
+        }
+    }
+}
+impl<'a> GraphicsPipelineTargetInfo<'a> {
     pub fn new() -> Self {
         Default::default()
     }
 
     /// A pointer to an array of color target descriptions.
-    pub fn with_color_target_descriptions(mut self, value: &[ColorTargetDescription]) -> Self {
+    pub fn with_color_target_descriptions(mut self, value: &'a [ColorTargetDescription]) -> Self {
         self.inner.color_target_descriptions =
             value.as_ptr() as *const SDL_GPUColorTargetDescription;
         self.inner.num_color_targets = value.len() as u32;
@@ -99,14 +107,34 @@ impl<'a> GraphicsPipelineBuilder<'a> {
         self
     }
 
-    pub fn with_vertex_input_state(mut self, value: VertexInputState) -> Self {
-        self.inner.vertex_input_state = value.inner;
-        self
+    pub fn with_vertex_input_state<'v>(
+        self,
+        value: VertexInputState<'v>,
+    ) -> GraphicsPipelineBuilder<'v>
+    where
+        'a: 'v,
+    {
+        let mut inner = self.inner;
+        inner.vertex_input_state = value.inner;
+        GraphicsPipelineBuilder {
+            device: self.device,
+            inner,
+        }
     }
 
-    pub fn with_target_info(mut self, value: GraphicsPipelineTargetInfo) -> Self {
-        self.inner.target_info = value.inner;
-        self
+    pub fn with_target_info<'t>(
+        self,
+        value: GraphicsPipelineTargetInfo<'t>,
+    ) -> GraphicsPipelineBuilder<'t>
+    where
+        'a: 't,
+    {
+        let mut inner = self.inner;
+        inner.target_info = value.inner;
+        GraphicsPipelineBuilder {
+            device: self.device,
+            inner,
+        }
     }
 
     pub fn build(self) -> Result<GraphicsPipeline, Error> {
@@ -186,23 +214,31 @@ impl VertexAttribute {
 }
 
 #[repr(C)]
-#[derive(Default)]
-pub struct VertexInputState {
+pub struct VertexInputState<'a> {
     inner: SDL_GPUVertexInputState,
+    _marker: PhantomData<&'a ()>,
 }
-impl VertexInputState {
+impl Default for VertexInputState<'_> {
+    fn default() -> Self {
+        Self {
+            inner: Default::default(),
+            _marker: PhantomData,
+        }
+    }
+}
+impl<'a> VertexInputState<'a> {
     pub fn new() -> Self {
         Default::default()
     }
 
-    pub fn with_vertex_buffer_descriptions(mut self, value: &[VertexBufferDescription]) -> Self {
+    pub fn with_vertex_buffer_descriptions(mut self, value: &'a [VertexBufferDescription]) -> Self {
         self.inner.vertex_buffer_descriptions =
             value.as_ptr() as *const SDL_GPUVertexBufferDescription;
         self.inner.num_vertex_buffers = value.len() as u32;
         self
     }
 
-    pub fn with_vertex_attributes(mut self, value: &[VertexAttribute]) -> Self {
+    pub fn with_vertex_attributes(mut self, value: &'a [VertexAttribute]) -> Self {
         self.inner.vertex_attributes = value.as_ptr() as *const SDL_GPUVertexAttribute;
         self.inner.num_vertex_attributes = value.len() as u32;
         self
