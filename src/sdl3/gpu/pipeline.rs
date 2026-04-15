@@ -22,17 +22,25 @@ use sys::gpu::{
 
 use super::{Buffer, ShaderFormat, Texture};
 
-#[derive(Default)]
-pub struct GraphicsPipelineTargetInfo {
+pub struct GraphicsPipelineTargetInfo<'a> {
     inner: SDL_GPUGraphicsPipelineTargetInfo,
+    _marker: PhantomData<&'a ()>,
 }
-impl GraphicsPipelineTargetInfo {
+impl Default for GraphicsPipelineTargetInfo<'_> {
+    fn default() -> Self {
+        Self {
+            inner: Default::default(),
+            _marker: PhantomData,
+        }
+    }
+}
+impl<'a> GraphicsPipelineTargetInfo<'a> {
     pub fn new() -> Self {
         Default::default()
     }
 
     /// A pointer to an array of color target descriptions.
-    pub fn with_color_target_descriptions(mut self, value: &[ColorTargetDescription]) -> Self {
+    pub fn with_color_target_descriptions(mut self, value: &'a [ColorTargetDescription]) -> Self {
         self.inner.color_target_descriptions =
             value.as_ptr() as *const SDL_GPUColorTargetDescription;
         self.inner.num_color_targets = value.len() as u32;
@@ -99,14 +107,34 @@ impl<'a> GraphicsPipelineBuilder<'a> {
         self
     }
 
-    pub fn with_vertex_input_state(mut self, value: VertexInputState<'_>) -> Self {
-        self.inner.vertex_input_state = value.inner;
-        self
+    pub fn with_vertex_input_state<'v>(
+        self,
+        value: VertexInputState<'v>,
+    ) -> GraphicsPipelineBuilder<'v>
+    where
+        'a: 'v,
+    {
+        let mut inner = self.inner;
+        inner.vertex_input_state = value.inner;
+        GraphicsPipelineBuilder {
+            device: self.device,
+            inner,
+        }
     }
 
-    pub fn with_target_info(mut self, value: GraphicsPipelineTargetInfo) -> Self {
-        self.inner.target_info = value.inner;
-        self
+    pub fn with_target_info<'t>(
+        self,
+        value: GraphicsPipelineTargetInfo<'t>,
+    ) -> GraphicsPipelineBuilder<'t>
+    where
+        'a: 't,
+    {
+        let mut inner = self.inner;
+        inner.target_info = value.inner;
+        GraphicsPipelineBuilder {
+            device: self.device,
+            inner,
+        }
     }
 
     pub fn build(self) -> Result<GraphicsPipeline, Error> {
