@@ -418,6 +418,7 @@ impl TryFrom<u32> for EventType {
             SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED => WindowPixelSizeChanged,
             SDL_EVENT_WINDOW_MINIMIZED => WindowMinimized,
             SDL_EVENT_WINDOW_MAXIMIZED => WindowMaximized,
+            SDL_EVENT_WINDOW_OCCLUDED => WindowOccluded,
             SDL_EVENT_WINDOW_RESTORED => WindowRestored,
             SDL_EVENT_WINDOW_MOUSE_ENTER => WindowMouseEnter,
             SDL_EVENT_WINDOW_MOUSE_LEAVE => WindowMouseLeave,
