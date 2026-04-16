@@ -7,14 +7,14 @@ struct MyCallback {
 }
 impl AudioCallback<f32> for MyCallback {
     fn callback(&mut self, stream: &mut AudioStream, requested: i32) {
-        use rand::{thread_rng, Rng};
-        let mut rng = thread_rng();
+        use rand::RngExt;
+        let mut rng = rand::rng();
 
         self.buffer.resize(requested as usize, 0.0);
 
         // Generate white noise
         for x in self.buffer.iter_mut() {
-            *x = (rng.gen_range(0.0..=2.0) - 1.0) * self.volume;
+            *x = (rng.random_range(0.0..=2.0) - 1.0) * self.volume;
         }
 
         match stream.put_data_f32(&self.buffer) {

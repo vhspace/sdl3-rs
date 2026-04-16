@@ -1,4 +1,4 @@
-use rand::Rng;
+use rand::RngExt;
 use sdl3::event::Event;
 use sdl3::pixels::Color;
 use sdl3::{
@@ -35,14 +35,14 @@ impl AppState {
         let event_pump = sdl_context.event_pump().unwrap();
 
         // Initialize points and speeds
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
         let mut points = [FPoint::new(0.0, 0.0); NUM_POINTS];
         let mut point_speeds = [0.0; NUM_POINTS];
 
         for i in 0..NUM_POINTS {
-            points[i].x = rng.gen_range(0.0..WINDOW_WIDTH as f32);
-            points[i].y = rng.gen_range(0.0..WINDOW_HEIGHT as f32);
-            point_speeds[i] = rng.gen_range(MIN_PIXELS_PER_SECOND..MAX_PIXELS_PER_SECOND);
+            points[i].x = rng.random_range(0.0..WINDOW_WIDTH as f32);
+            points[i].y = rng.random_range(0.0..WINDOW_HEIGHT as f32);
+            point_speeds[i] = rng.random_range(MIN_PIXELS_PER_SECOND..MAX_PIXELS_PER_SECOND);
         }
 
         let last_time = Instant::now();
@@ -78,15 +78,16 @@ impl AppState {
 
             if self.points[i].x >= WINDOW_WIDTH as f32 || self.points[i].y >= WINDOW_HEIGHT as f32 {
                 // Reset off-screen points
-                let mut rng = rand::thread_rng();
-                if rng.gen_bool(0.5) {
-                    self.points[i].x = rng.gen_range(0.0..WINDOW_WIDTH as f32);
+                let mut rng = rand::rng();
+                if rng.random_bool(0.5) {
+                    self.points[i].x = rng.random_range(0.0..WINDOW_WIDTH as f32);
                     self.points[i].y = 0.0;
                 } else {
                     self.points[i].x = 0.0;
-                    self.points[i].y = rng.gen_range(0.0..WINDOW_HEIGHT as f32);
+                    self.points[i].y = rng.random_range(0.0..WINDOW_HEIGHT as f32);
                 }
-                self.point_speeds[i] = rng.gen_range(MIN_PIXELS_PER_SECOND..MAX_PIXELS_PER_SECOND);
+                self.point_speeds[i] =
+                    rng.random_range(MIN_PIXELS_PER_SECOND..MAX_PIXELS_PER_SECOND);
             }
         }
 
