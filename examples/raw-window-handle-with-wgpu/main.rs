@@ -1,7 +1,7 @@
 /// Minimal example for getting sdl3 and wgpu working together with raw-window-handle.
 /// For your own code, make sure to add "raw-window-handle" to the features list of sdl3
 use std::borrow::Cow;
-use wgpu::{InstanceDescriptor, SurfaceError};
+use wgpu::InstanceDescriptor;
 
 use sdl3::event::{Event, WindowEvent};
 use sdl3::keyboard::Keycode;
@@ -21,16 +21,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .map_err(|e| e.to_string())?;
     let (width, height) = window.size();
 
-    let instance = wgpu::Instance::new(&InstanceDescriptor::default());
+    let instance = wgpu::Instance::new(InstanceDescriptor::new_without_display_handle_from_env());
     let surface = create_surface::create_surface(&instance, &window)?;
-    let adapter_opt = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+    let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::HighPerformance,
         force_fallback_adapter: false,
         compatible_surface: Some(&surface),
-    }));
-    let Some(adapter) = adapter_opt else {
-        return Err("No adapter found".into());
-    };
+    }))?;
 
     let (device, queue) = pollster::block_on(adapter.request_device(
         &wgpu::DeviceDescriptor {
@@ -38,12 +35,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             label: Some("device"),
             required_features: wgpu::Features::empty(),
             memory_hints: wgpu::MemoryHints::Performance,
+            experimental_features: wgpu::ExperimentalFeatures::disabled(),
+            trace: wgpu::Trace::Off,
         },
-        None,
     ))?;
 
     let capabilities = surface.get_capabilities(&adapter);
-    let mut formats = capabilities.formats;
+    let formats = capabilities.formats;
     let main_format = *formats
         .iter()
         .find(|format| format.is_srgb())
@@ -64,9 +62,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         label: Some("bind_group"),
     });
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        bind_group_layouts: &[&bind_group_layout],
+        bind_group_layouts: &[Some(&bind_group_layout)],
         label: None,
-        push_constant_ranges: &[],
+        immediate_size: 0,
     });
 
     let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -103,7 +101,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             mask: !0,
             alpha_to_coverage_enabled: false,
         },
-        multiview: None,
+        multiview_mask: None,
         cache: None,
     });
 
@@ -148,17 +146,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         let frame = match surface.get_current_texture() {
-            Ok(frame) => frame,
-            Err(err) => {
-                let reason = match err {
-                    SurfaceError::Timeout => "Timeout",
-                    SurfaceError::Outdated => "Outdated",
-                    SurfaceError::Lost => "Lost",
-                    SurfaceError::OutOfMemory => "OutOfMemory",
-                    SurfaceError::Other => "Other",
-                };
-                panic!("Failed to get current surface texture! Reason: {}", reason)
+            wgpu::CurrentSurfaceTexture::Success(frame) => frame,
+            wgpu::CurrentSurfaceTexture::Timeout
+            | wgpu::CurrentSurfaceTexture::Occluded => continue,
+            wgpu::CurrentSurfaceTexture::Outdated
+            | wgpu::CurrentSurfaceTexture::Lost => {
+                surface.configure(&device, &config);
+                continue;
             }
+            other => panic!("Failed to get current surface texture: {other:?}"),
         };
 
         let output = frame
@@ -173,6 +169,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &output,
                     resolve_target: None,
+                    depth_slice: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Clear(wgpu::Color::GREEN),
                         store: wgpu::StoreOp::Store,
@@ -182,12 +179,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 label: None,
                 timestamp_writes: None,
                 occlusion_query_set: None,
+                multiview_mask: None,
             });
             rpass.set_pipeline(&render_pipeline);
             rpass.set_bind_group(0, &bind_group, &[]);
             rpass.draw(0..3, 0..1);
         }
-        queue.submit([encoder.finish()]);
+        queue.submit(std::iter::once(encoder.finish()));
         frame.present();
     }
 
