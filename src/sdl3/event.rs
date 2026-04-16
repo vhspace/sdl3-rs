@@ -18,7 +18,7 @@ use crate::gamepad;
 use crate::gamepad::{Axis, Button};
 use crate::get_error;
 use crate::joystick;
-use crate::joystick::HatState;
+use crate::joystick::{HatState, JoystickId};
 use crate::keyboard::Keycode;
 use crate::keyboard::Mod;
 use crate::keyboard::Scancode;
@@ -776,7 +776,7 @@ pub enum Event {
     JoyAxisMotion {
         timestamp: u64,
         /// The joystick's `id`
-        which: u32,
+        which: JoystickId,
         axis_idx: u8,
         value: i16,
     },
@@ -784,7 +784,7 @@ pub enum Event {
     JoyHatMotion {
         timestamp: u64,
         /// The joystick's `id`
-        which: u32,
+        which: JoystickId,
         hat_idx: u8,
         state: HatState,
     },
@@ -792,31 +792,31 @@ pub enum Event {
     JoyButtonDown {
         timestamp: u64,
         /// The joystick's `id`
-        which: u32,
+        which: JoystickId,
         button_idx: u8,
     },
     JoyButtonUp {
         timestamp: u64,
         /// The joystick's `id`
-        which: u32,
+        which: JoystickId,
         button_idx: u8,
     },
 
     JoyDeviceAdded {
         timestamp: u64,
         /// The newly added joystick's `joystick_index`
-        which: u32,
+        which: JoystickId,
     },
     JoyDeviceRemoved {
         timestamp: u64,
         /// The joystick's `id`
-        which: u32,
+        which: JoystickId,
     },
 
     ControllerAxisMotion {
         timestamp: u64,
         /// The controller's joystick `id`
-        which: u32,
+        which: JoystickId,
         axis: Axis,
         value: i16,
     },
@@ -824,36 +824,36 @@ pub enum Event {
     ControllerButtonDown {
         timestamp: u64,
         /// The controller's joystick `id`
-        which: u32,
+        which: JoystickId,
         button: Button,
     },
     ControllerButtonUp {
         timestamp: u64,
         /// The controller's joystick `id`
-        which: u32,
+        which: JoystickId,
         button: Button,
     },
 
     ControllerDeviceAdded {
         timestamp: u64,
         /// The newly added controller's `joystick_index`
-        which: u32,
+        which: JoystickId,
     },
     ControllerDeviceRemoved {
         timestamp: u64,
         /// The controller's joystick `id`
-        which: u32,
+        which: JoystickId,
     },
     ControllerDeviceRemapped {
         timestamp: u64,
         /// The controller's joystick `id`
-        which: u32,
+        which: JoystickId,
     },
 
     ControllerTouchpadDown {
         timestamp: u64,
         /// The joystick instance id
-        which: u32,
+        which: JoystickId,
         /// The index of the touchpad
         touchpad: i32,
         /// The index of the finger on the touchpad
@@ -868,7 +868,7 @@ pub enum Event {
     ControllerTouchpadMotion {
         timestamp: u64,
         /// The joystick instance id
-        which: u32,
+        which: JoystickId,
         /// The index of the touchpad
         touchpad: i32,
         /// The index of the finger on the touchpad
@@ -883,7 +883,7 @@ pub enum Event {
     ControllerTouchpadUp {
         timestamp: u64,
         /// The joystick instance id
-        which: u32,
+        which: JoystickId,
         /// The index of the touchpad
         touchpad: i32,
         /// The index of the finger on the touchpad
@@ -900,7 +900,7 @@ pub enum Event {
     #[cfg(feature = "hidapi")]
     ControllerSensorUpdated {
         timestamp: u64,
-        which: u32,
+        which: JoystickId,
         sensor: crate::sensor::SensorType,
         /// Data from the sensor.
         ///
@@ -1128,8 +1128,8 @@ impl Event {
     }
 
     #[inline]
-    fn joystick_id_to_ll(id: u32) -> sys::joystick::SDL_JoystickID {
-        sys::joystick::SDL_JoystickID(id)
+    fn joystick_id_to_ll(id: JoystickId) -> sys::joystick::SDL_JoystickID {
+        id.into()
     }
 
     #[inline]
@@ -1148,8 +1148,8 @@ impl Event {
     }
 
     #[inline]
-    fn joystick_id_from_ll(id: sys::joystick::SDL_JoystickID) -> u32 {
-        id.0
+    fn joystick_id_from_ll(id: sys::joystick::SDL_JoystickID) -> JoystickId {
+        JoystickId::from(id)
     }
 
     #[inline]
@@ -2355,15 +2355,16 @@ impl Event {
     ///
     /// ```
     /// use sdl3::event::Event;
+    /// use sdl3::joystick::JoystickId;
     ///
     /// let ev1 = Event::JoyButtonDown {
     ///     timestamp: 0,
-    ///     which: 0,
+    ///     which: JoystickId::new(0),
     ///     button_idx: 0,
     /// };
     /// let ev2 = Event::JoyButtonDown {
     ///     timestamp: 1,
-    ///     which: 1,
+    ///     which: JoystickId::new(1),
     ///     button_idx: 1,
     /// };
     ///
@@ -2429,10 +2430,11 @@ impl Event {
     ///
     /// ```
     /// use sdl3::event::Event;
+    /// use sdl3::joystick::JoystickId;
     ///
     /// let ev = Event::JoyButtonDown {
     ///     timestamp: 12,
-    ///     which: 0,
+    ///     which: JoystickId::new(0),
     ///     button_idx: 0,
     /// };
     /// assert!(ev.get_timestamp() == 12);
@@ -2506,10 +2508,11 @@ impl Event {
     ///
     /// ```
     /// use sdl3::event::Event;
+    /// use sdl3::joystick::JoystickId;
     ///
     /// let ev = Event::JoyButtonDown {
     ///     timestamp: 0,
-    ///     which: 0,
+    ///     which: JoystickId::new(0),
     ///     button_idx: 0,
     /// };
     /// assert!(ev.get_window_id() == None);
@@ -2676,10 +2679,11 @@ impl Event {
     ///
     /// ```
     /// use sdl3::event::Event;
+    /// use sdl3::joystick::JoystickId;
     ///
     /// let ev = Event::ControllerDeviceAdded {
     ///     timestamp: 0,
-    ///     which: 0,
+    ///     which: JoystickId::new(0),
     /// };
     /// assert!(ev.is_controller());
     ///
@@ -2706,10 +2710,11 @@ impl Event {
     ///
     /// ```
     /// use sdl3::event::Event;
+    /// use sdl3::joystick::JoystickId;
     ///
     /// let ev = Event::JoyButtonUp {
     ///     timestamp: 0,
-    ///     which: 0,
+    ///     which: JoystickId::new(0),
     ///     button_idx: 0,
     /// };
     /// assert!(ev.is_joy());
@@ -3341,7 +3346,7 @@ mod test {
     use crate::video::Display;
 
     use super::super::gamepad::{Axis, Button};
-    use super::super::joystick::HatState;
+    use super::super::joystick::{HatState, JoystickId};
     use super::super::keyboard::{Keycode, Mod, Scancode};
     use super::super::mouse::{MouseButton, MouseState, MouseWheelDirection};
     use super::super::video::Orientation;
@@ -3463,7 +3468,7 @@ mod test {
         {
             let e = Event::JoyAxisMotion {
                 timestamp: 0,
-                which: 1,
+                which: JoystickId::new(1),
                 axis_idx: 1,
                 value: 12,
             };
@@ -3473,7 +3478,7 @@ mod test {
         {
             let e = Event::JoyHatMotion {
                 timestamp: 0,
-                which: 3,
+                which: JoystickId::new(3),
                 hat_idx: 1,
                 state: HatState::Left,
             };
@@ -3483,7 +3488,7 @@ mod test {
         {
             let e = Event::JoyButtonDown {
                 timestamp: 0,
-                which: 0,
+                which: JoystickId::new(0),
                 button_idx: 3,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
@@ -3492,7 +3497,7 @@ mod test {
         {
             let e = Event::JoyButtonUp {
                 timestamp: 9876,
-                which: 1,
+                which: JoystickId::new(1),
                 button_idx: 2,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
@@ -3501,7 +3506,7 @@ mod test {
         {
             let e = Event::JoyDeviceAdded {
                 timestamp: 0,
-                which: 1,
+                which: JoystickId::new(1),
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
@@ -3509,7 +3514,7 @@ mod test {
         {
             let e = Event::JoyDeviceRemoved {
                 timestamp: 0,
-                which: 2,
+                which: JoystickId::new(2),
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
@@ -3517,7 +3522,7 @@ mod test {
         {
             let e = Event::ControllerAxisMotion {
                 timestamp: 53,
-                which: 0,
+                which: JoystickId::new(0),
                 axis: Axis::LeftX,
                 value: 3,
             };
@@ -3527,7 +3532,7 @@ mod test {
         {
             let e = Event::ControllerButtonDown {
                 timestamp: 0,
-                which: 1,
+                which: JoystickId::new(1),
                 button: Button::Guide,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
@@ -3536,7 +3541,7 @@ mod test {
         {
             let e = Event::ControllerButtonUp {
                 timestamp: 654214,
-                which: 0,
+                which: JoystickId::new(0),
                 button: Button::DPadRight,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
@@ -3545,7 +3550,7 @@ mod test {
         {
             let e = Event::ControllerDeviceAdded {
                 timestamp: 543,
-                which: 3,
+                which: JoystickId::new(3),
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
@@ -3553,7 +3558,7 @@ mod test {
         {
             let e = Event::ControllerDeviceRemoved {
                 timestamp: 555,
-                which: 3,
+                which: JoystickId::new(3),
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
@@ -3561,7 +3566,7 @@ mod test {
         {
             let e = Event::ControllerDeviceRemapped {
                 timestamp: 654,
-                which: 0,
+                which: JoystickId::new(0),
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
