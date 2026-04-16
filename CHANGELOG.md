@@ -10,6 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### <!-- 0 -->Added
 - Add integer_x/y to Event::MouseWheel ([#360](https://github.com/vhspace/sdl3-rs/pull/360))
 
+### <!-- 1 -->Changed
+- Allow deps scope in PR title lint
+
+### <!-- 2 -->Fixed
+- Prevent use-after-free in VertexInputState and GraphicsPipelineTargetInfo ([#338](https://github.com/vhspace/sdl3-rs/pull/338))
+
+### <!-- 4 -->Dependencies
+- Bump wgpu from 24.0.5 to 29.0.1
+- Bump rand from 0.8.5 to 0.10.1
+- Bump env_logger from 0.11.8 to 0.11.10 ([#344](https://github.com/vhspace/sdl3-rs/pull/344))
+- Bump libc from 0.2.180 to 0.2.185 ([#364](https://github.com/vhspace/sdl3-rs/pull/364))
+- Bump objc2 from 0.6.3 to 0.6.4 ([#339](https://github.com/vhspace/sdl3-rs/pull/339))
+- Bump sdl3-main from 0.6.0 to 0.6.2 ([#345](https://github.com/vhspace/sdl3-rs/pull/345))
+- Bump sdl3-image-sys ([#354](https://github.com/vhspace/sdl3-rs/pull/354))
+- Bump bitflags from 2.10.0 to 2.11.1 ([#366](https://github.com/vhspace/sdl3-rs/pull/366))
+- Bump sdl3-sys from 0.6.0+SDL-3.4.0 to 0.6.3+SDL-3.4.4 ([#367](https://github.com/vhspace/sdl3-rs/pull/367))
+- Bump softprops/action-gh-release from 2.6.1 to 3.0.0 ([#363](https://github.com/vhspace/sdl3-rs/pull/363))
+
 ## [0.18.1] - 2026-04-12
 
 ### <!-- 2 -->Fixed
