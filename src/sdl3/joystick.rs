@@ -71,6 +71,12 @@ impl JoystickSubsystem {
     pub fn update(&self) {
         unsafe { sys::joystick::SDL_UpdateJoysticks() };
     }
+
+    /// Check if a joystick is virtual
+    #[doc(alias = "SDL_IsJoystickVirtual")]
+    pub fn virt(&self, joystick_id: JoystickId) -> bool {
+        unsafe { sys::joystick::SDL_IsJoystickVirtual(joystick_id) }
+    }
 }
 
 // power level and percentage together
@@ -449,6 +455,13 @@ impl Joystick {
         } else {
             Ok(())
         }
+    }
+
+    /// Check if a joystick is virtual
+    #[doc(alias = "SDL_IsJoystickVirtual")]
+    pub fn virt(&self) -> bool {
+        let id = sys::joystick::SDL_JoystickID(self.id());
+        unsafe { sys::joystick::SDL_IsJoystickVirtual(id) }
     }
 }
 
