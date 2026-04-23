@@ -8,7 +8,7 @@ use crate::guid::Guid;
 use crate::Error;
 use crate::JoystickSubsystem;
 use libc::{c_char, c_void};
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
 use std::fmt;
 use sys::power::{SDL_PowerState, SDL_POWERSTATE_UNKNOWN};
 use sys::stdinc::SDL_free;
@@ -617,6 +617,12 @@ fn c_str_to_string(c_str: *const c_char) -> String {
     }
 }
 
+/// Conversely, this converts a string slice `string` into a C string.
+fn string_to_c_str(string: &str) -> *const c_char {
+    let cstr = CString::new(string).unwrap();
+    cstr.as_ptr() as *const c_char
+}
+
 /// Represents the lifetime of a virtual joystick connection
 pub struct VirtualJoystickConnection {
     inner: Joystick,
@@ -652,4 +658,99 @@ pub struct VirtualJoystickDescription {
     // mapped to.
     axis_mask: u32,
     button_mask: u32,
+}
+
+impl VirtualJoystickDescription {
+    pub fn new() -> Self {
+        Self {
+            name: string_to_c_str("Unnamed Virtual Joystick"),
+            joystick_type: JoystickType::Unknown,
+            num_axes: 0,
+            num_buttons: 0,
+            num_hats: 0,
+            axis_mask: 0,
+            button_mask: 0,
+        }
+    }
+
+    /// Set the joystick name
+    pub fn name(self, name: &str) -> Self {
+        let mut desc = self;
+        desc.name = string_to_c_str(name);
+        desc
+    }
+
+    /// Set the joystick type
+    pub fn joystick_type(self, joystick_type: JoystickType) -> Self {
+        let mut desc = self;
+        desc.joystick_type = joystick_type;
+        desc
+    }
+
+    /// Set the number of hats
+    pub fn num_hats(self, num_hats: u16) -> Self {
+        let mut desc = self;
+        desc.num_hats = num_hats;
+        desc
+    }
+
+    /// Specifies that a given axis can be controlled by the virtual joystick
+    pub fn with_axis(self, axis: crate::gamepad::Axis) -> Self {
+        let mut desc = self;
+        let axis_code = axis.to_ll().0 as u16;
+
+        // num_axes must be equal to at least 1 + the highest enum value of axes added to the
+        // joystick
+        if axis_code >= desc.num_axes {
+            desc.num_axes = axis_code + 1;
+        }
+
+        desc.axis_mask |= 1 << axis_code;
+        desc
+    }
+
+    /// Specifies that a given button can be controlled by the virtual joystick
+    pub fn with_button(self, button: crate::gamepad::Button) -> Self {
+        let mut desc = self;
+        let button_code = button.to_ll().0 as u16;
+
+        // num_buttons must be equal to at least 1 + the highest enum value of buttons added to the
+        // joystick
+        if button_code >= desc.num_buttons {
+            desc.num_buttons = button_code + 1;
+        }
+
+        desc.button_mask |= 1 << button_code;
+        desc
+    }
+
+    /// Specifies that a given list of axes can be controlled by the virtual joystick
+    pub fn with_axes(self, axes: Vec<crate::gamepad::Axis>) -> Self {
+        let mut desc = self;
+        for axis in axes {
+            desc = desc.with_axis(axis);
+        }
+        desc
+    }
+
+    /// Specifies that a given list of buttons can be controlled by the virtual joystick
+    pub fn with_buttons(self, buttons: Vec<crate::gamepad::Button>) -> Self {
+        let mut desc = self;
+        for button in buttons {
+            desc = desc.with_button(button);
+        }
+        desc
+    }
+
+    /// Convert the VirtualJoystickDescription into a form usable by SDL's underlying code
+    pub fn to_ll(self) -> sys::joystick::SDL_VirtualJoystickDesc {
+        let mut desc = sys::joystick::SDL_VirtualJoystickDesc::new();
+        desc.r#type = self.joystick_type.to_ll().0 as u16;
+        desc.naxes = self.num_axes;
+        desc.nbuttons = self.num_buttons;
+        desc.nhats = self.num_hats;
+        desc.axis_mask = self.axis_mask;
+        desc.button_mask = self.button_mask;
+        desc
+    }
 }
