@@ -475,6 +475,42 @@ impl Joystick {
         let id = sys::joystick::SDL_JoystickID(self.id());
         unsafe { sys::joystick::SDL_IsJoystickVirtual(id) }
     }
+
+    /// Set a virtual axis state
+    #[doc(alias = "SDL_SetJoystickVirtualAxis")]
+    pub fn set_virtual_axis(&self, axis: u32, state: i16) -> Result<(), IntegerOrSdlError> {
+        let axis = validate_int(axis, "axis")?;
+
+        if unsafe { sys::joystick::SDL_SetJoystickVirtualAxis(self.raw, axis, state) } {
+            Ok(())
+        } else {
+            Err(IntegerOrSdlError::SdlError(get_error()))
+        }
+    }
+
+    /// Set a virtual button state
+    #[doc(alias = "SDL_SetJoystickVirtualButton")]
+    pub fn set_virtual_button(&self, button: u32, state: bool) -> Result<(), IntegerOrSdlError> {
+        let button = validate_int(button, "button")?;
+
+        if unsafe { sys::joystick::SDL_SetJoystickVirtualButton(self.raw, button, state) } {
+            Ok(())
+        } else {
+            Err(IntegerOrSdlError::SdlError(get_error()))
+        }
+    }
+
+    /// Set a virtual hat state
+    #[doc(alias = "SDL_SetJoystickVirtualHat")]
+    pub fn set_virtual_hat(&self, hat: u32, state: HatState) -> Result<(), IntegerOrSdlError> {
+        let hat = validate_int(hat, "hat")?;
+
+        if unsafe { sys::joystick::SDL_SetJoystickVirtualHat(self.raw, hat, state.to_raw()) } {
+            Ok(())
+        } else {
+            Err(IntegerOrSdlError::SdlError(get_error()))
+        }
+    }
 }
 
 impl Drop for Joystick {
