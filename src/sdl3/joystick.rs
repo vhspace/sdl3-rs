@@ -555,6 +555,56 @@ impl ConnectionState {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(i32)]
+pub enum JoystickType {
+    Unknown = sys::joystick::SDL_JoystickType::UNKNOWN.0,
+    Gamepad = sys::joystick::SDL_JoystickType::GAMEPAD.0,
+    Wheel = sys::joystick::SDL_JoystickType::WHEEL.0,
+    ArcadeStick = sys::joystick::SDL_JoystickType::ARCADE_STICK.0,
+    FlightStick = sys::joystick::SDL_JoystickType::FLIGHT_STICK.0,
+    DancePad = sys::joystick::SDL_JoystickType::DANCE_PAD.0,
+    Guitar = sys::joystick::SDL_JoystickType::GUITAR.0,
+    DrumKit = sys::joystick::SDL_JoystickType::DRUM_KIT.0,
+    ArcadePad = sys::joystick::SDL_JoystickType::ARCADE_PAD.0,
+    Throttle = sys::joystick::SDL_JoystickType::THROTTLE.0,
+    Count = sys::joystick::SDL_JoystickType::COUNT.0,
+}
+
+impl JoystickType {
+    pub fn from_ll(kind: sys::joystick::SDL_JoystickType) -> JoystickType {
+        match kind {
+            sys::joystick::SDL_JoystickType::GAMEPAD => JoystickType::Gamepad,
+            sys::joystick::SDL_JoystickType::WHEEL => JoystickType::Wheel,
+            sys::joystick::SDL_JoystickType::ARCADE_STICK => JoystickType::ArcadeStick,
+            sys::joystick::SDL_JoystickType::FLIGHT_STICK => JoystickType::FlightStick,
+            sys::joystick::SDL_JoystickType::DANCE_PAD => JoystickType::DancePad,
+            sys::joystick::SDL_JoystickType::GUITAR => JoystickType::Guitar,
+            sys::joystick::SDL_JoystickType::DRUM_KIT => JoystickType::DrumKit,
+            sys::joystick::SDL_JoystickType::ARCADE_PAD => JoystickType::ArcadePad,
+            sys::joystick::SDL_JoystickType::THROTTLE => JoystickType::Throttle,
+            sys::joystick::SDL_JoystickType::COUNT => JoystickType::Count,
+            sys::joystick::SDL_JoystickType::UNKNOWN | _ => JoystickType::Unknown,
+        }
+    }
+
+    pub fn to_ll(self) -> sys::joystick::SDL_JoystickType {
+        match self {
+            JoystickType::Unknown => sys::joystick::SDL_JoystickType::UNKNOWN,
+            JoystickType::Gamepad => sys::joystick::SDL_JoystickType::GAMEPAD,
+            JoystickType::Wheel => sys::joystick::SDL_JoystickType::WHEEL,
+            JoystickType::ArcadeStick => sys::joystick::SDL_JoystickType::ARCADE_STICK,
+            JoystickType::FlightStick => sys::joystick::SDL_JoystickType::FLIGHT_STICK,
+            JoystickType::DancePad => sys::joystick::SDL_JoystickType::DANCE_PAD,
+            JoystickType::Guitar => sys::joystick::SDL_JoystickType::GUITAR,
+            JoystickType::DrumKit => sys::joystick::SDL_JoystickType::DRUM_KIT,
+            JoystickType::ArcadePad => sys::joystick::SDL_JoystickType::ARCADE_PAD,
+            JoystickType::Throttle => sys::joystick::SDL_JoystickType::THROTTLE,
+            JoystickType::Count => sys::joystick::SDL_JoystickType::COUNT,
+        }
+    }
+}
+
 /// Convert C string `c_str` to a String. Return an empty string if
 /// `c_str` is NULL.
 fn c_str_to_string(c_str: *const c_char) -> String {
