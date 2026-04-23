@@ -639,3 +639,17 @@ impl Drop for VirtualJoystickConnection {
         unsafe { sys::joystick::SDL_DetachVirtualJoystick(id) };
     }
 }
+
+/// As of SDL3, Virtual Devices must be initialized using a description.
+pub struct VirtualJoystickDescription {
+    name: *const c_char,
+    joystick_type: JoystickType,
+    num_axes: u16,
+    num_buttons: u16,
+    num_hats: u16,
+
+    // Virtual Joysticks require specification as to what each of its buttons and axes are actually
+    // mapped to.
+    axis_mask: u32,
+    button_mask: u32,
+}
