@@ -77,6 +77,18 @@ impl JoystickSubsystem {
     pub fn virt(&self, joystick_id: JoystickId) -> bool {
         unsafe { sys::joystick::SDL_IsJoystickVirtual(joystick_id) }
     }
+
+    /// Attach a virtual joystick
+    pub fn attach_virt_joystick(
+        &self,
+        desc: VirtualJoystickDescription,
+    ) -> Result<VirtualJoystickConnection, IntegerOrSdlError> {
+        let desc = desc.to_ll();
+        let joystick_id = unsafe { sys::joystick::SDL_AttachVirtualJoystick(&desc) };
+        let joystick = self.open(joystick_id)?;
+
+        Ok(VirtualJoystickConnection { inner: joystick })
+    }
 }
 
 // power level and percentage together
