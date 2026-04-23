@@ -616,3 +616,26 @@ fn c_str_to_string(c_str: *const c_char) -> String {
         String::from_utf8_lossy(bytes).to_string()
     }
 }
+
+/// Represents the lifetime of a virtual joystick connection
+pub struct VirtualJoystickConnection {
+    inner: Joystick,
+}
+
+impl VirtualJoystickConnection {
+    /// Exposes the instance ID of the attached virtual joystick so that it can be opened
+    pub fn id(&self) -> JoystickId {
+        sys::joystick::SDL_JoystickID(self.inner.id())
+    }
+}
+
+/// When a VirtualJoystickConnection is dropped, the underlying virtual device will be disconnected.
+/// For any existing virtual joysticks relying on that connection, it will be analogous to a physical
+/// piece of hardware being unplugged while being used by a non-virtual joystick.
+impl Drop for VirtualJoystickConnection {
+    #[doc(alias = "SDL_DetachVirtualJoystick")]
+    fn drop(&mut self) {
+        let id = sys::joystick::SDL_JoystickID(self.inner.id());
+        unsafe { sys::joystick::SDL_DetachVirtualJoystick(id) };
+    }
+}
