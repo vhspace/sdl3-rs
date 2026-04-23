@@ -793,6 +793,7 @@ impl VirtualJoystickDescription {
     /// Convert the VirtualJoystickDescription into a form usable by SDL's underlying code
     pub fn to_ll(self) -> sys::joystick::SDL_VirtualJoystickDesc {
         let mut desc = sys::joystick::SDL_VirtualJoystickDesc::new();
+        desc.name = self.name;
         desc.r#type = self.joystick_type.to_ll().0 as u16;
         desc.naxes = self.num_axes;
         desc.nbuttons = self.num_buttons;
