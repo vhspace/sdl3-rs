@@ -8,7 +8,7 @@ use crate::guid::Guid;
 use crate::Error;
 use crate::JoystickSubsystem;
 use libc::{c_char, c_void};
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
 use std::fmt;
 use sys::power::{SDL_PowerState, SDL_POWERSTATE_UNKNOWN};
 use sys::stdinc::SDL_free;
@@ -70,6 +70,38 @@ impl JoystickSubsystem {
     #[doc(alias = "SDL_UpdateJoysticks")]
     pub fn update(&self) {
         unsafe { sys::joystick::SDL_UpdateJoysticks() };
+    }
+
+    /// Check if a joystick is virtual
+    #[doc(alias = "SDL_IsJoystickVirtual")]
+    pub fn virt(&self, joystick_id: JoystickId) -> bool {
+        unsafe { sys::joystick::SDL_IsJoystickVirtual(joystick_id) }
+    }
+
+    /// Attach a virtual joystick
+    pub fn attach_virt_joystick(
+        &self,
+        desc: VirtualJoystickDescription,
+    ) -> Result<VirtualJoystickConnection, IntegerOrSdlError> {
+        let mut raw_desc = sys::joystick::SDL_VirtualJoystickDesc::new();
+
+        raw_desc.name = desc.name.as_ptr();
+        raw_desc.r#type = desc.joystick_type.to_ll().0 as u16;
+        raw_desc.naxes = desc.num_axes;
+        raw_desc.nbuttons = desc.num_buttons;
+        raw_desc.nhats = desc.num_hats;
+        raw_desc.axis_mask = desc.axis_mask;
+        raw_desc.button_mask = desc.button_mask;
+
+        let joystick_id = unsafe { sys::joystick::SDL_AttachVirtualJoystick(&raw_desc) };
+
+        if joystick_id.0 == 0 {
+            Err(IntegerOrSdlError::SdlError(get_error()))
+        } else {
+            let joystick = self.open(joystick_id)?;
+
+            Ok(VirtualJoystickConnection { inner: joystick })
+        }
     }
 }
 
@@ -450,6 +482,49 @@ impl Joystick {
             Ok(())
         }
     }
+
+    /// Check if a joystick is virtual
+    #[doc(alias = "SDL_IsJoystickVirtual")]
+    pub fn virt(&self) -> bool {
+        let id = sys::joystick::SDL_JoystickID(self.id());
+        unsafe { sys::joystick::SDL_IsJoystickVirtual(id) }
+    }
+
+    /// Set a virtual axis state
+    #[doc(alias = "SDL_SetJoystickVirtualAxis")]
+    pub fn set_virtual_axis(&self, axis: u32, state: i16) -> Result<(), IntegerOrSdlError> {
+        let axis = validate_int(axis, "axis")?;
+
+        if unsafe { sys::joystick::SDL_SetJoystickVirtualAxis(self.raw, axis, state) } {
+            Ok(())
+        } else {
+            Err(IntegerOrSdlError::SdlError(get_error()))
+        }
+    }
+
+    /// Set a virtual button state
+    #[doc(alias = "SDL_SetJoystickVirtualButton")]
+    pub fn set_virtual_button(&self, button: u32, state: bool) -> Result<(), IntegerOrSdlError> {
+        let button = validate_int(button, "button")?;
+
+        if unsafe { sys::joystick::SDL_SetJoystickVirtualButton(self.raw, button, state) } {
+            Ok(())
+        } else {
+            Err(IntegerOrSdlError::SdlError(get_error()))
+        }
+    }
+
+    /// Set a virtual hat state
+    #[doc(alias = "SDL_SetJoystickVirtualHat")]
+    pub fn set_virtual_hat(&self, hat: u32, state: HatState) -> Result<(), IntegerOrSdlError> {
+        let hat = validate_int(hat, "hat")?;
+
+        if unsafe { sys::joystick::SDL_SetJoystickVirtualHat(self.raw, hat, state.to_raw()) } {
+            Ok(())
+        } else {
+            Err(IntegerOrSdlError::SdlError(get_error()))
+        }
+    }
 }
 
 impl Drop for Joystick {
@@ -542,6 +617,56 @@ impl ConnectionState {
     }
 }
 
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(i32)]
+pub enum JoystickType {
+    Unknown = sys::joystick::SDL_JoystickType::UNKNOWN.0,
+    Gamepad = sys::joystick::SDL_JoystickType::GAMEPAD.0,
+    Wheel = sys::joystick::SDL_JoystickType::WHEEL.0,
+    ArcadeStick = sys::joystick::SDL_JoystickType::ARCADE_STICK.0,
+    FlightStick = sys::joystick::SDL_JoystickType::FLIGHT_STICK.0,
+    DancePad = sys::joystick::SDL_JoystickType::DANCE_PAD.0,
+    Guitar = sys::joystick::SDL_JoystickType::GUITAR.0,
+    DrumKit = sys::joystick::SDL_JoystickType::DRUM_KIT.0,
+    ArcadePad = sys::joystick::SDL_JoystickType::ARCADE_PAD.0,
+    Throttle = sys::joystick::SDL_JoystickType::THROTTLE.0,
+    Count = sys::joystick::SDL_JoystickType::COUNT.0,
+}
+
+impl JoystickType {
+    pub fn from_ll(kind: sys::joystick::SDL_JoystickType) -> JoystickType {
+        match kind {
+            sys::joystick::SDL_JoystickType::GAMEPAD => JoystickType::Gamepad,
+            sys::joystick::SDL_JoystickType::WHEEL => JoystickType::Wheel,
+            sys::joystick::SDL_JoystickType::ARCADE_STICK => JoystickType::ArcadeStick,
+            sys::joystick::SDL_JoystickType::FLIGHT_STICK => JoystickType::FlightStick,
+            sys::joystick::SDL_JoystickType::DANCE_PAD => JoystickType::DancePad,
+            sys::joystick::SDL_JoystickType::GUITAR => JoystickType::Guitar,
+            sys::joystick::SDL_JoystickType::DRUM_KIT => JoystickType::DrumKit,
+            sys::joystick::SDL_JoystickType::ARCADE_PAD => JoystickType::ArcadePad,
+            sys::joystick::SDL_JoystickType::THROTTLE => JoystickType::Throttle,
+            sys::joystick::SDL_JoystickType::COUNT => JoystickType::Count,
+            sys::joystick::SDL_JoystickType::UNKNOWN | _ => JoystickType::Unknown,
+        }
+    }
+
+    pub fn to_ll(self) -> sys::joystick::SDL_JoystickType {
+        match self {
+            JoystickType::Unknown => sys::joystick::SDL_JoystickType::UNKNOWN,
+            JoystickType::Gamepad => sys::joystick::SDL_JoystickType::GAMEPAD,
+            JoystickType::Wheel => sys::joystick::SDL_JoystickType::WHEEL,
+            JoystickType::ArcadeStick => sys::joystick::SDL_JoystickType::ARCADE_STICK,
+            JoystickType::FlightStick => sys::joystick::SDL_JoystickType::FLIGHT_STICK,
+            JoystickType::DancePad => sys::joystick::SDL_JoystickType::DANCE_PAD,
+            JoystickType::Guitar => sys::joystick::SDL_JoystickType::GUITAR,
+            JoystickType::DrumKit => sys::joystick::SDL_JoystickType::DRUM_KIT,
+            JoystickType::ArcadePad => sys::joystick::SDL_JoystickType::ARCADE_PAD,
+            JoystickType::Throttle => sys::joystick::SDL_JoystickType::THROTTLE,
+            JoystickType::Count => sys::joystick::SDL_JoystickType::COUNT,
+        }
+    }
+}
+
 /// Convert C string `c_str` to a String. Return an empty string if
 /// `c_str` is NULL.
 fn c_str_to_string(c_str: *const c_char) -> String {
@@ -551,5 +676,130 @@ fn c_str_to_string(c_str: *const c_char) -> String {
         let bytes = unsafe { CStr::from_ptr(c_str as *const _).to_bytes() };
 
         String::from_utf8_lossy(bytes).to_string()
+    }
+}
+
+/// Conversely, this converts a string slice `string` into a C string.
+fn string_to_c_str(string: &str) -> CString {
+    CString::new(string).unwrap()
+}
+
+/// Represents the lifetime of a virtual joystick connection
+pub struct VirtualJoystickConnection {
+    inner: Joystick,
+}
+
+impl VirtualJoystickConnection {
+    /// Exposes the instance ID of the attached virtual joystick so that it can be opened
+    pub fn id(&self) -> JoystickId {
+        sys::joystick::SDL_JoystickID(self.inner.id())
+    }
+}
+
+/// When a VirtualJoystickConnection is dropped, the underlying virtual device will be disconnected.
+/// For any existing virtual joysticks relying on that connection, it will be analogous to a physical
+/// piece of hardware being unplugged while being used by a non-virtual joystick.
+impl Drop for VirtualJoystickConnection {
+    #[doc(alias = "SDL_DetachVirtualJoystick")]
+    fn drop(&mut self) {
+        let id = sys::joystick::SDL_JoystickID(self.inner.id());
+        unsafe { sys::joystick::SDL_DetachVirtualJoystick(id) };
+    }
+}
+
+/// As of SDL3, Virtual Devices must be initialized using a description.
+pub struct VirtualJoystickDescription {
+    name: CString,
+    joystick_type: JoystickType,
+    num_axes: u16,
+    num_buttons: u16,
+    num_hats: u16,
+
+    // Virtual Joysticks require specification as to what each of its buttons and axes are actually
+    // mapped to.
+    axis_mask: u32,
+    button_mask: u32,
+}
+
+impl VirtualJoystickDescription {
+    pub fn new() -> Self {
+        Self {
+            name: string_to_c_str("Unnamed Virtual Joystick"),
+            joystick_type: JoystickType::Unknown,
+            num_axes: 0,
+            num_buttons: 0,
+            num_hats: 0,
+            axis_mask: 0,
+            button_mask: 0,
+        }
+    }
+
+    /// Set the joystick name
+    pub fn name(self, name: &str) -> Self {
+        let mut desc = self;
+        desc.name = string_to_c_str(name);
+        desc
+    }
+
+    /// Set the joystick type
+    pub fn joystick_type(self, joystick_type: JoystickType) -> Self {
+        let mut desc = self;
+        desc.joystick_type = joystick_type;
+        desc
+    }
+
+    /// Set the number of hats
+    pub fn num_hats(self, num_hats: u16) -> Self {
+        let mut desc = self;
+        desc.num_hats = num_hats;
+        desc
+    }
+
+    /// Specifies that a given axis can be controlled by the virtual joystick
+    pub fn with_axis(self, axis: crate::gamepad::Axis) -> Self {
+        let mut desc = self;
+        let axis_code = axis.to_ll().0 as u16;
+
+        // num_axes must be equal to at least 1 + the highest enum value of axes added to the
+        // joystick
+        if axis_code >= desc.num_axes {
+            desc.num_axes = axis_code + 1;
+        }
+
+        desc.axis_mask |= 1 << axis_code;
+        desc
+    }
+
+    /// Specifies that a given button can be controlled by the virtual joystick
+    pub fn with_button(self, button: crate::gamepad::Button) -> Self {
+        let mut desc = self;
+        let button_code = button.to_ll().0 as u16;
+
+        // num_buttons must be equal to at least 1 + the highest enum value of buttons added to the
+        // joystick
+        if button_code >= desc.num_buttons {
+            desc.num_buttons = button_code + 1;
+        }
+
+        desc.button_mask |= 1 << button_code;
+        desc
+    }
+
+    /// Specifies that a given list of axes can be controlled by the virtual joystick
+    pub fn with_axes(self, axes: Vec<crate::gamepad::Axis>) -> Self {
+        let mut desc = self;
+        for axis in axes {
+            desc = desc.with_axis(axis);
+        }
+        desc
+    }
+
+    /// Specifies that a given list of buttons can be controlled by the virtual joystick
+    pub fn with_buttons(self, buttons: Vec<crate::gamepad::Button>) -> Self {
+        let mut desc = self;
+        for button in buttons {
+            desc = desc.with_button(button);
+        }
+        desc
     }
 }
