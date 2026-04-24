@@ -94,9 +94,14 @@ impl JoystickSubsystem {
         raw_desc.button_mask = desc.button_mask;
 
         let joystick_id = unsafe { sys::joystick::SDL_AttachVirtualJoystick(&raw_desc) };
-        let joystick = self.open(joystick_id)?;
 
-        Ok(VirtualJoystickConnection { inner: joystick })
+        if joystick_id.0 == 0 {
+            Err(IntegerOrSdlError::SdlError(get_error()))
+        } else {
+            let joystick = self.open(joystick_id)?;
+
+            Ok(VirtualJoystickConnection { inner: joystick })
+        }
     }
 }
 
