@@ -83,8 +83,17 @@ impl JoystickSubsystem {
         &self,
         desc: VirtualJoystickDescription,
     ) -> Result<VirtualJoystickConnection, IntegerOrSdlError> {
-        let desc = desc.to_ll();
-        let joystick_id = unsafe { sys::joystick::SDL_AttachVirtualJoystick(&desc) };
+        let mut raw_desc = sys::joystick::SDL_VirtualJoystickDesc::new();
+
+        raw_desc.name = desc.name.as_ptr();
+        raw_desc.r#type = desc.joystick_type.to_ll().0 as u16;
+        raw_desc.naxes = desc.num_axes;
+        raw_desc.nbuttons = desc.num_buttons;
+        raw_desc.nhats = desc.num_hats;
+        raw_desc.axis_mask = desc.axis_mask;
+        raw_desc.button_mask = desc.button_mask;
+
+        let joystick_id = unsafe { sys::joystick::SDL_AttachVirtualJoystick(&raw_desc) };
         let joystick = self.open(joystick_id)?;
 
         Ok(VirtualJoystickConnection { inner: joystick })
@@ -666,9 +675,8 @@ fn c_str_to_string(c_str: *const c_char) -> String {
 }
 
 /// Conversely, this converts a string slice `string` into a C string.
-fn string_to_c_str(string: &str) -> *const c_char {
-    let cstr = CString::new(string).unwrap();
-    cstr.as_ptr() as *const c_char
+fn string_to_c_str(string: &str) -> CString {
+    CString::new(string).unwrap()
 }
 
 /// Represents the lifetime of a virtual joystick connection
@@ -696,7 +704,7 @@ impl Drop for VirtualJoystickConnection {
 
 /// As of SDL3, Virtual Devices must be initialized using a description.
 pub struct VirtualJoystickDescription {
-    name: *const c_char,
+    name: CString,
     joystick_type: JoystickType,
     num_axes: u16,
     num_buttons: u16,
@@ -787,19 +795,6 @@ impl VirtualJoystickDescription {
         for button in buttons {
             desc = desc.with_button(button);
         }
-        desc
-    }
-
-    /// Convert the VirtualJoystickDescription into a form usable by SDL's underlying code
-    pub fn to_ll(self) -> sys::joystick::SDL_VirtualJoystickDesc {
-        let mut desc = sys::joystick::SDL_VirtualJoystickDesc::new();
-        desc.name = self.name;
-        desc.r#type = self.joystick_type.to_ll().0 as u16;
-        desc.naxes = self.num_axes;
-        desc.nbuttons = self.num_buttons;
-        desc.nhats = self.num_hats;
-        desc.axis_mask = self.axis_mask;
-        desc.button_mask = self.button_mask;
         desc
     }
 }
