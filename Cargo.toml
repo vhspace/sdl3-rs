@@ -63,13 +63,21 @@ wgpu = { version = "29.0.1", features = ["spirv"] }
 pollster = "0.4.0"
 env_logger = "0.11.10"
 
-# wgpu-hal 29.0.1 pulls in `windows-core` with `default-features = false`, which
-# turns off the `std` feature and drops the `core::error::Error` impl on
-# `windows_core::Error`. The gles backend (wgl.rs) then fails to compile on
-# Windows because `InstanceError::with_source` requires `impl Error`. Force the
-# `std` feature back on via Cargo's feature unification.
+# wgpu-hal 29.0.1 has two Windows-only resolution problems that we paper over
+# from this side via Cargo's feature unification / version selection:
+#
+# 1. `windows-core` is pulled in with `default-features = false`, which turns
+#    off the `std` feature and drops the `core::error::Error` impl on
+#    `windows_core::Error`. wgpu-hal's gles backend (wgl.rs) then fails to
+#    compile because `InstanceError::with_source` requires `impl Error`.
+# 2. wgpu-hal asks for `windows = "0.62"` while gpu-allocator 0.28 accepts
+#    `>=0.53, <=0.62` and the resolver picks 0.58 for gpu-allocator. The two
+#    versions then collide in wgpu-hal's dx12 backend (gpu-allocator wants
+#    `windows@0.58::ID3D12Device`, wgpu-hal hands it `windows@0.62::ID3D12Device`).
+#    Pinning `windows = "0.62"` here forces gpu-allocator onto the same version.
 [target.'cfg(windows)'.dev-dependencies]
 windows-core = { version = "0.62", features = ["std"] }
+windows = "0.62"
 
 [build-dependencies]
 sdl3-sys = { version = "0.6", features = ["only-metadata"] }
