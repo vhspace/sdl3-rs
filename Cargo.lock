@@ -981,6 +981,7 @@ dependencies = [
  "sdl3-sys",
  "sdl3-ttf-sys",
  "wgpu",
+ "windows-core 0.62.2",
 ]
 
 [[package]]
