@@ -617,7 +617,7 @@ impl ConnectionState {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[repr(i32)]
 pub enum JoystickType {
     Unknown = sys::joystick::SDL_JoystickType::UNKNOWN.0,
