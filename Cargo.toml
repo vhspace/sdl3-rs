@@ -293,7 +293,7 @@ required-features = ["raw-window-handle"]
 name = "raw-window-handle-with-wgpu"
 
 [[example]]
-name = "virt-joysticks"
+name = "virtual-joysticks"
 
 [package.metadata.vcpkg]
 dependencies = ["sdl3"]

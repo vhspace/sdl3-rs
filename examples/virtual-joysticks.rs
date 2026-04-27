@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         // `connection` is of type VirtualJoystickConnection, which behaves like a physical connection
         // between a physical device and your PC. If it leaves scope and is dropped, it is analogous to
         // you unplugging your mouse from your PC while a program is currently using it.
-        let connection = joystick_subsystem.attach_virt_joystick(desc)?;
+        let connection = joystick_subsystem.attach_virtual_joystick(desc)?;
         println!("Successfully built a new virtual joystick.");
 
         println!(
