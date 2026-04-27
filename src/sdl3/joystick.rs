@@ -630,7 +630,6 @@ pub enum JoystickType {
     DrumKit = sys::joystick::SDL_JoystickType::DRUM_KIT.0,
     ArcadePad = sys::joystick::SDL_JoystickType::ARCADE_PAD.0,
     Throttle = sys::joystick::SDL_JoystickType::THROTTLE.0,
-    Count = sys::joystick::SDL_JoystickType::COUNT.0,
 }
 
 impl JoystickType {
@@ -645,8 +644,7 @@ impl JoystickType {
             sys::joystick::SDL_JoystickType::DRUM_KIT => JoystickType::DrumKit,
             sys::joystick::SDL_JoystickType::ARCADE_PAD => JoystickType::ArcadePad,
             sys::joystick::SDL_JoystickType::THROTTLE => JoystickType::Throttle,
-            sys::joystick::SDL_JoystickType::COUNT => JoystickType::Count,
-            sys::joystick::SDL_JoystickType::UNKNOWN | _ => JoystickType::Unknown,
+            _ => JoystickType::Unknown,
         }
     }
 
@@ -662,7 +660,6 @@ impl JoystickType {
             JoystickType::DrumKit => sys::joystick::SDL_JoystickType::DRUM_KIT,
             JoystickType::ArcadePad => sys::joystick::SDL_JoystickType::ARCADE_PAD,
             JoystickType::Throttle => sys::joystick::SDL_JoystickType::THROTTLE,
-            JoystickType::Count => sys::joystick::SDL_JoystickType::COUNT,
         }
     }
 }
@@ -679,9 +676,12 @@ fn c_str_to_string(c_str: *const c_char) -> String {
     }
 }
 
-/// Conversely, this converts a string slice `string` into a C string.
+/// Convert a string slice into a `CString`, truncating at the first interior
+/// NUL byte. Joystick names cannot contain NUL, so silently dropping the tail
+/// is preferable to panicking on user-supplied input.
 fn string_to_c_str(string: &str) -> CString {
-    CString::new(string).unwrap()
+    let end = string.bytes().position(|b| b == 0).unwrap_or(string.len());
+    CString::new(&string.as_bytes()[..end]).expect("interior NULs stripped above")
 }
 
 /// Represents the lifetime of a virtual joystick connection
@@ -719,6 +719,12 @@ pub struct VirtualJoystickDescription {
     // mapped to.
     axis_mask: u32,
     button_mask: u32,
+}
+
+impl Default for VirtualJoystickDescription {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl VirtualJoystickDescription {
