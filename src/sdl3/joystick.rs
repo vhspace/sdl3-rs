@@ -74,12 +74,12 @@ impl JoystickSubsystem {
 
     /// Check if a joystick is virtual
     #[doc(alias = "SDL_IsJoystickVirtual")]
-    pub fn virt(&self, joystick_id: JoystickId) -> bool {
+    pub fn is_virtual(&self, joystick_id: JoystickId) -> bool {
         unsafe { sys::joystick::SDL_IsJoystickVirtual(joystick_id) }
     }
 
     /// Attach a virtual joystick
-    pub fn attach_virt_joystick(
+    pub fn attach_virtual_joystick(
         &self,
         desc: VirtualJoystickDescription,
     ) -> Result<VirtualJoystickConnection, IntegerOrSdlError> {
@@ -485,7 +485,7 @@ impl Joystick {
 
     /// Check if a joystick is virtual
     #[doc(alias = "SDL_IsJoystickVirtual")]
-    pub fn virt(&self) -> bool {
+    pub fn is_virtual(&self) -> bool {
         let id = sys::joystick::SDL_JoystickID(self.id());
         unsafe { sys::joystick::SDL_IsJoystickVirtual(id) }
     }
