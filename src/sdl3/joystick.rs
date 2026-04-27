@@ -740,7 +740,8 @@ impl VirtualJoystickDescription {
         }
     }
 
-    /// Set the joystick name
+    /// Set the joystick name. The name is truncated at the first interior NUL
+    /// byte, since C strings cannot contain NUL.
     pub fn name(self, name: &str) -> Self {
         let mut desc = self;
         desc.name = string_to_c_str(name);
