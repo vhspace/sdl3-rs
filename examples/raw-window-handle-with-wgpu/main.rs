@@ -29,16 +29,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         compatible_surface: Some(&surface),
     }))?;
 
-    let (device, queue) = pollster::block_on(adapter.request_device(
-        &wgpu::DeviceDescriptor {
-            required_limits: wgpu::Limits::default(),
-            label: Some("device"),
-            required_features: wgpu::Features::empty(),
-            memory_hints: wgpu::MemoryHints::Performance,
-            experimental_features: wgpu::ExperimentalFeatures::disabled(),
-            trace: wgpu::Trace::Off,
-        },
-    ))?;
+    let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+        required_limits: wgpu::Limits::default(),
+        label: Some("device"),
+        required_features: wgpu::Features::empty(),
+        memory_hints: wgpu::MemoryHints::Performance,
+        experimental_features: wgpu::ExperimentalFeatures::disabled(),
+        trace: wgpu::Trace::Off,
+    }))?;
 
     let capabilities = surface.get_capabilities(&adapter);
     let formats = capabilities.formats;
@@ -147,10 +145,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         let frame = match surface.get_current_texture() {
             wgpu::CurrentSurfaceTexture::Success(frame) => frame,
-            wgpu::CurrentSurfaceTexture::Timeout
-            | wgpu::CurrentSurfaceTexture::Occluded => continue,
-            wgpu::CurrentSurfaceTexture::Outdated
-            | wgpu::CurrentSurfaceTexture::Lost => {
+            wgpu::CurrentSurfaceTexture::Timeout | wgpu::CurrentSurfaceTexture::Occluded => {
+                continue
+            }
+            wgpu::CurrentSurfaceTexture::Outdated | wgpu::CurrentSurfaceTexture::Lost => {
                 surface.configure(&device, &config);
                 continue;
             }
