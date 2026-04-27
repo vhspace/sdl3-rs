@@ -793,7 +793,10 @@ impl VirtualJoystickDescription {
     }
 
     /// Specifies that a given list of axes can be controlled by the virtual joystick
-    pub fn with_axes(self, axes: Vec<crate::gamepad::Axis>) -> Self {
+    pub fn with_axes<T>(self, axes: T) -> Self
+    where
+        T: IntoIterator<Item = crate::gamepad::Axis>,
+    {
         let mut desc = self;
         for axis in axes {
             desc = desc.with_axis(axis);
@@ -802,7 +805,10 @@ impl VirtualJoystickDescription {
     }
 
     /// Specifies that a given list of buttons can be controlled by the virtual joystick
-    pub fn with_buttons(self, buttons: Vec<crate::gamepad::Button>) -> Self {
+    pub fn with_buttons<T>(self, buttons: T) -> Self
+    where
+        T: IntoIterator<Item = crate::gamepad::Button>,
+    {
         let mut desc = self;
         for button in buttons {
             desc = desc.with_button(button);
