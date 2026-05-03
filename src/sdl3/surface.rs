@@ -437,8 +437,8 @@ impl SurfaceRef {
 
     #[doc(alias = "SDL_SaveBMP_RW")]
     pub fn save_bmp_rw(&self, iostream: &mut IOStream) -> Result<(), Error> {
-        let ret = unsafe { sys::surface::SDL_SaveBMP_IO(self.raw(), iostream.raw(), false) };
-        if !ret {
+        let ok = unsafe { sys::surface::SDL_SaveBMP_IO(self.raw(), iostream.raw(), false) };
+        if ok {
             Ok(())
         } else {
             Err(get_error())
