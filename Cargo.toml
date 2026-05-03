@@ -26,7 +26,7 @@ bitflags = "2.11.1"
 libc = "0.2.185"
 
 [dependencies.sdl3-sys]
-version = "0.6"
+version = "0.6.5"
 features = ["metadata"]
 
 [dependencies.sdl3-image-sys]
@@ -80,7 +80,7 @@ windows-core = { version = "0.62", features = ["std"] }
 windows = "0.62"
 
 [build-dependencies]
-sdl3-sys = { version = "0.6", features = ["only-metadata"] }
+sdl3-sys = { version = "0.6.5", features = ["only-metadata"] }
 
 
 [features]
