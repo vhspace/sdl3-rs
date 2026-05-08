@@ -554,10 +554,7 @@ impl<'r> Font<'r> {
 
     #[doc(alias = "TTF_GetFontSize")]
     pub fn get_size(&self) -> Result<f32, Error> {
-
-        let ret = unsafe {
-            ttf::TTF_GetFontSize(self.raw)
-        };
+        let ret = unsafe { ttf::TTF_GetFontSize(self.raw) };
         if ret == 0.0f32 {
             Err(get_error())
         } else {
