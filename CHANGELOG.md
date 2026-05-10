@@ -8,6 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### <!-- 0 -->Added
+- Expose the api call: TTF_GetFontSize ([#382](https://github.com/vhspace/sdl3-rs/pull/382))
+
+### <!-- 4 -->Dependencies
+- Bump libc from 0.2.185 to 0.2.186 ([#370](https://github.com/vhspace/sdl3-rs/pull/370))
+- Bump orhun/git-cliff-action from 4.7.1 to 4.8.0 ([#375](https://github.com/vhspace/sdl3-rs/pull/375))
+
+## [0.18.3] - 2026-05-04
+
+### <!-- 1 -->Changed
+- Bump sdl3-sys to 0.6.5 (SDL 3.4.8) ([#379](https://github.com/vhspace/sdl3-rs/pull/379))
+
+## [0.18.2] - 2026-05-03
+
+### <!-- 0 -->Added
 - Add bindings for Virtual joysticks in sdl3::joysticks ([#371](https://github.com/vhspace/sdl3-rs/pull/371))
 - Add integer_x/y to Event::MouseWheel ([#360](https://github.com/vhspace/sdl3-rs/pull/360))
 
@@ -256,7 +270,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump bitflags from 2.9.0 to 2.9.1 ([#207](https://github.com/vhspace/sdl3-rs/pull/207))
 - Bump actions/cache from 3 to 4 ([#208](https://github.com/vhspace/sdl3-rs/pull/208))
 
-[unreleased]: https://github.com/vhspace/sdl3-rs/compare/v0.18.1...HEAD
+[unreleased]: https://github.com/vhspace/sdl3-rs/compare/v0.18.3...HEAD
+[0.18.3]: https://github.com/vhspace/sdl3-rs/compare/v0.18.2...v0.18.3
+[0.18.2]: https://github.com/vhspace/sdl3-rs/compare/v0.18.1...v0.18.2
 [0.18.1]: https://github.com/vhspace/sdl3-rs/compare/v0.18.0...v0.18.1
 [0.18.0]: https://github.com/vhspace/sdl3-rs/compare/v0.17.3...v0.18.0
 [0.17.3]: https://github.com/vhspace/sdl3-rs/compare/v0.17.2...v0.17.3
