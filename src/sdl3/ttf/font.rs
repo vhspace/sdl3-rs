@@ -552,6 +552,16 @@ impl<'r> Font<'r> {
         }
     }
 
+    #[doc(alias = "TTF_GetFontSize")]
+    pub fn get_size(&self) -> Result<f32, Error> {
+        let ret = unsafe { ttf::TTF_GetFontSize(self.raw) };
+        if ret == 0.0f32 {
+            Err(get_error())
+        } else {
+            Ok(ret)
+        }
+    }
+
     #[doc(alias = "TTF_SetFontSize")]
     pub fn set_size(&self, size: f32) -> Result<(), Error> {
         let ret = unsafe { ttf::TTF_SetFontSize(self.raw, size) };
