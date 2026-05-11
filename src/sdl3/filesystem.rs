@@ -471,3 +471,93 @@ pub fn rename_path(
 
     Ok(())
 }
+
+#[cfg(test)]
+mod test {
+    use super::{enumerate_directory, EnumerationResult, FileSystemError};
+    use std::cell::Cell;
+    use std::fs;
+    use std::path::PathBuf;
+
+    fn temp_subdir(label: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!(
+            "sdl3-rs-enumerate-{}-{}-{}",
+            label,
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn enumerate_directory_captures_state() {
+        let _sdl = crate::sdl::init().unwrap();
+        let dir = temp_subdir("collect");
+        fs::write(dir.join("a.txt"), b"").unwrap();
+        fs::write(dir.join("b.txt"), b"").unwrap();
+
+        let mut names: Vec<String> = Vec::new();
+        enumerate_directory(&dir, |_d, f| {
+            names.push(f.to_string_lossy().into_owned());
+            EnumerationResult::CONTINUE
+        })
+        .unwrap();
+
+        names.sort();
+        assert_eq!(names, vec!["a.txt".to_string(), "b.txt".to_string()]);
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn enumerate_directory_early_stop() {
+        let _sdl = crate::sdl::init().unwrap();
+        let dir = temp_subdir("stop");
+        fs::write(dir.join("a.txt"), b"").unwrap();
+        fs::write(dir.join("b.txt"), b"").unwrap();
+        fs::write(dir.join("c.txt"), b"").unwrap();
+
+        let calls = Cell::new(0u32);
+        enumerate_directory(&dir, |_d, _f| {
+            calls.set(calls.get() + 1);
+            EnumerationResult::SUCCESS
+        })
+        .unwrap();
+
+        assert_eq!(calls.get(), 1);
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn enumerate_directory_propagates_panic() {
+        let _sdl = crate::sdl::init().unwrap();
+        let dir = temp_subdir("panic");
+        fs::write(dir.join("a.txt"), b"").unwrap();
+
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            enumerate_directory(&dir, |_d, _f| {
+                panic!("boom");
+            })
+        }));
+
+        let payload = result.expect_err("expected panic to propagate");
+        let msg = payload
+            .downcast_ref::<&'static str>()
+            .copied()
+            .or_else(|| payload.downcast_ref::<String>().map(|s| s.as_str()))
+            .unwrap_or("");
+        assert_eq!(msg, "boom");
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn enumerate_directory_nonexistent_path() {
+        let _sdl = crate::sdl::init().unwrap();
+        let bogus = std::env::temp_dir().join("sdl3-rs-this-does-not-exist-xyz123");
+        let err = enumerate_directory(&bogus, |_d, _f| EnumerationResult::CONTINUE);
+        assert!(matches!(err, Err(FileSystemError::SdlError(_))));
+    }
+}
