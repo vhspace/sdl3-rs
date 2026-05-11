@@ -96,14 +96,15 @@ pub fn create_directory(path: impl AsRef<Path>) -> Result<(), FileSystemError> {
 
 pub use sys::filesystem::SDL_EnumerationResult as EnumerationResult;
 
-pub type EnumerateCallback = fn(&Path, &Path) -> EnumerationResult;
-
-unsafe extern "C" fn c_enumerate_directory(
+unsafe extern "C" fn c_enumerate_directory<F>(
     userdata: *mut c_void,
     dirname: *const c_char,
     fname: *const c_char,
-) -> EnumerationResult {
-    let callback: EnumerateCallback = std::mem::transmute(userdata);
+) -> EnumerationResult
+where
+    F: FnMut(&Path, &Path) -> EnumerationResult,
+{
+    let callback = &mut *(userdata as *mut F);
 
     cstring_path!(dirname, return EnumerationResult::FAILURE);
     cstring_path!(fname, return EnumerationResult::FAILURE);
@@ -111,17 +112,25 @@ unsafe extern "C" fn c_enumerate_directory(
     callback(dirname, fname)
 }
 
+/// Enumerate the entries in a directory, invoking `callback` for each one.
+///
+/// `SDL_EnumerateDirectory` is synchronous: it runs the callback for every
+/// entry and returns before this function does, so the callback can borrow
+/// state from the caller (capture by `&mut`, push into a `Vec`, etc.).
 #[doc(alias = "SDL_EnumerateDirectory")]
-pub fn enumerate_directory(
+pub fn enumerate_directory<F>(
     path: impl AsRef<Path>,
-    callback: EnumerateCallback,
-) -> Result<(), FileSystemError> {
+    mut callback: F,
+) -> Result<(), FileSystemError>
+where
+    F: FnMut(&Path, &Path) -> EnumerationResult,
+{
     path_cstring!(path);
     unsafe {
         if !sys::filesystem::SDL_EnumerateDirectory(
             path.as_ptr(),
-            Some(c_enumerate_directory),
-            callback as *mut c_void,
+            Some(c_enumerate_directory::<F>),
+            &mut callback as *mut F as *mut c_void,
         ) {
             return Err(FileSystemError::SdlError(get_error()));
         }
