@@ -96,6 +96,11 @@ pub fn create_directory(path: impl AsRef<Path>) -> Result<(), FileSystemError> {
 
 pub use sys::filesystem::SDL_EnumerationResult as EnumerationResult;
 
+struct EnumerateState<F> {
+    callback: F,
+    panic: Option<Box<dyn std::any::Any + Send + 'static>>,
+}
+
 unsafe extern "C" fn c_enumerate_directory<F>(
     userdata: *mut c_void,
     dirname: *const c_char,
@@ -104,36 +109,50 @@ unsafe extern "C" fn c_enumerate_directory<F>(
 where
     F: FnMut(&Path, &Path) -> EnumerationResult,
 {
-    let callback = &mut *(userdata as *mut F);
+    let state = &mut *(userdata as *mut EnumerateState<F>);
+    if state.panic.is_some() {
+        return EnumerationResult::FAILURE;
+    }
 
     cstring_path!(dirname, return EnumerationResult::FAILURE);
     cstring_path!(fname, return EnumerationResult::FAILURE);
 
-    callback(dirname, fname)
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        (state.callback)(dirname, fname)
+    })) {
+        Ok(r) => r,
+        Err(p) => {
+            state.panic = Some(p);
+            EnumerationResult::FAILURE
+        }
+    }
 }
 
 /// Enumerate the entries in a directory, invoking `callback` for each one.
 ///
-/// `SDL_EnumerateDirectory` is synchronous: it runs the callback for every
-/// entry and returns before this function does, so the callback can borrow
-/// state from the caller (capture by `&mut`, push into a `Vec`, etc.).
+/// Runs synchronously, so `callback` may borrow caller state mutably.
 #[doc(alias = "SDL_EnumerateDirectory")]
-pub fn enumerate_directory<F>(
-    path: impl AsRef<Path>,
-    mut callback: F,
-) -> Result<(), FileSystemError>
+pub fn enumerate_directory<F>(path: impl AsRef<Path>, callback: F) -> Result<(), FileSystemError>
 where
     F: FnMut(&Path, &Path) -> EnumerationResult,
 {
     path_cstring!(path);
-    unsafe {
-        if !sys::filesystem::SDL_EnumerateDirectory(
+    let mut state = EnumerateState {
+        callback,
+        panic: None,
+    };
+    let ok = unsafe {
+        sys::filesystem::SDL_EnumerateDirectory(
             path.as_ptr(),
             Some(c_enumerate_directory::<F>),
-            &mut callback as *mut F as *mut c_void,
-        ) {
-            return Err(FileSystemError::SdlError(get_error()));
-        }
+            &mut state as *mut EnumerateState<F> as *mut c_void,
+        )
+    };
+    if let Some(p) = state.panic {
+        std::panic::resume_unwind(p);
+    }
+    if !ok {
+        return Err(FileSystemError::SdlError(get_error()));
     }
     Ok(())
 }
