@@ -509,29 +509,29 @@ impl<'r> Font<'r> {
     /// Returns the glyph metrics of the given character in this font face.
     #[doc(alias = "TTF_GetGlyphMetrics")]
     pub fn find_glyph_metrics(&self, ch: char) -> Option<GlyphMetrics> {
-        let minx = 0;
-        let maxx = 0;
-        let miny = 0;
-        let maxy = 0;
-        let advance = 0;
+        let mut minx = 0;
+        let mut maxx = 0;
+        let mut miny = 0;
+        let mut maxy = 0;
+        let mut advance = 0;
         let ret = unsafe {
             ttf::TTF_GetGlyphMetrics(
                 self.raw,
                 ch as u32,
-                &minx as *const _ as *mut _,
-                &maxx as *const _ as *mut _,
-                &miny as *const _ as *mut _,
-                &maxy as *const _ as *mut _,
-                &advance as *const _ as *mut _,
+                &mut minx,
+                &mut maxx,
+                &mut miny,
+                &mut maxy,
+                &mut advance,
             )
         };
         if ret {
             Some(GlyphMetrics {
-                minx: minx as i32,
-                maxx: maxx as i32,
-                miny: miny as i32,
-                maxy: maxy as i32,
-                advance: advance as i32,
+                minx,
+                maxx,
+                miny,
+                maxy,
+                advance,
             })
         } else {
             None
