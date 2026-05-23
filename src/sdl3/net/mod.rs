@@ -229,13 +229,18 @@ pub fn local_addresses() -> Result<Vec<Address>, Error> {
     if raw.is_null() {
         return Err(get_error());
     }
-    // Each entry holds its own reference; take ownership by ref-ing then freeing the array.
-    let mut out = Vec::with_capacity(count as usize);
-    for i in 0..count as isize {
-        let p = unsafe { *raw.offset(i) };
-        let reffed = unsafe { NET_RefAddress(p) };
-        out.push(Address { raw: reffed });
+    if count <= 0 {
+        unsafe { NET_FreeLocalAddresses(raw) };
+        return Ok(Vec::new());
     }
+    // Each entry holds its own reference; take ownership by ref-ing then freeing the array.
+    let slice = unsafe { std::slice::from_raw_parts(raw, count as usize) };
+    let out = slice
+        .iter()
+        .map(|&p| Address {
+            raw: unsafe { NET_RefAddress(p) },
+        })
+        .collect();
     unsafe { NET_FreeLocalAddresses(raw) };
     Ok(out)
 }
@@ -403,8 +408,9 @@ pub struct Datagram {
 }
 
 impl Datagram {
-    /// Sender address. Returned by reference; clone if you need to outlive the
-    /// datagram.
+    /// Sender address as an owned, ref-counted handle. The returned
+    /// [`Address`] is independent of this [`Datagram`] and remains valid
+    /// after the datagram is dropped.
     pub fn address(&self) -> Address {
         let raw = unsafe { (*self.raw).addr };
         let reffed = unsafe { NET_RefAddress(raw) };
@@ -504,24 +510,31 @@ impl Drop for DatagramSocket {
 }
 
 /// Something that can be passed to [`wait_until_input_available`].
-pub trait Waitable {
+///
+/// # Safety
+/// Implementors must return a pointer to a live SDL3_net object that
+/// `NET_WaitUntilInputAvailable` recognizes (currently `NET_Server`,
+/// `NET_StreamSocket`, or `NET_DatagramSocket`). Returning anything else,
+/// including dangling or arbitrary pointers, will trigger undefined
+/// behavior inside the FFI call.
+pub unsafe trait Waitable {
     /// Pointer cast to the void pointer SDL3_net expects.
     fn as_void_ptr(&self) -> *mut std::ffi::c_void;
 }
 
-impl Waitable for StreamSocket {
+unsafe impl Waitable for StreamSocket {
     fn as_void_ptr(&self) -> *mut std::ffi::c_void {
         self.raw as *mut _
     }
 }
 
-impl Waitable for Server {
+unsafe impl Waitable for Server {
     fn as_void_ptr(&self) -> *mut std::ffi::c_void {
         self.raw as *mut _
     }
 }
 
-impl Waitable for DatagramSocket {
+unsafe impl Waitable for DatagramSocket {
     fn as_void_ptr(&self) -> *mut std::ffi::c_void {
         self.raw as *mut _
     }
