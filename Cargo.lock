@@ -978,6 +978,7 @@ dependencies = [
  "sdl3-image-sys",
  "sdl3-main",
  "sdl3-mixer-sys",
+ "sdl3-net-sys",
  "sdl3-sys",
  "sdl3-ttf-sys",
  "wgpu",
@@ -1034,6 +1035,24 @@ dependencies = [
  "cmake",
  "rpkg-config",
  "sdl3-mixer-src",
+ "sdl3-sys",
+]
+
+[[package]]
+name = "sdl3-net-src"
+version = "3.1.0-prerelease"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "622d40a4250ee556a2f1cdc4b60e496ea2af8c600b2d94efc32080d3d67bd98d"
+
+[[package]]
+name = "sdl3-net-sys"
+version = "0.6.0-pre-0+SDL-net-3.1.0-prerelease"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cdbc6d312332b5fe879d3ba655f1e62c52daca2270b528c26bcfc2d12e140bf5"
+dependencies = [
+ "cmake",
+ "rpkg-config",
+ "sdl3-net-src",
  "sdl3-sys",
 ]
 

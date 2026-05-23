@@ -10,6 +10,15 @@ fn main() {
     #[cfg(any(target_os = "linux", target_os = "openbsd", target_os = "freebsd"))]
     println!(r"cargo:rustc-link-search=/usr/local/lib");
 
+    // Workaround: the sdl3-net-sys 0.6.0-pre-0 prerelease ships a pkg-config
+    // file with an empty `prefix=`, so the link search path that sdl3-net-sys
+    // emits resolves to `/lib`. Add the build directory of sdl3-net-sys back
+    // in so rustc can actually find libSDL3_net.{so,a}.
+    if let Some(out_dir) = env::var_os("DEP_SDL3_NET_OUT_DIR") {
+        let lib = PathBuf::from(&out_dir).join("lib");
+        println!("cargo:rustc-link-search=native={}", lib.display());
+    }
+
     if let Err(err) = generate_metadata_sources() {
         panic!("failed to generate metadata sources: {err}");
     }
