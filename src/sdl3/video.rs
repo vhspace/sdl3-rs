@@ -1141,12 +1141,20 @@ impl VideoSubsystem {
 
     #[doc(alias = "SDL_EnableScreenSaver")]
     pub fn enable_screen_saver(&self) {
-        unsafe { sys::video::SDL_EnableScreenSaver() };
+        if unsafe { sys::video::SDL_EnableScreenSaver() } {
+            Some(())
+        } else {
+            Err(get_error())
+        }
     }
 
     #[doc(alias = "SDL_DisableScreenSaver")]
-    pub fn disable_screen_saver(&self) {
-        unsafe { sys::video::SDL_DisableScreenSaver() };
+    pub fn disable_screen_saver(&self) -> Result<(), Error> {
+        if unsafe { sys::video::SDL_DisableScreenSaver() } {
+            Some(())
+        } else {
+            Err(get_error())
+        }
     }
 
     /// Loads the default OpenGL library.
