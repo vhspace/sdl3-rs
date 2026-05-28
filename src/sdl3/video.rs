@@ -1142,7 +1142,7 @@ impl VideoSubsystem {
     #[doc(alias = "SDL_EnableScreenSaver")]
     pub fn enable_screen_saver(&self) -> Result<(), Error> {
         if unsafe { sys::video::SDL_EnableScreenSaver() } {
-            Some(())
+            Ok(())
         } else {
             Err(get_error())
         }
@@ -1151,7 +1151,7 @@ impl VideoSubsystem {
     #[doc(alias = "SDL_DisableScreenSaver")]
     pub fn disable_screen_saver(&self) -> Result<(), Error> {
         if unsafe { sys::video::SDL_DisableScreenSaver() } {
-            Some(())
+            Ok(())
         } else {
             Err(get_error())
         }
