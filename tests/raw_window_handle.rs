@@ -13,7 +13,8 @@ mod raw_window_handle_test {
         use raw_window_handle::RawDisplayHandle;
 
         let window = new_hidden_window();
-        let window_handle = match window.window_handle() {
+        let window_as_handle = window.as_window_handle().unwrap();
+        let window_handle = match window_as_handle.window_handle() {
             Ok(v) => v,
             Err(err) => panic!(
                 "Received error while getting window handle for Windows: {:?}",
@@ -26,7 +27,7 @@ mod raw_window_handle_test {
         };
         assert_ne!(raw_handle.hwnd.get(), 0);
         println!("Successfully received Windows RawWindowHandle!");
-        let display_handle = match window.display_handle() {
+        let display_handle = match window_as_handle.display_handle() {
             Ok(v) => v,
             Err(err) => panic!(
                 "Received error while getting display handle for Windows: {:?}",
@@ -50,8 +51,8 @@ mod raw_window_handle_test {
     #[test]
     fn get_linux_handle() {
         let window = new_hidden_window();
-		let window_handle = window.as_window_handle().unwrap();
-        match window_handle.window_handle().unwrap().as_raw() {
+        let window_as_handle = window.as_window_handle().unwrap();
+        match window_as_handle.window_handle().unwrap().as_raw() {
             RawWindowHandle::Xlib(x11_handle) => {
                 assert_ne!(x11_handle.window, 0, "Window for X11 should not be 0");
                 println!("Successfully received linux X11 RawWindowHandle!");
@@ -70,7 +71,7 @@ mod raw_window_handle_test {
                 x
             ),
         }
-        match window_handle.display_handle().unwrap().as_raw() {
+        match window_as_handle.display_handle().unwrap().as_raw() {
             RawDisplayHandle::Xlib(x11_display) => {
                 assert_ne!(
                     x11_display.display.unwrap().as_ptr(),
@@ -97,7 +98,8 @@ mod raw_window_handle_test {
     #[test]
     fn get_macos_handle() {
         let window = new_hidden_window();
-        let window_handle = match window.window_handle() {
+        let window_as_handle = window.as_window_handle().unwrap();
+        let window_handle = match window_as_handle.window_handle() {
             Ok(v) => v,
             Err(err) => panic!(
                 "Received error while getting window handle for MacOs: {:?}",
@@ -117,7 +119,7 @@ mod raw_window_handle_test {
                 x
             ),
         }
-        let display_handle = match window.display_handle() {
+        let display_handle = match window_as_handle.display_handle() {
             Ok(v) => v,
             Err(err) => panic!(
                 "Received error while getting display handle for MacOS: {:?}",
