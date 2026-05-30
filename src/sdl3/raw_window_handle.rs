@@ -1,7 +1,10 @@
 extern crate raw_window_handle;
 
 use crate::video::Window;
-use raw_window_handle::{DisplayHandle, HandleError, HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle, WindowHandle};
+use raw_window_handle::{
+    DisplayHandle, HandleError, HasDisplayHandle, HasWindowHandle, RawDisplayHandle,
+    RawWindowHandle, WindowHandle,
+};
 use std::{ffi::CStr, num::NonZero, ptr::NonNull};
 use sys::properties::{SDL_GetNumberProperty, SDL_GetPointerProperty};
 
