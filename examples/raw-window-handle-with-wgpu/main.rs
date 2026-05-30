@@ -17,12 +17,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .position_centered()
         .resizable()
         .metal_view()
-        .build()
-        .map_err(|e| e.to_string())?;
+        .build()?;
     let (width, height) = window.size();
 
     let instance = wgpu::Instance::new(InstanceDescriptor::new_without_display_handle_from_env());
-    let surface = create_surface::create_surface(&instance, &window)?;
+    let surface = instance.create_surface(window.as_window_handle()?)?;
     let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::HighPerformance,
         force_fallback_adapter: false,
@@ -188,35 +187,4 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
-}
-
-mod create_surface {
-    use sdl3::video::Window;
-    use wgpu::rwh::{HasDisplayHandle, HasWindowHandle};
-
-    // contains the unsafe impl as much as possible by putting it in this module
-    struct SyncWindow<'a>(&'a Window);
-
-    unsafe impl<'a> Send for SyncWindow<'a> {}
-    unsafe impl<'a> Sync for SyncWindow<'a> {}
-
-    impl<'a> HasWindowHandle for SyncWindow<'a> {
-        fn window_handle(&self) -> Result<wgpu::rwh::WindowHandle<'_>, wgpu::rwh::HandleError> {
-            self.0.window_handle()
-        }
-    }
-    impl<'a> HasDisplayHandle for SyncWindow<'a> {
-        fn display_handle(&self) -> Result<wgpu::rwh::DisplayHandle<'_>, wgpu::rwh::HandleError> {
-            self.0.display_handle()
-        }
-    }
-
-    pub fn create_surface<'a>(
-        instance: &wgpu::Instance,
-        window: &'a Window,
-    ) -> Result<wgpu::Surface<'a>, String> {
-        instance
-            .create_surface(SyncWindow(&window))
-            .map_err(|err| err.to_string())
-    }
 }

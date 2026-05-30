@@ -50,7 +50,8 @@ mod raw_window_handle_test {
     #[test]
     fn get_linux_handle() {
         let window = new_hidden_window();
-        match window.window_handle().unwrap().as_raw() {
+		let window_handle = window.as_window_handle().unwrap();
+        match window_handle.window_handle().unwrap().as_raw() {
             RawWindowHandle::Xlib(x11_handle) => {
                 assert_ne!(x11_handle.window, 0, "Window for X11 should not be 0");
                 println!("Successfully received linux X11 RawWindowHandle!");
@@ -69,7 +70,7 @@ mod raw_window_handle_test {
                 x
             ),
         }
-        match window.display_handle().unwrap().as_raw() {
+        match window_handle.display_handle().unwrap().as_raw() {
             RawDisplayHandle::Xlib(x11_display) => {
                 assert_ne!(
                     x11_display.display.unwrap().as_ptr(),
