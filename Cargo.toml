@@ -22,7 +22,7 @@ name = "sdl3"
 path = "src/sdl3/lib.rs"
 
 [dependencies]
-bitflags = "2.11.1"
+bitflags = "2.12.1"
 libc = "0.2.186"
 
 [dependencies.sdl3-sys]
