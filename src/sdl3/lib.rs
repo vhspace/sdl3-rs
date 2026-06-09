@@ -78,7 +78,7 @@
 //! | `mixer`             | SDL3_mixer bindings for audio mixing and playback                      | Implemented           |
 //! | `image`             | Enable SDL_image helpers for loading/saving surfaces and textures      | Implemented           |
 //! | `ttf`               | Enable SDL_ttf font/text rendering APIs                                | Implemented           |
-//! | `net`               | SDL3_net bindings for TCP/UDP networking                               | Implemented (prerelease C library) |
+//! | `net`               | SDL3_net bindings for TCP/UDP networking                               | Implemented           |
 //! | `hidapi`            | Use SDL's hidapi backend for sensors and controllers                   | Implemented           |
 //! | `test-mode`         | Allows SDL to be initialised from a thread that is not the main thread | Implemented           |
 //! | `raw-window-handle` | Enables integrations with the [`wgpu`] crate                           | Implemented           |

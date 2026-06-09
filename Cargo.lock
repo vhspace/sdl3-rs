@@ -1040,15 +1040,15 @@ dependencies = [
 
 [[package]]
 name = "sdl3-net-src"
-version = "3.1.0-prerelease"
+version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "622d40a4250ee556a2f1cdc4b60e496ea2af8c600b2d94efc32080d3d67bd98d"
+checksum = "f0461903a7545a85fc0ae64bdd642ca86fc58c7e0a9422aa7ab108aba25dc1b9"
 
 [[package]]
 name = "sdl3-net-sys"
-version = "0.6.0-pre-0+SDL-net-3.1.0-prerelease"
+version = "0.6.0+SDL-net-3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cdbc6d312332b5fe879d3ba655f1e62c52daca2270b528c26bcfc2d12e140bf5"
+checksum = "18c466f25f8d546ab856931571e63eef1bfe208a4f3888de38851ba1c6d263f7"
 dependencies = [
  "cmake",
  "rpkg-config",

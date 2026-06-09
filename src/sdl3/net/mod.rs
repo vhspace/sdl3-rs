@@ -12,10 +12,6 @@
 //! $ cargo build --features "net"
 //! ```
 //!
-//! The upstream SDL3_net C library is still in prerelease, so this binding
-//! tracks the `sdl3-net-sys` prerelease crate and the API may shift before the
-//! first stable release.
-//!
 //! # Quick start
 //!
 //! ```no_run
