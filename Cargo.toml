@@ -26,23 +26,27 @@ bitflags = "2.11.1"
 libc = "0.2.186"
 
 [dependencies.sdl3-sys]
-version = "0.6.5"
+version = "0.6.6"
 features = ["metadata"]
 
 [dependencies.sdl3-image-sys]
-version = "0.6"
+version = "0.6.4"
 optional = true
 
+# Held at 0.6.0: sdl3-ttf-sys 0.6.1 hard-pins sdl3-ttf-src "=3.2.2", whose
+# vendored freetype still declares cmake_minimum_required(<3.5) and fails to
+# configure under CMake 4.x (breaks build-from-source-static). 0.6.0 allows the
+# fixed sdl3-ttf-src 3.2.3. Revisit when sdl3-ttf-sys bumps its src pin.
 [dependencies.sdl3-ttf-sys]
-version = "0.6"
+version = "=0.6.0"
 optional = true
 
 [dependencies.sdl3-mixer-sys]
-version = "0.6"
+version = "0.6.3"
 optional = true
 
 [dependencies.sdl3-main]
-version = "0.6"
+version = "0.6.3"
 optional = true
 
 [dependencies.c_vec]
@@ -80,7 +84,7 @@ windows-core = { version = "0.62", features = ["std"] }
 windows = "0.62"
 
 [build-dependencies]
-sdl3-sys = { version = "0.6.5", features = ["only-metadata"] }
+sdl3-sys = { version = "0.6.6", features = ["only-metadata"] }
 
 
 [features]
