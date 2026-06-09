@@ -1021,20 +1021,22 @@ checksum = "d750ed145e052d523eb5c7af8145e8d2c9a4485b652efb3648fb976e1476b6c5"
 
 [[package]]
 name = "sdl3-mixer-src"
-version = "3.2.0"
+version = "3.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1eadf2552e54f487570e82454e325358f8f4ce1b602ce5837206659805c9f2b8"
+checksum = "9cd815ae87084588c7dbd027c1667b0a5e21a6b5ae7b22ecb230bc21c7063eca"
 
 [[package]]
 name = "sdl3-mixer-sys"
-version = "0.6.1+SDL-mixer-3.2.0"
+version = "0.6.3+SDL-mixer-3.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f493bd0cf6f2ba15ab5e40dea89ca16fee6e1a6a7926a549a60225ccc033cfee"
+checksum = "2b5a157588924cf886bdc3a7c9d0e478cdad35d315740f26af00609a61e7c327"
 dependencies = [
  "cmake",
+ "pkg-config",
  "rpkg-config",
  "sdl3-mixer-src",
  "sdl3-sys",
+ "vcpkg",
 ]
 
 [[package]]
