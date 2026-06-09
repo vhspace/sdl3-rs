@@ -38,7 +38,7 @@ optional = true
 # configure under CMake 4.x (breaks build-from-source-static). 0.6.0 allows the
 # fixed sdl3-ttf-src 3.2.3. Revisit when sdl3-ttf-sys bumps its src pin.
 [dependencies.sdl3-ttf-sys]
-version = "=0.6.0"
+version = "=0.6.1"
 optional = true
 
 [dependencies.sdl3-mixer-sys]
