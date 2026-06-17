@@ -6,7 +6,10 @@ use raw_window_handle::{
     RawWindowHandle, WindowHandle,
 };
 use std::{ffi::CStr, num::NonZero, ptr::NonNull};
-use sys::{properties::{SDL_GetNumberProperty, SDL_GetPointerProperty}, video::SDL_Window};
+use sys::{
+    properties::{SDL_GetNumberProperty, SDL_GetPointerProperty},
+    video::SDL_Window,
+};
 
 // this queries then stores all handles upon creation, then returns the stored values on request
 
@@ -39,9 +42,11 @@ impl Window {
             display_handle: display_handle(self.raw())?,
         })
     }
-	// Safety: this does break rust's safety rule that you cannot modify something while there are other references to it, but following that rule religiously here would do more harm than good
+    // Safety: this does break rust's safety rule that you cannot modify something while there are other references to it, but following that rule religiously here would do more harm than good
     /// Gives a window handle that can be used by crates like wgpu, glutin, etc. Unlike `Window::as_window_handle()`, this gives back a mutable reference which can be used for methods which take `&mut Self` (such as `window.show()`, `window.minimize()`, etc)
-    pub fn mut_as_window_handle<'a>(&'a mut self) -> Result<(&'a mut Self, WindowAsWindowHandle<'a>), HandleError> {
+    pub fn mut_as_window_handle<'a>(
+        &'a mut self,
+    ) -> Result<(&'a mut Self, WindowAsWindowHandle<'a>), HandleError> {
         let handle = WindowAsWindowHandle {
             window_handle: window_handle(self.raw())?,
             display_handle: display_handle(self.raw())?,
@@ -79,8 +84,8 @@ fn window_handle<'a>(raw_window: *mut SDL_Window) -> Result<WindowHandle<'a>, Ha
     // macOS
     #[cfg(target_os = "macos")]
     unsafe {
-        use raw_window_handle::AppKitWindowHandle;
         use objc2::{msg_send, runtime::NSObject};
+        use raw_window_handle::AppKitWindowHandle;
 
         let window_properties = sys::video::SDL_GetWindowProperties(raw_window);
 
