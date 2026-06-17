@@ -6,10 +6,11 @@ use raw_window_handle::{
     RawWindowHandle, WindowHandle,
 };
 use std::{ffi::CStr, num::NonZero, ptr::NonNull};
-use sys::properties::{SDL_GetNumberProperty, SDL_GetPointerProperty};
+use sys::{properties::{SDL_GetNumberProperty, SDL_GetPointerProperty}, video::SDL_Window};
 
 // this queries then stores all handles upon creation, then returns the stored values on request
 
+#[derive(Debug, PartialEq)]
 pub struct WindowAsWindowHandle<'a> {
     window_handle: WindowHandle<'a>,
     display_handle: DisplayHandle<'a>,
@@ -31,22 +32,32 @@ impl<'a> HasDisplayHandle for WindowAsWindowHandle<'a> {
 }
 
 impl Window {
+    /// Gives a window handle that can be used by crates like wgpu, glutin, etc. Note: using this function means you cannot use methods on `sdl3::video::Window` which take `&mut Self` (such as `window.show()`, `window.minimize()`, etc), if you need to these functions then use `Window::mut_as_window_handle()` instead.
     pub fn as_window_handle<'a>(&'a self) -> Result<WindowAsWindowHandle<'a>, HandleError> {
         Ok(WindowAsWindowHandle {
-            window_handle: window_handle(self)?,
-            display_handle: display_handle(self)?,
+            window_handle: window_handle(self.raw())?,
+            display_handle: display_handle(self.raw())?,
         })
+    }
+	// Safety: this does break rust's safety rule that you cannot modify something while there are other references to it, but following that rule religiously here would do more harm than good
+    /// Gives a window handle that can be used by crates like wgpu, glutin, etc. Unlike `Window::as_window_handle()`, this gives back a mutable reference which can be used for methods which take `&mut Self` (such as `window.show()`, `window.minimize()`, etc)
+    pub fn mut_as_window_handle<'a>(&'a mut self) -> Result<(&'a mut Self, WindowAsWindowHandle<'a>), HandleError> {
+        let handle = WindowAsWindowHandle {
+            window_handle: window_handle(self.raw())?,
+            display_handle: display_handle(self.raw())?,
+        };
+        Ok((self, handle))
     }
 }
 
 // Access window handle using SDL3 properties
-fn window_handle<'a>(window: &'a Window) -> Result<WindowHandle<'a>, HandleError> {
+fn window_handle<'a>(raw_window: *mut SDL_Window) -> Result<WindowHandle<'a>, HandleError> {
     // Windows
     #[cfg(target_os = "windows")]
     unsafe {
-        use self::raw_window_handle::Win32WindowHandle;
+        use raw_window_handle::Win32WindowHandle;
 
-        let window_properties = sys::video::SDL_GetWindowProperties(window.raw());
+        let window_properties = sys::video::SDL_GetWindowProperties(raw_window);
 
         let hwnd = SDL_GetPointerProperty(
             window_properties,
@@ -68,10 +79,10 @@ fn window_handle<'a>(window: &'a Window) -> Result<WindowHandle<'a>, HandleError
     // macOS
     #[cfg(target_os = "macos")]
     unsafe {
-        use self::raw_window_handle::AppKitWindowHandle;
+        use raw_window_handle::AppKitWindowHandle;
         use objc2::{msg_send, runtime::NSObject};
 
-        let window_properties = sys::video::SDL_GetWindowProperties(window.raw());
+        let window_properties = sys::video::SDL_GetWindowProperties(raw_window);
 
         let ns_window = SDL_GetPointerProperty(
             window_properties,
@@ -91,9 +102,9 @@ fn window_handle<'a>(window: &'a Window) -> Result<WindowHandle<'a>, HandleError
     // iOS
     #[cfg(target_os = "ios")]
     unsafe {
-        use self::raw_window_handle::UiKitWindowHandle;
+        use raw_window_handle::UiKitWindowHandle;
 
-        let window_properties = sys::video::SDL_GetWindowProperties(window.raw());
+        let window_properties = sys::video::SDL_GetWindowProperties(raw_window);
 
         let ui_view = SDL_GetPointerProperty(
             window_properties,
@@ -109,9 +120,9 @@ fn window_handle<'a>(window: &'a Window) -> Result<WindowHandle<'a>, HandleError
     // Android
     #[cfg(target_os = "android")]
     unsafe {
-        use self::raw_window_handle::AndroidNdkWindowHandle;
+        use raw_window_handle::AndroidNdkWindowHandle;
 
-        let window_properties = sys::video::SDL_GetWindowProperties(window.raw());
+        let window_properties = sys::video::SDL_GetWindowProperties(raw_window);
 
         let native_window = SDL_GetPointerProperty(
             window_properties,
@@ -136,9 +147,9 @@ fn window_handle<'a>(window: &'a Window) -> Result<WindowHandle<'a>, HandleError
 
         match video_driver.to_bytes() {
             b"x11" => {
-                use self::raw_window_handle::XlibWindowHandle;
+                use raw_window_handle::XlibWindowHandle;
 
-                let window_properties = sys::video::SDL_GetWindowProperties(window.raw());
+                let window_properties = sys::video::SDL_GetWindowProperties(raw_window);
 
                 let window = SDL_GetNumberProperty(
                     window_properties,
@@ -151,9 +162,9 @@ fn window_handle<'a>(window: &'a Window) -> Result<WindowHandle<'a>, HandleError
                 Ok(WindowHandle::borrow_raw(raw_window_handle))
             }
             b"wayland" => {
-                use self::raw_window_handle::WaylandWindowHandle;
+                use raw_window_handle::WaylandWindowHandle;
 
-                let window_properties = sys::video::SDL_GetWindowProperties(window.raw());
+                let window_properties = sys::video::SDL_GetWindowProperties(raw_window);
 
                 let window = SDL_GetPointerProperty(
                     window_properties,
@@ -173,11 +184,11 @@ fn window_handle<'a>(window: &'a Window) -> Result<WindowHandle<'a>, HandleError
 }
 
 // Access display handle using SDL3 properties
-fn display_handle<'a>(window: &'a Window) -> Result<DisplayHandle<'a>, HandleError> {
+fn display_handle<'a>(raw_window: *mut SDL_Window) -> Result<DisplayHandle<'a>, HandleError> {
     // Windows
     #[cfg(target_os = "windows")]
     unsafe {
-        use self::raw_window_handle::WindowsDisplayHandle;
+        use raw_window_handle::WindowsDisplayHandle;
         let handle = WindowsDisplayHandle::new();
         let raw_window_handle = RawDisplayHandle::Windows(handle);
 
@@ -187,7 +198,7 @@ fn display_handle<'a>(window: &'a Window) -> Result<DisplayHandle<'a>, HandleErr
     // macOS
     #[cfg(target_os = "macos")]
     unsafe {
-        use self::raw_window_handle::AppKitDisplayHandle;
+        use raw_window_handle::AppKitDisplayHandle;
         let handle = AppKitDisplayHandle::new();
         let raw_window_handle = RawDisplayHandle::AppKit(handle);
 
@@ -197,7 +208,7 @@ fn display_handle<'a>(window: &'a Window) -> Result<DisplayHandle<'a>, HandleErr
     // iOS
     #[cfg(target_os = "ios")]
     unsafe {
-        use self::raw_window_handle::UiKitDisplayHandle;
+        use raw_window_handle::UiKitDisplayHandle;
         let handle = UiKitDisplayHandle::new();
         let raw_window_handle = RawDisplayHandle::UiKit(handle);
 
@@ -207,7 +218,7 @@ fn display_handle<'a>(window: &'a Window) -> Result<DisplayHandle<'a>, HandleErr
     // Android
     #[cfg(target_os = "android")]
     unsafe {
-        use self::raw_window_handle::AndroidDisplayHandle;
+        use raw_window_handle::AndroidDisplayHandle;
         let handle = AndroidDisplayHandle::new();
         let raw_window_handle = RawDisplayHandle::Android(handle);
 
@@ -226,9 +237,9 @@ fn display_handle<'a>(window: &'a Window) -> Result<DisplayHandle<'a>, HandleErr
 
         match video_driver.to_bytes() {
             b"x11" => {
-                use self::raw_window_handle::XlibDisplayHandle;
+                use raw_window_handle::XlibDisplayHandle;
 
-                let window_properties = sys::video::SDL_GetWindowProperties(window.raw());
+                let window_properties = sys::video::SDL_GetWindowProperties(raw_window);
 
                 let display = SDL_GetPointerProperty(
                     window_properties,
@@ -248,9 +259,9 @@ fn display_handle<'a>(window: &'a Window) -> Result<DisplayHandle<'a>, HandleErr
                 Ok(DisplayHandle::borrow_raw(raw_window_handle))
             }
             b"wayland" => {
-                use self::raw_window_handle::WaylandDisplayHandle;
+                use raw_window_handle::WaylandDisplayHandle;
 
-                let window_properties = sys::video::SDL_GetWindowProperties(window.raw());
+                let window_properties = sys::video::SDL_GetWindowProperties(raw_window);
 
                 let display = SDL_GetPointerProperty(
                     window_properties,

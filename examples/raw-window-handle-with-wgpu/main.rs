@@ -12,7 +12,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
-    let window = video_subsystem
+    let mut window = video_subsystem
         .window("Raw Window Handle Example", 800, 600)
         .position_centered()
         .resizable()
@@ -21,7 +21,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (width, height) = window.size();
 
     let instance = wgpu::Instance::new(InstanceDescriptor::new_without_display_handle_from_env());
-    let surface = instance.create_surface(window.as_window_handle()?)?;
+    let (window, window_handle) = window.mut_as_window_handle()?; // reassigning `window` here allows for mutating the window (with methods such as `window.show()`) while still having a lifetime-bounded handle for it
+    let surface = instance.create_surface(window_handle)?;
     let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::HighPerformance,
         force_fallback_adapter: false,
