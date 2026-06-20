@@ -113,17 +113,11 @@ jobs:
       - name: Fetch dependencies
         run: cargo +stable fetch --locked
 
+      # Use the default shell (pwsh on Windows) rather than bash: under Git bash
+      # rustc picks up Git's usr/bin/link.exe instead of the MSVC linker. Keep
+      # the command on one line so it runs the same in bash and pwsh.
       - name: Build
-        shell: bash
-        run: |
-          cargo +stable \
-            build \
-            --verbose \
-            --locked \
-            --offline \
-            --examples \
-            --all-targets \
-            --features "${{ matrix.build_mode }} ${{ matrix.feature }}"
+        run: cargo +stable build --verbose --locked --offline --examples --all-targets --features "${{ matrix.build_mode }} ${{ matrix.feature }}"
 
   tests:
     name: Tests - ${{ matrix.name }}
