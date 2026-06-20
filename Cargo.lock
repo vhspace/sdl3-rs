@@ -988,27 +988,29 @@ dependencies = [
 
 [[package]]
 name = "sdl3-image-src"
-version = "3.4.2"
+version = "3.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d415de3fa6e610c3ae4994838f222d50ecb1d4dd8f8618f4049de2f41956a000"
+checksum = "fe273101c7dab94551183212eee9adef1a7bf274d407f0b7bfe72482960ab25c"
 
 [[package]]
 name = "sdl3-image-sys"
-version = "0.6.2+SDL-image-3.4.2"
+version = "0.6.4+SDL-image-3.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64a0c5e6f5874aef7cdc76ff36855bffd98f52feb9df3f5b7f443e0beb4472fe"
+checksum = "5a445f781b39a1c1bc751f5f4612191e0402006e35ad5d02d9193281afad1cf4"
 dependencies = [
  "cmake",
+ "pkg-config",
  "rpkg-config",
  "sdl3-image-src",
  "sdl3-sys",
+ "vcpkg",
 ]
 
 [[package]]
 name = "sdl3-main"
-version = "0.6.2"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87fa05598f8d4abf74d4db099d8b4d1179eb512b78b697de6b4940314bc6ad83"
+checksum = "27b7d0796300defd17b833472271e05ff228093ccbaf89114cc5653af4e05780"
 dependencies = [
  "sdl3-main-macros",
  "sdl3-sys",
@@ -1022,20 +1024,22 @@ checksum = "d750ed145e052d523eb5c7af8145e8d2c9a4485b652efb3648fb976e1476b6c5"
 
 [[package]]
 name = "sdl3-mixer-src"
-version = "3.2.0"
+version = "3.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1eadf2552e54f487570e82454e325358f8f4ce1b602ce5837206659805c9f2b8"
+checksum = "9cd815ae87084588c7dbd027c1667b0a5e21a6b5ae7b22ecb230bc21c7063eca"
 
 [[package]]
 name = "sdl3-mixer-sys"
-version = "0.6.1+SDL-mixer-3.2.0"
+version = "0.6.3+SDL-mixer-3.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f493bd0cf6f2ba15ab5e40dea89ca16fee6e1a6a7926a549a60225ccc033cfee"
+checksum = "2b5a157588924cf886bdc3a7c9d0e478cdad35d315740f26af00609a61e7c327"
 dependencies = [
  "cmake",
+ "pkg-config",
  "rpkg-config",
  "sdl3-mixer-src",
  "sdl3-sys",
+ "vcpkg",
 ]
 
 [[package]]
@@ -1058,15 +1062,15 @@ dependencies = [
 
 [[package]]
 name = "sdl3-src"
-version = "3.4.8"
+version = "3.4.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "997bff4c8d3d9d1e846d7ad8caa33e6fe18a07ec9dc474e1efbbb20923d87bd9"
+checksum = "ed4dcad85f1657d3424642ca2ed8f9f185212975baefda8972ac606494755a62"
 
 [[package]]
 name = "sdl3-sys"
-version = "0.6.5+SDL-3.4.8"
+version = "0.6.6+SDL-3.4.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51ca7a36c908d1d2b6c259d426a5000fbb70e764dcc430f6a373cc151f614f68"
+checksum = "04e7f134def04ed72e6f55187c6c29c72f7dab5d359c4be0dd49c9b97fef59c7"
 dependencies = [
  "ash",
  "cc",
