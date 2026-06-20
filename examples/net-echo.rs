@@ -33,7 +33,9 @@ fn server_thread(ready: mpsc::Sender<()>) -> Result<(), Box<dyn Error + Send + S
         let n = client.read(&mut buf)?;
         if n > 0 {
             client.write(&buf[..n])?;
-            client.wait_until_drained(1000);
+            if client.wait_until_drained(1000) < 0 {
+                return Err("server: failed to drain socket".into());
+            }
             return Ok(());
         }
         if Instant::now() > deadline {
@@ -63,7 +65,9 @@ fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
     );
 
     client.write(b"hello, sdl3-net\n")?;
-    client.wait_until_drained(1000);
+    if client.wait_until_drained(1000) < 0 {
+        return Err("client: failed to drain socket".into());
+    }
 
     let mut buf = [0u8; 256];
     let deadline = Instant::now() + Duration::from_secs(2);
