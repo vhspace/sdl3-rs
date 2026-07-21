@@ -31,7 +31,7 @@ jobs:
 
     steps:
       - name: checkout sources
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Install Linux dependencies
         uses: ./.github/actions/install-linux-deps
@@ -87,10 +87,23 @@ jobs:
 
     steps:
       - name: checkout sources
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Install Linux dependencies
         uses: ./.github/actions/install-linux-deps
+
+      # cmake 0.1.x (build-dep of sdl3-sys) can't auto-detect the Visual Studio
+      # generator on recent windows-latest images and panics with "couldn't
+      # determine visual studio generator". Set up the MSVC env and force the
+      # Ninja generator (bundled with VS) to sidestep the broken detection.
+      - name: Set up MSVC
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
+
+      - name: Use Ninja generator for CMake on Windows
+        if: runner.os == 'Windows'
+        shell: bash
+        run: echo "CMAKE_GENERATOR=Ninja" >> "$GITHUB_ENV"
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
@@ -100,17 +113,11 @@ jobs:
       - name: Fetch dependencies
         run: cargo +stable fetch --locked
 
+      # Use the default shell (pwsh on Windows) rather than bash: under Git bash
+      # rustc picks up Git's usr/bin/link.exe instead of the MSVC linker. Keep
+      # the command on one line so it runs the same in bash and pwsh.
       - name: Build
-        shell: bash
-        run: |
-          cargo +stable \
-            build \
-            --verbose \
-            --locked \
-            --offline \
-            --examples \
-            --all-targets \
-            --features "${{ matrix.build_mode }} ${{ matrix.feature }}"
+        run: cargo +stable build --verbose --locked --offline --examples --all-targets --features "${{ matrix.build_mode }} ${{ matrix.feature }}"
 
   tests:
     name: Tests - ${{ matrix.name }}
@@ -141,7 +148,7 @@ jobs:
 
     steps:
       - name: checkout sources
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Install Linux dependencies
         uses: ./.github/actions/install-linux-deps
@@ -182,7 +189,7 @@ jobs:
 
     steps:
       - name: Checkout sources
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Install toolchain
         uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # master
