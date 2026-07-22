@@ -125,6 +125,8 @@ test-mode = []
 raw-window-handle = ["dep:raw-window-handle", "dep:objc2"]
 # integration with sdl3-main, for using SDL's callback interface with types from this crate
 main = ["dep:sdl3-main"]
+debug-impls = ["sdl3-sys/debug-impls"]
+
 
 [package.metadata.docs.rs]
 #features = ["default", "gfx", "mixer", "image", "ttf"]

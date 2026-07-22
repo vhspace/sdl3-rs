@@ -745,6 +745,7 @@ pub enum MappingStatus {
 }
 
 /// Wrapper around the `SDL_Gamepad` object
+#[cfg_attr(feature = "debug-impls", derive(Debug))]
 pub struct Gamepad {
     subsystem: GamepadSubsystem,
     raw: *mut sys::gamepad::SDL_Gamepad,

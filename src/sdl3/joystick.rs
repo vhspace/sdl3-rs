@@ -158,6 +158,7 @@ impl PowerLevel {
 }
 
 /// Wrapper around the `SDL_Joystick` object
+#[cfg_attr(feature = "debug-impls", derive(Debug))]
 pub struct Joystick {
     subsystem: JoystickSubsystem,
     raw: *mut sys::joystick::SDL_Joystick,
