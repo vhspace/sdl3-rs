@@ -28,6 +28,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         power_preference: wgpu::PowerPreference::HighPerformance,
         force_fallback_adapter: false,
         compatible_surface: Some(&surface),
+		apply_limit_buckets: false,
     }))?;
 
     let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
@@ -107,6 +108,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut config = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         format: main_format,
+		color_space: wgpu::SurfaceColorSpace::Auto,
         width,
         height,
         present_mode: wgpu::PresentMode::Fifo,
@@ -185,7 +187,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             rpass.draw(0..3, 0..1);
         }
         queue.submit(std::iter::once(encoder.finish()));
-        frame.present();
+		queue.present(frame);
     }
 
     Ok(())
