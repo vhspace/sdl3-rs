@@ -45,6 +45,11 @@ optional = true
 version = "0.6.3"
 optional = true
 
+[dependencies.sdl3-net-sys]
+version = "0.6.0"
+default-features = false
+optional = true
+
 [dependencies.sdl3-main]
 version = "0.6.3"
 optional = true
@@ -100,12 +105,18 @@ build-from-source = [
     "sdl3-image-sys?/build-from-source",
     "sdl3-ttf-sys?/build-from-source",
     "sdl3-mixer-sys?/build-from-source",
+    "sdl3-net-sys?/build-from-source",
 ]
 build-from-source-static = [
     "sdl3-sys/build-from-source-static",
     "sdl3-image-sys?/build-from-source-static",
     "sdl3-ttf-sys?/build-static-vendored",
     "sdl3-mixer-sys?/build-static-vendored",
+    # NOTE: sdl3-net-sys 0.6.0 still ships a pkg-config file with an empty
+    # `prefix=`, so the static link search path resolves to `/lib` and rustc
+    # cannot find libSDL3_net.a during the `sdl3-net-sys` build. Until that
+    # is fixed upstream, use `build-from-source` + `net` (dynamic linking),
+    # which our build.rs patches around via DEP_SDL3_NET_OUT_DIR.
 ]
 build-from-source-unix-console = ["sdl3-sys/sdl-unix-console-build"]
 ash = ["sdl3-sys/use-ash-v0-38"]
@@ -117,6 +128,7 @@ gfx = ["c_vec"] #, "sdl3-sys/gfx"]
 mixer = ["dep:sdl3-mixer-sys"]
 image = ["dep:sdl3-image-sys"]
 ttf = ["dep:sdl3-ttf-sys"]
+net = ["dep:sdl3-net-sys"]
 # Use hidapi support in SDL. Only 2.0.12 and after
 hidapi = []
 # test_mode allows SDL to be initialised from a thread that is not the main thread
@@ -196,6 +208,10 @@ name = "message-box"
 [[example]]
 required-features = ["mixer"]
 name = "mixer-demo"
+
+[[example]]
+required-features = ["net"]
+name = "net-echo"
 
 [[example]]
 name = "mouse-state"
