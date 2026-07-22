@@ -21,7 +21,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let (width, height) = window.size();
 
     let instance = wgpu::Instance::new(InstanceDescriptor::new_without_display_handle_from_env());
-    let (window, window_handle) = window.mut_as_window_handle()?; // reassigning `window` here allows for mutating the window (with methods such as `window.show()`) while still having a lifetime-bounded handle for it
+    let (window, window_handle) = window.as_window_handles_mut()?; // reassigning `window` here allows for mutating the window (with methods such as `window.show()`) while still having a lifetime-bounded handle for it
+    window.show();
     let surface = instance.create_surface(window_handle)?;
     let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::HighPerformance,
