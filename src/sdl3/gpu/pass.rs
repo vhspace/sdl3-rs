@@ -5,7 +5,7 @@ use crate::{
         BufferBinding, BufferRegion, GraphicsPipeline, IndexElementSize, LoadOp, StoreOp, Texture,
         TextureRegion, TextureSamplerBinding, TextureTransferInfo, TransferBufferLocation,
     },
-    pixels::Color,
+    pixels::{Color, FColor},
     rect::Rect,
     Error,
 };
@@ -503,6 +503,12 @@ impl RenderPass {
     #[doc(alias = "SDL_SetGPUScissor")]
     pub fn set_scissor(&self, scissor: Rect) {
         unsafe { sys::gpu::SDL_SetGPUScissor(self.inner, scissor.raw()) }
+    }
+
+    #[doc(alias = "SDL_SetGPUBlendConstants")]
+    pub fn set_blend_constants(&self, color: Color) {
+        let color = FColor::from(color);
+        unsafe { sys::gpu::SDL_SetGPUBlendConstants(self.inner, color.raw()) }
     }
 }
 
