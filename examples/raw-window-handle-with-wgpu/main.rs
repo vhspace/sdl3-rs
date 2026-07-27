@@ -12,21 +12,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
-    let window = video_subsystem
+    let mut window = video_subsystem
         .window("Raw Window Handle Example", 800, 600)
         .position_centered()
         .resizable()
         .metal_view()
-        .build()
-        .map_err(|e| e.to_string())?;
+        .build()?;
     let (width, height) = window.size();
 
     let instance = wgpu::Instance::new(InstanceDescriptor::new_without_display_handle_from_env());
-    let surface = create_surface::create_surface(&instance, &window)?;
+    let (window, window_handle) = window.as_window_handles_mut()?; // reassigning `window` here allows for mutating the window (with methods such as `window.show()`) while still having a lifetime-bounded handle for it
+    window.show();
+    let surface = instance.create_surface(window_handle)?;
     let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::HighPerformance,
         force_fallback_adapter: false,
         compatible_surface: Some(&surface),
+        apply_limit_buckets: false,
     }))?;
 
     let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
@@ -106,6 +108,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut config = wgpu::SurfaceConfiguration {
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         format: main_format,
+        color_space: wgpu::SurfaceColorSpace::Auto,
         width,
         height,
         present_mode: wgpu::PresentMode::Fifo,
@@ -184,39 +187,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             rpass.draw(0..3, 0..1);
         }
         queue.submit(std::iter::once(encoder.finish()));
-        frame.present();
+        queue.present(frame);
     }
 
     Ok(())
-}
-
-mod create_surface {
-    use sdl3::video::Window;
-    use wgpu::rwh::{HasDisplayHandle, HasWindowHandle};
-
-    // contains the unsafe impl as much as possible by putting it in this module
-    struct SyncWindow<'a>(&'a Window);
-
-    unsafe impl<'a> Send for SyncWindow<'a> {}
-    unsafe impl<'a> Sync for SyncWindow<'a> {}
-
-    impl<'a> HasWindowHandle for SyncWindow<'a> {
-        fn window_handle(&self) -> Result<wgpu::rwh::WindowHandle<'_>, wgpu::rwh::HandleError> {
-            self.0.window_handle()
-        }
-    }
-    impl<'a> HasDisplayHandle for SyncWindow<'a> {
-        fn display_handle(&self) -> Result<wgpu::rwh::DisplayHandle<'_>, wgpu::rwh::HandleError> {
-            self.0.display_handle()
-        }
-    }
-
-    pub fn create_surface<'a>(
-        instance: &wgpu::Instance,
-        window: &'a Window,
-    ) -> Result<wgpu::Surface<'a>, String> {
-        instance
-            .create_surface(SyncWindow(&window))
-            .map_err(|err| err.to_string())
-    }
 }

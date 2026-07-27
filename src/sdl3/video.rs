@@ -820,7 +820,7 @@ impl ProgressState {
 /// This may happen when a `TextureCreator<Window>` outlives the `Canvas<Window>`
 #[derive(Clone)]
 pub struct Window {
-    context: Arc<WindowContext>, // Arc may not be needed, added because wgpu expects Window to be send/sync, though even with Arc this technically still isn't send/sync
+    context: Arc<WindowContext>,
     hit_test_callback: Option<*mut c_void>,
 }
 
