@@ -13,6 +13,10 @@ use std::fmt;
 use sys::power::{SDL_PowerState, SDL_POWERSTATE_UNKNOWN};
 use sys::stdinc::SDL_free;
 
+/// A unique identifier for a joystick device.
+///
+/// Returned by [`Joystick::id()`] and appears in joystick and gamepad events
+/// to identify the instance that generated the event.
 pub type JoystickId = sys::joystick::SDL_JoystickID;
 
 impl JoystickSubsystem {
@@ -187,14 +191,14 @@ impl Joystick {
     }
 
     #[doc(alias = "SDL_GetJoystickID")]
-    pub fn id(&self) -> u32 {
+    pub fn id(&self) -> JoystickId {
         let result = unsafe { sys::joystick::SDL_GetJoystickID(self.raw) };
 
-        if result == 0 {
+        if result.0 == 0 {
             // Should only fail if the joystick is NULL.
             panic!("{}", get_error())
         } else {
-            u32::from(result)
+            result
         }
     }
 
@@ -487,8 +491,7 @@ impl Joystick {
     /// Check if a joystick is virtual
     #[doc(alias = "SDL_IsJoystickVirtual")]
     pub fn is_virtual(&self) -> bool {
-        let id = sys::joystick::SDL_JoystickID(self.id());
-        unsafe { sys::joystick::SDL_IsJoystickVirtual(id) }
+        unsafe { sys::joystick::SDL_IsJoystickVirtual(self.id()) }
     }
 
     /// Set a virtual axis state
@@ -693,7 +696,7 @@ pub struct VirtualJoystickConnection {
 impl VirtualJoystickConnection {
     /// Exposes the instance ID of the attached virtual joystick so that it can be opened
     pub fn id(&self) -> JoystickId {
-        sys::joystick::SDL_JoystickID(self.inner.id())
+        self.inner.id()
     }
 }
 
@@ -703,8 +706,7 @@ impl VirtualJoystickConnection {
 impl Drop for VirtualJoystickConnection {
     #[doc(alias = "SDL_DetachVirtualJoystick")]
     fn drop(&mut self) {
-        let id = sys::joystick::SDL_JoystickID(self.inner.id());
-        unsafe { sys::joystick::SDL_DetachVirtualJoystick(id) };
+        unsafe { sys::joystick::SDL_DetachVirtualJoystick(self.inner.id()) };
     }
 }
 
