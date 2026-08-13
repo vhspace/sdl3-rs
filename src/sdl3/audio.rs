@@ -1173,7 +1173,31 @@ impl Display for AudioStream {
 }
 
 impl AudioStream {
+    /// Returns the raw SDL_AudioStream pointer.
+    ///
+    /// This can be used to call raw SDL functions that aren't wrapped by this crate.
+    #[doc(alias = "SDL_AudioStream")]
+    pub fn raw(&self) -> *mut sys::audio::SDL_AudioStream {
+        self.stream
+    }
+
+    /// Creates an `AudioStream` from a raw SDL_AudioStream pointer.
+    ///
+    /// # Safety
+    ///
+    /// - `raw` must be a valid, non-null pointer to an `SDL_AudioStream`
+    /// - The pointer must not be owned by another wrapper (to avoid double-free)
+    /// - The caller must ensure the pointer remains valid for the wrapper's lifetime
+    /// - The caller is responsible for ensuring the stream is properly destroyed
+    ///   (consider using `AudioStreamOwner` if you need automatic cleanup)
+    #[doc(alias = "SDL_AudioStream")]
+    pub unsafe fn from_raw(raw: *mut sys::audio::SDL_AudioStream) -> Self {
+        debug_assert!(!raw.is_null(), "from_raw called with null pointer");
+        Self { stream: raw }
+    }
+
     /// Get the SDL_AudioStream pointer.
+    #[deprecated(since = "0.18.0", note = "Use `raw()` instead")]
     #[doc(alias = "SDL_AudioStream")]
     pub fn stream(&mut self) -> *mut sys::audio::SDL_AudioStream {
         self.stream
@@ -1510,6 +1534,20 @@ pub struct AudioStreamWithCallback<CB> {
     _marker: PhantomData<CB>,
 }
 
+impl<CB> Deref for AudioStreamWithCallback<CB> {
+    type Target = AudioStream;
+
+    fn deref(&self) -> &Self::Target {
+        &self.base_stream
+    }
+}
+
+impl<CB> DerefMut for AudioStreamWithCallback<CB> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.base_stream
+    }
+}
+
 impl<CB> Drop for AudioStreamWithCallback<CB> {
     fn drop(&mut self) {
         // `base_stream` will be dropped automatically.
@@ -1524,41 +1562,12 @@ impl<CB> Drop for AudioStreamWithCallback<CB> {
 }
 
 impl<CB> AudioStreamWithCallback<CB> {
-    /// Get the SDL_AudioStream pointer.
-    pub fn stream(&mut self) -> *mut sys::audio::SDL_AudioStream {
-        self.base_stream.stream
-    }
-
-    /// Pauses the audio stream.
-    pub fn pause(&self) -> Result<(), Error> {
-        self.base_stream.pause()
-    }
-
-    /// Resumes the audio stream.
-    pub fn resume(&self) -> Result<(), Error> {
-        self.base_stream.resume()
-    }
-
-    /// Clear any pending data in the stream.
-    pub fn clear(&self) -> Result<(), Error> {
-        self.base_stream.clear()
-    }
-
-    /// Tell the stream that you're done sending data.
-    pub fn flush(&self) -> Result<(), Error> {
-        self.base_stream.flush()
-    }
-
-    pub fn queued_bytes(&self) -> Result<i32, Error> {
-        self.base_stream.queued_bytes()
-    }
-
-    pub fn available_bytes(&self) -> Result<i32, Error> {
-        self.base_stream.available_bytes()
-    }
-
+    /// Locks the audio stream for exclusive access to the callback data.
+    ///
+    /// This is the only method specific to `AudioStreamWithCallback` - all other
+    /// `AudioStream` methods are available via `Deref`.
     pub fn lock(&mut self) -> Option<AudioStreamLockGuard<'_, CB>> {
-        let raw_stream = self.base_stream.stream;
+        let raw_stream = self.base_stream.raw();
         let result = unsafe { sys::audio::SDL_LockAudioStream(raw_stream) };
 
         if result {
@@ -1569,14 +1578,6 @@ impl<CB> AudioStreamWithCallback<CB> {
         } else {
             None
         }
-    }
-
-    pub fn get_gain(&mut self) -> Result<f32, Error> {
-        self.base_stream.get_gain()
-    }
-
-    pub fn set_gain(&mut self, gain: f32) -> Result<(), Error> {
-        self.base_stream.set_gain(gain)
     }
 }
 
@@ -1641,7 +1642,7 @@ impl<'a, CB> DerefMut for AudioStreamLockGuard<'a, CB> {
 impl<'a, CB> Drop for AudioStreamLockGuard<'a, CB> {
     fn drop(&mut self) {
         unsafe {
-            sys::audio::SDL_UnlockAudioStream(self.stream.base_stream.stream);
+            sys::audio::SDL_UnlockAudioStream(self.stream.base_stream.raw());
         }
     }
 }
