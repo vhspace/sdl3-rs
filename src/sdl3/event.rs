@@ -347,6 +347,7 @@ pub enum EventType {
     FingerDown = sys::events::SDL_EVENT_FINGER_DOWN.0,
     FingerUp = sys::events::SDL_EVENT_FINGER_UP.0,
     FingerMotion = sys::events::SDL_EVENT_FINGER_MOTION.0,
+    FingerCanceled = sys::events::SDL_EVENT_FINGER_CANCELED.0,
     // gestures have been removed from SD3: https://github.com/libsdl-org/SDL_gesture
     ClipboardUpdate = sys::events::SDL_EVENT_CLIPBOARD_UPDATE.0,
     DropFile = sys::events::SDL_EVENT_DROP_FILE.0,
@@ -458,6 +459,7 @@ impl TryFrom<u32> for EventType {
             SDL_EVENT_FINGER_DOWN => FingerDown,
             SDL_EVENT_FINGER_UP => FingerUp,
             SDL_EVENT_FINGER_MOTION => FingerMotion,
+            SDL_EVENT_FINGER_CANCELED => FingerCanceled,
 
             SDL_EVENT_CLIPBOARD_UPDATE => ClipboardUpdate,
             SDL_EVENT_DROP_FILE => DropFile,
@@ -932,6 +934,17 @@ pub enum Event {
         window_id: u32,
     },
     FingerMotion {
+        timestamp: u64,
+        touch_id: u64,
+        finger_id: u64,
+        x: f32,
+        y: f32,
+        dx: f32,
+        dy: f32,
+        pressure: f32,
+        window_id: u32,
+    },
+    FingerCanceled {
         timestamp: u64,
         touch_id: u64,
         finger_id: u64,
@@ -2130,6 +2143,20 @@ impl Event {
                         window_id: Self::window_id_from_ll(event.windowID),
                     }
                 }
+                EventType::FingerCanceled => {
+                    let event = raw.tfinger;
+                    Event::FingerCanceled {
+                        timestamp: event.timestamp,
+                        touch_id: Self::touch_id_from_ll(event.touchID),
+                        finger_id: Self::finger_id_from_ll(event.fingerID),
+                        x: event.x,
+                        y: event.y,
+                        dx: event.dx,
+                        dy: event.dy,
+                        pressure: event.pressure,
+                        window_id: Self::window_id_from_ll(event.windowID),
+                    }
+                }
 
                 EventType::ClipboardUpdate => {
                     let event = raw.common;
@@ -2405,6 +2432,7 @@ impl Event {
             | (Self::FingerDown { .. }, Self::FingerDown { .. })
             | (Self::FingerUp { .. }, Self::FingerUp { .. })
             | (Self::FingerMotion { .. }, Self::FingerMotion { .. })
+            | (Self::FingerCanceled { .. }, Self::FingerCanceled { .. })
             | (Self::DollarRecord { .. }, Self::DollarRecord { .. })
             | (Self::MultiGesture { .. }, Self::MultiGesture { .. })
             | (Self::ClipboardUpdate { .. }, Self::ClipboardUpdate { .. })
@@ -2477,6 +2505,7 @@ impl Event {
             Self::FingerDown { timestamp, .. } => timestamp,
             Self::FingerUp { timestamp, .. } => timestamp,
             Self::FingerMotion { timestamp, .. } => timestamp,
+            Self::FingerCanceled { timestamp, .. } => timestamp,
             Self::DollarRecord { timestamp, .. } => timestamp,
             Self::MultiGesture { timestamp, .. } => timestamp,
             Self::ClipboardUpdate { timestamp, .. } => timestamp,
@@ -2535,6 +2564,7 @@ impl Event {
             Self::FingerDown { window_id, .. } => Some(*window_id),
             Self::FingerUp { window_id, .. } => Some(*window_id),
             Self::FingerMotion { window_id, .. } => Some(*window_id),
+            Self::FingerCanceled { window_id, .. } => Some(*window_id),
             Self::DropFile { window_id, .. } => Some(*window_id),
             Self::DropText { window_id, .. } => Some(*window_id),
             Self::DropBegin { window_id, .. } => Some(*window_id),
@@ -2760,7 +2790,10 @@ impl Event {
     pub fn is_finger(&self) -> bool {
         matches!(
             self,
-            Self::FingerDown { .. } | Self::FingerUp { .. } | Self::FingerMotion { .. }
+            Self::FingerDown { .. }
+                | Self::FingerUp { .. }
+                | Self::FingerMotion { .. }
+                | Self::FingerCanceled { .. }
         )
     }
 
