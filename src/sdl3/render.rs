@@ -2773,6 +2773,35 @@ impl InternalTexture {
         }
     }
 
+    #[doc(alias = "SDL_LockTextureToSurface")]
+    fn with_surface<F, R, R2>(&mut self, rect: R2, func: F) -> Result<R, Error>
+    where
+        F: FnOnce(&mut SurfaceRef) -> R,
+        R2: Into<Option<Rect>>,
+    {
+        let rect = rect.into();
+
+        let loaded = unsafe {
+            let mut surface = MaybeUninit::uninit();
+            let ret = sys::render::SDL_LockTextureToSurface(
+                self.raw,
+                rect.map_or_else(ptr::null, |rect| rect.raw()),
+                surface.as_mut_ptr(),
+            );
+            if ret {
+                Ok(SurfaceRef::from_ll_mut(surface.assume_init()))
+            } else {
+                Err(get_error())
+            }
+        };
+
+        loaded.map(|surface_ref| {
+            let result = func(surface_ref);
+            unsafe { sys::render::SDL_UnlockTexture(self.raw) };
+            result
+        })
+    }
+
     // removed:
     // SDL_GL_BindTexture() - use SDL_GetTextureProperties() to get the OpenGL texture ID and bind the texture directly
     // SDL_GL_UnbindTexture() - use SDL_GetTextureProperties() to get the OpenGL texture ID and unbind the texture directly
@@ -2957,6 +2986,26 @@ impl Texture<'_> {
         R2: Into<Option<Rect>>,
     {
         InternalTexture { raw: self.raw }.with_lock(rect, func)
+    }
+
+    /// Locks the texture for **write-only** pixel access, and expose it as a SDL surface.
+    /// The texture must have been created with streaming access.
+    ///
+    /// `F` is a function that is passed the write-only surface.
+    /// # Remarks
+    /// Besides providing an `SurfaceRef` instead of raw pixel data, this function operates like `with_lock`.
+    ///
+    /// As an optimization, the pixels made available for editing don't
+    /// necessarily contain the old texture data.
+    /// This is a write-only operation, and if you need to keep a copy of the
+    /// texture data you should do that at the application level.
+    #[inline]
+    pub fn with_surface<F, R, R2>(&mut self, rect: R2, func: F) -> Result<R, Error>
+    where
+        F: FnOnce(&mut SurfaceRef) -> R,
+        R2: Into<Option<Rect>>,
+    {
+        InternalTexture { raw: self.raw }.with_surface(rect, func)
     }
 
     // /// Binds an OpenGL/ES/ES2 texture to the current
@@ -3192,6 +3241,26 @@ impl Texture {
         R2: Into<Option<Rect>>,
     {
         InternalTexture { raw: self.raw }.with_lock(rect, func)
+    }
+
+    /// Locks the texture for **write-only** pixel access, and expose it as a SDL surface.
+    /// The texture must have been created with streaming access.
+    ///
+    /// `F` is a function that is passed the write-only surface.
+    /// # Remarks
+    /// Besides providing an `SurfaceRef` instead of raw pixel data, this function operates like `with_lock`.
+    ///
+    /// As an optimization, the pixels made available for editing don't
+    /// necessarily contain the old texture data.
+    /// This is a write-only operation, and if you need to keep a copy of the
+    /// texture data you should do that at the application level.
+    #[inline]
+    pub fn with_surface<F, R, R2>(&mut self, rect: R2, func: F) -> Result<R, Error>
+    where
+        F: FnOnce(&mut SurfaceRef) -> R,
+        R2: Into<Option<Rect>>,
+    {
+        InternalTexture { raw: self.raw }.with_surface(rect, func)
     }
 
     // these are not supplied by SDL anymore
