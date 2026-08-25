@@ -29,6 +29,7 @@ jobs:
             keyboard
             mixer
             mouse
+            net
             ttf
             audio
             clipboard

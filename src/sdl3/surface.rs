@@ -300,6 +300,42 @@ impl<'a> Surface<'a> {
         Surface::load_bmp_rw(&mut file)
     }
 
+    #[doc(alias = "SDL_LoadPNG_IO")]
+    pub fn load_png_io(iostream: &mut IOStream) -> Result<Surface<'static>, Error> {
+        let raw = unsafe { sys::surface::SDL_LoadPNG_IO(iostream.raw(), false) };
+
+        if raw.is_null() {
+            Err(get_error())
+        } else {
+            Ok(unsafe { Surface::from_ll(raw) })
+        }
+    }
+
+    pub fn load_png<P: AsRef<Path>>(path: P) -> Result<Surface<'static>, Error> {
+        let mut file = IOStream::from_file(path, "rb")?;
+        Surface::load_png_io(&mut file)
+    }
+
+    /// Loads a surface from PNG or BMP [`IOStream`].
+    /// Other formats require enabling `image` feature and using [`ImageIOStream`] trait.
+    #[doc(alias = "SDL_LoadSurface_IO")]
+    pub fn load_surface_io(iostream: &mut IOStream) -> Result<Surface<'static>, Error> {
+        let raw = unsafe { sys::surface::SDL_LoadSurface_IO(iostream.raw(), false) };
+
+        if raw.is_null() {
+            Err(get_error())
+        } else {
+            Ok(unsafe { Surface::from_ll(raw) })
+        }
+    }
+
+    /// Loads a surface from PNG or BMP file path.
+    /// Other formats require enabling `image` feature and using [`LoadSurface`] trait.
+    pub fn load_surface<P: AsRef<Path>>(path: P) -> Result<Surface<'static>, Error> {
+        let mut file = IOStream::from_file(path, "rb")?;
+        Surface::load_surface_io(&mut file)
+    }
+
     /// Creates a Software Canvas to allow rendering in the Surface itself. This `Canvas` will
     /// never be accelerated materially, so there is no performance change between `Surface` and
     /// `Canvas` coming from a `Surface`.
@@ -448,6 +484,21 @@ impl SurfaceRef {
     pub fn save_bmp<P: AsRef<Path>>(&self, path: P) -> Result<(), Error> {
         let mut file = IOStream::from_file(path, "wb")?;
         self.save_bmp_rw(&mut file)
+    }
+
+    #[doc(alias = "SDL_SavePNG_IO")]
+    pub fn save_png_io(&self, iostream: &mut IOStream) -> Result<(), Error> {
+        let ok = unsafe { sys::surface::SDL_SavePNG_IO(self.raw(), iostream.raw(), false) };
+        if ok {
+            Ok(())
+        } else {
+            Err(get_error())
+        }
+    }
+
+    pub fn save_png<P: AsRef<Path>>(&self, path: P) -> Result<(), Error> {
+        let mut file = IOStream::from_file(path, "wb")?;
+        self.save_png_io(&mut file)
     }
 
     #[doc(alias = "SDL_SetSurfacePalette")]
