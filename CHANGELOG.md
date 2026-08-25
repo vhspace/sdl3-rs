@@ -8,6 +8,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### <!-- 0 -->Added
+- Add Texture::with_surface ([#442](https://github.com/vhspace/sdl3-rs/pull/442))
+- Add FingerCanceled to EventType and Event. ([#438](https://github.com/vhspace/sdl3-rs/pull/438))
+- Add `RenderPass::bind_vertex_samplers` ([#440](https://github.com/vhspace/sdl3-rs/pull/440))
+- Add window properties, shape, and safe area APIs ([#428](https://github.com/vhspace/sdl3-rs/pull/428))
+- Add optional Debug impls ([#424](https://github.com/vhspace/sdl3-rs/pull/424))
+- Add safe set_blend_constants method ([#411](https://github.com/vhspace/sdl3-rs/pull/411))
+- Support loading/saving PNGs without `image` feature ([#393](https://github.com/vhspace/sdl3-rs/pull/393))
+- Return error when enabling/disabling screen saver ([#392](https://github.com/vhspace/sdl3-rs/pull/392))
+
+### <!-- 1 -->Changed
+- Update status of SDL_sound and SDL_net ([#441](https://github.com/vhspace/sdl3-rs/pull/441))
+- Implemented set_app_metadata and set_app_metadata_property. ([#418](https://github.com/vhspace/sdl3-rs/pull/418))
+- Sync mod state with sdl3 doc ([#417](https://github.com/vhspace/sdl3-rs/pull/417))
+- Fix Windows build by forcing Ninja cmake generator ([#407](https://github.com/vhspace/sdl3-rs/pull/407))
+- Allow 'net' scope in PR title linter ([#391](https://github.com/vhspace/sdl3-rs/pull/391))
+- Fix potential ub in find_glyph_metrics ([#387](https://github.com/vhspace/sdl3-rs/pull/387))
+
+### <!-- 4 -->Dependencies
+- Bump env_logger from 0.11.10 to 0.11.11 ([#409](https://github.com/vhspace/sdl3-rs/pull/409))
+- Bump sdl3-main from 0.6.3 to 0.6.4 ([#404](https://github.com/vhspace/sdl3-rs/pull/404))
+- Bump rand from 0.10.1 to 0.10.2 ([#415](https://github.com/vhspace/sdl3-rs/pull/415))
+- Bump pollster from 0.4.0 to 1.0.1 ([#420](https://github.com/vhspace/sdl3-rs/pull/420))
+- Bump bitflags from 2.11.1 to 2.13.1 ([#423](https://github.com/vhspace/sdl3-rs/pull/423))
+- Bump libc from 0.2.186 to 0.2.189 ([#427](https://github.com/vhspace/sdl3-rs/pull/427))
+- Bump sdl3-sys from 0.6.6+SDL-3.4.10 to 0.6.8+SDL-3.4.14 ([#433](https://github.com/vhspace/sdl3-rs/pull/433))
+- Bump dtolnay/rust-toolchain ([#432](https://github.com/vhspace/sdl3-rs/pull/432))
+- Bump softprops/action-gh-release from 3.0.0 to 3.0.1 ([#406](https://github.com/vhspace/sdl3-rs/pull/406))
+- Bump actions/checkout from 6.0.3 to 7.0.0 ([#405](https://github.com/vhspace/sdl3-rs/pull/405))
+- Bump sdl3-sys and extension sys crates to latest ([#398](https://github.com/vhspace/sdl3-rs/pull/398))
+- Bump actions/checkout from 6.0.2 to 6.0.3 ([#395](https://github.com/vhspace/sdl3-rs/pull/395))
+
+## [0.18.4] - 2026-05-14
+
+### <!-- 0 -->Added
+- Steam controller grip buttons ([#385](https://github.com/vhspace/sdl3-rs/pull/385))
 - Expose the api call: TTF_GetFontSize ([#382](https://github.com/vhspace/sdl3-rs/pull/382))
 
 ### <!-- 4 -->Dependencies
@@ -270,7 +305,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump bitflags from 2.9.0 to 2.9.1 ([#207](https://github.com/vhspace/sdl3-rs/pull/207))
 - Bump actions/cache from 3 to 4 ([#208](https://github.com/vhspace/sdl3-rs/pull/208))
 
-[unreleased]: https://github.com/vhspace/sdl3-rs/compare/v0.18.3...HEAD
+[unreleased]: https://github.com/vhspace/sdl3-rs/compare/v0.18.4...HEAD
+[0.18.4]: https://github.com/vhspace/sdl3-rs/compare/v0.18.3...v0.18.4
 [0.18.3]: https://github.com/vhspace/sdl3-rs/compare/v0.18.2...v0.18.3
 [0.18.2]: https://github.com/vhspace/sdl3-rs/compare/v0.18.1...v0.18.2
 [0.18.1]: https://github.com/vhspace/sdl3-rs/compare/v0.18.0...v0.18.1
