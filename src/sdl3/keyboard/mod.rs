@@ -17,6 +17,7 @@ bitflags! {
         const NOMOD = 0x0000;
         const LSHIFTMOD = 0x0001;
         const RSHIFTMOD = 0x0002;
+        const LEVEL5MOD = 0x0004;
         const LCTRLMOD = 0x0040;
         const RCTRLMOD = 0x0080;
         const LALTMOD = 0x0100;
@@ -26,7 +27,7 @@ bitflags! {
         const NUMMOD = 0x1000;
         const CAPSMOD = 0x2000;
         const MODEMOD = 0x4000;
-        const RESERVEDMOD = 0x8000;
+        const SCROLLMOD = 0x8000;
     }
 }
 
