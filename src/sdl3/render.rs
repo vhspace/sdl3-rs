@@ -2858,7 +2858,10 @@ impl Texture<'_> {
     #[doc(alias = "SDL_Texture")]
     pub unsafe fn from_raw(raw: *mut sys::render::SDL_Texture) -> Self {
         debug_assert!(!raw.is_null(), "from_raw called with null pointer");
-        Self { raw, _marker: PhantomData }
+        Self {
+            raw,
+            _marker: PhantomData,
+        }
     }
 
     /// Gets the texture's internal properties.

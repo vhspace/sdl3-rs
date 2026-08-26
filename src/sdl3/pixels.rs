@@ -111,7 +111,6 @@ impl Drop for Palette {
     }
 }
 
-
 #[test]
 fn create_palette() {
     let colors: Vec<_> = (0..0xff).map(|u| Color::RGB(u, 0, 0xff - u)).collect();

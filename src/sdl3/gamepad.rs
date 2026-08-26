@@ -768,7 +768,10 @@ impl Gamepad {
     /// - The pointer must not be owned by another wrapper (to avoid double-free)
     /// - The caller must ensure the pointer remains valid for the wrapper's lifetime
     #[doc(alias = "SDL_Gamepad")]
-    pub unsafe fn from_raw(raw: *mut sys::gamepad::SDL_Gamepad, subsystem: GamepadSubsystem) -> Self {
+    pub unsafe fn from_raw(
+        raw: *mut sys::gamepad::SDL_Gamepad,
+        subsystem: GamepadSubsystem,
+    ) -> Self {
         debug_assert!(!raw.is_null(), "from_raw called with null pointer");
         Self { subsystem, raw }
     }
