@@ -2033,6 +2033,61 @@ impl Window {
         WindowFlags::from(self.window_flags()).contains(WindowFlags::MINIMIZED)
     }
 
+    /// Get the properties associated with a window.
+    ///
+    /// # Remarks
+    /// Returns a `Properties` wrapper containing the read-only properties provided by SDL.
+    #[doc(alias = "SDL_GetWindowProperties")]
+    pub fn properties(&self) -> Result<Properties, Error> {
+        unsafe {
+            let result = sys::video::SDL_GetWindowProperties(self.context.raw);
+            if result.0 == 0 {
+                Err(get_error())
+            } else {
+                Ok(Properties::const_from_ll(result))
+            }
+        }
+    }
+
+    /// Set the alpha channel (shape) of a transparent window.
+    ///
+    /// # Remarks
+    /// This sets the alpha channel of a transparent window, and any fully transparent areas
+    /// are also transparent to mouse clicks. If you are using something besides the SDL
+    /// render API, then you are responsible for drawing the alpha channel of the window to
+    /// match the shape alpha channel to get consistent cross-platform results.
+    /// The window must have been created with the `SDL_WINDOW_TRANSPARENT` flag.
+    #[doc(alias = "SDL_SetWindowShape")]
+    pub fn set_shape<S: AsRef<SurfaceRef>>(&self, shape: S) -> Result<(), Error> {
+        unsafe {
+            if sys::video::SDL_SetWindowShape(self.context.raw, shape.as_ref().raw()) {
+                Ok(())
+            } else {
+                Err(get_error())
+            }
+        }
+    }
+
+    /// Get the safe area for this window.
+    ///
+    /// # Remarks
+    /// Some devices have portions of the screen which are partially obscured or not interactive,
+    /// possibly due to on-screen controls, curved edges, camera notches, TV overscan, etc. This
+    /// function provides the area of the window which is safe to have interactable content. You
+    /// should continue rendering into the rest of the window, but it should not contain visually
+    /// important or interactable content.
+    #[doc(alias = "SDL_GetWindowSafeArea")]
+    pub fn safe_area(&self) -> Result<Rect, Error> {
+        let mut rect = Rect::new(0, 0, 0, 0);
+        unsafe {
+            if sys::video::SDL_GetWindowSafeArea(self.context.raw, rect.raw_mut()) {
+                Ok(rect)
+            } else {
+                Err(get_error())
+            }
+        }
+    }
+
     #[doc(alias = "SDL_SetWindowTitle")]
     pub fn set_title(&mut self, title: &str) -> Result<(), NulError> {
         let title = CString::new(title)?;
