@@ -2847,6 +2847,23 @@ impl InternalTexture {
 
 #[cfg(not(feature = "unsafe_textures"))]
 impl Texture<'_> {
+    /// Creates a `Texture` from a raw SDL_Texture pointer.
+    ///
+    /// # Safety
+    ///
+    /// - `raw` must be a valid, non-null pointer to an `SDL_Texture`
+    /// - The pointer must not be owned by another wrapper (to avoid double-free)
+    /// - The caller must ensure the pointer remains valid for the wrapper's lifetime
+    /// - The texture must have been created by the same renderer that will use it
+    #[doc(alias = "SDL_Texture")]
+    pub unsafe fn from_raw(raw: *mut sys::render::SDL_Texture) -> Self {
+        debug_assert!(!raw.is_null(), "from_raw called with null pointer");
+        Self {
+            raw,
+            _marker: PhantomData,
+        }
+    }
+
     /// Gets the texture's internal properties.
     #[inline]
     pub fn query(&self) -> TextureQuery {
@@ -3102,6 +3119,20 @@ impl Texture<'_> {
 
 #[cfg(feature = "unsafe_textures")]
 impl Texture {
+    /// Creates a `Texture` from a raw SDL_Texture pointer.
+    ///
+    /// # Safety
+    ///
+    /// - `raw` must be a valid, non-null pointer to an `SDL_Texture`
+    /// - The pointer must not be owned by another wrapper (to avoid double-free)
+    /// - The caller must ensure the pointer remains valid for the wrapper's lifetime
+    /// - The texture must have been created by the same renderer that will use it
+    #[doc(alias = "SDL_Texture")]
+    pub unsafe fn from_raw(raw: *mut sys::render::SDL_Texture) -> Self {
+        debug_assert!(!raw.is_null(), "from_raw called with null pointer");
+        Self { raw }
+    }
+
     /// Gets the texture's internal properties.
     #[inline]
     pub fn query(&self) -> TextureQuery {

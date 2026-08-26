@@ -44,6 +44,27 @@ impl Drop for Cursor {
 }
 
 impl Cursor {
+    /// Returns the raw SDL_Cursor pointer.
+    ///
+    /// This can be used to call raw SDL functions that aren't wrapped by this crate.
+    #[doc(alias = "SDL_Cursor")]
+    pub fn raw(&self) -> *mut sys::mouse::SDL_Cursor {
+        self.raw
+    }
+
+    /// Creates a `Cursor` from a raw SDL_Cursor pointer.
+    ///
+    /// # Safety
+    ///
+    /// - `raw` must be a valid, non-null pointer to an `SDL_Cursor`
+    /// - The pointer must not be owned by another wrapper (to avoid double-free)
+    /// - The caller must ensure the pointer remains valid for the wrapper's lifetime
+    #[doc(alias = "SDL_Cursor")]
+    pub unsafe fn from_raw(raw: *mut sys::mouse::SDL_Cursor) -> Self {
+        debug_assert!(!raw.is_null(), "from_raw called with null pointer");
+        Self { raw }
+    }
+
     #[doc(alias = "SDL_CreateCursor")]
     pub fn new(
         data: &[u8],

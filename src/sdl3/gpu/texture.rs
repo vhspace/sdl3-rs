@@ -223,8 +223,12 @@ impl Sampler {
         }
     }
 
+    /// Returns the raw SDL_GPUSampler pointer.
+    ///
+    /// This can be used to call raw SDL functions that aren't wrapped by this crate.
     #[inline]
-    fn raw(&self) -> *mut SDL_GPUSampler {
+    #[doc(alias = "SDL_GPUSampler")]
+    pub fn raw(&self) -> *mut SDL_GPUSampler {
         self.inner.raw
     }
 }
