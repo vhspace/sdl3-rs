@@ -1,4 +1,3 @@
-extern crate sdl3;
 use std::time::{Duration, Instant};
 
 use sdl3::{event::Event, sensor::SensorType};

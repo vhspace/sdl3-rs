@@ -1,7 +1,4 @@
-extern crate rand;
-extern crate sdl3;
-
-use rand::Rng;
+use rand::RngExt;
 use sdl3::event::Event;
 use sdl3::pixels::Color;
 use sdl3::rect::Point;
@@ -76,13 +73,13 @@ impl AppState {
         let size = 30.0;
         let x = 320.0;
         let y = 95.0 - (size / 2.0);
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         for i in 0..360 {
             let random_color = Color::RGB(
-                rng.gen_range(0..=255),
-                rng.gen_range(0..=255),
-                rng.gen_range(0..=255),
+                rng.random_range(0..=255),
+                rng.random_range(0..=255),
+                rng.random_range(0..=255),
             );
             self.canvas.set_draw_color(random_color);
             self.canvas

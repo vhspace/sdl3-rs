@@ -3,8 +3,6 @@
 // orginal code https://www.desmos.com/calculator/vp7yjxkq9h
 // orginal C code https://github.com/servetgulnaroglu/cube.c
 
-extern crate sdl3;
-
 use sdl3::{
     event::Event, keyboard::Keycode, pixels::Color, rect::Point, render::Canvas, video::Window,
 };

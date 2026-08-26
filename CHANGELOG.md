@@ -5,6 +5,92 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### <!-- 0 -->Added
+- Expose the api call: TTF_GetFontSize ([#382](https://github.com/vhspace/sdl3-rs/pull/382))
+
+### <!-- 4 -->Dependencies
+- Bump libc from 0.2.185 to 0.2.186 ([#370](https://github.com/vhspace/sdl3-rs/pull/370))
+- Bump orhun/git-cliff-action from 4.7.1 to 4.8.0 ([#375](https://github.com/vhspace/sdl3-rs/pull/375))
+
+## [0.18.3] - 2026-05-04
+
+### <!-- 1 -->Changed
+- Bump sdl3-sys to 0.6.5 (SDL 3.4.8) ([#379](https://github.com/vhspace/sdl3-rs/pull/379))
+
+## [0.18.2] - 2026-05-03
+
+### <!-- 0 -->Added
+- Add bindings for Virtual joysticks in sdl3::joysticks ([#371](https://github.com/vhspace/sdl3-rs/pull/371))
+- Add integer_x/y to Event::MouseWheel ([#360](https://github.com/vhspace/sdl3-rs/pull/360))
+
+### <!-- 1 -->Changed
+- Fix save_bmp_rw in surface.rs ([#372](https://github.com/vhspace/sdl3-rs/pull/372))
+- Allow deps scope in PR title lint
+
+### <!-- 2 -->Fixed
+- One missing occurence of WindowEvent::Occluded ([#369](https://github.com/vhspace/sdl3-rs/pull/369))
+- Pin windows = 0.62 to unify with wgpu-hal's gpu-allocator dx12 backend ([#373](https://github.com/vhspace/sdl3-rs/pull/373))
+- Enable windows-core/std so wgpu-hal 29.0.1 compiles on Windows
+- Prevent use-after-free in VertexInputState and GraphicsPipelineTargetInfo ([#338](https://github.com/vhspace/sdl3-rs/pull/338))
+
+### <!-- 4 -->Dependencies
+- Bump wgpu from 24.0.5 to 29.0.1
+- Bump rand from 0.8.5 to 0.10.1
+- Bump env_logger from 0.11.8 to 0.11.10 ([#344](https://github.com/vhspace/sdl3-rs/pull/344))
+- Bump libc from 0.2.180 to 0.2.185 ([#364](https://github.com/vhspace/sdl3-rs/pull/364))
+- Bump objc2 from 0.6.3 to 0.6.4 ([#339](https://github.com/vhspace/sdl3-rs/pull/339))
+- Bump sdl3-main from 0.6.0 to 0.6.2 ([#345](https://github.com/vhspace/sdl3-rs/pull/345))
+- Bump sdl3-image-sys ([#354](https://github.com/vhspace/sdl3-rs/pull/354))
+- Bump bitflags from 2.10.0 to 2.11.1 ([#366](https://github.com/vhspace/sdl3-rs/pull/366))
+- Bump sdl3-sys from 0.6.0+SDL-3.4.0 to 0.6.3+SDL-3.4.4 ([#367](https://github.com/vhspace/sdl3-rs/pull/367))
+- Bump softprops/action-gh-release from 2.6.1 to 3.0.0 ([#363](https://github.com/vhspace/sdl3-rs/pull/363))
+
+## [0.18.1] - 2026-04-12
+
+### <!-- 2 -->Fixed
+- Harden CI/CD workflows and add security policies ([#361](https://github.com/vhspace/sdl3-rs/pull/361))
+
+### <!-- 5 -->Documentation
+- Mark SDL_mixer as supported in extension libraries table
+
+## [0.18.0] - 2026-04-09
+
+### <!-- 0 -->Added
+- Mixer advanced API surface ([#357](https://github.com/vhspace/sdl3-rs/pull/357))
+- Add SDL3_mixer support ([#356](https://github.com/vhspace/sdl3-rs/pull/356))
+- Add window_id to finger touch events ([#351](https://github.com/vhspace/sdl3-rs/pull/351))
+- Add sdl3::event::WindowEvent::Occluded ([#347](https://github.com/vhspace/sdl3-rs/pull/347))
+- Added SDL_CreateGPUDeviceWithProperties support. ([#335](https://github.com/vhspace/sdl3-rs/pull/335))
+
+### <!-- 1 -->Changed
+- Better crate description ([#349](https://github.com/vhspace/sdl3-rs/pull/349))
+- Expose 'available_bytes' from base_stream in AudioStreamWithCallback as well as the underlying sdl sys stream ([#327](https://github.com/vhspace/sdl3-rs/pull/327))
+- Add Windows to build matrix ([#317](https://github.com/vhspace/sdl3-rs/pull/317))
+- Bump wgpu from 24.0.5 to 28.0.0 ([#313](https://github.com/vhspace/sdl3-rs/pull/313)) ([#318](https://github.com/vhspace/sdl3-rs/pull/318))
+- Replace lazy_static with std ([#315](https://github.com/vhspace/sdl3-rs/pull/315))
+
+### <!-- 2 -->Fixed
+- Remove unsafe transmutes and improve type safety ([#311](https://github.com/vhspace/sdl3-rs/pull/311))
+- Address wait_timeout_iter feedback from #310 ([#312](https://github.com/vhspace/sdl3-rs/pull/312))
+
+### <!-- 4 -->Dependencies
+- Bump wgpu from 24.0.5 to 28.0.0 ([#313](https://github.com/vhspace/sdl3-rs/pull/313))
+
+## [0.17.3] - 2026-01-11
+
+### <!-- 1 -->Changed
+- Document the `main` feature ([#305](https://github.com/vhspace/sdl3-rs/pull/305))
+
+### <!-- 2 -->Fixed
+- Resolve clippy warnings across codebase ([#309](https://github.com/vhspace/sdl3-rs/pull/309))
+- Use Duration for wait_timeout_iter and track total elapsed time ([#310](https://github.com/vhspace/sdl3-rs/pull/310))
+- Restore audio-queue-squarewave and audio-wav examples ([#308](https://github.com/vhspace/sdl3-rs/pull/308))
+
+### <!-- 4 -->Dependencies
+- Bump libc from 0.2.179 to 0.2.180 ([#307](https://github.com/vhspace/sdl3-rs/pull/307))
+
 ## [0.17.2] - 2026-01-08
 
 ### <!-- 1 -->Changed
@@ -184,6 +270,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump bitflags from 2.9.0 to 2.9.1 ([#207](https://github.com/vhspace/sdl3-rs/pull/207))
 - Bump actions/cache from 3 to 4 ([#208](https://github.com/vhspace/sdl3-rs/pull/208))
 
+[unreleased]: https://github.com/vhspace/sdl3-rs/compare/v0.18.3...HEAD
+[0.18.3]: https://github.com/vhspace/sdl3-rs/compare/v0.18.2...v0.18.3
+[0.18.2]: https://github.com/vhspace/sdl3-rs/compare/v0.18.1...v0.18.2
+[0.18.1]: https://github.com/vhspace/sdl3-rs/compare/v0.18.0...v0.18.1
+[0.18.0]: https://github.com/vhspace/sdl3-rs/compare/v0.17.3...v0.18.0
+[0.17.3]: https://github.com/vhspace/sdl3-rs/compare/v0.17.2...v0.17.3
 [0.17.2]: https://github.com/vhspace/sdl3-rs/compare/v0.17.1...v0.17.2
 [0.17.1]: https://github.com/vhspace/sdl3-rs/compare/v0.17.0...v0.17.1
 [0.17.0]: https://github.com/vhspace/sdl3-rs/compare/v0.16.4...v0.17.0

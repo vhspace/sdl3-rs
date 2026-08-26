@@ -1,5 +1,3 @@
-extern crate sdl3;
-
 use sdl3::event::Event;
 use sdl3::pixels::PixelFormat;
 use sdl3::render::{Canvas, FRect, Texture};

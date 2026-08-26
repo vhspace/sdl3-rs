@@ -1,4 +1,3 @@
-extern crate sdl3;
 use sdl3::{rect::Rect, render::create_renderer, render::ClippingRect};
 
 #[test]

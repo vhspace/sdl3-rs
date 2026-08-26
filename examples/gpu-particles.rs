@@ -1,4 +1,4 @@
-use rand::Rng;
+use rand::RngExt as _;
 use sdl3::gpu::*;
 use sdl3::pixels::Color;
 use sdl3::{event::Event, keyboard::Keycode};
@@ -164,5 +164,5 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 fn rand01() -> f32 {
-    rand::thread_rng().gen::<f32>()
+    rand::rng().random::<f32>()
 }

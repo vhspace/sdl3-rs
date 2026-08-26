@@ -1,5 +1,3 @@
-extern crate sdl3;
-
 use sdl3::audio::{AudioSpec, AudioSpecWAV};
 use std::borrow::Cow;
 use std::path::{Path, PathBuf};

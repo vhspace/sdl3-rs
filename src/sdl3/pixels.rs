@@ -293,7 +293,7 @@ impl FColor {
 
     // Implemented manually and kept private, because reasons
     #[inline]
-    const fn raw(self) -> sys::pixels::SDL_FColor {
+    pub(crate) const fn raw(self) -> sys::pixels::SDL_FColor {
         sys::pixels::SDL_FColor {
             r: self.r,
             g: self.g,

@@ -14,8 +14,6 @@ use sdl3::{
     Error,
 };
 
-extern crate sdl3;
-
 #[repr(packed)]
 #[derive(Copy, Clone)]
 pub struct VertexPosition {

@@ -1,5 +1,3 @@
-extern crate sdl3;
-
 use sdl3::dialog::{
     show_open_file_dialog, show_open_folder_dialog, show_save_file_dialog, DialogFileFilter,
 };

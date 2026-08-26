@@ -1,5 +1,3 @@
-extern crate sdl3;
-
 /*
 #[test]
 fn display_name_no_segfault() {

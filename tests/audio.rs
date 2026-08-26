@@ -1,5 +1,3 @@
-extern crate sdl3;
-
 fn init_audio_subsystem() -> Option<(sdl3::Sdl, sdl3::AudioSubsystem)> {
     std::env::set_var("SDL_AUDIODRIVER", "dummy");
     let sdl = match sdl3::init() {

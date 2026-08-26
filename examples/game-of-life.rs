@@ -1,5 +1,3 @@
-extern crate sdl3;
-
 #[cfg(not(feature = "unsafe_textures"))]
 use crate::game_of_life::{PLAYGROUND_HEIGHT, PLAYGROUND_WIDTH, SQUARE_SIZE};
 use sdl3::event::Event;

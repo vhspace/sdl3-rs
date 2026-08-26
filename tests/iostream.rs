@@ -1,4 +1,3 @@
-extern crate sdl3;
 use std::io::Read;
 
 #[test]

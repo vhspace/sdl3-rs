@@ -303,6 +303,7 @@ pub enum EventType {
     WindowPixelSizeChanged = sys::events::SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED.0,
     WindowMinimized = sys::events::SDL_EVENT_WINDOW_MINIMIZED.0,
     WindowMaximized = sys::events::SDL_EVENT_WINDOW_MAXIMIZED.0,
+    WindowOccluded = sys::events::SDL_EVENT_WINDOW_OCCLUDED.0,
     WindowRestored = sys::events::SDL_EVENT_WINDOW_RESTORED.0,
     WindowMouseEnter = sys::events::SDL_EVENT_WINDOW_MOUSE_ENTER.0,
     WindowMouseLeave = sys::events::SDL_EVENT_WINDOW_MOUSE_LEAVE.0,
@@ -346,6 +347,7 @@ pub enum EventType {
     FingerDown = sys::events::SDL_EVENT_FINGER_DOWN.0,
     FingerUp = sys::events::SDL_EVENT_FINGER_UP.0,
     FingerMotion = sys::events::SDL_EVENT_FINGER_MOTION.0,
+    FingerCanceled = sys::events::SDL_EVENT_FINGER_CANCELED.0,
     // gestures have been removed from SD3: https://github.com/libsdl-org/SDL_gesture
     ClipboardUpdate = sys::events::SDL_EVENT_CLIPBOARD_UPDATE.0,
     DropFile = sys::events::SDL_EVENT_DROP_FILE.0,
@@ -417,6 +419,7 @@ impl TryFrom<u32> for EventType {
             SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED => WindowPixelSizeChanged,
             SDL_EVENT_WINDOW_MINIMIZED => WindowMinimized,
             SDL_EVENT_WINDOW_MAXIMIZED => WindowMaximized,
+            SDL_EVENT_WINDOW_OCCLUDED => WindowOccluded,
             SDL_EVENT_WINDOW_RESTORED => WindowRestored,
             SDL_EVENT_WINDOW_MOUSE_ENTER => WindowMouseEnter,
             SDL_EVENT_WINDOW_MOUSE_LEAVE => WindowMouseLeave,
@@ -456,6 +459,7 @@ impl TryFrom<u32> for EventType {
             SDL_EVENT_FINGER_DOWN => FingerDown,
             SDL_EVENT_FINGER_UP => FingerUp,
             SDL_EVENT_FINGER_MOTION => FingerMotion,
+            SDL_EVENT_FINGER_CANCELED => FingerCanceled,
 
             SDL_EVENT_CLIPBOARD_UPDATE => ClipboardUpdate,
             SDL_EVENT_DROP_FILE => DropFile,
@@ -572,6 +576,7 @@ pub enum WindowEvent {
     PixelSizeChanged(i32, i32),
     Minimized,
     Maximized,
+    Occluded,
     Restored,
     MouseEnter,
     MouseLeave,
@@ -596,6 +601,7 @@ impl WindowEvent {
                 EventType::WindowPixelSizeChanged => WindowEvent::PixelSizeChanged(data1, data2),
                 EventType::WindowMinimized => WindowEvent::Minimized,
                 EventType::WindowMaximized => WindowEvent::Maximized,
+                EventType::WindowOccluded => WindowEvent::Occluded,
                 EventType::WindowRestored => WindowEvent::Restored,
                 EventType::WindowMouseEnter => WindowEvent::MouseEnter,
                 EventType::WindowMouseLeave => WindowEvent::MouseLeave,
@@ -622,6 +628,7 @@ impl WindowEvent {
             WindowEvent::PixelSizeChanged(d1, d2) => (EventType::WindowPixelSizeChanged, d1, d2),
             WindowEvent::Minimized => (EventType::WindowMinimized, 0, 0),
             WindowEvent::Maximized => (EventType::WindowMaximized, 0, 0),
+            WindowEvent::Occluded => (EventType::WindowOccluded, 0, 0),
             WindowEvent::Restored => (EventType::WindowRestored, 0, 0),
             WindowEvent::MouseEnter => (EventType::WindowMouseEnter, 0, 0),
             WindowEvent::MouseLeave => (EventType::WindowMouseLeave, 0, 0),
@@ -765,6 +772,8 @@ pub enum Event {
         direction: MouseWheelDirection,
         mouse_x: f32,
         mouse_y: f32,
+        integer_x: i32,
+        integer_y: i32,
     },
 
     JoyAxisMotion {
@@ -911,6 +920,7 @@ pub enum Event {
         dx: f32,
         dy: f32,
         pressure: f32,
+        window_id: u32,
     },
     FingerUp {
         timestamp: u64,
@@ -921,6 +931,7 @@ pub enum Event {
         dx: f32,
         dy: f32,
         pressure: f32,
+        window_id: u32,
     },
     FingerMotion {
         timestamp: u64,
@@ -931,6 +942,18 @@ pub enum Event {
         dx: f32,
         dy: f32,
         pressure: f32,
+        window_id: u32,
+    },
+    FingerCanceled {
+        timestamp: u64,
+        touch_id: u64,
+        finger_id: u64,
+        x: f32,
+        y: f32,
+        dx: f32,
+        dy: f32,
+        pressure: f32,
+        window_id: u32,
     },
 
     DollarRecord {
@@ -1406,6 +1429,8 @@ impl Event {
                 direction,
                 mouse_x,
                 mouse_y,
+                integer_x,
+                integer_y,
             } => {
                 let event = SDL_MouseWheelEvent {
                     r#type: sys::events::SDL_EVENT_MOUSE_WHEEL,
@@ -1417,8 +1442,8 @@ impl Event {
                     direction: direction.into(),
                     mouse_x,
                     mouse_y,
-                    integer_x: 0,
-                    integer_y: 0,
+                    integer_x,
+                    integer_y,
                     reserved: 0,
                 };
                 unsafe {
@@ -1724,6 +1749,7 @@ impl Event {
                 | EventType::WindowPixelSizeChanged
                 | EventType::WindowMinimized
                 | EventType::WindowMaximized
+                | EventType::WindowOccluded
                 | EventType::WindowRestored
                 | EventType::WindowMouseEnter
                 | EventType::WindowMouseLeave
@@ -1922,6 +1948,8 @@ impl Event {
                         direction: event.direction.into(),
                         mouse_x: event.mouse_x,
                         mouse_y: event.mouse_y,
+                        integer_x: event.integer_x,
+                        integer_y: event.integer_y,
                     }
                 }
 
@@ -2084,6 +2112,7 @@ impl Event {
                         dx: event.dx,
                         dy: event.dy,
                         pressure: event.pressure,
+                        window_id: Self::window_id_from_ll(event.windowID),
                     }
                 }
                 EventType::FingerUp => {
@@ -2097,6 +2126,7 @@ impl Event {
                         dx: event.dx,
                         dy: event.dy,
                         pressure: event.pressure,
+                        window_id: Self::window_id_from_ll(event.windowID),
                     }
                 }
                 EventType::FingerMotion => {
@@ -2110,6 +2140,21 @@ impl Event {
                         dx: event.dx,
                         dy: event.dy,
                         pressure: event.pressure,
+                        window_id: Self::window_id_from_ll(event.windowID),
+                    }
+                }
+                EventType::FingerCanceled => {
+                    let event = raw.tfinger;
+                    Event::FingerCanceled {
+                        timestamp: event.timestamp,
+                        touch_id: Self::touch_id_from_ll(event.touchID),
+                        finger_id: Self::finger_id_from_ll(event.fingerID),
+                        x: event.x,
+                        y: event.y,
+                        dx: event.dx,
+                        dy: event.dy,
+                        pressure: event.pressure,
+                        window_id: Self::window_id_from_ll(event.windowID),
                     }
                 }
 
@@ -2387,6 +2432,7 @@ impl Event {
             | (Self::FingerDown { .. }, Self::FingerDown { .. })
             | (Self::FingerUp { .. }, Self::FingerUp { .. })
             | (Self::FingerMotion { .. }, Self::FingerMotion { .. })
+            | (Self::FingerCanceled { .. }, Self::FingerCanceled { .. })
             | (Self::DollarRecord { .. }, Self::DollarRecord { .. })
             | (Self::MultiGesture { .. }, Self::MultiGesture { .. })
             | (Self::ClipboardUpdate { .. }, Self::ClipboardUpdate { .. })
@@ -2459,6 +2505,7 @@ impl Event {
             Self::FingerDown { timestamp, .. } => timestamp,
             Self::FingerUp { timestamp, .. } => timestamp,
             Self::FingerMotion { timestamp, .. } => timestamp,
+            Self::FingerCanceled { timestamp, .. } => timestamp,
             Self::DollarRecord { timestamp, .. } => timestamp,
             Self::MultiGesture { timestamp, .. } => timestamp,
             Self::ClipboardUpdate { timestamp, .. } => timestamp,
@@ -2514,6 +2561,10 @@ impl Event {
             Self::MouseButtonDown { window_id, .. } => Some(*window_id),
             Self::MouseButtonUp { window_id, .. } => Some(*window_id),
             Self::MouseWheel { window_id, .. } => Some(*window_id),
+            Self::FingerDown { window_id, .. } => Some(*window_id),
+            Self::FingerUp { window_id, .. } => Some(*window_id),
+            Self::FingerMotion { window_id, .. } => Some(*window_id),
+            Self::FingerCanceled { window_id, .. } => Some(*window_id),
             Self::DropFile { window_id, .. } => Some(*window_id),
             Self::DropText { window_id, .. } => Some(*window_id),
             Self::DropBegin { window_id, .. } => Some(*window_id),
@@ -2625,11 +2676,13 @@ impl Event {
     ///     timestamp: 0,
     ///     window_id: 0,
     ///     which: 0,
-    ///     mouse_x: 0.0,
-    ///     mouse_y: 0.0,
     ///     x: 0.0,
     ///     y: 0.0,
     ///     direction: MouseWheelDirection::Normal,
+    ///     mouse_x: 0.0,
+    ///     mouse_y: 0.0,
+    ///     integer_x: 0,
+    ///     integer_y: 0,
     /// };
     /// assert!(ev.is_mouse());
     ///
@@ -2725,6 +2778,7 @@ impl Event {
     ///     dx: 0.,
     ///     dy: 0.,
     ///     pressure: 0.,
+    ///     window_id: 0,
     /// };
     /// assert!(ev.is_finger());
     ///
@@ -2736,7 +2790,10 @@ impl Event {
     pub fn is_finger(&self) -> bool {
         matches!(
             self,
-            Self::FingerDown { .. } | Self::FingerUp { .. } | Self::FingerMotion { .. }
+            Self::FingerDown { .. }
+                | Self::FingerUp { .. }
+                | Self::FingerMotion { .. }
+                | Self::FingerCanceled { .. }
         )
     }
 
@@ -3431,6 +3488,8 @@ mod test {
                 direction: MouseWheelDirection::Flipped,
                 mouse_x: 2.,
                 mouse_y: 3.,
+                integer_x: -3,
+                integer_y: 5,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);

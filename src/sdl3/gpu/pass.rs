@@ -5,19 +5,20 @@ use crate::{
         BufferBinding, BufferRegion, GraphicsPipeline, IndexElementSize, LoadOp, StoreOp, Texture,
         TextureRegion, TextureSamplerBinding, TextureTransferInfo, TransferBufferLocation,
     },
-    pixels::Color,
+    pixels::{Color, FColor},
     rect::Rect,
     Error,
 };
 use std::sync::Arc;
 use sys::gpu::{
     SDL_AcquireGPUSwapchainTexture, SDL_BindGPUFragmentSamplers, SDL_BindGPUIndexBuffer,
-    SDL_BindGPUVertexBuffers, SDL_DrawGPUIndexedPrimitives, SDL_GPUBlitInfo, SDL_GPUBufferBinding,
-    SDL_GPUColorTargetInfo, SDL_GPUCommandBuffer, SDL_GPUComputePass, SDL_GPUCopyPass,
-    SDL_GPUDepthStencilTargetInfo, SDL_GPUFence, SDL_GPUFilter, SDL_GPULoadOp, SDL_GPURenderPass,
-    SDL_GPUTextureSamplerBinding, SDL_PushGPUComputeUniformData, SDL_PushGPUFragmentUniformData,
-    SDL_PushGPUVertexUniformData, SDL_QueryGPUFence, SDL_ReleaseGPUFence, SDL_UploadToGPUBuffer,
-    SDL_UploadToGPUTexture, SDL_WaitAndAcquireGPUSwapchainTexture,
+    SDL_BindGPUVertexBuffers, SDL_BindGPUVertexSamplers, SDL_DrawGPUIndexedPrimitives,
+    SDL_GPUBlitInfo, SDL_GPUBufferBinding, SDL_GPUColorTargetInfo, SDL_GPUCommandBuffer,
+    SDL_GPUComputePass, SDL_GPUCopyPass, SDL_GPUDepthStencilTargetInfo, SDL_GPUFence,
+    SDL_GPUFilter, SDL_GPULoadOp, SDL_GPURenderPass, SDL_GPUTextureSamplerBinding,
+    SDL_PushGPUComputeUniformData, SDL_PushGPUFragmentUniformData, SDL_PushGPUVertexUniformData,
+    SDL_QueryGPUFence, SDL_ReleaseGPUFence, SDL_UploadToGPUBuffer, SDL_UploadToGPUTexture,
+    SDL_WaitAndAcquireGPUSwapchainTexture,
 };
 
 /// Manages the raw `SDL_GPUFence` pointer and releases it on drop
@@ -391,6 +392,18 @@ impl RenderPass {
         }
     }
 
+    #[doc(alias = "SDL_BindGPUVertexSamplers")]
+    pub fn bind_vertex_samplers(&self, first_slot: u32, bindings: &[TextureSamplerBinding]) {
+        unsafe {
+            SDL_BindGPUVertexSamplers(
+                self.raw(),
+                first_slot,
+                bindings.as_ptr() as *const SDL_GPUTextureSamplerBinding,
+                bindings.len() as u32,
+            );
+        }
+    }
+
     #[doc(alias = "SDL_BindGPUVertexStorageBuffers")]
     pub fn bind_vertex_storage_buffers(&self, first_slot: u32, storage_buffers: &[Buffer]) {
         let buffer_handles = storage_buffers.iter().map(|x| x.raw()).collect::<Vec<_>>();
@@ -503,6 +516,12 @@ impl RenderPass {
     #[doc(alias = "SDL_SetGPUScissor")]
     pub fn set_scissor(&self, scissor: Rect) {
         unsafe { sys::gpu::SDL_SetGPUScissor(self.inner, scissor.raw()) }
+    }
+
+    #[doc(alias = "SDL_SetGPUBlendConstants")]
+    pub fn set_blend_constants(&self, color: Color) {
+        let color = FColor::from(color);
+        unsafe { sys::gpu::SDL_SetGPUBlendConstants(self.inner, color.raw()) }
     }
 }
 

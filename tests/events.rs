@@ -1,5 +1,3 @@
-extern crate sdl3;
-
 use sdl3::event;
 use std::sync::Mutex;
 

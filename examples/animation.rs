@@ -1,4 +1,3 @@
-extern crate sdl3;
 use std::path::Path;
 
 use sdl3::event::Event;

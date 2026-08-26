@@ -1,7 +1,5 @@
 // https://github.com/libsdl-org/SDL/tree/main/examples/renderer
-extern crate sdl3;
-
-use rand::Rng;
+use rand::RngExt;
 use sdl3::rect::Rect;
 use sdl3::render::FRect;
 use sdl3::Error;
@@ -29,11 +27,11 @@ fn main() -> Result<(), Error> {
     let mut event_pump = sdl_context.event_pump()?;
 
     let mut points: Vec<Point> = Vec::with_capacity(NUM_POINTS);
-    let mut rng = rand::thread_rng(); // Using thread_rng instead of just rng
+    let mut rng = rand::rng();
 
     for _ in 0..NUM_POINTS {
-        let x = rng.gen_range(100..540); // Generating random numbers within the bounds
-        let y = rng.gen_range(100..380);
+        let x = rng.random_range(100..540);
+        let y = rng.random_range(100..380);
         points.push(Point::new(x, y));
     }
 

@@ -6,6 +6,7 @@ use sys::guid::SDL_GUID;
 /// Wrapper around a `SDL_GUID`, a globally unique identifier
 /// for a joystick.
 #[derive(Copy, Clone)]
+#[cfg_attr(feature = "debug-impls", derive(Debug))]
 pub struct Guid {
     pub raw: sys::guid::SDL_GUID,
 }
