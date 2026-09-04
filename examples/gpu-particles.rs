@@ -141,7 +141,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         // === Draw ===
         let mut draw_cmd = device.acquire_command_buffer()?;
-        if let Ok(swapchain) = draw_cmd.wait_and_acquire_swapchain_texture(&window) {
+        if let Ok(Some(swapchain)) = draw_cmd.wait_and_acquire_swapchain_texture(&window) {
             let color_target = ColorTargetInfo::default()
                 .with_texture(&swapchain)
                 .with_load_op(LoadOp::CLEAR)
