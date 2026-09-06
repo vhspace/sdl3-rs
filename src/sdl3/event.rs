@@ -1211,7 +1211,7 @@ impl Event {
                     code,
                     data1,
                     data2,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1227,7 +1227,7 @@ impl Event {
                 let event = sys::events::SDL_QuitEvent {
                     r#type: sys::events::SDL_EVENT_QUIT,
                     timestamp,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1251,7 +1251,7 @@ impl Event {
                     windowID: Self::window_id_to_ll(window_id),
                     data1,
                     data2,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1278,13 +1278,13 @@ impl Event {
                     timestamp,
                     windowID: Self::window_id_to_ll(window_id),
                     repeat,
-                    reserved: 0,
                     scancode: scancode?.into(),
                     which: Self::keyboard_id_to_ll(which),
                     down: true,
                     key: keycode?.into(),
                     r#mod: Self::keymod_to_ll(keymod),
                     raw,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1310,13 +1310,13 @@ impl Event {
                     timestamp,
                     windowID: Self::window_id_to_ll(window_id),
                     repeat,
-                    reserved: 0,
                     scancode: scancode?.into(),
                     which: Self::keyboard_id_to_ll(which),
                     down: false,
                     key: keycode?.into(),
                     r#mod: Self::keymod_to_ll(keymod),
                     raw,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1348,7 +1348,7 @@ impl Event {
                     y,
                     xrel,
                     yrel,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1444,7 +1444,7 @@ impl Event {
                     mouse_y,
                     integer_x,
                     integer_y,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1553,7 +1553,7 @@ impl Event {
                     r#type: sys::events::SDL_EVENT_JOYSTICK_ADDED,
                     timestamp,
                     which: Self::joystick_id_to_ll(which),
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1570,7 +1570,7 @@ impl Event {
                     r#type: sys::events::SDL_EVENT_JOYSTICK_REMOVED,
                     timestamp,
                     which: Self::joystick_id_to_ll(which),
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1657,7 +1657,7 @@ impl Event {
                     r#type: sys::events::SDL_EVENT_GAMEPAD_ADDED,
                     timestamp,
                     which: Self::joystick_id_to_ll(which),
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1674,7 +1674,7 @@ impl Event {
                     r#type: sys::events::SDL_EVENT_GAMEPAD_REMOVED,
                     timestamp,
                     which: Self::joystick_id_to_ll(which),
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1691,7 +1691,7 @@ impl Event {
                     r#type: sys::events::SDL_EVENT_GAMEPAD_REMAPPED,
                     timestamp,
                     which: Self::joystick_id_to_ll(which),
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1715,7 +1715,7 @@ impl Event {
                     data1: display_event.1,
                     data2: 0,
                     timestamp,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
