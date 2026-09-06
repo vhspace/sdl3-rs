@@ -64,9 +64,9 @@ Not all [SDL3 extension libraries](https://wiki.libsdl.org/SDL3/Libraries) have 
 | SDL_gfx  | 🟨 Waiting on improvements to the C library  |
 | SDL_image  | ✅ Supported  |
 | SDL_mixer  | ✅ Supported  |
-| SDL_sound  | 🟨 Awaiting a stable C release   |
+| SDL_sound  | ❌ Not currently supported   |
 | SDL_ttf  | ✅ Supported  |
-| SDL_net  | 🟨 Awaiting a stable C release  |
+| SDL_net  | ❌ Not currently supported  |
 | SDL_shadercross  | ❌ Not currently supported  |
 | sdl3-main | ✅ Supported  |
 
