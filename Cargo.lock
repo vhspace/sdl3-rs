@@ -1050,9 +1050,9 @@ checksum = "f0461903a7545a85fc0ae64bdd642ca86fc58c7e0a9422aa7ab108aba25dc1b9"
 
 [[package]]
 name = "sdl3-net-sys"
-version = "0.6.0+SDL-net-3.2.0"
+version = "0.7.0+SDL-net-3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "18c466f25f8d546ab856931571e63eef1bfe208a4f3888de38851ba1c6d263f7"
+checksum = "2db35fcc4c810d47fbac59147c1157618d84d7b52aa8644c997e995eef43c5c3"
 dependencies = [
  "cmake",
  "rpkg-config",

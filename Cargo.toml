@@ -42,7 +42,7 @@ version = "0.7.0"
 optional = true
 
 [dependencies.sdl3-net-sys]
-version = "0.6.0"
+version = "0.7.0"
 default-features = false
 optional = true
 
