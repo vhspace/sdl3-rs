@@ -66,7 +66,7 @@ Not all [SDL3 extension libraries](https://wiki.libsdl.org/SDL3/Libraries) have 
 | SDL_mixer  | ✅ Supported  |
 | SDL_sound  | ❌ Not currently supported   |
 | SDL_ttf  | ✅ Supported  |
-| SDL_net  | ❌ Not currently supported  |
+| SDL_net  | ✅ Supported (enable the `net` feature)  |
 | SDL_shadercross  | ❌ Not currently supported  |
 | sdl3-main | ✅ Supported  |
 
