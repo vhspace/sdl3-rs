@@ -219,12 +219,37 @@ impl PowerLevel {
 }
 
 /// Wrapper around the `SDL_Joystick` object
+#[cfg_attr(feature = "debug-impls", derive(Debug))]
 pub struct Joystick {
     subsystem: JoystickSubsystem,
     raw: *mut sys::joystick::SDL_Joystick,
 }
 
 impl Joystick {
+    /// Returns the raw SDL_Joystick pointer.
+    ///
+    /// This can be used to call raw SDL functions that aren't wrapped by this crate.
+    #[doc(alias = "SDL_Joystick")]
+    pub fn raw(&self) -> *mut sys::joystick::SDL_Joystick {
+        self.raw
+    }
+
+    /// Creates a `Joystick` from a raw SDL_Joystick pointer.
+    ///
+    /// # Safety
+    ///
+    /// - `raw` must be a valid, non-null pointer to an `SDL_Joystick`
+    /// - The pointer must not be owned by another wrapper (to avoid double-free)
+    /// - The caller must ensure the pointer remains valid for the wrapper's lifetime
+    #[doc(alias = "SDL_Joystick")]
+    pub unsafe fn from_raw(
+        raw: *mut sys::joystick::SDL_Joystick,
+        subsystem: JoystickSubsystem,
+    ) -> Self {
+        debug_assert!(!raw.is_null(), "from_raw called with null pointer");
+        Self { subsystem, raw }
+    }
+
     #[inline]
     pub const fn subsystem(&self) -> &JoystickSubsystem {
         &self.subsystem
@@ -590,9 +615,9 @@ impl Joystick {
 impl Drop for Joystick {
     #[doc(alias = "SDL_CloseJoystick")]
     fn drop(&mut self) {
-        if self.connected() {
-            unsafe { sys::joystick::SDL_CloseJoystick(self.raw) }
-        }
+        // Always close the joystick, regardless of connection status.
+        // SDL_CloseJoystick is safe to call on disconnected joysticks.
+        unsafe { sys::joystick::SDL_CloseJoystick(self.raw) }
     }
 }
 
