@@ -111,7 +111,7 @@ impl CommandBuffer {
     pub fn wait_and_acquire_swapchain_texture<'a>(
         &'a mut self,
         w: &crate::video::Window,
-    ) -> Result<Texture<'a>, Error> {
+    ) -> Result<Option<Texture<'a>>, Error> {
         let mut swapchain = std::ptr::null_mut();
         let mut width = 0;
         let mut height = 0;
@@ -125,7 +125,11 @@ impl CommandBuffer {
             )
         };
         if success {
-            Ok(Texture::new_sdl_managed(swapchain, width, height))
+            if swapchain.is_null() {
+                Ok(None)
+            } else {
+                Ok(Some(Texture::new_sdl_managed(swapchain, width, height)))
+            }
         } else {
             Err(get_error())
         }

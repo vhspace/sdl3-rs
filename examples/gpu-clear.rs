@@ -39,7 +39,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
         // This is because a swapchain needs to be "allocated", and it can quickly run out
         // if we don't properly time the rendering process.
         let mut command_buffer = gpu.acquire_command_buffer()?;
-        if let Ok(swapchain) = command_buffer.wait_and_acquire_swapchain_texture(&window) {
+        if let Ok(Some(swapchain)) = command_buffer.wait_and_acquire_swapchain_texture(&window) {
             let color_targets = [
                 sdl3::gpu::ColorTargetInfo::default()
                     .with_texture(&swapchain) // Use swapchain texture
