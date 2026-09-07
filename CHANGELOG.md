@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.20.0] - 2026-09-07
 
 ### <!-- 0 -->Added
 - Initial SDL3_net bindings ([#390](https://github.com/vhspace/sdl3-rs/pull/390))
@@ -328,7 +328,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump bitflags from 2.9.0 to 2.9.1 ([#207](https://github.com/vhspace/sdl3-rs/pull/207))
 - Bump actions/cache from 3 to 4 ([#208](https://github.com/vhspace/sdl3-rs/pull/208))
 
-[unreleased]: https://github.com/vhspace/sdl3-rs/compare/v0.19.0...HEAD
+[0.20.0]: https://github.com/vhspace/sdl3-rs/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/vhspace/sdl3-rs/compare/v0.18.4...v0.19.0
 [0.18.4]: https://github.com/vhspace/sdl3-rs/compare/v0.18.3...v0.18.4
 [0.18.3]: https://github.com/vhspace/sdl3-rs/compare/v0.18.2...v0.18.3
