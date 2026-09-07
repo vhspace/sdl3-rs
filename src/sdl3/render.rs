@@ -2061,7 +2061,7 @@ impl<T: RenderTarget> Canvas<T> {
     ///
     /// It must be sound to [create references to](core::ptr#pointer-to-reference-conversion):
     /// - `positions` offset by `position_offset` bytes, of type [`FPoint`] (or `[f32; 2]`),
-    /// - `colors` offset by `color_offset` bytes, of type [`Color`][pixels::Color] (or `[u8; 4]`)
+    /// - `colors` offset by `color_offset` bytes, of type [`FColor`][pixels::FColor] (or `[f32; 4]`)
     /// - `tex_coords` offset by `tex_coord_offset` bytes, of type [`FPoint`] (or `[f32; 2]`).
     ///
     /// For the above to hold, make sure that the hypothetical references are properly aligned and
@@ -2079,8 +2079,8 @@ impl<T: RenderTarget> Canvas<T> {
     /// Offsets must be correct.
     /// - `position_offset + size_of::<FPoint>() <= size_of::<PosVertex>()`: an [`FPoint`] must fit
     ///   in `PosVertex` at `position_offset` bytes from the start.
-    /// - `color_offset + size_of::<Color>() <= size_of::<ColorVertex>()`: a
-    ///   [`Color`][pixels::Color] must fit in `ColorVertex` at `color_offset` bytes from the
+    /// - `color_offset + size_of::<FColor>() <= size_of::<ColorVertex>()`: an
+    ///   [`FColor`][pixels::FColor] must fit in `ColorVertex` at `color_offset` bytes from the
     ///   start.
     /// - `tex_coord_offset + size_of::<FPoint>() <= size_of::<TexCoordVertex>()`: an [`FPoint`]
     ///   must fit in `TexCoordVertex` at `tex_coord_offset` bytes from the start.
@@ -2105,7 +2105,7 @@ impl<T: RenderTarget> Canvas<T> {
         assert_eq!(num_vertices, colors.len());
 
         assert!(position_offset + size_of::<FPoint>() <= size_of::<PosVertex>());
-        assert!(color_offset + size_of::<pixels::Color>() <= size_of::<ColorVertex>());
+        assert!(color_offset + size_of::<pixels::FColor>() <= size_of::<ColorVertex>());
         let (texture, uv, uv_stride) = if let Some(texture_params) = texture_params {
             assert_eq!(num_vertices, texture_params.tex_coords.len());
             assert!(
