@@ -53,7 +53,7 @@
 //! using the default library search paths.
 //!
 //! If you don't have `libsdl3` installed on your system and just want it to work, we recommend using `build-from-source`.
-//! Also see the different build configurations that `sdl3-sys` provides:  <https://github.com/maia-s/sdl3-sys-rs/tree/main/sdl3-sys#usage>
+//! Also see the different build configurations that `sdl3-sys` provides:  <https://codeberg.org/maia/sdl3-sys-rs/src/branch/main/sdl3-sys#usage>
 //!
 //! | Name                             | Description                                                    |
 //! |----------------------------------|----------------------------------------------------------------|

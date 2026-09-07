@@ -19,7 +19,7 @@ The migration is in progress, and we are looking for contributors to help us com
 Expect some bugs and [missing features](https://wiki.libsdl.org/SDL3/NewFeatures).
 Feel free to create issues or work on them yourself.
 
-- [x] Update all modules to SDL3, use new [sdl3-sys](https://github.com/maia-s/sdl3-sys-rs) bindings,
+- [x] Update all modules to SDL3, use new [sdl3-sys](https://codeberg.org/maia/sdl3-sys-rs) bindings,
       follow [migration guide](https://github.com/libsdl-org/SDL/blob/main/docs/README-migration.md).
 - [x] Fix tests.
 - [x] Update examples to SDL3.
@@ -28,7 +28,7 @@ Feel free to create issues or work on them yourself.
 
 Please refer to the [sdl3-rs](https://github.com/vhspace/sdl3-rs) repository for the latest updates.
 
-The low-level bindings are being worked on in the [sdl3-sys](https://github.com/maia-s/sdl3-sys-rs) repository.
+The low-level bindings are being worked on in the [sdl3-sys](https://codeberg.org/maia/sdl3-sys-rs) repository.
 
 # Overview
 
