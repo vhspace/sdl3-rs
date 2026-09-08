@@ -440,11 +440,13 @@ pub fn set_app_metadata(
 }
 
 #[doc(alias = "SDL_SetAppMetadataProperty")]
-pub fn set_app_metadata_property(name: &str, value: Option<&str>) -> Result<(), Error> {
+pub fn set_app_metadata_property(
+    prop: &crate::properties::PropertyName,
+    value: Option<&str>,
+) -> Result<(), Error> {
     let c_value = value.map(|s| CString::new(s).unwrap());
     let p_value = c_value.as_ref().map_or(std::ptr::null(), |c| c.as_ptr());
-    let c_name = CString::new(name).unwrap();
-    if unsafe { !sys::init::SDL_SetAppMetadataProperty(c_name.as_ptr(), p_value) } {
+    if unsafe { !sys::init::SDL_SetAppMetadataProperty(prop.raw, p_value) } {
         Err(get_error())
     } else {
         Ok(())
