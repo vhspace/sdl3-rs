@@ -348,7 +348,11 @@ pub enum EventType {
     FingerUp = sys::events::SDL_EVENT_FINGER_UP.0,
     FingerMotion = sys::events::SDL_EVENT_FINGER_MOTION.0,
     FingerCanceled = sys::events::SDL_EVENT_FINGER_CANCELED.0,
-    // gestures have been removed from SD3: https://github.com/libsdl-org/SDL_gesture
+    // the old SDL2 gesture events were removed from SDL3
+    // (https://github.com/libsdl-org/SDL_gesture); SDL 3.4 added pinch instead
+    PinchBegin = sys::events::SDL_EVENT_PINCH_BEGIN.0,
+    PinchUpdate = sys::events::SDL_EVENT_PINCH_UPDATE.0,
+    PinchEnd = sys::events::SDL_EVENT_PINCH_END.0,
     ClipboardUpdate = sys::events::SDL_EVENT_CLIPBOARD_UPDATE.0,
     DropFile = sys::events::SDL_EVENT_DROP_FILE.0,
     DropText = sys::events::SDL_EVENT_DROP_TEXT.0,
@@ -460,6 +464,9 @@ impl TryFrom<u32> for EventType {
             SDL_EVENT_FINGER_UP => FingerUp,
             SDL_EVENT_FINGER_MOTION => FingerMotion,
             SDL_EVENT_FINGER_CANCELED => FingerCanceled,
+            SDL_EVENT_PINCH_BEGIN => PinchBegin,
+            SDL_EVENT_PINCH_UPDATE => PinchUpdate,
+            SDL_EVENT_PINCH_END => PinchEnd,
 
             SDL_EVENT_CLIPBOARD_UPDATE => ClipboardUpdate,
             SDL_EVENT_DROP_FILE => DropFile,
@@ -956,24 +963,26 @@ pub enum Event {
         window_id: u32,
     },
 
-    DollarRecord {
+    /// A pinch gesture started.
+    PinchBegin {
         timestamp: u64,
-        touch_id: i64,
-        gesture_id: i64,
-        num_fingers: u32,
-        error: f32,
-        x: f32,
-        y: f32,
+        /// The scale change since the last pinch update. `< 1.0` is "zoom out", `> 1.0` is "zoom in".
+        scale: f32,
+        window_id: u32,
     },
-
-    MultiGesture {
+    /// A pinch gesture changed.
+    PinchUpdate {
         timestamp: u64,
-        touch_id: i64,
-        d_theta: f32,
-        d_dist: f32,
-        x: f32,
-        y: f32,
-        num_fingers: u16,
+        /// The scale change since the last pinch update. `< 1.0` is "zoom out", `> 1.0` is "zoom in".
+        scale: f32,
+        window_id: u32,
+    },
+    /// A pinch gesture ended.
+    PinchEnd {
+        timestamp: u64,
+        /// The scale change since the last pinch update. `< 1.0` is "zoom out", `> 1.0` is "zoom in".
+        scale: f32,
+        window_id: u32,
     },
 
     ClipboardUpdate {
@@ -1703,6 +1712,43 @@ impl Event {
                 }
             }
 
+            Event::PinchBegin {
+                timestamp,
+                scale,
+                window_id,
+            }
+            | Event::PinchUpdate {
+                timestamp,
+                scale,
+                window_id,
+            }
+            | Event::PinchEnd {
+                timestamp,
+                scale,
+                window_id,
+            } => {
+                let r#type = match self {
+                    Event::PinchBegin { .. } => sys::events::SDL_EVENT_PINCH_BEGIN,
+                    Event::PinchUpdate { .. } => sys::events::SDL_EVENT_PINCH_UPDATE,
+                    _ => sys::events::SDL_EVENT_PINCH_END,
+                };
+                let event = sys::events::SDL_PinchFingerEvent {
+                    r#type,
+                    timestamp,
+                    scale,
+                    windowID: Self::window_id_to_ll(window_id),
+                    ..Default::default()
+                };
+                unsafe {
+                    ptr::copy(
+                        &event,
+                        ret.as_mut_ptr() as *mut sys::events::SDL_PinchFingerEvent,
+                        1,
+                    );
+                    Some(ret.assume_init())
+                }
+            }
+
             Event::Display {
                 timestamp,
                 display,
@@ -2157,6 +2203,30 @@ impl Event {
                         window_id: Self::window_id_from_ll(event.windowID),
                     }
                 }
+                EventType::PinchBegin => {
+                    let event = raw.pinch;
+                    Event::PinchBegin {
+                        timestamp: event.timestamp,
+                        scale: event.scale,
+                        window_id: Self::window_id_from_ll(event.windowID),
+                    }
+                }
+                EventType::PinchUpdate => {
+                    let event = raw.pinch;
+                    Event::PinchUpdate {
+                        timestamp: event.timestamp,
+                        scale: event.scale,
+                        window_id: Self::window_id_from_ll(event.windowID),
+                    }
+                }
+                EventType::PinchEnd => {
+                    let event = raw.pinch;
+                    Event::PinchEnd {
+                        timestamp: event.timestamp,
+                        scale: event.scale,
+                        window_id: Self::window_id_from_ll(event.windowID),
+                    }
+                }
 
                 EventType::ClipboardUpdate => {
                     let event = raw.common;
@@ -2437,8 +2507,9 @@ impl Event {
             | (Self::FingerUp { .. }, Self::FingerUp { .. })
             | (Self::FingerMotion { .. }, Self::FingerMotion { .. })
             | (Self::FingerCanceled { .. }, Self::FingerCanceled { .. })
-            | (Self::DollarRecord { .. }, Self::DollarRecord { .. })
-            | (Self::MultiGesture { .. }, Self::MultiGesture { .. })
+            | (Self::PinchBegin { .. }, Self::PinchBegin { .. })
+            | (Self::PinchUpdate { .. }, Self::PinchUpdate { .. })
+            | (Self::PinchEnd { .. }, Self::PinchEnd { .. })
             | (Self::ClipboardUpdate { .. }, Self::ClipboardUpdate { .. })
             | (Self::DropFile { .. }, Self::DropFile { .. })
             | (Self::DropText { .. }, Self::DropText { .. })
@@ -2511,8 +2582,9 @@ impl Event {
             Self::FingerUp { timestamp, .. } => timestamp,
             Self::FingerMotion { timestamp, .. } => timestamp,
             Self::FingerCanceled { timestamp, .. } => timestamp,
-            Self::DollarRecord { timestamp, .. } => timestamp,
-            Self::MultiGesture { timestamp, .. } => timestamp,
+            Self::PinchBegin { timestamp, .. } => timestamp,
+            Self::PinchUpdate { timestamp, .. } => timestamp,
+            Self::PinchEnd { timestamp, .. } => timestamp,
             Self::ClipboardUpdate { timestamp, .. } => timestamp,
             Self::DropFile { timestamp, .. } => timestamp,
             Self::DropText { timestamp, .. } => timestamp,
@@ -2571,6 +2643,9 @@ impl Event {
             Self::FingerUp { window_id, .. } => Some(*window_id),
             Self::FingerMotion { window_id, .. } => Some(*window_id),
             Self::FingerCanceled { window_id, .. } => Some(*window_id),
+            Self::PinchBegin { window_id, .. } => Some(*window_id),
+            Self::PinchUpdate { window_id, .. } => Some(*window_id),
+            Self::PinchEnd { window_id, .. } => Some(*window_id),
             Self::DropFile { window_id, .. } => Some(*window_id),
             Self::DropText { window_id, .. } => Some(*window_id),
             Self::DropBegin { window_id, .. } => Some(*window_id),
@@ -2815,6 +2890,32 @@ impl Event {
                 | Self::FingerUp { .. }
                 | Self::FingerMotion { .. }
                 | Self::FingerCanceled { .. }
+        )
+    }
+
+    /// Returns `true` if this is a pinch gesture event.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use sdl3::event::Event;
+    ///
+    /// let ev = Event::PinchUpdate {
+    ///     timestamp: 0,
+    ///     scale: 1.5,
+    ///     window_id: 0,
+    /// };
+    /// assert!(ev.is_pinch());
+    ///
+    /// let another_ev = Event::Quit {
+    ///     timestamp: 0,
+    /// };
+    /// assert!(another_ev.is_pinch() == false); // Not a pinch event!
+    /// ```
+    pub fn is_pinch(&self) -> bool {
+        matches!(
+            self,
+            Self::PinchBegin { .. } | Self::PinchUpdate { .. } | Self::PinchEnd { .. }
         )
     }
 
@@ -3617,6 +3718,33 @@ mod test {
             let e = Event::GamepadRemapped {
                 timestamp: 654,
                 which: JoystickId::new(0),
+            };
+            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            assert_eq!(e, e2);
+        }
+        {
+            let e = Event::PinchBegin {
+                timestamp: 700,
+                scale: 1.0,
+                window_id: 2,
+            };
+            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            assert_eq!(e, e2);
+        }
+        {
+            let e = Event::PinchUpdate {
+                timestamp: 701,
+                scale: 1.25,
+                window_id: 2,
+            };
+            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            assert_eq!(e, e2);
+        }
+        {
+            let e = Event::PinchEnd {
+                timestamp: 702,
+                scale: 0.5,
+                window_id: 2,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
