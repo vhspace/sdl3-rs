@@ -386,6 +386,41 @@ impl<'r> Font<'r> {
         }
     }
 
+    /// Attaches another font to this one, to be used for substituting missing glyphs.
+    ///
+    /// ### Safety
+    ///
+    /// As of SDL_ttf 3.2.2, the behavior when a fallback font is dropped is to simply
+    /// ignore the stale reference.
+    ///
+    /// As such, user code may find it desirable to continue holding a reference to the fallback
+    /// font. Doing so is also required for adjusting the font settings, which are not inherited
+    /// from the parent font.
+    ///
+    /// Alternatively, it is possible to use `std::mem::forget` to force the fallback font(s) to not
+    /// be dropped.
+    #[doc(alias = "TTF_AddFallbackFont")]
+    pub fn add_fallback_font(&mut self, other: &Font<'static>) -> Result<(), Error> {
+        let ret = unsafe { ttf::TTF_AddFallbackFont(self.raw, other.raw) };
+        if !ret {
+            Err(get_error())
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Detaches a fallback font
+    #[doc(alias = "TTF_RemoveFallbackFont")]
+    pub fn remove_fallback_font(&mut self, other: &Font<'static>) {
+        unsafe { ttf::TTF_RemoveFallbackFont(self.raw, other.raw) }
+    }
+
+    /// Detaches all fallback fonts
+    #[doc(alias = "TTF_ClearFallbackFont")]
+    pub fn clear_fallback_font(&mut self) {
+        unsafe { ttf::TTF_ClearFallbackFonts(self.raw) }
+    }
+
     /// Sets the font's style flags.
     #[doc(alias = "TTF_SetFontStyle")]
     pub fn set_style(&mut self, styles: FontStyle) {
