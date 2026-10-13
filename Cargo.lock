@@ -1080,15 +1080,15 @@ dependencies = [
 
 [[package]]
 name = "sdl3-src"
-version = "3.4.16"
+version = "3.4.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5bfd475a15a4679b94f6579aed7d52c69f3e04d80e6707712373f12903a2ef91"
+checksum = "400d0fb006a4485fde477cfc56a250c99d7bfb183fefd145c15fe7607db7fc49"
 
 [[package]]
 name = "sdl3-sys"
-version = "0.7.1+SDL-3.4.16"
+version = "0.7.2+SDL-3.4.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6c10781cd13b03f18f26af765c9909ac64d362fd645c4fa92db51685c834cf8b"
+checksum = "82b6a7f3cad40c5b318b3539bb4624389f4a03504cd5f4c65030787b962505ac"
 dependencies = [
  "ash",
  "cc",
