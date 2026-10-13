@@ -41,7 +41,7 @@ fn get_centered_rect(rect_width: u32, rect_height: u32, cons_width: u32, cons_he
     rect!(cx, cy, w, h)
 }
 
-fn run(font_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+fn run(font_path: &Path, fallback_path: Option<&Path>) -> Result<(), Box<dyn std::error::Error>> {
     let sdl_context = sdl3::init()?;
     let video_subsys = sdl_context.video()?;
     let ttf_context = sdl3::ttf::init().map_err(|e| e.to_string())?;
@@ -59,10 +59,20 @@ fn run(font_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
     // Load a font
     let mut font = ttf_context.load_font(font_path, 128.0)?;
     font.set_style(sdl3::ttf::FontStyle::BOLD);
+    if let Some(font_path) = fallback_path {
+        let mut fallback = ttf_context.load_font(font_path, 128.0)?;
+        fallback.set_style(sdl3::ttf::FontStyle::BOLD);
+        font.add_fallback_font(&fallback)?;
+        std::mem::forget(fallback);
+    }
 
     // render a surface, and convert it to a texture bound to the canvas
     let surface = font
-        .render("Hello Rust!")
+        .render(if fallback_path.is_some() {
+            "Hello Rust! 你好 Rust!"
+        } else {
+            "Hello Rust!"
+        })
         .blended(Color::RGBA(255, 0, 0, 255))
         .map_err(|e| e.to_string())?;
     let texture = texture_creator
@@ -108,10 +118,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("linked sdl3_ttf: {}", sdl3::ttf::get_linked_version());
 
     if args.len() < 2 {
-        println!("Usage: ./demo font.[ttf|ttc|fon]")
+        println!("Usage: ./demo font.[ttf|ttc|fon] [font.[ttf|ttc|fon]]")
     } else {
         let path: &Path = Path::new(&args[1]);
-        run(path)?;
+        let path_fb = args.get(2).map(|s| Path::new(s));
+        run(path, path_fb)?;
     }
 
     Ok(())
