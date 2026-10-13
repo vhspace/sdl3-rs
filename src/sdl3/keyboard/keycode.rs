@@ -265,7 +265,7 @@ impl Keycode {
     /// Creates a Keycode from a u32 value.
     ///
     /// This matches SDL3's SDL_Keycode type which is u32.
-    pub fn from_u32(n: u32) -> Option<Keycode> {
+    pub const fn from_u32(n: u32) -> Option<Keycode> {
         use self::Keycode::*;
         let n = SDL_Keycode(n);
 
@@ -532,11 +532,11 @@ impl Keycode {
         since = "0.18.0",
         note = "Use from_u32 instead. SDL3's SDL_Keycode is u32."
     )]
-    pub fn from_i32(n: i32) -> Option<Keycode> {
+    pub const fn from_i32(n: i32) -> Option<Keycode> {
         Self::from_u32(n as u32)
     }
 
-    pub fn to_ll(self) -> SDL_Keycode {
+    pub const fn to_ll(self) -> SDL_Keycode {
         SDL_Keycode(self as u32)
     }
 }

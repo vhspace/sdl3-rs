@@ -260,7 +260,7 @@ pub enum Scancode {
 }
 
 impl Scancode {
-    pub fn from_i32(n: i32) -> Option<Scancode> {
+    pub const fn from_i32(n: i32) -> Option<Scancode> {
         use self::Scancode::*;
 
         Some(match SDL_Scancode(n) {
@@ -517,7 +517,7 @@ impl Scancode {
         })
     }
 
-    pub fn to_i32(self) -> i32 {
+    pub const fn to_i32(self) -> i32 {
         self as i32
     }
 }
