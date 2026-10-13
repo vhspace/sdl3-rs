@@ -91,7 +91,7 @@ sdl3-sys = { version = "0.7.1", features = ["only-metadata"] }
 [features]
 
 # various ways to link to libsdl3
-# provided by sdl3-sys: https://github.com/maia-s/sdl3-sys-rs/tree/main/sdl3-sys#usage
+# provided by sdl3-sys: https://codeberg.org/maia/sdl3-sys-rs/src/branch/main/sdl3-sys#usage
 use-pkg-config = ["sdl3-sys/use-pkg-config"]
 use-vcpkg = ["sdl3-sys/use-vcpkg"]
 static-link = ["sdl3-sys/link-static"]
