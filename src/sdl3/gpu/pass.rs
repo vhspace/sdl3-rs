@@ -286,6 +286,36 @@ impl ColorTargetInfo {
         self.inner.clear_color.a = (value.a as f32) / 255.0;
         self
     }
+
+    /// The texture that a multisampled color target is resolved into when
+    /// the store op is [`StoreOp::RESOLVE`] or [`StoreOp::RESOLVE_AND_STORE`].
+    /// Must have a sample count of 1.
+    #[doc(alias = "SDL_GPUColorTargetInfo::resolve_texture")]
+    pub fn with_resolve_texture(mut self, texture: &Texture) -> Self {
+        self.inner.resolve_texture = texture.raw();
+        self
+    }
+
+    /// The mip level of the resolve texture to write to.
+    #[doc(alias = "SDL_GPUColorTargetInfo::resolve_mip_level")]
+    pub fn with_resolve_mip_level(mut self, mip_level: u32) -> Self {
+        self.inner.resolve_mip_level = mip_level;
+        self
+    }
+
+    /// The layer index of the resolve texture to write to.
+    #[doc(alias = "SDL_GPUColorTargetInfo::resolve_layer")]
+    pub fn with_resolve_layer(mut self, layer: u32) -> Self {
+        self.inner.resolve_layer = layer;
+        self
+    }
+
+    /// True cycles the resolve texture if it is already bound.
+    #[doc(alias = "SDL_GPUColorTargetInfo::cycle_resolve_texture")]
+    pub fn with_cycle_resolve_texture(mut self, cycle: bool) -> Self {
+        self.inner.cycle_resolve_texture = cycle;
+        self
+    }
 }
 
 #[repr(C)]
