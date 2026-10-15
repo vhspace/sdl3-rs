@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### <!-- 0 -->Added
+- Add GLAttr::reset ([#475](https://github.com/vhspace/sdl3-rs/pull/475))
+- Add fullscreen events ([#466](https://github.com/vhspace/sdl3-rs/pull/466))
+- Support fallback fonts ([#461](https://github.com/vhspace/sdl3-rs/pull/461))
+- Made conversions from i/u32 to and from keycodes and scancodes ([#460](https://github.com/vhspace/sdl3-rs/pull/460))
+
+### <!-- 1 -->Changed
+- Fix deprecation warnings ([#476](https://github.com/vhspace/sdl3-rs/pull/476))
+
+### <!-- 2 -->Fixed
+- Fix sdl3-sys repo url ([#452](https://github.com/vhspace/sdl3-rs/pull/452))
+
+### <!-- 4 -->Dependencies
+- Bump windows-core from 0.62.2 to 0.100.0 ([#454](https://github.com/vhspace/sdl3-rs/pull/454))
+- Bump bitflags from 2.13.1 to 2.13.2 ([#462](https://github.com/vhspace/sdl3-rs/pull/462))
+- Bump rand from 0.10.2 to 0.10.3 ([#468](https://github.com/vhspace/sdl3-rs/pull/468))
+- Bump libc from 0.2.189 to 0.2.190 ([#470](https://github.com/vhspace/sdl3-rs/pull/470))
+- Bump objc2 from 0.6.4 to 0.6.5 ([#472](https://github.com/vhspace/sdl3-rs/pull/472))
+- Bump sdl3-image-sys ([#473](https://github.com/vhspace/sdl3-rs/pull/473))
+- Bump sdl3-sys from 0.7.1+SDL-3.4.16 to 0.7.2+SDL-3.4.18 ([#471](https://github.com/vhspace/sdl3-rs/pull/471))
+- Bump actions/checkout from 7.0.0 to 7.0.1 ([#425](https://github.com/vhspace/sdl3-rs/pull/425))
+
 ## [0.20.0] - 2026-09-07
 
 ### <!-- 0 -->Added
@@ -328,6 +352,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump bitflags from 2.9.0 to 2.9.1 ([#207](https://github.com/vhspace/sdl3-rs/pull/207))
 - Bump actions/cache from 3 to 4 ([#208](https://github.com/vhspace/sdl3-rs/pull/208))
 
+[unreleased]: https://github.com/vhspace/sdl3-rs/compare/v0.20.0...HEAD
 [0.20.0]: https://github.com/vhspace/sdl3-rs/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/vhspace/sdl3-rs/compare/v0.18.4...v0.19.0
 [0.18.4]: https://github.com/vhspace/sdl3-rs/compare/v0.18.3...v0.18.4
