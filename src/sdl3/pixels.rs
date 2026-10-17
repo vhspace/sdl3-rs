@@ -1,4 +1,5 @@
 use crate::get_error;
+use crate::gpu;
 use crate::sys;
 use crate::Error;
 use std::convert::{TryFrom, TryInto};
@@ -523,6 +524,22 @@ impl PixelFormat {
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct PixelFormat {
     raw: pixels::SDL_PixelFormat,
+}
+impl PixelFormat {
+    #[doc(alias = "SDL_GetPixelFormatFromGPUTextureFormat")]
+    pub fn from_texture_format(texture_format: gpu::TextureFormat) -> Self {
+        let format = sys::gpu::SDL_GetPixelFormatFromGPUTextureFormat(sys::gpu::SDL_GPUTextureFormat::new(texture_format as i32));
+
+        // Safety: SDL_GetPixelFormatFromGPUTextureFormat always returns a valid SDL_PixelFormat(either UNKNOWN or the matching format)
+        unsafe {
+            Self::from_ll(format)
+        }
+    }
+}
+impl From<gpu::TextureFormat> for PixelFormat {
+    fn from(value: gpu::TextureFormat) -> Self {
+        Self::from_texture_format(value)
+    }
 }
 
 impl_raw_accessors!((PixelFormat, pixels::SDL_PixelFormat));

@@ -3,6 +3,8 @@ use std::fmt;
 use std::ops::{BitAnd, BitOr};
 use sys::gpu::{SDL_GPUBlendFactor, SDL_GPUBlendOp};
 
+use crate::pixels;
+
 macro_rules! impl_with {
     (bitwise_and_or $x:ident $prim:ident) => {
         impl BitOr<$x> for $x {
@@ -134,6 +136,26 @@ pub enum TextureFormat {
     Astc12x12Float = sys::gpu::SDL_GPU_TEXTUREFORMAT_ASTC_12x12_FLOAT.0 as u32,
 }
 
+impl TextureFormat {
+    #[doc(alias = "SDL_GetGPUTextureFormatFromPixelFormat")]
+    pub fn from_pixel_format(pixel_format: pixels::PixelFormat) -> Self {
+        let format = sys::gpu::SDL_GetGPUTextureFormatFromPixelFormat(pixel_format.into());
+
+        // Safety: SDL_GetGPUTextureFormatFromPixelFormat() will always return a valid SDL_GPUTextureFormat(with INVALID or the matching format)
+        unsafe{ 
+            std::mem::transmute(format.0)
+        }
+    }
+}
+impl From<pixels::PixelFormat> for TextureFormat {
+    fn from(value: pixels::PixelFormat) -> TextureFormat {
+        Self::from_pixel_format(value)
+    }
+}
+
+
+
+#[doc(alias = "TTF_Version")]
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub struct ShaderFormat(pub sys::gpu::SDL_GPUShaderFormat);
 impl ShaderFormat {
