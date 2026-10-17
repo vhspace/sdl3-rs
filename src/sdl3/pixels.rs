@@ -528,12 +528,12 @@ pub struct PixelFormat {
 impl PixelFormat {
     #[doc(alias = "SDL_GetPixelFormatFromGPUTextureFormat")]
     pub fn from_texture_format(texture_format: gpu::TextureFormat) -> Self {
-        let format = sys::gpu::SDL_GetPixelFormatFromGPUTextureFormat(sys::gpu::SDL_GPUTextureFormat::new(texture_format as i32));
+        let format = sys::gpu::SDL_GetPixelFormatFromGPUTextureFormat(
+            sys::gpu::SDL_GPUTextureFormat::new(texture_format as i32),
+        );
 
         // Safety: SDL_GetPixelFormatFromGPUTextureFormat always returns a valid SDL_PixelFormat(either UNKNOWN or the matching format)
-        unsafe {
-            Self::from_ll(format)
-        }
+        unsafe { Self::from_ll(format) }
     }
 }
 impl From<gpu::TextureFormat> for PixelFormat {

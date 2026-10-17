@@ -142,9 +142,7 @@ impl TextureFormat {
         let format = sys::gpu::SDL_GetGPUTextureFormatFromPixelFormat(pixel_format.into());
 
         // Safety: SDL_GetGPUTextureFormatFromPixelFormat() will always return a valid SDL_GPUTextureFormat(with INVALID or the matching format)
-        unsafe{ 
-            std::mem::transmute(format.0)
-        }
+        unsafe { std::mem::transmute(format.0) }
     }
 }
 impl From<pixels::PixelFormat> for TextureFormat {
@@ -152,8 +150,6 @@ impl From<pixels::PixelFormat> for TextureFormat {
         Self::from_pixel_format(value)
     }
 }
-
-
 
 #[doc(alias = "TTF_Version")]
 #[derive(Clone, Copy, PartialEq, Eq)]
