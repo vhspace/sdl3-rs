@@ -142,16 +142,56 @@ impl fmt::Display for DialogError {
 /// when the platform does not report the selected filter (Linux portals, for
 /// instance, do not).
 ///
-/// The callback may be invoked from a thread other than the one that requested
-/// the dialog, depending on the operating system.
+/// The callback is called exactly once. It may be invoked from a thread other
+/// than the one that requested the dialog, depending on the operating system,
+/// which is why it must be `Send`.
 ///
 /// On Android the paths are `content://` URIs rather than filesystem paths.
 #[doc(alias = "SDL_DialogFileCallback")]
-pub type DialogCallback = Box<dyn Fn(Result<Vec<PathBuf>, DialogError>, Option<DialogFileFilter>)>;
+pub type DialogCallback =
+    Box<dyn FnOnce(Result<Vec<PathBuf>, DialogError>, Option<DialogFileFilter>) + Send>;
 
+/// Everything SDL needs to stay alive until the callback runs. SDL reads the
+/// filter list asynchronously on some platforms, so it can't live on the stack
+/// of the `show_*` function.
 struct DialogCallbackData {
-    pub callback: DialogCallback,
-    pub filter_strings: Option<Vec<(CString, CString)>>,
+    callback: DialogCallback,
+    filter_strings: Vec<(CString, CString)>,
+    c_filters: Vec<SDL_DialogFileFilter>,
+}
+
+/// Reads the NULL-terminated file list SDL hands to the callback.
+///
+/// # Safety
+///
+/// `filelist` must be null or point to a NULL-terminated array of valid C strings.
+unsafe fn collect_files(filelist: *const *const c_char) -> Result<Vec<PathBuf>, DialogError> {
+    if filelist.is_null() {
+        return Err(DialogError::SdlError(get_error()));
+    }
+
+    let mut files = Vec::new();
+    let mut count = 0;
+    loop {
+        let file = *filelist.offset(count);
+        if file.is_null() {
+            break;
+        }
+
+        match CStr::from_ptr(file).to_str() {
+            // PathBuf::from_str can not fail
+            Ok(file) => files.push(PathBuf::from_str(file).unwrap()),
+            Err(e) => return Err(DialogError::InvalidFilename(e)),
+        }
+
+        count += 1;
+    }
+
+    if files.is_empty() {
+        Err(DialogError::Canceled)
+    } else {
+        Ok(files)
+    }
 }
 
 extern "C" fn c_dialog_callback(
@@ -159,58 +199,28 @@ extern "C" fn c_dialog_callback(
     filelist: *const *const c_char,
     filter: c_int,
 ) {
-    let callback_info_ptr = userdata as *mut DialogCallbackData;
-    if filelist.is_null() {
-        unsafe {
-            return ((*callback_info_ptr).callback)(Err(DialogError::SdlError(get_error())), None);
-        }
-    }
+    // Safety: userdata is the box leaked by `callback_data_ptr!`, and SDL calls
+    // this exactly once per dialog, so ownership comes back here and is freed.
+    let data = unsafe { Box::from_raw(userdata as *mut DialogCallbackData) };
+    let DialogCallbackData {
+        callback,
+        filter_strings,
+        c_filters: _c_filters,
+    } = *data;
 
-    let mut files = Vec::new();
-    unsafe {
-        let mut count = 0;
-        loop {
-            let file = *filelist.offset(count);
-            if file.is_null() {
-                break;
+    let files = unsafe { collect_files(filelist) };
+    let selected = match (&files, usize::try_from(filter)) {
+        (Ok(_), Ok(index)) => filter_strings.get(index).map(|(name, pattern)| {
+            DialogFileFilter {
+                // We created these from strs, they cannot fail
+                name: name.to_str().unwrap(),
+                pattern: pattern.to_str().unwrap(),
             }
+        }),
+        _ => None,
+    };
 
-            let file = CStr::from_ptr(file);
-            match file.to_str() {
-                // PathBuf::from_str can not fail
-                Ok(file) => files.push(PathBuf::from_str(file).unwrap()),
-                Err(e) => {
-                    return ((*callback_info_ptr).callback)(
-                        Err(DialogError::InvalidFilename(e)),
-                        None,
-                    )
-                }
-            };
-
-            count += 1;
-        }
-
-        if count == 0 {
-            return ((*callback_info_ptr).callback)(Err(DialogError::Canceled), None);
-        }
-    }
-    unsafe {
-        if filter < 0 {
-            ((*callback_info_ptr).callback)(Ok(files), None)
-        } else {
-            // Seemingly not implemented in linux portals, untested
-            if let Some(filter_strings) = &(*callback_info_ptr).filter_strings {
-                if let Some(filter) = filter_strings.get(filter as usize) {
-                    let filter = DialogFileFilter {
-                        // We created these from strs, they cannot fail
-                        name: filter.0.to_str().unwrap(),
-                        pattern: filter.1.to_str().unwrap(),
-                    };
-                    ((*callback_info_ptr).callback)(Ok(files), Some(filter))
-                }
-            }
-        }
-    }
+    callback(files, selected);
 }
 
 /// Take a slice of DialogFileFilter and transform it into two vecs
@@ -261,13 +271,23 @@ macro_rules! default_location_ptr {
     };
 }
 
+/// Moves the callback and filters into a heap allocation that the C callback
+/// takes back ownership of. Also yields the filter pointer and count to pass
+/// to SDL, which point into that allocation and stay valid until the callback.
 macro_rules! callback_data_ptr {
-    ($callback:ident, $filter_strings:expr, $callback_data_ptr:ident) => {
+    ($callback:ident, $filter_strings:expr, $c_filters:expr, $callback_data_ptr:ident, $filters_ptr:ident, $filters_len:ident) => {
         let callback_data = DialogCallbackData {
             callback: $callback,
             filter_strings: $filter_strings,
+            c_filters: $c_filters,
         };
         let $callback_data_ptr = Box::into_raw(Box::new(callback_data));
+        let $filters_len = (*$callback_data_ptr).c_filters.len() as c_int;
+        let $filters_ptr = if $filters_len == 0 {
+            ptr::null()
+        } else {
+            (*$callback_data_ptr).c_filters.as_ptr()
+        };
     };
 }
 
@@ -319,14 +339,21 @@ where
     unsafe {
         window_ptr!(window, window_ptr);
         default_location_ptr!(default_location, default_location_ptr);
-        callback_data_ptr!(callback, Some(filter_strings), callback_data_ptr);
+        callback_data_ptr!(
+            callback,
+            filter_strings,
+            c_filters,
+            callback_data_ptr,
+            filters_ptr,
+            filters_len
+        );
 
         sys::dialog::SDL_ShowOpenFileDialog(
             Some(c_dialog_callback),
             callback_data_ptr as *mut c_void,
             window_ptr,
-            c_filters.as_ptr(),
-            c_filters.len() as i32,
+            filters_ptr,
+            filters_len,
             default_location_ptr,
             allow_many,
         );
@@ -373,7 +400,14 @@ pub fn show_open_folder_dialog<'a, W>(
     unsafe {
         window_ptr!(window, window_ptr);
         default_location_ptr!(default_location, default_location_ptr);
-        callback_data_ptr!(callback, None, callback_data_ptr);
+        callback_data_ptr!(
+            callback,
+            Vec::new(),
+            Vec::new(),
+            callback_data_ptr,
+            _filters_ptr,
+            _filters_len
+        );
 
         sys::dialog::SDL_ShowOpenFolderDialog(
             Some(c_dialog_callback),
@@ -430,16 +464,79 @@ where
     unsafe {
         window_ptr!(window, window_ptr);
         default_location_ptr!(default_location, default_location_ptr);
-        callback_data_ptr!(callback, Some(filter_strings), callback_data_ptr);
+        callback_data_ptr!(
+            callback,
+            filter_strings,
+            c_filters,
+            callback_data_ptr,
+            filters_ptr,
+            filters_len
+        );
 
         sys::dialog::SDL_ShowSaveFileDialog(
             Some(c_dialog_callback),
             callback_data_ptr as *mut c_void,
             window_ptr,
-            c_filters.as_ptr(),
-            c_filters.len() as i32,
+            filters_ptr,
+            filters_len,
             default_location_ptr,
         );
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::mpsc;
+
+    type Outcome = (Result<Vec<PathBuf>, String>, Option<String>);
+
+    /// Builds callback data the way the show_* functions do and runs the C
+    /// trampoline on it, returning what the Rust callback received.
+    fn run(files: &[&str], filter: c_int) -> Outcome {
+        let (tx, rx) = mpsc::channel();
+        let callback: DialogCallback = Box::new(move |result, filter| {
+            let result = result.map_err(|e| e.to_string());
+            tx.send((result, filter.map(|f| f.name.to_owned())))
+                .unwrap();
+        });
+        let filter_strings = vec![
+            (CString::new("Text").unwrap(), CString::new("txt").unwrap()),
+            (CString::new("All").unwrap(), CString::new("*").unwrap()),
+        ];
+        let data = Box::into_raw(Box::new(DialogCallbackData {
+            callback,
+            filter_strings,
+            c_filters: Vec::new(),
+        }));
+
+        let c_files: Vec<CString> = files.iter().map(|f| CString::new(*f).unwrap()).collect();
+        let mut list: Vec<*const c_char> = c_files.iter().map(|f| f.as_ptr()).collect();
+        list.push(ptr::null());
+
+        c_dialog_callback(data as *mut c_void, list.as_ptr(), filter);
+        rx.try_recv().expect("callback was not invoked")
+    }
+
+    #[test]
+    fn reports_files_and_selected_filter() {
+        let (result, filter) = run(&["/tmp/a.txt"], 1);
+        assert_eq!(result.unwrap(), vec![PathBuf::from("/tmp/a.txt")]);
+        assert_eq!(filter.as_deref(), Some("All"));
+    }
+
+    #[test]
+    fn empty_list_is_canceled() {
+        let (result, filter) = run(&[], -1);
+        assert_eq!(result.unwrap_err(), "Canceled");
+        assert_eq!(filter, None);
+    }
+
+    #[test]
+    fn unknown_filter_index_still_calls_back() {
+        let (result, filter) = run(&["/tmp/a.txt"], 7);
+        assert!(result.is_ok());
+        assert_eq!(filter, None);
     }
 }
