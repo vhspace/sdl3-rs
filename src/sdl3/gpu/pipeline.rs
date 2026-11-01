@@ -2,7 +2,7 @@ use crate::{
     get_error,
     gpu::{
         device::WeakDevice, BlendFactor, BlendOp, ColorComponentFlags, CompareOp, CullMode, Device,
-        FillMode, FrontFace, PrimitiveType, Shader, StencilOp, TextureFormat,
+        FillMode, FrontFace, PrimitiveType, SampleCount, Shader, StencilOp, TextureFormat,
         VertexBufferDescription, VertexElementFormat,
     },
     sys, Error,
@@ -13,11 +13,11 @@ use sys::gpu::{
     SDL_GPUColorTargetDescription, SDL_GPUCompareOp, SDL_GPUComputePipeline,
     SDL_GPUComputePipelineCreateInfo, SDL_GPUCullMode, SDL_GPUDepthStencilState, SDL_GPUFillMode,
     SDL_GPUFrontFace, SDL_GPUGraphicsPipeline, SDL_GPUGraphicsPipelineCreateInfo,
-    SDL_GPUGraphicsPipelineTargetInfo, SDL_GPUPrimitiveType, SDL_GPURasterizerState,
-    SDL_GPUStencilOp, SDL_GPUStencilOpState, SDL_GPUStorageBufferReadWriteBinding,
-    SDL_GPUStorageTextureReadWriteBinding, SDL_GPUTextureFormat, SDL_GPUVertexAttribute,
-    SDL_GPUVertexBufferDescription, SDL_GPUVertexInputState, SDL_ReleaseGPUComputePipeline,
-    SDL_ReleaseGPUGraphicsPipeline,
+    SDL_GPUGraphicsPipelineTargetInfo, SDL_GPUMultisampleState, SDL_GPUPrimitiveType,
+    SDL_GPURasterizerState, SDL_GPUSampleCount, SDL_GPUStencilOp, SDL_GPUStencilOpState,
+    SDL_GPUStorageBufferReadWriteBinding, SDL_GPUStorageTextureReadWriteBinding,
+    SDL_GPUTextureFormat, SDL_GPUVertexAttribute, SDL_GPUVertexBufferDescription,
+    SDL_GPUVertexInputState, SDL_ReleaseGPUComputePipeline, SDL_ReleaseGPUGraphicsPipeline,
 };
 
 use super::{Buffer, ShaderFormat, Texture};
@@ -104,6 +104,13 @@ impl<'a> GraphicsPipelineBuilder<'a> {
 
     pub fn with_depth_stencil_state(mut self, value: DepthStencilState) -> Self {
         self.inner.depth_stencil_state = value.inner;
+        self
+    }
+
+    /// Sets the multisample state of the graphics pipeline.
+    #[doc(alias = "SDL_GPUGraphicsPipelineCreateInfo::multisample_state")]
+    pub fn with_multisample_state(mut self, value: MultisampleState) -> Self {
+        self.inner.multisample_state = value.inner;
         self
     }
 
@@ -387,6 +394,31 @@ impl RasterizerState {
     /// True to enable depth clip, false to enable depth clamp.
     pub fn with_enable_depth_clip(mut self, value: bool) -> Self {
         self.inner.enable_depth_clip = value;
+        self
+    }
+}
+
+/// The multisample state of a graphics pipeline.
+#[repr(C)]
+#[derive(Default, Copy, Clone)]
+#[doc(alias = "SDL_GPUMultisampleState")]
+pub struct MultisampleState {
+    inner: SDL_GPUMultisampleState,
+}
+impl MultisampleState {
+    pub fn new() -> Self {
+        Default::default()
+    }
+
+    /// The number of samples to be used in rasterization.
+    pub fn with_sample_count(mut self, value: SampleCount) -> Self {
+        self.inner.sample_count = SDL_GPUSampleCount(value as i32);
+        self
+    }
+
+    /// True enables the alpha-to-coverage feature.
+    pub fn with_enable_alpha_to_coverage(mut self, value: bool) -> Self {
+        self.inner.enable_alpha_to_coverage = value;
         self
     }
 }
