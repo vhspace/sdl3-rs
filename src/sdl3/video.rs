@@ -300,6 +300,15 @@ pub mod gl_attr {
         pub fn context_version(&self) -> (u8, u8) {
             (self.context_major_version(), self.context_minor_version())
         }
+
+        /// Resets all OpenGL attributes to their default values.
+        #[doc(alias = "SDL_GL_ResetAttributes")]
+        #[inline]
+        pub fn reset(&self) {
+            unsafe {
+                sys::video::SDL_GL_ResetAttributes();
+            }
+        }
     }
 
     /// The type that allows you to build a OpenGL context configuration.
