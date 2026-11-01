@@ -37,10 +37,10 @@ jobs:
         run: cargo +stable fetch --locked
 
       - name: Build
-        run: cargo +stable build --verbose --locked --offline
+        run: cargo +stable build --verbose --locked --offline --features build-from-source-static
 
       - name: Run tests
-        run: cargo +stable test --verbose --locked --offline
+        run: cargo +stable test --verbose --locked --offline --features build-from-source-static
 
       - name: Publish Crate
         env:
