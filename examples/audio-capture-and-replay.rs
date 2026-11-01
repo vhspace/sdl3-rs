@@ -1,6 +1,5 @@
 use sdl3::audio::{AudioCallback, AudioFormat, AudioRecordingCallback, AudioSpec, AudioStream};
 use sdl3::AudioSubsystem;
-use std::i16;
 use std::sync::mpsc;
 use std::time::Duration;
 

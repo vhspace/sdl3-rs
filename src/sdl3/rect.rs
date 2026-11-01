@@ -945,8 +945,8 @@ mod test {
             )),
             Rect::from_enclose_points(
                 &[
-                    Point::new(i32::MIN, i32::min_value()),
-                    Point::new(i32::MAX, i32::max_value())
+                    Point::new(i32::MIN, i32::MIN),
+                    Point::new(i32::MAX, i32::MAX)
                 ],
                 None
             )
@@ -996,7 +996,7 @@ mod test {
     fn clamp_position_min() {
         assert_eq!(
             tuple(min_int_value(), min_int_value(), 1, 1),
-            Rect::new(i32::min_value(), i32::min_value(), 1, 1).into()
+            Rect::new(i32::MIN, i32::MIN, 1, 1).into()
         );
     }
 
@@ -1012,7 +1012,7 @@ mod test {
     fn clamp_i32_max() {
         assert_eq!(
             tuple(0, 0, max_int_value(), max_int_value()),
-            Rect::new(0, 0, i32::max_value() as u32, i32::max_value() as u32).into()
+            Rect::new(0, 0, i32::MAX as u32, i32::MAX as u32).into()
         )
     }
 
