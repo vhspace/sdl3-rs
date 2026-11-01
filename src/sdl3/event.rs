@@ -313,6 +313,8 @@ pub enum EventType {
     WindowHitTest = sys::events::SDL_EVENT_WINDOW_HIT_TEST.0,
     WindowICCProfileChanged = sys::events::SDL_EVENT_WINDOW_ICCPROF_CHANGED.0,
     WindowDisplayChanged = sys::events::SDL_EVENT_WINDOW_DISPLAY_CHANGED.0,
+    WindowEnterFullscreen = sys::events::SDL_EVENT_WINDOW_ENTER_FULLSCREEN.0,
+    WindowLeaveFullscreen = sys::events::SDL_EVENT_WINDOW_LEAVE_FULLSCREEN.0,
 
     // TODO: SysWM = sys::events::SDL_EVENT_SYSWM .0,
     KeyDown = sys::events::SDL_EVENT_KEY_DOWN.0,
@@ -426,6 +428,8 @@ impl TryFrom<u32> for EventType {
             SDL_EVENT_WINDOW_FOCUS_GAINED => WindowFocusGained,
             SDL_EVENT_WINDOW_FOCUS_LOST => WindowFocusLost,
             SDL_EVENT_WINDOW_CLOSE_REQUESTED => WindowCloseRequested,
+            SDL_EVENT_WINDOW_ENTER_FULLSCREEN => WindowEnterFullscreen,
+            SDL_EVENT_WINDOW_LEAVE_FULLSCREEN => WindowLeaveFullscreen,
 
             SDL_EVENT_KEY_DOWN => KeyDown,
             SDL_EVENT_KEY_UP => KeyUp,
@@ -586,6 +590,8 @@ pub enum WindowEvent {
     HitTest(i32, i32),
     ICCProfChanged,
     DisplayChanged(i32),
+    EnterFullscreen,
+    LeaveFullscreen,
 }
 
 impl WindowEvent {
@@ -611,6 +617,8 @@ impl WindowEvent {
                 EventType::WindowHitTest => WindowEvent::HitTest(data1, data2),
                 EventType::WindowICCProfileChanged => WindowEvent::ICCProfChanged,
                 EventType::WindowDisplayChanged => WindowEvent::DisplayChanged(data1),
+                EventType::WindowEnterFullscreen => WindowEvent::EnterFullscreen,
+                EventType::WindowLeaveFullscreen => WindowEvent::LeaveFullscreen,
                 _ => WindowEvent::None,
             },
             Err(_) => WindowEvent::None,
@@ -638,6 +646,8 @@ impl WindowEvent {
             WindowEvent::HitTest(d1, d2) => (EventType::WindowHitTest, d1, d2),
             WindowEvent::ICCProfChanged => (EventType::WindowICCProfileChanged, 0, 0),
             WindowEvent::DisplayChanged(d1) => (EventType::WindowDisplayChanged, d1, 0),
+            WindowEvent::EnterFullscreen => (EventType::WindowEnterFullscreen, 0, 0),
+            WindowEvent::LeaveFullscreen => (EventType::WindowLeaveFullscreen, 0, 0),
         }
     }
 
@@ -662,6 +672,8 @@ impl WindowEvent {
                 | (Self::HitTest(_, _), Self::HitTest(_, _))
                 | (Self::ICCProfChanged, Self::ICCProfChanged)
                 | (Self::DisplayChanged(_), Self::DisplayChanged(_))
+                | (Self::EnterFullscreen, Self::EnterFullscreen)
+                | (Self::LeaveFullscreen, Self::LeaveFullscreen)
         )
     }
 }
@@ -1758,7 +1770,9 @@ impl Event {
                 | EventType::WindowCloseRequested
                 | EventType::WindowHitTest
                 | EventType::WindowICCProfileChanged
-                | EventType::WindowDisplayChanged => {
+                | EventType::WindowDisplayChanged
+                | EventType::WindowEnterFullscreen
+                | EventType::WindowLeaveFullscreen => {
                     let event = raw.window;
                     Event::Window {
                         timestamp: event.timestamp,
