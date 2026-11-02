@@ -45,16 +45,17 @@ impl TextureTransferInfo {
 }
 
 #[derive(Default)]
-pub struct TextureRegion {
+pub struct TextureRegion<'a> {
     pub(super) inner: SDL_GPUTextureRegion,
+    _phantom: PhantomData<&'a ()>,
 }
-impl TextureRegion {
+impl<'a> TextureRegion<'a> {
     pub fn new() -> Self {
         Default::default()
     }
 
     /// The texture used in the copy operation.
-    pub fn with_texture(mut self, texture: &Texture) -> Self {
+    pub fn with_texture(mut self, texture: &'a Texture<'_>) -> Self {
         self.inner.texture = texture.raw();
         self
     }
