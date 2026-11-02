@@ -320,6 +320,18 @@ subsystem!(EventSubsystem, SDL_INIT_EVENTS, EVENT_COUNT, sync);
 subsystem!(SensorSubsystem, SDL_INIT_SENSOR, SENSOR_COUNT, nosync);
 subsystem!(CameraSubsystem, SDL_INIT_CAMERA, CAMERA_COUNT, nosync);
 
+/// Panics unless called on SDL's main thread. Skipped with the `test-mode`
+/// feature, same as the check in `Sdl::new`.
+#[track_caller]
+pub(crate) fn assert_main_thread(what: &str) {
+    if !(cfg!(test) || cfg!(feature = "test-mode")) {
+        assert!(
+            unsafe { sys::init::SDL_IsMainThread() },
+            "{what} must be called on the main thread"
+        );
+    }
+}
+
 static IS_EVENT_PUMP_ALIVE: AtomicBool = AtomicBool::new(false);
 
 /// A thread-safe type that encapsulates SDL event-pumping functions.

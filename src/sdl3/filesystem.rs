@@ -161,6 +161,9 @@ where
 pub fn get_base_path() -> Result<&'static Path, FileSystemError> {
     unsafe {
         let path = sys::filesystem::SDL_GetBasePath();
+        if path.is_null() {
+            return Err(FileSystemError::SdlError(get_error()));
+        }
         cstring_path!(path, return Err(FileSystemError::SdlError(get_error())));
         Ok(path)
     }
@@ -304,16 +307,15 @@ pub fn get_pref_path(org_name: &str, app_name: &str) -> Result<PathBuf, PrefPath
             org.as_ptr() as *const c_char,
             app.as_ptr() as *const c_char,
         );
-        let path = PathBuf::from(CStr::from_ptr(buf).to_str().unwrap());
+        if buf.is_null() {
+            return Err(PrefPathError::SdlError(get_error()));
+        }
+        let path = CStr::from_ptr(buf).to_str().map(PathBuf::from);
         sys::stdinc::SDL_free(buf as *mut c_void);
         path
     };
 
-    if path.as_os_str().is_empty() {
-        Err(PrefPathError::SdlError(get_error()))
-    } else {
-        Ok(path)
-    }
+    path.map_err(|_| PrefPathError::SdlError(Error("pref path is not valid UTF-8".to_owned())))
 }
 
 pub use sys::filesystem::SDL_Folder as Folder;
