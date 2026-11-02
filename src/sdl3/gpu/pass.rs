@@ -9,7 +9,7 @@ use crate::{
     rect::Rect,
     Error,
 };
-use std::sync::Arc;
+use std::{marker::PhantomData, sync::Arc};
 use sys::gpu::{
     SDL_AcquireGPUSwapchainTexture, SDL_BindGPUFragmentSamplers, SDL_BindGPUIndexBuffer,
     SDL_BindGPUVertexBuffers, SDL_BindGPUVertexSamplers, SDL_DrawGPUIndexedPrimitives,
@@ -109,7 +109,7 @@ impl CommandBuffer {
 
     #[doc(alias = "SDL_WaitAndAcquireGPUSwapchainTexture")]
     pub fn wait_and_acquire_swapchain_texture<'a>(
-        &'a mut self,
+        &'a self,
         w: &crate::video::Window,
     ) -> Result<Option<Texture<'a>>, Error> {
         let mut swapchain = std::ptr::null_mut();
@@ -150,7 +150,7 @@ impl CommandBuffer {
     /// ```
     #[doc(alias = "SDL_AcquireGPUSwapchainTexture")]
     pub fn acquire_swapchain_texture<'a>(
-        &'a mut self,
+        &'a self,
         w: &crate::video::Window,
     ) -> Result<Option<Texture<'a>>, Error> {
         let mut swapchain = std::ptr::null_mut();
@@ -212,15 +212,16 @@ impl CommandBuffer {
 
 #[repr(C)]
 #[derive(Default)]
-pub struct DepthStencilTargetInfo {
+pub struct DepthStencilTargetInfo<'a> {
     inner: SDL_GPUDepthStencilTargetInfo,
+    _phantom: PhantomData<&'a ()>,
 }
-impl DepthStencilTargetInfo {
+impl<'a> DepthStencilTargetInfo<'a> {
     pub fn new() -> Self {
         Default::default()
     }
 
-    pub fn with_texture(mut self, texture: &mut Texture) -> Self {
+    pub fn with_texture(mut self, texture: &'a mut Texture<'_>) -> Self {
         self.inner.texture = texture.raw();
         self
     }
@@ -261,13 +262,29 @@ impl DepthStencilTargetInfo {
     }
 }
 
+/// A color target for [`Device::begin_render_pass`](crate::gpu::Device::begin_render_pass).
+///
+/// Borrows the textures it points at, so they can't be released while the
+/// info is still around:
+///
+/// ```compile_fail,E0597
+/// # use sdl3::gpu::{ColorTargetInfo, Device, TextureCreateInfo};
+/// # fn f(device: &Device) {
+/// let info = {
+///     let texture = device.create_texture(TextureCreateInfo::new()).unwrap();
+///     ColorTargetInfo::default().with_texture(&texture)
+/// };
+/// # let _ = info;
+/// # }
+/// ```
 #[repr(C)]
 #[derive(Default)]
-pub struct ColorTargetInfo {
+pub struct ColorTargetInfo<'a> {
     inner: SDL_GPUColorTargetInfo,
+    _phantom: PhantomData<&'a ()>,
 }
-impl ColorTargetInfo {
-    pub fn with_texture(mut self, texture: &Texture) -> Self {
+impl<'a> ColorTargetInfo<'a> {
+    pub fn with_texture(mut self, texture: &'a Texture<'_>) -> Self {
         self.inner.texture = texture.raw();
         self
     }
@@ -291,7 +308,7 @@ impl ColorTargetInfo {
     /// the store op is [`StoreOp::RESOLVE`] or [`StoreOp::RESOLVE_AND_STORE`].
     /// Must have a sample count of 1.
     #[doc(alias = "SDL_GPUColorTargetInfo::resolve_texture")]
-    pub fn with_resolve_texture(mut self, texture: &Texture) -> Self {
+    pub fn with_resolve_texture(mut self, texture: &'a Texture<'_>) -> Self {
         self.inner.resolve_texture = texture.raw();
         self
     }
@@ -320,11 +337,12 @@ impl ColorTargetInfo {
 
 #[repr(C)]
 #[derive(Default)]
-pub struct BlitInfo {
+pub struct BlitInfo<'a> {
     inner: SDL_GPUBlitInfo,
+    _phantom: PhantomData<&'a ()>,
 }
-impl BlitInfo {
-    pub fn with_source_texture(mut self, texture: &Texture) -> Self {
+impl<'a> BlitInfo<'a> {
+    pub fn with_source_texture(mut self, texture: &'a Texture<'_>) -> Self {
         self.inner.source.texture = texture.raw();
         self
     }
@@ -350,7 +368,7 @@ impl BlitInfo {
         self
     }
 
-    pub fn with_destination_texture(mut self, texture: &Texture) -> Self {
+    pub fn with_destination_texture(mut self, texture: &'a Texture<'_>) -> Self {
         self.inner.destination.texture = texture.raw();
         self
     }

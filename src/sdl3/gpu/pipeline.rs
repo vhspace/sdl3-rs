@@ -622,15 +622,16 @@ impl ComputePipeline {
 
 #[repr(C)]
 #[derive(Default)]
-pub struct StorageTextureReadWriteBinding {
+pub struct StorageTextureReadWriteBinding<'a> {
     inner: SDL_GPUStorageTextureReadWriteBinding,
+    _marker: PhantomData<&'a ()>,
 }
-impl StorageTextureReadWriteBinding {
+impl<'a> StorageTextureReadWriteBinding<'a> {
     pub fn new() -> Self {
         Default::default()
     }
 
-    pub fn with_texture(mut self, texture: &Texture) -> Self {
+    pub fn with_texture(mut self, texture: &'a Texture<'_>) -> Self {
         self.inner.texture = texture.raw();
         self
     }
