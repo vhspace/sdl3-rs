@@ -12,8 +12,14 @@ pub struct RelativeMouseState {
 }
 
 impl RelativeMouseState {
+    /// # Panics
+    ///
+    /// When called off the main thread. `EventPump` is `Sync`, but SDL only
+    /// allows reading the mouse state on the main thread.
     #[doc(alias = "SDL_GetRelativeMouseState")]
+    #[track_caller]
     pub fn new(_e: &EventPump) -> RelativeMouseState {
+        crate::sdl::assert_main_thread("RelativeMouseState::new");
         let mut x = 0.;
         let mut y = 0.;
         let mouse_state = unsafe {
