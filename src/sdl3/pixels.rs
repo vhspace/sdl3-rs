@@ -1,4 +1,5 @@
 use crate::get_error;
+use crate::gpu;
 use crate::sys;
 use crate::Error;
 use std::convert::{TryFrom, TryInto};
@@ -13,6 +14,27 @@ pub struct Palette {
 }
 
 impl Palette {
+    /// Returns the raw SDL_Palette pointer.
+    ///
+    /// This can be used to call raw SDL functions that aren't wrapped by this crate.
+    #[doc(alias = "SDL_Palette")]
+    pub fn raw(&self) -> *mut pixels::SDL_Palette {
+        self.raw
+    }
+
+    /// Creates a `Palette` from a raw SDL_Palette pointer.
+    ///
+    /// # Safety
+    ///
+    /// - `raw` must be a valid, non-null pointer to an `SDL_Palette`
+    /// - The pointer must not be owned by another wrapper (to avoid double-free)
+    /// - The caller must ensure the pointer remains valid for the wrapper's lifetime
+    #[doc(alias = "SDL_Palette")]
+    pub unsafe fn from_raw(raw: *mut pixels::SDL_Palette) -> Self {
+        debug_assert!(!raw.is_null(), "from_raw called with null pointer");
+        Self { raw }
+    }
+
     #[inline]
     /// Creates a new, uninitialized palette
     #[doc(alias = "SDL_CreatePalette")]
@@ -89,8 +111,6 @@ impl Drop for Palette {
         }
     }
 }
-
-impl_raw_accessors!((Palette, *mut pixels::SDL_Palette));
 
 #[test]
 fn create_palette() {
@@ -273,7 +293,7 @@ impl FColor {
 
     // Implemented manually and kept private, because reasons
     #[inline]
-    const fn raw(self) -> sys::pixels::SDL_FColor {
+    pub(crate) const fn raw(self) -> sys::pixels::SDL_FColor {
         sys::pixels::SDL_FColor {
             r: self.r,
             g: self.g,
@@ -505,9 +525,25 @@ impl PixelFormat {
 pub struct PixelFormat {
     raw: pixels::SDL_PixelFormat,
 }
+impl PixelFormat {
+    #[doc(alias = "SDL_GetPixelFormatFromGPUTextureFormat")]
+    pub fn from_texture_format(texture_format: gpu::TextureFormat) -> Self {
+        let format = sys::gpu::SDL_GetPixelFormatFromGPUTextureFormat(
+            sys::gpu::SDL_GPUTextureFormat::new(texture_format as i32),
+        );
+
+        // Safety: SDL_GetPixelFormatFromGPUTextureFormat always returns a valid SDL_PixelFormat(either UNKNOWN or the matching format)
+        unsafe { Self::from_ll(format) }
+    }
+}
+impl From<gpu::TextureFormat> for PixelFormat {
+    fn from(value: gpu::TextureFormat) -> Self {
+        Self::from_texture_format(value)
+    }
+}
 
 impl_raw_accessors!((PixelFormat, pixels::SDL_PixelFormat));
-impl_raw_constructor!((PixelFormat, PixelFormat(raw: pixels::SDL_PixelFormat )));
+impl_raw_constructor!((PixelFormat, PixelFormat(raw: pixels::SDL_PixelFormat)));
 
 impl Debug for PixelFormat {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {

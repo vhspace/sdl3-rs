@@ -53,7 +53,7 @@
 //! using the default library search paths.
 //!
 //! If you don't have `libsdl3` installed on your system and just want it to work, we recommend using `build-from-source`.
-//! Also see the different build configurations that `sdl3-sys` provides:  <https://github.com/maia-s/sdl3-sys-rs/tree/main/sdl3-sys#usage>
+//! Also see the different build configurations that `sdl3-sys` provides:  <https://codeberg.org/maia/sdl3-sys-rs/src/branch/main/sdl3-sys#usage>
 //!
 //! | Name                             | Description                                                    |
 //! |----------------------------------|----------------------------------------------------------------|
@@ -78,6 +78,7 @@
 //! | `mixer`             | SDL3_mixer bindings for audio mixing and playback                      | Implemented           |
 //! | `image`             | Enable SDL_image helpers for loading/saving surfaces and textures      | Implemented           |
 //! | `ttf`               | Enable SDL_ttf font/text rendering APIs                                | Implemented           |
+//! | `net`               | SDL3_net bindings for TCP/UDP networking                               | Implemented           |
 //! | `hidapi`            | Use SDL's hidapi backend for sensors and controllers                   | Implemented           |
 //! | `test-mode`         | Allows SDL to be initialised from a thread that is not the main thread | Implemented           |
 //! | `raw-window-handle` | Enables integrations with the [`wgpu`] crate                           | Implemented           |
@@ -145,6 +146,8 @@ pub mod gfx;
 pub mod image;
 #[cfg(feature = "mixer")]
 pub mod mixer;
+#[cfg(feature = "net")]
+pub mod net;
 #[cfg(feature = "ttf")]
 pub mod ttf;
 

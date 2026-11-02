@@ -2061,7 +2061,7 @@ impl<T: RenderTarget> Canvas<T> {
     ///
     /// It must be sound to [create references to](core::ptr#pointer-to-reference-conversion):
     /// - `positions` offset by `position_offset` bytes, of type [`FPoint`] (or `[f32; 2]`),
-    /// - `colors` offset by `color_offset` bytes, of type [`Color`][pixels::Color] (or `[u8; 4]`)
+    /// - `colors` offset by `color_offset` bytes, of type [`FColor`][pixels::FColor] (or `[f32; 4]`)
     /// - `tex_coords` offset by `tex_coord_offset` bytes, of type [`FPoint`] (or `[f32; 2]`).
     ///
     /// For the above to hold, make sure that the hypothetical references are properly aligned and
@@ -2079,8 +2079,8 @@ impl<T: RenderTarget> Canvas<T> {
     /// Offsets must be correct.
     /// - `position_offset + size_of::<FPoint>() <= size_of::<PosVertex>()`: an [`FPoint`] must fit
     ///   in `PosVertex` at `position_offset` bytes from the start.
-    /// - `color_offset + size_of::<Color>() <= size_of::<ColorVertex>()`: a
-    ///   [`Color`][pixels::Color] must fit in `ColorVertex` at `color_offset` bytes from the
+    /// - `color_offset + size_of::<FColor>() <= size_of::<ColorVertex>()`: an
+    ///   [`FColor`][pixels::FColor] must fit in `ColorVertex` at `color_offset` bytes from the
     ///   start.
     /// - `tex_coord_offset + size_of::<FPoint>() <= size_of::<TexCoordVertex>()`: an [`FPoint`]
     ///   must fit in `TexCoordVertex` at `tex_coord_offset` bytes from the start.
@@ -2105,7 +2105,7 @@ impl<T: RenderTarget> Canvas<T> {
         assert_eq!(num_vertices, colors.len());
 
         assert!(position_offset + size_of::<FPoint>() <= size_of::<PosVertex>());
-        assert!(color_offset + size_of::<pixels::Color>() <= size_of::<ColorVertex>());
+        assert!(color_offset + size_of::<pixels::FColor>() <= size_of::<ColorVertex>());
         let (texture, uv, uv_stride) = if let Some(texture_params) = texture_params {
             assert_eq!(num_vertices, texture_params.tex_coords.len());
             assert!(
@@ -2773,6 +2773,35 @@ impl InternalTexture {
         }
     }
 
+    #[doc(alias = "SDL_LockTextureToSurface")]
+    fn with_surface<F, R, R2>(&mut self, rect: R2, func: F) -> Result<R, Error>
+    where
+        F: FnOnce(&mut SurfaceRef) -> R,
+        R2: Into<Option<Rect>>,
+    {
+        let rect = rect.into();
+
+        let loaded = unsafe {
+            let mut surface = MaybeUninit::uninit();
+            let ret = sys::render::SDL_LockTextureToSurface(
+                self.raw,
+                rect.map_or_else(ptr::null, |rect| rect.raw()),
+                surface.as_mut_ptr(),
+            );
+            if ret {
+                Ok(SurfaceRef::from_ll_mut(surface.assume_init()))
+            } else {
+                Err(get_error())
+            }
+        };
+
+        loaded.map(|surface_ref| {
+            let result = func(surface_ref);
+            unsafe { sys::render::SDL_UnlockTexture(self.raw) };
+            result
+        })
+    }
+
     // removed:
     // SDL_GL_BindTexture() - use SDL_GetTextureProperties() to get the OpenGL texture ID and bind the texture directly
     // SDL_GL_UnbindTexture() - use SDL_GetTextureProperties() to get the OpenGL texture ID and unbind the texture directly
@@ -2818,6 +2847,23 @@ impl InternalTexture {
 
 #[cfg(not(feature = "unsafe_textures"))]
 impl Texture<'_> {
+    /// Creates a `Texture` from a raw SDL_Texture pointer.
+    ///
+    /// # Safety
+    ///
+    /// - `raw` must be a valid, non-null pointer to an `SDL_Texture`
+    /// - The pointer must not be owned by another wrapper (to avoid double-free)
+    /// - The caller must ensure the pointer remains valid for the wrapper's lifetime
+    /// - The texture must have been created by the same renderer that will use it
+    #[doc(alias = "SDL_Texture")]
+    pub unsafe fn from_raw(raw: *mut sys::render::SDL_Texture) -> Self {
+        debug_assert!(!raw.is_null(), "from_raw called with null pointer");
+        Self {
+            raw,
+            _marker: PhantomData,
+        }
+    }
+
     /// Gets the texture's internal properties.
     #[inline]
     pub fn query(&self) -> TextureQuery {
@@ -2957,6 +3003,26 @@ impl Texture<'_> {
         R2: Into<Option<Rect>>,
     {
         InternalTexture { raw: self.raw }.with_lock(rect, func)
+    }
+
+    /// Locks the texture for **write-only** pixel access, and expose it as a SDL surface.
+    /// The texture must have been created with streaming access.
+    ///
+    /// `F` is a function that is passed the write-only surface.
+    /// # Remarks
+    /// Besides providing an `SurfaceRef` instead of raw pixel data, this function operates like `with_lock`.
+    ///
+    /// As an optimization, the pixels made available for editing don't
+    /// necessarily contain the old texture data.
+    /// This is a write-only operation, and if you need to keep a copy of the
+    /// texture data you should do that at the application level.
+    #[inline]
+    pub fn with_surface<F, R, R2>(&mut self, rect: R2, func: F) -> Result<R, Error>
+    where
+        F: FnOnce(&mut SurfaceRef) -> R,
+        R2: Into<Option<Rect>>,
+    {
+        InternalTexture { raw: self.raw }.with_surface(rect, func)
     }
 
     // /// Binds an OpenGL/ES/ES2 texture to the current
@@ -3053,6 +3119,20 @@ impl Texture<'_> {
 
 #[cfg(feature = "unsafe_textures")]
 impl Texture {
+    /// Creates a `Texture` from a raw SDL_Texture pointer.
+    ///
+    /// # Safety
+    ///
+    /// - `raw` must be a valid, non-null pointer to an `SDL_Texture`
+    /// - The pointer must not be owned by another wrapper (to avoid double-free)
+    /// - The caller must ensure the pointer remains valid for the wrapper's lifetime
+    /// - The texture must have been created by the same renderer that will use it
+    #[doc(alias = "SDL_Texture")]
+    pub unsafe fn from_raw(raw: *mut sys::render::SDL_Texture) -> Self {
+        debug_assert!(!raw.is_null(), "from_raw called with null pointer");
+        Self { raw }
+    }
+
     /// Gets the texture's internal properties.
     #[inline]
     pub fn query(&self) -> TextureQuery {
@@ -3192,6 +3272,26 @@ impl Texture {
         R2: Into<Option<Rect>>,
     {
         InternalTexture { raw: self.raw }.with_lock(rect, func)
+    }
+
+    /// Locks the texture for **write-only** pixel access, and expose it as a SDL surface.
+    /// The texture must have been created with streaming access.
+    ///
+    /// `F` is a function that is passed the write-only surface.
+    /// # Remarks
+    /// Besides providing an `SurfaceRef` instead of raw pixel data, this function operates like `with_lock`.
+    ///
+    /// As an optimization, the pixels made available for editing don't
+    /// necessarily contain the old texture data.
+    /// This is a write-only operation, and if you need to keep a copy of the
+    /// texture data you should do that at the application level.
+    #[inline]
+    pub fn with_surface<F, R, R2>(&mut self, rect: R2, func: F) -> Result<R, Error>
+    where
+        F: FnOnce(&mut SurfaceRef) -> R,
+        R2: Into<Option<Rect>>,
+    {
+        InternalTexture { raw: self.raw }.with_surface(rect, func)
     }
 
     // these are not supplied by SDL anymore

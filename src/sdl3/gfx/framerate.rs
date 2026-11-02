@@ -12,6 +12,28 @@ pub struct FPSManager {
 }
 
 impl FPSManager {
+    /// Returns the raw FPSmanager pointer.
+    ///
+    /// This can be used to call raw SDL_gfx functions that aren't wrapped by this crate.
+    #[doc(alias = "FPSmanager")]
+    pub fn raw(&self) -> *mut gfx::framerate::FPSmanager {
+        self.raw
+    }
+
+    /// Creates an `FPSManager` from a raw FPSmanager pointer.
+    ///
+    /// # Safety
+    ///
+    /// - `raw` must be a valid, non-null pointer to an `FPSmanager`
+    /// - The pointer must not be owned by another wrapper (to avoid double-free)
+    /// - The caller must ensure the pointer remains valid for the wrapper's lifetime
+    /// - The pointer must have been allocated with `libc::malloc` (as it will be freed with `libc::free`)
+    #[doc(alias = "FPSmanager")]
+    pub unsafe fn from_raw(raw: *mut gfx::framerate::FPSmanager) -> Self {
+        debug_assert!(!raw.is_null(), "from_raw called with null pointer");
+        Self { raw }
+    }
+
     /// Create the framerate manager.
     pub fn new() -> FPSManager {
         unsafe {

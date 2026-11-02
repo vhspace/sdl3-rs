@@ -13,7 +13,68 @@ use std::fmt;
 use sys::power::{SDL_PowerState, SDL_POWERSTATE_UNKNOWN};
 use sys::stdinc::SDL_free;
 
-pub type JoystickId = sys::joystick::SDL_JoystickID;
+/// A unique identifier for a joystick device.
+///
+/// Returned by [`Joystick::id()`] and appears in joystick and gamepad events
+/// to identify the instance that generated the event. Construct with
+/// [`JoystickId::new`].
+#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[repr(transparent)]
+pub struct JoystickId(sys::joystick::SDL_JoystickID);
+
+impl JoystickId {
+    /// Creates a new `JoystickId` from a raw value.
+    #[inline]
+    pub const fn new(id: u32) -> Self {
+        Self(sys::joystick::SDL_JoystickID(id))
+    }
+
+    /// Returns the raw numeric value of this joystick ID.
+    #[inline]
+    pub const fn raw(self) -> u32 {
+        self.0 .0
+    }
+}
+
+impl fmt::Debug for JoystickId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_tuple("JoystickId").field(&self.raw()).finish()
+    }
+}
+
+impl fmt::Display for JoystickId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.raw())
+    }
+}
+
+impl From<u32> for JoystickId {
+    #[inline]
+    fn from(id: u32) -> Self {
+        Self::new(id)
+    }
+}
+
+impl From<JoystickId> for u32 {
+    #[inline]
+    fn from(id: JoystickId) -> Self {
+        id.raw()
+    }
+}
+
+impl From<sys::joystick::SDL_JoystickID> for JoystickId {
+    #[inline]
+    fn from(id: sys::joystick::SDL_JoystickID) -> Self {
+        Self(id)
+    }
+}
+
+impl From<JoystickId> for sys::joystick::SDL_JoystickID {
+    #[inline]
+    fn from(id: JoystickId) -> Self {
+        id.0
+    }
+}
 
 impl JoystickSubsystem {
     /// Get joystick instance IDs and names.
@@ -28,7 +89,7 @@ impl JoystickSubsystem {
                 let mut instances = Vec::new();
                 for i in 0..num_joysticks {
                     let id = *joystick_ids.offset(i as isize);
-                    instances.push(id);
+                    instances.push(JoystickId::from(id));
                 }
                 SDL_free(joystick_ids as *mut c_void);
                 Ok(instances)
@@ -40,7 +101,7 @@ impl JoystickSubsystem {
     #[doc(alias = "SDL_OpenJoystick")]
     pub fn open(&self, joystick_id: JoystickId) -> Result<Joystick, IntegerOrSdlError> {
         use crate::common::IntegerOrSdlError::*;
-        let joystick = unsafe { sys::joystick::SDL_OpenJoystick(joystick_id) };
+        let joystick = unsafe { sys::joystick::SDL_OpenJoystick(joystick_id.into()) };
 
         if joystick.is_null() {
             Err(SdlError(get_error()))
@@ -75,7 +136,7 @@ impl JoystickSubsystem {
     /// Check if a joystick is virtual
     #[doc(alias = "SDL_IsJoystickVirtual")]
     pub fn is_virtual(&self, joystick_id: JoystickId) -> bool {
-        unsafe { sys::joystick::SDL_IsJoystickVirtual(joystick_id) }
+        unsafe { sys::joystick::SDL_IsJoystickVirtual(joystick_id.into()) }
     }
 
     /// Attach a virtual joystick
@@ -98,7 +159,7 @@ impl JoystickSubsystem {
         if joystick_id.0 == 0 {
             Err(IntegerOrSdlError::SdlError(get_error()))
         } else {
-            let joystick = self.open(joystick_id)?;
+            let joystick = self.open(joystick_id.into())?;
 
             Ok(VirtualJoystickConnection { inner: joystick })
         }
@@ -158,12 +219,37 @@ impl PowerLevel {
 }
 
 /// Wrapper around the `SDL_Joystick` object
+#[cfg_attr(feature = "debug-impls", derive(Debug))]
 pub struct Joystick {
     subsystem: JoystickSubsystem,
     raw: *mut sys::joystick::SDL_Joystick,
 }
 
 impl Joystick {
+    /// Returns the raw SDL_Joystick pointer.
+    ///
+    /// This can be used to call raw SDL functions that aren't wrapped by this crate.
+    #[doc(alias = "SDL_Joystick")]
+    pub fn raw(&self) -> *mut sys::joystick::SDL_Joystick {
+        self.raw
+    }
+
+    /// Creates a `Joystick` from a raw SDL_Joystick pointer.
+    ///
+    /// # Safety
+    ///
+    /// - `raw` must be a valid, non-null pointer to an `SDL_Joystick`
+    /// - The pointer must not be owned by another wrapper (to avoid double-free)
+    /// - The caller must ensure the pointer remains valid for the wrapper's lifetime
+    #[doc(alias = "SDL_Joystick")]
+    pub unsafe fn from_raw(
+        raw: *mut sys::joystick::SDL_Joystick,
+        subsystem: JoystickSubsystem,
+    ) -> Self {
+        debug_assert!(!raw.is_null(), "from_raw called with null pointer");
+        Self { subsystem, raw }
+    }
+
     #[inline]
     pub const fn subsystem(&self) -> &JoystickSubsystem {
         &self.subsystem
@@ -186,14 +272,14 @@ impl Joystick {
     }
 
     #[doc(alias = "SDL_GetJoystickID")]
-    pub fn id(&self) -> u32 {
+    pub fn id(&self) -> JoystickId {
         let result = unsafe { sys::joystick::SDL_GetJoystickID(self.raw) };
 
-        if result == 0 {
+        if result.0 == 0 {
             // Should only fail if the joystick is NULL.
             panic!("{}", get_error())
         } else {
-            u32::from(result)
+            JoystickId::from(result)
         }
     }
 
@@ -486,8 +572,7 @@ impl Joystick {
     /// Check if a joystick is virtual
     #[doc(alias = "SDL_IsJoystickVirtual")]
     pub fn is_virtual(&self) -> bool {
-        let id = sys::joystick::SDL_JoystickID(self.id());
-        unsafe { sys::joystick::SDL_IsJoystickVirtual(id) }
+        unsafe { sys::joystick::SDL_IsJoystickVirtual(self.id().into()) }
     }
 
     /// Set a virtual axis state
@@ -530,9 +615,9 @@ impl Joystick {
 impl Drop for Joystick {
     #[doc(alias = "SDL_CloseJoystick")]
     fn drop(&mut self) {
-        if self.connected() {
-            unsafe { sys::joystick::SDL_CloseJoystick(self.raw) }
-        }
+        // Always close the joystick, regardless of connection status.
+        // SDL_CloseJoystick is safe to call on disconnected joysticks.
+        unsafe { sys::joystick::SDL_CloseJoystick(self.raw) }
     }
 }
 
@@ -692,7 +777,7 @@ pub struct VirtualJoystickConnection {
 impl VirtualJoystickConnection {
     /// Exposes the instance ID of the attached virtual joystick so that it can be opened
     pub fn id(&self) -> JoystickId {
-        sys::joystick::SDL_JoystickID(self.inner.id())
+        self.inner.id()
     }
 }
 
@@ -702,8 +787,7 @@ impl VirtualJoystickConnection {
 impl Drop for VirtualJoystickConnection {
     #[doc(alias = "SDL_DetachVirtualJoystick")]
     fn drop(&mut self) {
-        let id = sys::joystick::SDL_JoystickID(self.inner.id());
-        unsafe { sys::joystick::SDL_DetachVirtualJoystick(id) };
+        unsafe { sys::joystick::SDL_DetachVirtualJoystick(self.inner.id().into()) };
     }
 }
 

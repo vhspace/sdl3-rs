@@ -18,7 +18,7 @@ use crate::gamepad;
 use crate::gamepad::{Axis, Button};
 use crate::get_error;
 use crate::joystick;
-use crate::joystick::HatState;
+use crate::joystick::{HatState, JoystickId};
 use crate::keyboard::Keycode;
 use crate::keyboard::Mod;
 use crate::keyboard::Scancode;
@@ -313,6 +313,8 @@ pub enum EventType {
     WindowHitTest = sys::events::SDL_EVENT_WINDOW_HIT_TEST.0,
     WindowICCProfileChanged = sys::events::SDL_EVENT_WINDOW_ICCPROF_CHANGED.0,
     WindowDisplayChanged = sys::events::SDL_EVENT_WINDOW_DISPLAY_CHANGED.0,
+    WindowEnterFullscreen = sys::events::SDL_EVENT_WINDOW_ENTER_FULLSCREEN.0,
+    WindowLeaveFullscreen = sys::events::SDL_EVENT_WINDOW_LEAVE_FULLSCREEN.0,
 
     // TODO: SysWM = sys::events::SDL_EVENT_SYSWM .0,
     KeyDown = sys::events::SDL_EVENT_KEY_DOWN.0,
@@ -332,22 +334,27 @@ pub enum EventType {
     JoyDeviceAdded = sys::events::SDL_EVENT_JOYSTICK_ADDED.0,
     JoyDeviceRemoved = sys::events::SDL_EVENT_JOYSTICK_REMOVED.0,
 
-    ControllerAxisMotion = sys::events::SDL_EVENT_GAMEPAD_AXIS_MOTION.0,
-    ControllerButtonDown = sys::events::SDL_EVENT_GAMEPAD_BUTTON_DOWN.0,
-    ControllerButtonUp = sys::events::SDL_EVENT_GAMEPAD_BUTTON_UP.0,
-    ControllerDeviceAdded = sys::events::SDL_EVENT_GAMEPAD_ADDED.0,
-    ControllerDeviceRemoved = sys::events::SDL_EVENT_GAMEPAD_REMOVED.0,
-    ControllerDeviceRemapped = sys::events::SDL_EVENT_GAMEPAD_REMAPPED.0,
-    ControllerTouchpadDown = sys::events::SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN.0,
-    ControllerTouchpadMotion = sys::events::SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION.0,
-    ControllerTouchpadUp = sys::events::SDL_EVENT_GAMEPAD_TOUCHPAD_UP.0,
+    GamepadAxisMotion = sys::events::SDL_EVENT_GAMEPAD_AXIS_MOTION.0,
+    GamepadButtonDown = sys::events::SDL_EVENT_GAMEPAD_BUTTON_DOWN.0,
+    GamepadButtonUp = sys::events::SDL_EVENT_GAMEPAD_BUTTON_UP.0,
+    GamepadAdded = sys::events::SDL_EVENT_GAMEPAD_ADDED.0,
+    GamepadRemoved = sys::events::SDL_EVENT_GAMEPAD_REMOVED.0,
+    GamepadRemapped = sys::events::SDL_EVENT_GAMEPAD_REMAPPED.0,
+    GamepadTouchpadDown = sys::events::SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN.0,
+    GamepadTouchpadMotion = sys::events::SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION.0,
+    GamepadTouchpadUp = sys::events::SDL_EVENT_GAMEPAD_TOUCHPAD_UP.0,
     #[cfg(feature = "hidapi")]
-    ControllerSensorUpdated = sys::events::SDL_EVENT_GAMEPAD_SENSOR_UPDATE.0,
+    GamepadSensorUpdated = sys::events::SDL_EVENT_GAMEPAD_SENSOR_UPDATE.0,
 
     FingerDown = sys::events::SDL_EVENT_FINGER_DOWN.0,
     FingerUp = sys::events::SDL_EVENT_FINGER_UP.0,
     FingerMotion = sys::events::SDL_EVENT_FINGER_MOTION.0,
-    // gestures have been removed from SD3: https://github.com/libsdl-org/SDL_gesture
+    FingerCanceled = sys::events::SDL_EVENT_FINGER_CANCELED.0,
+    // the old SDL2 gesture events were removed from SDL3
+    // (https://github.com/libsdl-org/SDL_gesture); SDL 3.4 added pinch instead
+    PinchBegin = sys::events::SDL_EVENT_PINCH_BEGIN.0,
+    PinchUpdate = sys::events::SDL_EVENT_PINCH_UPDATE.0,
+    PinchEnd = sys::events::SDL_EVENT_PINCH_END.0,
     ClipboardUpdate = sys::events::SDL_EVENT_CLIPBOARD_UPDATE.0,
     DropFile = sys::events::SDL_EVENT_DROP_FILE.0,
     DropText = sys::events::SDL_EVENT_DROP_TEXT.0,
@@ -425,6 +432,8 @@ impl TryFrom<u32> for EventType {
             SDL_EVENT_WINDOW_FOCUS_GAINED => WindowFocusGained,
             SDL_EVENT_WINDOW_FOCUS_LOST => WindowFocusLost,
             SDL_EVENT_WINDOW_CLOSE_REQUESTED => WindowCloseRequested,
+            SDL_EVENT_WINDOW_ENTER_FULLSCREEN => WindowEnterFullscreen,
+            SDL_EVENT_WINDOW_LEAVE_FULLSCREEN => WindowLeaveFullscreen,
 
             SDL_EVENT_KEY_DOWN => KeyDown,
             SDL_EVENT_KEY_UP => KeyUp,
@@ -443,21 +452,25 @@ impl TryFrom<u32> for EventType {
             SDL_EVENT_JOYSTICK_ADDED => JoyDeviceAdded,
             SDL_EVENT_JOYSTICK_REMOVED => JoyDeviceRemoved,
 
-            SDL_EVENT_GAMEPAD_AXIS_MOTION => ControllerAxisMotion,
-            SDL_EVENT_GAMEPAD_BUTTON_DOWN => ControllerButtonDown,
-            SDL_EVENT_GAMEPAD_BUTTON_UP => ControllerButtonUp,
-            SDL_EVENT_GAMEPAD_ADDED => ControllerDeviceAdded,
-            SDL_EVENT_GAMEPAD_REMOVED => ControllerDeviceRemoved,
-            SDL_EVENT_GAMEPAD_REMAPPED => ControllerDeviceRemapped,
-            SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN => ControllerTouchpadDown,
-            SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION => ControllerTouchpadMotion,
-            SDL_EVENT_GAMEPAD_TOUCHPAD_UP => ControllerTouchpadUp,
+            SDL_EVENT_GAMEPAD_AXIS_MOTION => GamepadAxisMotion,
+            SDL_EVENT_GAMEPAD_BUTTON_DOWN => GamepadButtonDown,
+            SDL_EVENT_GAMEPAD_BUTTON_UP => GamepadButtonUp,
+            SDL_EVENT_GAMEPAD_ADDED => GamepadAdded,
+            SDL_EVENT_GAMEPAD_REMOVED => GamepadRemoved,
+            SDL_EVENT_GAMEPAD_REMAPPED => GamepadRemapped,
+            SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN => GamepadTouchpadDown,
+            SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION => GamepadTouchpadMotion,
+            SDL_EVENT_GAMEPAD_TOUCHPAD_UP => GamepadTouchpadUp,
             #[cfg(feature = "hidapi")]
-            SDL_EVENT_GAMEPAD_SENSOR_UPDATE => ControllerSensorUpdated,
+            SDL_EVENT_GAMEPAD_SENSOR_UPDATE => GamepadSensorUpdated,
 
             SDL_EVENT_FINGER_DOWN => FingerDown,
             SDL_EVENT_FINGER_UP => FingerUp,
             SDL_EVENT_FINGER_MOTION => FingerMotion,
+            SDL_EVENT_FINGER_CANCELED => FingerCanceled,
+            SDL_EVENT_PINCH_BEGIN => PinchBegin,
+            SDL_EVENT_PINCH_UPDATE => PinchUpdate,
+            SDL_EVENT_PINCH_END => PinchEnd,
 
             SDL_EVENT_CLIPBOARD_UPDATE => ClipboardUpdate,
             SDL_EVENT_DROP_FILE => DropFile,
@@ -584,6 +597,8 @@ pub enum WindowEvent {
     HitTest(i32, i32),
     ICCProfChanged,
     DisplayChanged(i32),
+    EnterFullscreen,
+    LeaveFullscreen,
 }
 
 impl WindowEvent {
@@ -609,6 +624,8 @@ impl WindowEvent {
                 EventType::WindowHitTest => WindowEvent::HitTest(data1, data2),
                 EventType::WindowICCProfileChanged => WindowEvent::ICCProfChanged,
                 EventType::WindowDisplayChanged => WindowEvent::DisplayChanged(data1),
+                EventType::WindowEnterFullscreen => WindowEvent::EnterFullscreen,
+                EventType::WindowLeaveFullscreen => WindowEvent::LeaveFullscreen,
                 _ => WindowEvent::None,
             },
             Err(_) => WindowEvent::None,
@@ -636,6 +653,8 @@ impl WindowEvent {
             WindowEvent::HitTest(d1, d2) => (EventType::WindowHitTest, d1, d2),
             WindowEvent::ICCProfChanged => (EventType::WindowICCProfileChanged, 0, 0),
             WindowEvent::DisplayChanged(d1) => (EventType::WindowDisplayChanged, d1, 0),
+            WindowEvent::EnterFullscreen => (EventType::WindowEnterFullscreen, 0, 0),
+            WindowEvent::LeaveFullscreen => (EventType::WindowLeaveFullscreen, 0, 0),
         }
     }
 
@@ -660,6 +679,8 @@ impl WindowEvent {
                 | (Self::HitTest(_, _), Self::HitTest(_, _))
                 | (Self::ICCProfChanged, Self::ICCProfChanged)
                 | (Self::DisplayChanged(_), Self::DisplayChanged(_))
+                | (Self::EnterFullscreen, Self::EnterFullscreen)
+                | (Self::LeaveFullscreen, Self::LeaveFullscreen)
         )
     }
 }
@@ -777,7 +798,7 @@ pub enum Event {
     JoyAxisMotion {
         timestamp: u64,
         /// The joystick's `id`
-        which: u32,
+        which: JoystickId,
         axis_idx: u8,
         value: i16,
     },
@@ -785,7 +806,7 @@ pub enum Event {
     JoyHatMotion {
         timestamp: u64,
         /// The joystick's `id`
-        which: u32,
+        which: JoystickId,
         hat_idx: u8,
         state: HatState,
     },
@@ -793,68 +814,68 @@ pub enum Event {
     JoyButtonDown {
         timestamp: u64,
         /// The joystick's `id`
-        which: u32,
+        which: JoystickId,
         button_idx: u8,
     },
     JoyButtonUp {
         timestamp: u64,
         /// The joystick's `id`
-        which: u32,
+        which: JoystickId,
         button_idx: u8,
     },
 
     JoyDeviceAdded {
         timestamp: u64,
-        /// The newly added joystick's `joystick_index`
-        which: u32,
+        /// The newly added joystick's instance id
+        which: JoystickId,
     },
     JoyDeviceRemoved {
         timestamp: u64,
         /// The joystick's `id`
-        which: u32,
+        which: JoystickId,
     },
 
-    ControllerAxisMotion {
+    GamepadAxisMotion {
         timestamp: u64,
-        /// The controller's joystick `id`
-        which: u32,
+        /// The gamepad's joystick instance id
+        which: JoystickId,
         axis: Axis,
         value: i16,
     },
 
-    ControllerButtonDown {
+    GamepadButtonDown {
         timestamp: u64,
-        /// The controller's joystick `id`
-        which: u32,
+        /// The gamepad's joystick instance id
+        which: JoystickId,
         button: Button,
     },
-    ControllerButtonUp {
+    GamepadButtonUp {
         timestamp: u64,
-        /// The controller's joystick `id`
-        which: u32,
+        /// The gamepad's joystick instance id
+        which: JoystickId,
         button: Button,
     },
 
-    ControllerDeviceAdded {
+    GamepadAdded {
         timestamp: u64,
-        /// The newly added controller's `joystick_index`
-        which: u32,
+        /// The newly added gamepad's joystick instance id
+        which: JoystickId,
     },
-    ControllerDeviceRemoved {
+    GamepadRemoved {
         timestamp: u64,
-        /// The controller's joystick `id`
-        which: u32,
+        /// The gamepad's joystick instance id
+        which: JoystickId,
     },
-    ControllerDeviceRemapped {
+    GamepadRemapped {
         timestamp: u64,
-        /// The controller's joystick `id`
-        which: u32,
+        /// The gamepad's joystick instance id
+        which: JoystickId,
     },
 
-    ControllerTouchpadDown {
+    GamepadTouchpadDown {
         timestamp: u64,
         /// The joystick instance id
-        which: u32,
+        which: JoystickId,
         /// The index of the touchpad
         touchpad: i32,
         /// The index of the finger on the touchpad
@@ -866,10 +887,10 @@ pub enum Event {
         /// Normalized in the range 0...1
         pressure: f32,
     },
-    ControllerTouchpadMotion {
+    GamepadTouchpadMotion {
         timestamp: u64,
         /// The joystick instance id
-        which: u32,
+        which: JoystickId,
         /// The index of the touchpad
         touchpad: i32,
         /// The index of the finger on the touchpad
@@ -881,10 +902,10 @@ pub enum Event {
         /// Normalized in the range 0...1
         pressure: f32,
     },
-    ControllerTouchpadUp {
+    GamepadTouchpadUp {
         timestamp: u64,
         /// The joystick instance id
-        which: u32,
+        which: JoystickId,
         /// The index of the touchpad
         touchpad: i32,
         /// The index of the finger on the touchpad
@@ -899,9 +920,9 @@ pub enum Event {
 
     /// Triggered when the gyroscope or accelerometer is updated
     #[cfg(feature = "hidapi")]
-    ControllerSensorUpdated {
+    GamepadSensorUpdated {
         timestamp: u64,
-        which: u32,
+        which: JoystickId,
         sensor: crate::sensor::SensorType,
         /// Data from the sensor.
         ///
@@ -942,25 +963,38 @@ pub enum Event {
         pressure: f32,
         window_id: u32,
     },
-
-    DollarRecord {
+    FingerCanceled {
         timestamp: u64,
-        touch_id: i64,
-        gesture_id: i64,
-        num_fingers: u32,
-        error: f32,
+        touch_id: u64,
+        finger_id: u64,
         x: f32,
         y: f32,
+        dx: f32,
+        dy: f32,
+        pressure: f32,
+        window_id: u32,
     },
 
-    MultiGesture {
+    /// A pinch gesture started.
+    PinchBegin {
         timestamp: u64,
-        touch_id: i64,
-        d_theta: f32,
-        d_dist: f32,
-        x: f32,
-        y: f32,
-        num_fingers: u16,
+        /// The scale change since the last pinch update. `< 1.0` is "zoom out", `> 1.0` is "zoom in".
+        scale: f32,
+        window_id: u32,
+    },
+    /// A pinch gesture changed.
+    PinchUpdate {
+        timestamp: u64,
+        /// The scale change since the last pinch update. `< 1.0` is "zoom out", `> 1.0` is "zoom in".
+        scale: f32,
+        window_id: u32,
+    },
+    /// A pinch gesture ended.
+    PinchEnd {
+        timestamp: u64,
+        /// The scale change since the last pinch update. `< 1.0` is "zoom out", `> 1.0` is "zoom in".
+        scale: f32,
+        window_id: u32,
     },
 
     ClipboardUpdate {
@@ -1129,8 +1163,8 @@ impl Event {
     }
 
     #[inline]
-    fn joystick_id_to_ll(id: u32) -> sys::joystick::SDL_JoystickID {
-        sys::joystick::SDL_JoystickID(id)
+    fn joystick_id_to_ll(id: JoystickId) -> sys::joystick::SDL_JoystickID {
+        id.into()
     }
 
     #[inline]
@@ -1149,8 +1183,8 @@ impl Event {
     }
 
     #[inline]
-    fn joystick_id_from_ll(id: sys::joystick::SDL_JoystickID) -> u32 {
-        id.0
+    fn joystick_id_from_ll(id: sys::joystick::SDL_JoystickID) -> JoystickId {
+        JoystickId::from(id)
     }
 
     #[inline]
@@ -1198,7 +1232,7 @@ impl Event {
                     code,
                     data1,
                     data2,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1214,7 +1248,7 @@ impl Event {
                 let event = sys::events::SDL_QuitEvent {
                     r#type: sys::events::SDL_EVENT_QUIT,
                     timestamp,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1238,7 +1272,7 @@ impl Event {
                     windowID: Self::window_id_to_ll(window_id),
                     data1,
                     data2,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1265,13 +1299,13 @@ impl Event {
                     timestamp,
                     windowID: Self::window_id_to_ll(window_id),
                     repeat,
-                    reserved: 0,
                     scancode: scancode?.into(),
                     which: Self::keyboard_id_to_ll(which),
                     down: true,
                     key: keycode?.into(),
                     r#mod: Self::keymod_to_ll(keymod),
                     raw,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1297,13 +1331,13 @@ impl Event {
                     timestamp,
                     windowID: Self::window_id_to_ll(window_id),
                     repeat,
-                    reserved: 0,
                     scancode: scancode?.into(),
                     which: Self::keyboard_id_to_ll(which),
                     down: false,
                     key: keycode?.into(),
                     r#mod: Self::keymod_to_ll(keymod),
                     raw,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1335,7 +1369,7 @@ impl Event {
                     y,
                     xrel,
                     yrel,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1431,7 +1465,7 @@ impl Event {
                     mouse_y,
                     integer_x,
                     integer_y,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1540,7 +1574,7 @@ impl Event {
                     r#type: sys::events::SDL_EVENT_JOYSTICK_ADDED,
                     timestamp,
                     which: Self::joystick_id_to_ll(which),
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1557,7 +1591,7 @@ impl Event {
                     r#type: sys::events::SDL_EVENT_JOYSTICK_REMOVED,
                     timestamp,
                     which: Self::joystick_id_to_ll(which),
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1568,7 +1602,7 @@ impl Event {
                     Some(ret.assume_init())
                 }
             }
-            Event::ControllerAxisMotion {
+            Event::GamepadAxisMotion {
                 timestamp,
                 which,
                 axis,
@@ -1591,7 +1625,7 @@ impl Event {
                     Some(ret.assume_init())
                 }
             }
-            Event::ControllerButtonDown {
+            Event::GamepadButtonDown {
                 timestamp,
                 which,
                 button,
@@ -1616,7 +1650,7 @@ impl Event {
                 }
             }
 
-            Event::ControllerButtonUp {
+            Event::GamepadButtonUp {
                 timestamp,
                 which,
                 button,
@@ -1639,12 +1673,12 @@ impl Event {
                 }
             }
 
-            Event::ControllerDeviceAdded { timestamp, which } => {
+            Event::GamepadAdded { timestamp, which } => {
                 let event = SDL_GamepadDeviceEvent {
                     r#type: sys::events::SDL_EVENT_GAMEPAD_ADDED,
                     timestamp,
                     which: Self::joystick_id_to_ll(which),
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1656,12 +1690,12 @@ impl Event {
                 }
             }
 
-            Event::ControllerDeviceRemoved { timestamp, which } => {
+            Event::GamepadRemoved { timestamp, which } => {
                 let event = SDL_GamepadDeviceEvent {
                     r#type: sys::events::SDL_EVENT_GAMEPAD_REMOVED,
                     timestamp,
                     which: Self::joystick_id_to_ll(which),
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1673,17 +1707,54 @@ impl Event {
                 }
             }
 
-            Event::ControllerDeviceRemapped { timestamp, which } => {
+            Event::GamepadRemapped { timestamp, which } => {
                 let event = SDL_GamepadDeviceEvent {
                     r#type: sys::events::SDL_EVENT_GAMEPAD_REMAPPED,
                     timestamp,
                     which: Self::joystick_id_to_ll(which),
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
                         &event,
                         ret.as_mut_ptr() as *mut sys::events::SDL_GamepadDeviceEvent,
+                        1,
+                    );
+                    Some(ret.assume_init())
+                }
+            }
+
+            Event::PinchBegin {
+                timestamp,
+                scale,
+                window_id,
+            }
+            | Event::PinchUpdate {
+                timestamp,
+                scale,
+                window_id,
+            }
+            | Event::PinchEnd {
+                timestamp,
+                scale,
+                window_id,
+            } => {
+                let r#type = match self {
+                    Event::PinchBegin { .. } => sys::events::SDL_EVENT_PINCH_BEGIN,
+                    Event::PinchUpdate { .. } => sys::events::SDL_EVENT_PINCH_UPDATE,
+                    _ => sys::events::SDL_EVENT_PINCH_END,
+                };
+                let event = sys::events::SDL_PinchFingerEvent {
+                    r#type,
+                    timestamp,
+                    scale,
+                    windowID: Self::window_id_to_ll(window_id),
+                    ..Default::default()
+                };
+                unsafe {
+                    ptr::copy(
+                        &event,
+                        ret.as_mut_ptr() as *mut sys::events::SDL_PinchFingerEvent,
                         1,
                     );
                     Some(ret.assume_init())
@@ -1702,7 +1773,7 @@ impl Event {
                     data1: display_event.1,
                     data2: 0,
                     timestamp,
-                    reserved: 0,
+                    ..Default::default()
                 };
                 unsafe {
                     ptr::copy(
@@ -1745,7 +1816,9 @@ impl Event {
                 | EventType::WindowCloseRequested
                 | EventType::WindowHitTest
                 | EventType::WindowICCProfileChanged
-                | EventType::WindowDisplayChanged => {
+                | EventType::WindowDisplayChanged
+                | EventType::WindowEnterFullscreen
+                | EventType::WindowLeaveFullscreen => {
                     let event = raw.window;
                     Event::Window {
                         timestamp: event.timestamp,
@@ -1989,61 +2062,61 @@ impl Event {
                     }
                 }
 
-                EventType::ControllerAxisMotion => {
+                EventType::GamepadAxisMotion => {
                     let event = raw.gaxis;
                     let axis = gamepad::Axis::from_ll(transmute(event.axis as i32)).unwrap();
 
-                    Event::ControllerAxisMotion {
+                    Event::GamepadAxisMotion {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                         axis,
                         value: event.value,
                     }
                 }
-                EventType::ControllerButtonDown => {
+                EventType::GamepadButtonDown => {
                     let event = raw.gbutton;
                     let button = gamepad::Button::from_ll(transmute(event.button as i32)).unwrap();
 
-                    Event::ControllerButtonDown {
+                    Event::GamepadButtonDown {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                         button,
                     }
                 }
-                EventType::ControllerButtonUp => {
+                EventType::GamepadButtonUp => {
                     let event = raw.gbutton;
                     let button = gamepad::Button::from_ll(transmute(event.button as i32)).unwrap();
 
-                    Event::ControllerButtonUp {
+                    Event::GamepadButtonUp {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                         button,
                     }
                 }
-                EventType::ControllerDeviceAdded => {
+                EventType::GamepadAdded => {
                     let event = raw.gdevice;
-                    Event::ControllerDeviceAdded {
+                    Event::GamepadAdded {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                     }
                 }
-                EventType::ControllerDeviceRemoved => {
+                EventType::GamepadRemoved => {
                     let event = raw.gdevice;
-                    Event::ControllerDeviceRemoved {
+                    Event::GamepadRemoved {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                     }
                 }
-                EventType::ControllerDeviceRemapped => {
+                EventType::GamepadRemapped => {
                     let event = raw.gdevice;
-                    Event::ControllerDeviceRemapped {
+                    Event::GamepadRemapped {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                     }
                 }
-                EventType::ControllerTouchpadDown => {
+                EventType::GamepadTouchpadDown => {
                     let event = raw.gtouchpad;
-                    Event::ControllerTouchpadDown {
+                    Event::GamepadTouchpadDown {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                         touchpad: event.touchpad,
@@ -2053,9 +2126,9 @@ impl Event {
                         pressure: event.pressure,
                     }
                 }
-                EventType::ControllerTouchpadMotion => {
+                EventType::GamepadTouchpadMotion => {
                     let event = raw.gtouchpad;
-                    Event::ControllerTouchpadMotion {
+                    Event::GamepadTouchpadMotion {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                         touchpad: event.touchpad,
@@ -2065,9 +2138,9 @@ impl Event {
                         pressure: event.pressure,
                     }
                 }
-                EventType::ControllerTouchpadUp => {
+                EventType::GamepadTouchpadUp => {
                     let event = raw.gtouchpad;
-                    Event::ControllerTouchpadUp {
+                    Event::GamepadTouchpadUp {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                         touchpad: event.touchpad,
@@ -2078,9 +2151,9 @@ impl Event {
                     }
                 }
                 #[cfg(feature = "hidapi")]
-                EventType::ControllerSensorUpdated => {
+                EventType::GamepadSensorUpdated => {
                     let event = raw.gsensor;
-                    Event::ControllerSensorUpdated {
+                    Event::GamepadSensorUpdated {
                         timestamp: event.timestamp,
                         which: Self::joystick_id_from_ll(event.which),
                         sensor: crate::sensor::SensorType::from_ll(event.sensor),
@@ -2127,6 +2200,44 @@ impl Event {
                         dx: event.dx,
                         dy: event.dy,
                         pressure: event.pressure,
+                        window_id: Self::window_id_from_ll(event.windowID),
+                    }
+                }
+                EventType::FingerCanceled => {
+                    let event = raw.tfinger;
+                    Event::FingerCanceled {
+                        timestamp: event.timestamp,
+                        touch_id: Self::touch_id_from_ll(event.touchID),
+                        finger_id: Self::finger_id_from_ll(event.fingerID),
+                        x: event.x,
+                        y: event.y,
+                        dx: event.dx,
+                        dy: event.dy,
+                        pressure: event.pressure,
+                        window_id: Self::window_id_from_ll(event.windowID),
+                    }
+                }
+                EventType::PinchBegin => {
+                    let event = raw.pinch;
+                    Event::PinchBegin {
+                        timestamp: event.timestamp,
+                        scale: event.scale,
+                        window_id: Self::window_id_from_ll(event.windowID),
+                    }
+                }
+                EventType::PinchUpdate => {
+                    let event = raw.pinch;
+                    Event::PinchUpdate {
+                        timestamp: event.timestamp,
+                        scale: event.scale,
+                        window_id: Self::window_id_from_ll(event.windowID),
+                    }
+                }
+                EventType::PinchEnd => {
+                    let event = raw.pinch;
+                    Event::PinchEnd {
+                        timestamp: event.timestamp,
+                        scale: event.scale,
                         window_id: Self::window_id_from_ll(event.windowID),
                     }
                 }
@@ -2356,15 +2467,16 @@ impl Event {
     ///
     /// ```
     /// use sdl3::event::Event;
+    /// use sdl3::joystick::JoystickId;
     ///
     /// let ev1 = Event::JoyButtonDown {
     ///     timestamp: 0,
-    ///     which: 0,
+    ///     which: JoystickId::new(0),
     ///     button_idx: 0,
     /// };
     /// let ev2 = Event::JoyButtonDown {
     ///     timestamp: 1,
-    ///     which: 1,
+    ///     which: JoystickId::new(1),
     ///     button_idx: 1,
     /// };
     ///
@@ -2396,17 +2508,22 @@ impl Event {
             | (Self::JoyButtonUp { .. }, Self::JoyButtonUp { .. })
             | (Self::JoyDeviceAdded { .. }, Self::JoyDeviceAdded { .. })
             | (Self::JoyDeviceRemoved { .. }, Self::JoyDeviceRemoved { .. })
-            | (Self::ControllerAxisMotion { .. }, Self::ControllerAxisMotion { .. })
-            | (Self::ControllerButtonDown { .. }, Self::ControllerButtonDown { .. })
-            | (Self::ControllerButtonUp { .. }, Self::ControllerButtonUp { .. })
-            | (Self::ControllerDeviceAdded { .. }, Self::ControllerDeviceAdded { .. })
-            | (Self::ControllerDeviceRemoved { .. }, Self::ControllerDeviceRemoved { .. })
-            | (Self::ControllerDeviceRemapped { .. }, Self::ControllerDeviceRemapped { .. })
+            | (Self::GamepadAxisMotion { .. }, Self::GamepadAxisMotion { .. })
+            | (Self::GamepadButtonDown { .. }, Self::GamepadButtonDown { .. })
+            | (Self::GamepadButtonUp { .. }, Self::GamepadButtonUp { .. })
+            | (Self::GamepadAdded { .. }, Self::GamepadAdded { .. })
+            | (Self::GamepadRemoved { .. }, Self::GamepadRemoved { .. })
+            | (Self::GamepadRemapped { .. }, Self::GamepadRemapped { .. })
+            | (Self::GamepadTouchpadDown { .. }, Self::GamepadTouchpadDown { .. })
+            | (Self::GamepadTouchpadMotion { .. }, Self::GamepadTouchpadMotion { .. })
+            | (Self::GamepadTouchpadUp { .. }, Self::GamepadTouchpadUp { .. })
             | (Self::FingerDown { .. }, Self::FingerDown { .. })
             | (Self::FingerUp { .. }, Self::FingerUp { .. })
             | (Self::FingerMotion { .. }, Self::FingerMotion { .. })
-            | (Self::DollarRecord { .. }, Self::DollarRecord { .. })
-            | (Self::MultiGesture { .. }, Self::MultiGesture { .. })
+            | (Self::FingerCanceled { .. }, Self::FingerCanceled { .. })
+            | (Self::PinchBegin { .. }, Self::PinchBegin { .. })
+            | (Self::PinchUpdate { .. }, Self::PinchUpdate { .. })
+            | (Self::PinchEnd { .. }, Self::PinchEnd { .. })
             | (Self::ClipboardUpdate { .. }, Self::ClipboardUpdate { .. })
             | (Self::DropFile { .. }, Self::DropFile { .. })
             | (Self::DropText { .. }, Self::DropText { .. })
@@ -2419,7 +2536,7 @@ impl Event {
             | (Self::User { .. }, Self::User { .. })
             | (Self::Unknown { .. }, Self::Unknown { .. }) => true,
             #[cfg(feature = "hidapi")]
-            (Self::ControllerSensorUpdated { .. }, Self::ControllerSensorUpdated { .. }) => true,
+            (Self::GamepadSensorUpdated { .. }, Self::GamepadSensorUpdated { .. }) => true,
             _ => false,
         }
     }
@@ -2430,10 +2547,11 @@ impl Event {
     ///
     /// ```
     /// use sdl3::event::Event;
+    /// use sdl3::joystick::JoystickId;
     ///
     /// let ev = Event::JoyButtonDown {
     ///     timestamp: 12,
-    ///     which: 0,
+    ///     which: JoystickId::new(0),
     ///     button_idx: 0,
     /// };
     /// assert!(ev.get_timestamp() == 12);
@@ -2463,22 +2581,24 @@ impl Event {
             Self::JoyButtonUp { timestamp, .. } => timestamp,
             Self::JoyDeviceAdded { timestamp, .. } => timestamp,
             Self::JoyDeviceRemoved { timestamp, .. } => timestamp,
-            Self::ControllerAxisMotion { timestamp, .. } => timestamp,
-            Self::ControllerButtonDown { timestamp, .. } => timestamp,
-            Self::ControllerButtonUp { timestamp, .. } => timestamp,
-            Self::ControllerDeviceAdded { timestamp, .. } => timestamp,
-            Self::ControllerDeviceRemoved { timestamp, .. } => timestamp,
-            Self::ControllerDeviceRemapped { timestamp, .. } => timestamp,
-            Self::ControllerTouchpadDown { timestamp, .. } => timestamp,
-            Self::ControllerTouchpadMotion { timestamp, .. } => timestamp,
-            Self::ControllerTouchpadUp { timestamp, .. } => timestamp,
+            Self::GamepadAxisMotion { timestamp, .. } => timestamp,
+            Self::GamepadButtonDown { timestamp, .. } => timestamp,
+            Self::GamepadButtonUp { timestamp, .. } => timestamp,
+            Self::GamepadAdded { timestamp, .. } => timestamp,
+            Self::GamepadRemoved { timestamp, .. } => timestamp,
+            Self::GamepadRemapped { timestamp, .. } => timestamp,
+            Self::GamepadTouchpadDown { timestamp, .. } => timestamp,
+            Self::GamepadTouchpadMotion { timestamp, .. } => timestamp,
+            Self::GamepadTouchpadUp { timestamp, .. } => timestamp,
             #[cfg(feature = "hidapi")]
-            Self::ControllerSensorUpdated { timestamp, .. } => timestamp,
+            Self::GamepadSensorUpdated { timestamp, .. } => timestamp,
             Self::FingerDown { timestamp, .. } => timestamp,
             Self::FingerUp { timestamp, .. } => timestamp,
             Self::FingerMotion { timestamp, .. } => timestamp,
-            Self::DollarRecord { timestamp, .. } => timestamp,
-            Self::MultiGesture { timestamp, .. } => timestamp,
+            Self::FingerCanceled { timestamp, .. } => timestamp,
+            Self::PinchBegin { timestamp, .. } => timestamp,
+            Self::PinchUpdate { timestamp, .. } => timestamp,
+            Self::PinchEnd { timestamp, .. } => timestamp,
             Self::ClipboardUpdate { timestamp, .. } => timestamp,
             Self::DropFile { timestamp, .. } => timestamp,
             Self::DropText { timestamp, .. } => timestamp,
@@ -2507,10 +2627,11 @@ impl Event {
     ///
     /// ```
     /// use sdl3::event::Event;
+    /// use sdl3::joystick::JoystickId;
     ///
     /// let ev = Event::JoyButtonDown {
     ///     timestamp: 0,
-    ///     which: 0,
+    ///     which: JoystickId::new(0),
     ///     button_idx: 0,
     /// };
     /// assert!(ev.get_window_id() == None);
@@ -2535,6 +2656,10 @@ impl Event {
             Self::FingerDown { window_id, .. } => Some(*window_id),
             Self::FingerUp { window_id, .. } => Some(*window_id),
             Self::FingerMotion { window_id, .. } => Some(*window_id),
+            Self::FingerCanceled { window_id, .. } => Some(*window_id),
+            Self::PinchBegin { window_id, .. } => Some(*window_id),
+            Self::PinchUpdate { window_id, .. } => Some(*window_id),
+            Self::PinchEnd { window_id, .. } => Some(*window_id),
             Self::DropFile { window_id, .. } => Some(*window_id),
             Self::DropText { window_id, .. } => Some(*window_id),
             Self::DropBegin { window_id, .. } => Some(*window_id),
@@ -2671,34 +2796,48 @@ impl Event {
         )
     }
 
-    /// Returns `true` if this is a controller event.
+    /// Returns `true` if this is a gamepad event.
     ///
     /// # Example
     ///
     /// ```
     /// use sdl3::event::Event;
+    /// use sdl3::joystick::JoystickId;
     ///
-    /// let ev = Event::ControllerDeviceAdded {
+    /// let ev = Event::GamepadAdded {
     ///     timestamp: 0,
-    ///     which: 0,
+    ///     which: JoystickId::new(0),
     /// };
-    /// assert!(ev.is_controller());
+    /// assert!(ev.is_gamepad());
     ///
     /// let another_ev = Event::Quit {
     ///     timestamp: 0,
     /// };
-    /// assert!(another_ev.is_controller() == false); // Not a controller event!
+    /// assert!(another_ev.is_gamepad() == false); // Not a gamepad event!
     /// ```
+    pub fn is_gamepad(&self) -> bool {
+        match self {
+            Self::GamepadAxisMotion { .. }
+            | Self::GamepadButtonDown { .. }
+            | Self::GamepadButtonUp { .. }
+            | Self::GamepadAdded { .. }
+            | Self::GamepadRemoved { .. }
+            | Self::GamepadRemapped { .. }
+            | Self::GamepadTouchpadDown { .. }
+            | Self::GamepadTouchpadMotion { .. }
+            | Self::GamepadTouchpadUp { .. } => true,
+            #[cfg(feature = "hidapi")]
+            Self::GamepadSensorUpdated { .. } => true,
+            _ => false,
+        }
+    }
+
+    /// Returns `true` if this is a gamepad event.
+    ///
+    /// **Deprecated**: Use [`is_gamepad()`](Self::is_gamepad) instead.
+    #[deprecated(since = "0.18.0", note = "renamed to is_gamepad()")]
     pub fn is_controller(&self) -> bool {
-        matches!(
-            self,
-            Self::ControllerAxisMotion { .. }
-                | Self::ControllerButtonDown { .. }
-                | Self::ControllerButtonUp { .. }
-                | Self::ControllerDeviceAdded { .. }
-                | Self::ControllerDeviceRemoved { .. }
-                | Self::ControllerDeviceRemapped { .. }
-        )
+        self.is_gamepad()
     }
 
     /// Returns `true` if this is a joy event.
@@ -2707,10 +2846,11 @@ impl Event {
     ///
     /// ```
     /// use sdl3::event::Event;
+    /// use sdl3::joystick::JoystickId;
     ///
     /// let ev = Event::JoyButtonUp {
     ///     timestamp: 0,
-    ///     which: 0,
+    ///     which: JoystickId::new(0),
     ///     button_idx: 0,
     /// };
     /// assert!(ev.is_joy());
@@ -2760,7 +2900,36 @@ impl Event {
     pub fn is_finger(&self) -> bool {
         matches!(
             self,
-            Self::FingerDown { .. } | Self::FingerUp { .. } | Self::FingerMotion { .. }
+            Self::FingerDown { .. }
+                | Self::FingerUp { .. }
+                | Self::FingerMotion { .. }
+                | Self::FingerCanceled { .. }
+        )
+    }
+
+    /// Returns `true` if this is a pinch gesture event.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use sdl3::event::Event;
+    ///
+    /// let ev = Event::PinchUpdate {
+    ///     timestamp: 0,
+    ///     scale: 1.5,
+    ///     window_id: 0,
+    /// };
+    /// assert!(ev.is_pinch());
+    ///
+    /// let another_ev = Event::Quit {
+    ///     timestamp: 0,
+    /// };
+    /// assert!(another_ev.is_pinch() == false); // Not a pinch event!
+    /// ```
+    pub fn is_pinch(&self) -> bool {
+        matches!(
+            self,
+            Self::PinchBegin { .. } | Self::PinchUpdate { .. } | Self::PinchEnd { .. }
         )
     }
 
@@ -3342,7 +3511,7 @@ mod test {
     use crate::video::Display;
 
     use super::super::gamepad::{Axis, Button};
-    use super::super::joystick::HatState;
+    use super::super::joystick::{HatState, JoystickId};
     use super::super::keyboard::{Keycode, Mod, Scancode};
     use super::super::mouse::{MouseButton, MouseState, MouseWheelDirection};
     use super::super::video::Orientation;
@@ -3464,7 +3633,7 @@ mod test {
         {
             let e = Event::JoyAxisMotion {
                 timestamp: 0,
-                which: 1,
+                which: JoystickId::new(1),
                 axis_idx: 1,
                 value: 12,
             };
@@ -3474,7 +3643,7 @@ mod test {
         {
             let e = Event::JoyHatMotion {
                 timestamp: 0,
-                which: 3,
+                which: JoystickId::new(3),
                 hat_idx: 1,
                 state: HatState::Left,
             };
@@ -3484,7 +3653,7 @@ mod test {
         {
             let e = Event::JoyButtonDown {
                 timestamp: 0,
-                which: 0,
+                which: JoystickId::new(0),
                 button_idx: 3,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
@@ -3493,7 +3662,7 @@ mod test {
         {
             let e = Event::JoyButtonUp {
                 timestamp: 9876,
-                which: 1,
+                which: JoystickId::new(1),
                 button_idx: 2,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
@@ -3502,7 +3671,7 @@ mod test {
         {
             let e = Event::JoyDeviceAdded {
                 timestamp: 0,
-                which: 1,
+                which: JoystickId::new(1),
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
@@ -3510,15 +3679,15 @@ mod test {
         {
             let e = Event::JoyDeviceRemoved {
                 timestamp: 0,
-                which: 2,
+                which: JoystickId::new(2),
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
         }
         {
-            let e = Event::ControllerAxisMotion {
+            let e = Event::GamepadAxisMotion {
                 timestamp: 53,
-                which: 0,
+                which: JoystickId::new(0),
                 axis: Axis::LeftX,
                 value: 3,
             };
@@ -3526,43 +3695,70 @@ mod test {
             assert_eq!(e, e2);
         }
         {
-            let e = Event::ControllerButtonDown {
+            let e = Event::GamepadButtonDown {
                 timestamp: 0,
-                which: 1,
+                which: JoystickId::new(1),
                 button: Button::Guide,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
         }
         {
-            let e = Event::ControllerButtonUp {
+            let e = Event::GamepadButtonUp {
                 timestamp: 654214,
-                which: 0,
+                which: JoystickId::new(0),
                 button: Button::DPadRight,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
         }
         {
-            let e = Event::ControllerDeviceAdded {
+            let e = Event::GamepadAdded {
                 timestamp: 543,
-                which: 3,
+                which: JoystickId::new(3),
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
         }
         {
-            let e = Event::ControllerDeviceRemoved {
+            let e = Event::GamepadRemoved {
                 timestamp: 555,
-                which: 3,
+                which: JoystickId::new(3),
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);
         }
         {
-            let e = Event::ControllerDeviceRemapped {
+            let e = Event::GamepadRemapped {
                 timestamp: 654,
-                which: 0,
+                which: JoystickId::new(0),
+            };
+            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            assert_eq!(e, e2);
+        }
+        {
+            let e = Event::PinchBegin {
+                timestamp: 700,
+                scale: 1.0,
+                window_id: 2,
+            };
+            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            assert_eq!(e, e2);
+        }
+        {
+            let e = Event::PinchUpdate {
+                timestamp: 701,
+                scale: 1.25,
+                window_id: 2,
+            };
+            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            assert_eq!(e, e2);
+        }
+        {
+            let e = Event::PinchEnd {
+                timestamp: 702,
+                scale: 0.5,
+                window_id: 2,
             };
             let e2 = Event::from_ll(e.clone().to_ll().unwrap());
             assert_eq!(e, e2);

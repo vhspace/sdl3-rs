@@ -80,7 +80,7 @@ fn main() -> Result<(), String> {
             println!("gyro: {:?}, accel: {:?}", gyro_data, accel_data);
         }
 
-        if let Event::ControllerSensorUpdated { .. } = event {
+        if let Event::GamepadSensorUpdated { .. } = event {
             println!("{:?}", event);
         }
 

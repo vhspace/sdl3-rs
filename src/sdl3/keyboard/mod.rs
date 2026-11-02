@@ -1,5 +1,7 @@
+use crate::get_error;
 use crate::rect::Rect;
 use crate::video::Window;
+use crate::Error;
 use crate::EventPump;
 
 use crate::sys;
@@ -205,6 +207,113 @@ impl KeyboardUtil {
     }
 }
 
+/// The type of text being entered, used to hint the platform's on-screen keyboard.
+///
+/// # Remarks
+/// Not every platform honours every value. Passwords additionally disable the
+/// input method editor on platforms that support doing so.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[doc(alias = "SDL_TextInputType")]
+pub enum TextInputType {
+    /// The input is text.
+    Text,
+    /// The input is a person's name.
+    Name,
+    /// The input is an e-mail address.
+    Email,
+    /// The input is a username.
+    Username,
+    /// The input is a secure password that is hidden.
+    PasswordHidden,
+    /// The input is a secure password that is visible.
+    PasswordVisible,
+    /// The input is a number.
+    Number,
+    /// The input is a secure PIN that is hidden.
+    NumberPasswordHidden,
+    /// The input is a secure PIN that is visible.
+    NumberPasswordVisible,
+}
+
+impl TextInputType {
+    fn to_ll(self) -> sys::keyboard::SDL_TextInputType {
+        use sys::keyboard::SDL_TextInputType as T;
+        match self {
+            TextInputType::Text => T::TEXT,
+            TextInputType::Name => T::TEXT_NAME,
+            TextInputType::Email => T::TEXT_EMAIL,
+            TextInputType::Username => T::TEXT_USERNAME,
+            TextInputType::PasswordHidden => T::TEXT_PASSWORD_HIDDEN,
+            TextInputType::PasswordVisible => T::TEXT_PASSWORD_VISIBLE,
+            TextInputType::Number => T::NUMBER,
+            TextInputType::NumberPasswordHidden => T::NUMBER_PASSWORD_HIDDEN,
+            TextInputType::NumberPasswordVisible => T::NUMBER_PASSWORD_VISIBLE,
+        }
+    }
+}
+
+/// How the platform should auto-capitalize entered text.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[doc(alias = "SDL_Capitalization")]
+pub enum Capitalization {
+    /// No auto-capitalization will be done.
+    None,
+    /// The first letter of sentences will be capitalized.
+    Sentences,
+    /// The first letter of words will be capitalized.
+    Words,
+    /// All letters will be capitalized.
+    Letters,
+}
+
+impl Capitalization {
+    fn to_ll(self) -> sys::keyboard::SDL_Capitalization {
+        use sys::keyboard::SDL_Capitalization as C;
+        match self {
+            Capitalization::None => C::NONE,
+            Capitalization::Sentences => C::SENTENCES,
+            Capitalization::Words => C::WORDS,
+            Capitalization::Letters => C::LETTERS,
+        }
+    }
+}
+
+/// Options for [`TextInputUtil::start_with_options`].
+///
+/// # Remarks
+/// Every field is optional; a `None` leaves the corresponding SDL property unset,
+/// so SDL applies its own default. The defaults for capitalization depend on the
+/// input type, so prefer leaving it `None` unless you need to override it.
+///
+/// ```no_run
+/// use sdl3::keyboard::{TextInputOptions, TextInputType};
+///
+/// let options = TextInputOptions {
+///     input_type: Some(TextInputType::Email),
+///     autocorrect: Some(false),
+///     ..Default::default()
+/// };
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct TextInputOptions {
+    /// Describes the text being entered. Defaults to [`TextInputType::Text`].
+    pub input_type: Option<TextInputType>,
+    /// How entered text should be auto-capitalized. The SDL default depends on
+    /// `input_type`: sentences for [`TextInputType::Text`], words for
+    /// [`TextInputType::Name`], and none for e-mail addresses and usernames.
+    pub capitalization: Option<Capitalization>,
+    /// Whether to enable auto-completion and auto-correction. Defaults to `true`.
+    pub autocorrect: Option<bool>,
+    /// Whether multiple lines of text are allowed. This lets the on-screen keyboard
+    /// show a newline key instead of a return key, and prevents closing the keyboard
+    /// when pressing it. Defaults to `false`.
+    pub multiline: Option<bool>,
+    /// Android only: the `InputType` value to pass through verbatim, overriding
+    /// whatever `input_type`, `capitalization` and `autocorrect` would have produced.
+    /// Ignored on other platforms.
+    pub android_input_type: Option<i32>,
+}
+
 /// Text input utility functions. Access with `VideoSubsystem::text_input()`.
 ///
 /// These functions require the video subsystem to be initialized and are not thread-safe.
@@ -249,6 +358,115 @@ impl TextInputUtil {
                 rect.raw() as *mut sys::rect::SDL_Rect,
                 cursor,
             );
+        }
+    }
+
+    /// Get the area used to type Unicode text input, as last set by [`Self::set_rect`].
+    ///
+    /// # Remarks
+    /// Returns the rectangle in window coordinates together with the offset, in
+    /// pixels, of the text cursor from the left edge of that rectangle.
+    #[doc(alias = "SDL_GetTextInputArea")]
+    pub fn rect(&self, window: &Window) -> Result<(Rect, i32), Error> {
+        let mut rect = sys::rect::SDL_Rect {
+            x: 0,
+            y: 0,
+            w: 0,
+            h: 0,
+        };
+        let mut cursor: std::os::raw::c_int = 0;
+        let ok =
+            unsafe { sys::keyboard::SDL_GetTextInputArea(window.raw(), &mut rect, &mut cursor) };
+        if ok {
+            Ok((Rect::from_ll(rect), cursor))
+        } else {
+            Err(get_error())
+        }
+    }
+
+    /// Start accepting Unicode text input events, describing what is being entered.
+    ///
+    /// # Remarks
+    /// This is [`Self::start`] plus the hints SDL needs to present a suitable
+    /// on-screen keyboard: an e-mail field can be given a keyboard with `@` on it,
+    /// and a password field can have the input method editor turned off. Every hint
+    /// is advisory — platforms that do not support one simply ignore it.
+    ///
+    /// Text input is not automatically enabled, and you should also use
+    /// [`Self::set_rect`] to tell SDL where the text is being entered so that the
+    /// candidate window of an input method editor lands next to the cursor.
+    ///
+    /// ```no_run
+    /// use sdl3::keyboard::{TextInputOptions, TextInputType};
+    ///
+    /// # fn example(video_subsystem: &sdl3::VideoSubsystem, window: &sdl3::video::Window) -> Result<(), sdl3::Error> {
+    /// video_subsystem.text_input().start_with_options(
+    ///     window,
+    ///     TextInputOptions {
+    ///         input_type: Some(TextInputType::Email),
+    ///         autocorrect: Some(false),
+    ///         ..Default::default()
+    ///     },
+    /// )?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    #[doc(alias = "SDL_StartTextInputWithProperties")]
+    pub fn start_with_options(
+        &self,
+        window: &Window,
+        options: TextInputOptions,
+    ) -> Result<(), Error> {
+        unsafe {
+            let props = sys::properties::SDL_CreateProperties();
+            if props.0 == 0 {
+                return Err(get_error());
+            }
+
+            if let Some(input_type) = options.input_type {
+                sys::properties::SDL_SetNumberProperty(
+                    props,
+                    sys::keyboard::SDL_PROP_TEXTINPUT_TYPE_NUMBER,
+                    input_type.to_ll().0 as i64,
+                );
+            }
+            if let Some(capitalization) = options.capitalization {
+                sys::properties::SDL_SetNumberProperty(
+                    props,
+                    sys::keyboard::SDL_PROP_TEXTINPUT_CAPITALIZATION_NUMBER,
+                    capitalization.to_ll().0 as i64,
+                );
+            }
+            if let Some(autocorrect) = options.autocorrect {
+                sys::properties::SDL_SetBooleanProperty(
+                    props,
+                    sys::keyboard::SDL_PROP_TEXTINPUT_AUTOCORRECT_BOOLEAN,
+                    autocorrect,
+                );
+            }
+            if let Some(multiline) = options.multiline {
+                sys::properties::SDL_SetBooleanProperty(
+                    props,
+                    sys::keyboard::SDL_PROP_TEXTINPUT_MULTILINE_BOOLEAN,
+                    multiline,
+                );
+            }
+            if let Some(android_input_type) = options.android_input_type {
+                sys::properties::SDL_SetNumberProperty(
+                    props,
+                    sys::keyboard::SDL_PROP_TEXTINPUT_ANDROID_INPUTTYPE_NUMBER,
+                    android_input_type as i64,
+                );
+            }
+
+            let ok = sys::keyboard::SDL_StartTextInputWithProperties(window.raw(), props);
+            // SDL copies what it needs out of the property group, so it can go now.
+            sys::properties::SDL_DestroyProperties(props);
+            if ok {
+                Ok(())
+            } else {
+                Err(get_error())
+            }
         }
     }
 

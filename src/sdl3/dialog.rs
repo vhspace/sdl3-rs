@@ -1,3 +1,59 @@
+//! Native file and folder dialogs.
+//!
+//! This module wraps `SDL_dialog.h`. It lets an application pop up the
+//! platform's own "open file", "save file" and "open folder" dialogs and be
+//! told which paths the user picked.
+//!
+//! All of the dialog functions are asynchronous: they return immediately and
+//! the result is delivered later to a [`DialogCallback`]. Note that the
+//! callback may run on a different thread than the one the dialog was
+//! requested from, depending on the operating system. The callback is invoked
+//! exactly once per dialog, whether the user accepted, canceled, or an error
+//! occurred.
+//!
+//! On Linux, dialogs may require XDG Portals, which requires DBus, which
+//! requires an event-handling loop. Applications that do not use SDL to handle
+//! events should call [`EventPump::pump_events`](crate::EventPump::pump_events)
+//! in their main loop so the dialog can make progress.
+//!
+//! # Example
+//!
+//! ```no_run
+//! use sdl3::dialog::{show_open_file_dialog, DialogFileFilter};
+//! use std::path::PathBuf;
+//!
+//! let sdl_context = sdl3::init().unwrap();
+//! let video_subsystem = sdl_context.video().unwrap();
+//! let window = video_subsystem.window("dialog", 800, 600).build().unwrap();
+//!
+//! let filters = [
+//!     DialogFileFilter { name: "Text", pattern: "txt" },
+//!     DialogFileFilter { name: "Videos", pattern: "mp4;mkv" },
+//!     DialogFileFilter { name: "All", pattern: "*" },
+//! ];
+//!
+//! show_open_file_dialog(
+//!     &filters,
+//!     None::<PathBuf>,
+//!     true,
+//!     &window,
+//!     Box::new(|result, filter| match result {
+//!         Ok(paths) => println!("picked {paths:?} with filter {filter:?}"),
+//!         Err(error) => eprintln!("dialog failed: {error}"),
+//!     }),
+//! )
+//! .unwrap();
+//!
+//! // Keep pumping events so the dialog can run and the callback gets called.
+//! let mut event_pump = sdl_context.event_pump().unwrap();
+//! loop {
+//!     for _event in event_pump.poll_iter() {}
+//! }
+//! ```
+//!
+//! See `examples/dialog.rs` for a complete program that drives all three
+//! dialog types.
+
 use crate::get_error;
 use crate::sys;
 use crate::Error;
@@ -12,17 +68,51 @@ use sys::dialog::SDL_DialogFileFilter;
 
 use crate::video::Window;
 
+/// An entry in the list of file type filters shown by a file dialog.
+///
+/// Filters are passed to [`show_open_file_dialog`] and
+/// [`show_save_file_dialog`]. Not all platforms support filters, and platforms
+/// that do may let the user ignore them.
+///
+/// # Example
+///
+/// ```
+/// use sdl3::dialog::DialogFileFilter;
+///
+/// let filters = [
+///     DialogFileFilter { name: "Office document", pattern: "doc;docx" },
+///     DialogFileFilter { name: "All files", pattern: "*" },
+/// ];
+/// ```
+#[doc(alias = "SDL_DialogFileFilter")]
 #[derive(Debug)]
 pub struct DialogFileFilter<'a> {
+    /// A user-readable label for the filter, for example `"Office document"`.
     pub name: &'a str,
+    /// A semicolon-separated list of file extensions, for example
+    /// `"doc;docx"`. Extensions may only contain alphanumeric characters,
+    /// hyphens, underscores and periods. Alternatively the whole string can be
+    /// a single asterisk (`"*"`), which acts as an "All files" filter.
     pub pattern: &'a str,
 }
 
+/// Errors reported by the dialog functions, either when requesting a dialog or
+/// when its result is delivered to the [`DialogCallback`].
 #[derive(Debug, Clone)]
 pub enum DialogError {
+    /// A filter's [`name`](DialogFileFilter::name) or
+    /// [`pattern`](DialogFileFilter::pattern) contained an interior NUL byte
+    /// and could not be passed to SDL. Returned directly by
+    /// [`show_open_file_dialog`] and [`show_save_file_dialog`].
     FilterError(NulError),
+    /// One of the paths chosen by the user was not valid UTF-8. Passed to the
+    /// callback.
     InvalidFilename(Utf8Error),
+    /// The user closed the dialog without choosing anything. Passed to the
+    /// callback.
     Canceled,
+    /// SDL failed to show the dialog or to collect its result. Passed to the
+    /// callback.
     SdlError(Error),
 }
 
@@ -39,11 +129,69 @@ impl fmt::Display for DialogError {
     }
 }
 
-pub type DialogCallback = Box<dyn Fn(Result<Vec<PathBuf>, DialogError>, Option<DialogFileFilter>)>;
+/// Callback invoked with the outcome of a dialog.
+///
+/// The first argument is the list of paths the user chose, or a
+/// [`DialogError`] if the dialog was canceled ([`DialogError::Canceled`]), a
+/// path was not valid UTF-8 ([`DialogError::InvalidFilename`]), or SDL
+/// reported an error ([`DialogError::SdlError`]). Unless the dialog was shown
+/// with `allow_many` the list contains a single path.
+///
+/// The second argument is the filter the user selected, if any. It is `None`
+/// when no filters were supplied, when the dialog was canceled or failed, or
+/// when the platform does not report the selected filter (Linux portals, for
+/// instance, do not).
+///
+/// The callback is called exactly once. It may be invoked from a thread other
+/// than the one that requested the dialog, depending on the operating system,
+/// which is why it must be `Send`.
+///
+/// On Android the paths are `content://` URIs rather than filesystem paths.
+#[doc(alias = "SDL_DialogFileCallback")]
+pub type DialogCallback =
+    Box<dyn FnOnce(Result<Vec<PathBuf>, DialogError>, Option<DialogFileFilter>) + Send>;
 
+/// Everything SDL needs to stay alive until the callback runs. SDL reads the
+/// filter list asynchronously on some platforms, so it can't live on the stack
+/// of the `show_*` function.
 struct DialogCallbackData {
-    pub callback: DialogCallback,
-    pub filter_strings: Option<Vec<(CString, CString)>>,
+    callback: DialogCallback,
+    filter_strings: Vec<(CString, CString)>,
+    c_filters: Vec<SDL_DialogFileFilter>,
+}
+
+/// Reads the NULL-terminated file list SDL hands to the callback.
+///
+/// # Safety
+///
+/// `filelist` must be null or point to a NULL-terminated array of valid C strings.
+unsafe fn collect_files(filelist: *const *const c_char) -> Result<Vec<PathBuf>, DialogError> {
+    if filelist.is_null() {
+        return Err(DialogError::SdlError(get_error()));
+    }
+
+    let mut files = Vec::new();
+    let mut count = 0;
+    loop {
+        let file = *filelist.offset(count);
+        if file.is_null() {
+            break;
+        }
+
+        match CStr::from_ptr(file).to_str() {
+            // PathBuf::from_str can not fail
+            Ok(file) => files.push(PathBuf::from_str(file).unwrap()),
+            Err(e) => return Err(DialogError::InvalidFilename(e)),
+        }
+
+        count += 1;
+    }
+
+    if files.is_empty() {
+        Err(DialogError::Canceled)
+    } else {
+        Ok(files)
+    }
 }
 
 extern "C" fn c_dialog_callback(
@@ -51,58 +199,28 @@ extern "C" fn c_dialog_callback(
     filelist: *const *const c_char,
     filter: c_int,
 ) {
-    let callback_info_ptr = userdata as *mut DialogCallbackData;
-    if filelist.is_null() {
-        unsafe {
-            return ((*callback_info_ptr).callback)(Err(DialogError::SdlError(get_error())), None);
-        }
-    }
+    // Safety: userdata is the box leaked by `callback_data_ptr!`, and SDL calls
+    // this exactly once per dialog, so ownership comes back here and is freed.
+    let data = unsafe { Box::from_raw(userdata as *mut DialogCallbackData) };
+    let DialogCallbackData {
+        callback,
+        filter_strings,
+        c_filters: _c_filters,
+    } = *data;
 
-    let mut files = Vec::new();
-    unsafe {
-        let mut count = 0;
-        loop {
-            let file = *filelist.offset(count);
-            if file.is_null() {
-                break;
+    let files = unsafe { collect_files(filelist) };
+    let selected = match (&files, usize::try_from(filter)) {
+        (Ok(_), Ok(index)) => filter_strings.get(index).map(|(name, pattern)| {
+            DialogFileFilter {
+                // We created these from strs, they cannot fail
+                name: name.to_str().unwrap(),
+                pattern: pattern.to_str().unwrap(),
             }
+        }),
+        _ => None,
+    };
 
-            let file = CStr::from_ptr(file);
-            match file.to_str() {
-                // PathBuf::from_str can not fail
-                Ok(file) => files.push(PathBuf::from_str(file).unwrap()),
-                Err(e) => {
-                    return ((*callback_info_ptr).callback)(
-                        Err(DialogError::InvalidFilename(e)),
-                        None,
-                    )
-                }
-            };
-
-            count += 1;
-        }
-
-        if count == 0 {
-            return ((*callback_info_ptr).callback)(Err(DialogError::Canceled), None);
-        }
-    }
-    unsafe {
-        if filter < 0 {
-            ((*callback_info_ptr).callback)(Ok(files), None)
-        } else {
-            // Seemingly not implemented in linux portals, untested
-            if let Some(filter_strings) = &(*callback_info_ptr).filter_strings {
-                if let Some(filter) = filter_strings.get(filter as usize) {
-                    let filter = DialogFileFilter {
-                        // We created these from strs, they cannot fail
-                        name: filter.0.to_str().unwrap(),
-                        pattern: filter.1.to_str().unwrap(),
-                    };
-                    ((*callback_info_ptr).callback)(Ok(files), Some(filter))
-                }
-            }
-        }
-    }
+    callback(files, selected);
 }
 
 /// Take a slice of DialogFileFilter and transform it into two vecs
@@ -153,16 +271,56 @@ macro_rules! default_location_ptr {
     };
 }
 
+/// Moves the callback and filters into a heap allocation that the C callback
+/// takes back ownership of. Also yields the filter pointer and count to pass
+/// to SDL, which point into that allocation and stay valid until the callback.
 macro_rules! callback_data_ptr {
-    ($callback:ident, $filter_strings:expr, $callback_data_ptr:ident) => {
+    ($callback:ident, $filter_strings:expr, $c_filters:expr, $callback_data_ptr:ident, $filters_ptr:ident, $filters_len:ident) => {
         let callback_data = DialogCallbackData {
             callback: $callback,
             filter_strings: $filter_strings,
+            c_filters: $c_filters,
         };
         let $callback_data_ptr = Box::into_raw(Box::new(callback_data));
+        let $filters_len = (*$callback_data_ptr).c_filters.len() as c_int;
+        let $filters_ptr = if $filters_len == 0 {
+            ptr::null()
+        } else {
+            (*$callback_data_ptr).c_filters.as_ptr()
+        };
     };
 }
 
+/// Displays a dialog that lets the user select one or more files on their
+/// filesystem.
+///
+/// This function returns immediately; the result is delivered later to
+/// `callback`, possibly from a different thread. Depending on the platform, the
+/// user may be allowed to enter paths that don't exist yet.
+///
+/// # Arguments
+///
+/// * `filters` - File type filters offered to the user. May be empty. Not all
+///   platforms support filters, and those that do may let the user ignore them.
+/// * `default_location` - The folder or file the dialog should start at. Not
+///   all platforms support this option.
+/// * `allow_many` - If `true`, the user may select several files at once. Not
+///   all platforms support this option.
+/// * `window` - The window the dialog should be modal for, or `None`. Not all
+///   platforms support this option.
+/// * `callback` - Invoked once with the chosen paths, or with a
+///   [`DialogError`] if the user canceled or an error occurred.
+///
+/// # Errors
+///
+/// Returns [`DialogError::FilterError`] if a filter's name or pattern contains
+/// an interior NUL byte. Errors that happen after the dialog has been requested
+/// are reported to `callback` instead.
+///
+/// # Panics
+///
+/// Panics if `default_location` is not valid UTF-8 or contains an interior
+/// NUL byte.
 #[doc(alias = "SDL_ShowOpenFileDialog")]
 pub fn show_open_file_dialog<'a, W>(
     filters: &[DialogFileFilter],
@@ -181,14 +339,21 @@ where
     unsafe {
         window_ptr!(window, window_ptr);
         default_location_ptr!(default_location, default_location_ptr);
-        callback_data_ptr!(callback, Some(filter_strings), callback_data_ptr);
+        callback_data_ptr!(
+            callback,
+            filter_strings,
+            c_filters,
+            callback_data_ptr,
+            filters_ptr,
+            filters_len
+        );
 
         sys::dialog::SDL_ShowOpenFileDialog(
             Some(c_dialog_callback),
             callback_data_ptr as *mut c_void,
             window_ptr,
-            c_filters.as_ptr(),
-            c_filters.len() as i32,
+            filters_ptr,
+            filters_len,
             default_location_ptr,
             allow_many,
         );
@@ -196,6 +361,31 @@ where
     }
 }
 
+/// Displays a dialog that lets the user select one or more folders on their
+/// filesystem.
+///
+/// This function returns immediately; the result is delivered later to
+/// `callback`, possibly from a different thread. Depending on the platform, the
+/// user may be allowed to enter paths that don't exist yet.
+///
+/// Folder dialogs have no filters, so the callback's filter argument is always
+/// `None`.
+///
+/// # Arguments
+///
+/// * `default_location` - The folder the dialog should start at. Not all
+///   platforms support this option.
+/// * `allow_many` - If `true`, the user may select several folders at once.
+///   Not all platforms support this option.
+/// * `window` - The window the dialog should be modal for, or `None`. Not all
+///   platforms support this option.
+/// * `callback` - Invoked once with the chosen paths, or with a
+///   [`DialogError`] if the user canceled or an error occurred.
+///
+/// # Panics
+///
+/// Panics if `default_location` is not valid UTF-8 or contains an interior
+/// NUL byte.
 #[doc(alias = "SDL_ShowOpenFolderDialog")]
 pub fn show_open_folder_dialog<'a, W>(
     default_location: Option<impl AsRef<Path>>,
@@ -210,7 +400,14 @@ pub fn show_open_folder_dialog<'a, W>(
     unsafe {
         window_ptr!(window, window_ptr);
         default_location_ptr!(default_location, default_location_ptr);
-        callback_data_ptr!(callback, None, callback_data_ptr);
+        callback_data_ptr!(
+            callback,
+            Vec::new(),
+            Vec::new(),
+            callback_data_ptr,
+            _filters_ptr,
+            _filters_len
+        );
 
         sys::dialog::SDL_ShowOpenFolderDialog(
             Some(c_dialog_callback),
@@ -222,6 +419,34 @@ pub fn show_open_folder_dialog<'a, W>(
     }
 }
 
+/// Displays a dialog that lets the user choose a new or existing file on their
+/// filesystem to save to.
+///
+/// This function returns immediately; the result is delivered later to
+/// `callback`, possibly from a different thread. The chosen file may or may not
+/// already exist; nothing is written to it by SDL.
+///
+/// # Arguments
+///
+/// * `filters` - File type filters offered to the user. May be empty. Not all
+///   platforms support filters, and those that do may let the user ignore them.
+/// * `default_location` - The folder or file the dialog should start at. Not
+///   all platforms support this option.
+/// * `window` - The window the dialog should be modal for, or `None`. Not all
+///   platforms support this option.
+/// * `callback` - Invoked once with the chosen path, or with a
+///   [`DialogError`] if the user canceled or an error occurred.
+///
+/// # Errors
+///
+/// Returns [`DialogError::FilterError`] if a filter's name or pattern contains
+/// an interior NUL byte. Errors that happen after the dialog has been requested
+/// are reported to `callback` instead.
+///
+/// # Panics
+///
+/// Panics if `default_location` is not valid UTF-8 or contains an interior
+/// NUL byte.
 #[doc(alias = "SDL_ShowSaveFileDialog")]
 pub fn show_save_file_dialog<'a, W>(
     filters: &[DialogFileFilter],
@@ -239,16 +464,79 @@ where
     unsafe {
         window_ptr!(window, window_ptr);
         default_location_ptr!(default_location, default_location_ptr);
-        callback_data_ptr!(callback, Some(filter_strings), callback_data_ptr);
+        callback_data_ptr!(
+            callback,
+            filter_strings,
+            c_filters,
+            callback_data_ptr,
+            filters_ptr,
+            filters_len
+        );
 
         sys::dialog::SDL_ShowSaveFileDialog(
             Some(c_dialog_callback),
             callback_data_ptr as *mut c_void,
             window_ptr,
-            c_filters.as_ptr(),
-            c_filters.len() as i32,
+            filters_ptr,
+            filters_len,
             default_location_ptr,
         );
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::mpsc;
+
+    type Outcome = (Result<Vec<PathBuf>, String>, Option<String>);
+
+    /// Builds callback data the way the show_* functions do and runs the C
+    /// trampoline on it, returning what the Rust callback received.
+    fn run(files: &[&str], filter: c_int) -> Outcome {
+        let (tx, rx) = mpsc::channel();
+        let callback: DialogCallback = Box::new(move |result, filter| {
+            let result = result.map_err(|e| e.to_string());
+            tx.send((result, filter.map(|f| f.name.to_owned())))
+                .unwrap();
+        });
+        let filter_strings = vec![
+            (CString::new("Text").unwrap(), CString::new("txt").unwrap()),
+            (CString::new("All").unwrap(), CString::new("*").unwrap()),
+        ];
+        let data = Box::into_raw(Box::new(DialogCallbackData {
+            callback,
+            filter_strings,
+            c_filters: Vec::new(),
+        }));
+
+        let c_files: Vec<CString> = files.iter().map(|f| CString::new(*f).unwrap()).collect();
+        let mut list: Vec<*const c_char> = c_files.iter().map(|f| f.as_ptr()).collect();
+        list.push(ptr::null());
+
+        c_dialog_callback(data as *mut c_void, list.as_ptr(), filter);
+        rx.try_recv().expect("callback was not invoked")
+    }
+
+    #[test]
+    fn reports_files_and_selected_filter() {
+        let (result, filter) = run(&["/tmp/a.txt"], 1);
+        assert_eq!(result.unwrap(), vec![PathBuf::from("/tmp/a.txt")]);
+        assert_eq!(filter.as_deref(), Some("All"));
+    }
+
+    #[test]
+    fn empty_list_is_canceled() {
+        let (result, filter) = run(&[], -1);
+        assert_eq!(result.unwrap_err(), "Canceled");
+        assert_eq!(filter, None);
+    }
+
+    #[test]
+    fn unknown_filter_index_still_calls_back() {
+        let (result, filter) = run(&["/tmp/a.txt"], 7);
+        assert!(result.is_ok());
+        assert_eq!(filter, None);
     }
 }

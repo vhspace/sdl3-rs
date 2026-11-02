@@ -96,35 +96,63 @@ pub fn create_directory(path: impl AsRef<Path>) -> Result<(), FileSystemError> {
 
 pub use sys::filesystem::SDL_EnumerationResult as EnumerationResult;
 
-pub type EnumerateCallback = fn(&Path, &Path) -> EnumerationResult;
+struct EnumerateState<F> {
+    callback: F,
+    panic: Option<Box<dyn std::any::Any + Send + 'static>>,
+}
 
-unsafe extern "C" fn c_enumerate_directory(
+unsafe extern "C" fn c_enumerate_directory<F>(
     userdata: *mut c_void,
     dirname: *const c_char,
     fname: *const c_char,
-) -> EnumerationResult {
-    let callback: EnumerateCallback = std::mem::transmute(userdata);
+) -> EnumerationResult
+where
+    F: FnMut(&Path, &Path) -> EnumerationResult,
+{
+    let state = &mut *(userdata as *mut EnumerateState<F>);
+    if state.panic.is_some() {
+        return EnumerationResult::FAILURE;
+    }
 
     cstring_path!(dirname, return EnumerationResult::FAILURE);
     cstring_path!(fname, return EnumerationResult::FAILURE);
 
-    callback(dirname, fname)
+    match std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        (state.callback)(dirname, fname)
+    })) {
+        Ok(r) => r,
+        Err(p) => {
+            state.panic = Some(p);
+            EnumerationResult::FAILURE
+        }
+    }
 }
 
+/// Enumerate the entries in a directory, invoking `callback` for each one.
+///
+/// Runs synchronously, so `callback` may borrow caller state mutably.
 #[doc(alias = "SDL_EnumerateDirectory")]
-pub fn enumerate_directory(
-    path: impl AsRef<Path>,
-    callback: EnumerateCallback,
-) -> Result<(), FileSystemError> {
+pub fn enumerate_directory<F>(path: impl AsRef<Path>, callback: F) -> Result<(), FileSystemError>
+where
+    F: FnMut(&Path, &Path) -> EnumerationResult,
+{
     path_cstring!(path);
-    unsafe {
-        if !sys::filesystem::SDL_EnumerateDirectory(
+    let mut state = EnumerateState {
+        callback,
+        panic: None,
+    };
+    let ok = unsafe {
+        sys::filesystem::SDL_EnumerateDirectory(
             path.as_ptr(),
-            Some(c_enumerate_directory),
-            callback as *mut c_void,
-        ) {
-            return Err(FileSystemError::SdlError(get_error()));
-        }
+            Some(c_enumerate_directory::<F>),
+            &mut state as *mut EnumerateState<F> as *mut c_void,
+        )
+    };
+    if let Some(p) = state.panic {
+        std::panic::resume_unwind(p);
+    }
+    if !ok {
+        return Err(FileSystemError::SdlError(get_error()));
     }
     Ok(())
 }
@@ -442,4 +470,116 @@ pub fn rename_path(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use super::{enumerate_directory, EnumerationResult, FileSystemError};
+    use std::fs;
+    use std::path::{Path, PathBuf};
+    use std::sync::atomic::{AtomicU64, Ordering};
+
+    /// RAII tempdir: auto-removes on drop so failed assertions don't leak.
+    struct TempDir(PathBuf);
+
+    impl TempDir {
+        fn new(label: &str) -> Self {
+            static SEQ: AtomicU64 = AtomicU64::new(0);
+            let dir = std::env::temp_dir().join(format!(
+                "sdl3-rs-enumerate-{}-{}-{}",
+                label,
+                std::process::id(),
+                SEQ.fetch_add(1, Ordering::Relaxed),
+            ));
+            fs::create_dir_all(&dir).unwrap();
+            TempDir(dir)
+        }
+
+        fn path(&self) -> &Path {
+            &self.0
+        }
+    }
+
+    impl Drop for TempDir {
+        fn drop(&mut self) {
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn enumerate_directory_captures_state() {
+        let dir = TempDir::new("collect");
+        fs::write(dir.path().join("a.txt"), b"").unwrap();
+        fs::write(dir.path().join("b.txt"), b"").unwrap();
+
+        let mut names = Vec::new();
+        enumerate_directory(dir.path(), |_d, f| {
+            names.push(f.to_string_lossy().into_owned());
+            EnumerationResult::CONTINUE
+        })
+        .unwrap();
+
+        names.sort();
+        assert_eq!(names, vec!["a.txt", "b.txt"]);
+    }
+
+    #[test]
+    fn enumerate_directory_early_stop() {
+        let dir = TempDir::new("stop");
+        fs::write(dir.path().join("a.txt"), b"").unwrap();
+        fs::write(dir.path().join("b.txt"), b"").unwrap();
+        fs::write(dir.path().join("c.txt"), b"").unwrap();
+
+        let mut calls = 0u32;
+        enumerate_directory(dir.path(), |_d, _f| {
+            calls += 1;
+            EnumerationResult::SUCCESS
+        })
+        .unwrap();
+
+        assert_eq!(calls, 1);
+    }
+
+    /// Panics from the user callback must propagate, AND subsequent
+    /// invocations of the same enumeration must be suppressed (the
+    /// `state.panic.is_some()` short-circuit in c_enumerate_directory).
+    #[test]
+    fn enumerate_directory_propagates_panic_mid_iteration() {
+        let dir = TempDir::new("panic");
+        for name in ["a.txt", "b.txt", "c.txt"] {
+            fs::write(dir.path().join(name), b"").unwrap();
+        }
+
+        let mut seen = Vec::new();
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            enumerate_directory(dir.path(), |_d, f| {
+                let name = f.to_string_lossy().into_owned();
+                seen.push(name.clone());
+                if name == "b.txt" {
+                    panic!("boom");
+                }
+                EnumerationResult::CONTINUE
+            })
+        }));
+
+        let payload = result.expect_err("expected panic to propagate");
+        let msg = payload
+            .downcast_ref::<&str>()
+            .copied()
+            .or_else(|| payload.downcast_ref::<String>().map(String::as_str));
+        assert_eq!(msg, Some("boom"));
+
+        // Ensure the panic short-circuit fired: no callback runs after b.txt.
+        // Because directory order is platform-dependent, the strongest check
+        // we can make is that we stopped at the panicking entry.
+        assert!(seen.contains(&"b.txt".to_string()));
+        assert_eq!(seen.last().unwrap(), "b.txt");
+    }
+
+    #[test]
+    fn enumerate_directory_nonexistent_path() {
+        let bogus = std::env::temp_dir().join("sdl3-rs-this-does-not-exist-xyz123");
+        let err = enumerate_directory(&bogus, |_d, _f| EnumerationResult::CONTINUE);
+        assert!(matches!(err, Err(FileSystemError::SdlError(_))));
+    }
 }

@@ -3,7 +3,7 @@ name = "sdl3"
 description = "Bindings to SDL3, a cross-platform library to abstract the platform-specific details for building applications."
 repository = "https://github.com/vhspace/sdl3-rs"
 documentation = "https://docs.rs/sdl3/latest/sdl3/"
-version = "0.18.4"
+version = "0.22.0"
 license = "MIT"
 authors = [
     "Tony Aldridge <tony@angry-lawyer.com>",
@@ -26,27 +26,28 @@ bitflags = "2.11.1"
 libc = "0.2.186"
 
 [dependencies.sdl3-sys]
-version = "0.6.6"
-features = ["metadata"]
+version = "0.7.1"
+features = ["metadata", "debug-impls", "display-impls"]
 
 [dependencies.sdl3-image-sys]
-version = "0.6.4"
+version = "0.7.0"
 optional = true
 
-# Held at 0.6.0: sdl3-ttf-sys 0.6.1 hard-pins sdl3-ttf-src "=3.2.2", whose
-# vendored freetype still declares cmake_minimum_required(<3.5) and fails to
-# configure under CMake 4.x (breaks build-from-source-static). 0.6.0 allows the
-# fixed sdl3-ttf-src 3.2.3. Revisit when sdl3-ttf-sys bumps its src pin.
 [dependencies.sdl3-ttf-sys]
-version = "=0.6.0"
+version = "0.7.1"
 optional = true
 
 [dependencies.sdl3-mixer-sys]
-version = "0.6.3"
+version = "0.7.0"
+optional = true
+
+[dependencies.sdl3-net-sys]
+version = "0.7.0"
+default-features = false
 optional = true
 
 [dependencies.sdl3-main]
-version = "0.6.3"
+version = "0.7.0"
 optional = true
 
 [dependencies.c_vec]
@@ -64,7 +65,7 @@ optional = true
 [dev-dependencies]
 rand = "0.10.1"
 wgpu = { version = "30.0.0", features = ["spirv"] }
-pollster = "0.4.0"
+pollster = "1.0.1"
 env_logger = "0.11.10"
 
 # wgpu-hal 29.0.1 has two Windows-only resolution problems that we paper over
@@ -80,17 +81,17 @@ env_logger = "0.11.10"
 #    `windows@0.58::ID3D12Device`, wgpu-hal hands it `windows@0.62::ID3D12Device`).
 #    Pinning `windows = "0.62"` here forces gpu-allocator onto the same version.
 [target.'cfg(windows)'.dev-dependencies]
-windows-core = { version = "0.62", features = ["std"] }
+windows-core = { version = "0.100", features = ["std"] }
 windows = "0.62"
 
 [build-dependencies]
-sdl3-sys = { version = "0.6.6", features = ["only-metadata"] }
+sdl3-sys = { version = "0.7.1", features = ["only-metadata"] }
 
 
 [features]
 
 # various ways to link to libsdl3
-# provided by sdl3-sys: https://github.com/maia-s/sdl3-sys-rs/tree/main/sdl3-sys#usage
+# provided by sdl3-sys: https://codeberg.org/maia/sdl3-sys-rs/src/branch/main/sdl3-sys#usage
 use-pkg-config = ["sdl3-sys/use-pkg-config"]
 use-vcpkg = ["sdl3-sys/use-vcpkg"]
 static-link = ["sdl3-sys/link-static"]
@@ -100,12 +101,18 @@ build-from-source = [
     "sdl3-image-sys?/build-from-source",
     "sdl3-ttf-sys?/build-from-source",
     "sdl3-mixer-sys?/build-from-source",
+    "sdl3-net-sys?/build-from-source",
 ]
 build-from-source-static = [
     "sdl3-sys/build-from-source-static",
     "sdl3-image-sys?/build-from-source-static",
     "sdl3-ttf-sys?/build-static-vendored",
     "sdl3-mixer-sys?/build-static-vendored",
+    # NOTE: sdl3-net-sys 0.7.0 still ships a pkg-config file with an empty
+    # `prefix=`, so the static link search path resolves to `/lib` and rustc
+    # cannot find libSDL3_net.a during the `sdl3-net-sys` build. Until that
+    # is fixed upstream, use `build-from-source` + `net` (dynamic linking),
+    # which our build.rs patches around via DEP_SDL3_NET_OUT_DIR.
 ]
 build-from-source-unix-console = ["sdl3-sys/sdl-unix-console-build"]
 ash = ["sdl3-sys/use-ash-v0-38"]
@@ -113,10 +120,11 @@ default = []
 unsafe_textures = []
 # DEPRECATED: gfx feature is non-functional - SDL_gfx has not been ported to SDL3 yet.
 # See: https://github.com/vhspace/sdl3-rs/issues/160
-gfx = ["c_vec"] #, "sdl3-sys/gfx"]
+gfx = ["c_vec"]                #, "sdl3-sys/gfx"]
 mixer = ["dep:sdl3-mixer-sys"]
 image = ["dep:sdl3-image-sys"]
 ttf = ["dep:sdl3-ttf-sys"]
+net = ["dep:sdl3-net-sys"]
 # Use hidapi support in SDL. Only 2.0.12 and after
 hidapi = []
 # test_mode allows SDL to be initialised from a thread that is not the main thread
@@ -125,6 +133,8 @@ test-mode = []
 raw-window-handle = ["dep:raw-window-handle", "dep:objc2"]
 # integration with sdl3-main, for using SDL's callback interface with types from this crate
 main = ["dep:sdl3-main"]
+debug-impls = ["sdl3-sys/debug-impls"]
+
 
 [package.metadata.docs.rs]
 #features = ["default", "gfx", "mixer", "image", "ttf"]
@@ -196,6 +206,10 @@ name = "message-box"
 [[example]]
 required-features = ["mixer"]
 name = "mixer-demo"
+
+[[example]]
+required-features = ["net"]
+name = "net-echo"
 
 [[example]]
 name = "mouse-state"

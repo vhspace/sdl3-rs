@@ -414,3 +414,41 @@ pub fn set_error(err: &str) -> Result<(), NulError> {
 pub fn clear_error() {
     sys::error::SDL_ClearError();
 }
+
+#[doc(alias = "SDL_SetAppMetadata")]
+pub fn set_app_metadata(
+    appname: Option<&str>,
+    appversion: Option<&str>,
+    appidentifier: Option<&str>,
+) -> Result<(), Error> {
+    let to_cstring = |s| CString::new(s).unwrap();
+    let c_appname = appname.map(to_cstring);
+    let p_appname = c_appname.as_ref().map_or(std::ptr::null(), |c| c.as_ptr());
+    let c_appversion = appversion.map(to_cstring);
+    let p_appversion = c_appversion
+        .as_ref()
+        .map_or(std::ptr::null(), |c| c.as_ptr());
+    let c_appidentifier = appidentifier.map(to_cstring);
+    let p_appidentifier = c_appidentifier
+        .as_ref()
+        .map_or(std::ptr::null(), |c| c.as_ptr());
+    if unsafe { !sys::init::SDL_SetAppMetadata(p_appname, p_appversion, p_appidentifier) } {
+        Err(get_error())
+    } else {
+        Ok(())
+    }
+}
+
+#[doc(alias = "SDL_SetAppMetadataProperty")]
+pub fn set_app_metadata_property(
+    prop: &crate::properties::PropertyName,
+    value: Option<&str>,
+) -> Result<(), Error> {
+    let c_value = value.map(|s| CString::new(s).unwrap());
+    let p_value = c_value.as_ref().map_or(std::ptr::null(), |c| c.as_ptr());
+    if unsafe { !sys::init::SDL_SetAppMetadataProperty(prop.raw, p_value) } {
+        Err(get_error())
+    } else {
+        Ok(())
+    }
+}

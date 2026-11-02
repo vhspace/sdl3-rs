@@ -1,5 +1,6 @@
 use libc::c_char;
 use libc::c_void;
+use std::error;
 use std::ffi::CStr;
 use std::ffi::CString;
 use std::ffi::NulError;
@@ -18,6 +19,32 @@ pub enum PropertiesError {
     StringError(Utf8Error),
     NullPointer,
     SdlError(Error),
+}
+
+impl fmt::Display for PropertiesError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use self::PropertiesError::*;
+
+        match *self {
+            ArgumentError(ref e) => write!(f, "Argument error: {e}"),
+            StringError(ref e) => write!(f, "String error: {e}"),
+            NullPointer => write!(f, "Null pointer"),
+            SdlError(ref e) => write!(f, "SDL error: {e}"),
+        }
+    }
+}
+
+impl error::Error for PropertiesError {
+    fn description(&self) -> &str {
+        use self::PropertiesError::*;
+
+        match *self {
+            ArgumentError(_) => "argument error",
+            StringError(_) => "string error",
+            NullPointer => "null pointer",
+            SdlError(ref e) => &e.0,
+        }
+    }
 }
 
 #[derive(Clone)]
