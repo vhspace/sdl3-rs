@@ -5,7 +5,9 @@ use raw_window_handle::{
     DisplayHandle, HandleError, HasDisplayHandle, HasWindowHandle, RawDisplayHandle,
     RawWindowHandle, WindowHandle,
 };
-use std::{ffi::CStr, num::NonZero, ptr::NonNull};
+use std::{ffi::CStr, ptr::NonNull};
+#[cfg(target_os = "windows")]
+use std::num::NonZero;
 use sys::{
     properties::{SDL_GetNumberProperty, SDL_GetPointerProperty},
     video::SDL_Window,
@@ -13,41 +15,48 @@ use sys::{
 
 // this queries then stores all handles upon creation, then returns the stored values on request
 
+/// Holds the handles for a [`Window`]. This can be created using [`Window::as_window_handles()`] or [`Window::as_window_handles_mut()`] then can be given to a crate such as wgpu or glutin. This might only be needed for wgpu (which needs a value that is Send/Sync), and the [`Window`] struct already implements [`HasWindowHandle`] and [`HasDisplayHandle`] for crates that do not need a Send/Sync value.
+/// 
+/// Note: this implements Send/Sync due to wgpu requirements, but the values returned by [`WindowHandles::window_handle()`] and [`WindowHandles::display_handle()`] can only be used on the same thread that created the window due to raw-window-handle (and OS) requirements
 #[derive(Debug, PartialEq)]
-pub struct WindowHandles<'a> {
-    window_handle: WindowHandle<'a>,
-    display_handle: DisplayHandle<'a>,
+pub struct WindowHandles<'window> {
+    window_handle: WindowHandle<'window>,
+    display_handle: DisplayHandle<'window>,
 }
 
-// Note: this is necessary because Wgpu needs the given window handle struct to be Send/Sync
-// Safety: WindowHandles is not send/sync safe in the same way that Arc<*mut T> is not send/sync unless T is send/sync. Whether or not the underlying window and display handles are send/sync is an extremely difficult question to answer, so these unsafe impls are likely not sound. It should be noted that WindowHandles itself can be sent, referenced, and accessed across threads safely, but send/sync also requires the returned values to be safely usable across threads (which they likely aren't).
-unsafe impl<'a> Send for WindowHandles<'a> {}
-unsafe impl<'a> Sync for WindowHandles<'a> {}
+// Note: these impls are necessary because Wgpu needs the given window handle struct to be Send/Sync
+// Safety: WindowHandles only stores data (copies of native handle values) and it is the
+// consumer's responsibility to use the returned handles (which are !Send/!Sync) only on
+// the correct thread (as required by raw-window-handle). The handles are created when
+// the WindowHandles struct is created, and the struct never dereferences them or calls
+// into SDL afterwards.
+unsafe impl<'window> Send for WindowHandles<'window> {}
+unsafe impl<'window> Sync for WindowHandles<'window> {}
 
-impl<'a> HasWindowHandle for WindowHandles<'a> {
-    fn window_handle(&self) -> Result<WindowHandle<'a>, HandleError> {
+impl<'window> HasWindowHandle for WindowHandles<'window> {
+    fn window_handle(&self) -> Result<WindowHandle<'window>, HandleError> {
         Ok(self.window_handle)
     }
 }
 
-impl<'a> HasDisplayHandle for WindowHandles<'a> {
-    fn display_handle(&self) -> Result<DisplayHandle<'a>, HandleError> {
+impl<'window> HasDisplayHandle for WindowHandles<'window> {
+    fn display_handle(&self) -> Result<DisplayHandle<'window>, HandleError> {
         Ok(self.display_handle)
     }
 }
 
 impl Window {
-    /// Gives a window handles struct that can be used by crates like wgpu, glutin, etc. Note: using this function means you cannot use methods on `sdl3::video::Window` which take `&mut Self` (such as `window.show()`, `window.minimize()`, etc), if you need these functions then use `Window::as_window_handles_mut()` instead.
-    pub fn as_window_handles<'a>(&'a self) -> Result<WindowHandles<'a>, HandleError> {
+    /// Gives a Send/Sync [`WindowHandles`] struct that can be used by crates like wgpu. Note: using this function means you cannot use methods on [`Window`] which take `&mut Self` (such as `window.show()`, `window.minimize()`, etc), if you need these functions then use [`Window::as_window_handles_mut()`] instead.
+    pub fn as_window_handles<'window>(&'window self) -> Result<WindowHandles<'window>, HandleError> {
         Ok(WindowHandles {
             window_handle: get_window_handle(self.raw())?,
             display_handle: get_display_handle(self.raw())?,
         })
     }
-    /// Gives a window handles struct that can be used by crates like wgpu, glutin, etc. Unlike `Window::as_window_handles()`, this gives back a mutable reference which can be used for methods which take `&mut Self` (such as `window.show()`, `window.minimize()`, etc)
-    pub fn as_window_handles_mut<'a>(
-        &'a mut self,
-    ) -> Result<(&'a mut Self, WindowHandles<'a>), HandleError> {
+    /// Gives a Send/Sync [`WindowHandles`] struct that can be used by crates like wgpu. Unlike [`Window::as_window_handles()`], this gives back a mutable reference which can be used for methods which take `&mut Self` (such as `window.show()`, `window.minimize()`, etc).
+    pub fn as_window_handles_mut<'window>(
+        &'window mut self,
+    ) -> Result<(&'window mut Self, WindowHandles<'window>), HandleError> {
         let handle = WindowHandles {
             window_handle: get_window_handle(self.raw())?,
             display_handle: get_display_handle(self.raw())?,
@@ -56,8 +65,20 @@ impl Window {
     }
 }
 
+impl<'window> HasWindowHandle for Window {
+	fn window_handle(&self) -> Result<WindowHandle<'_>, HandleError> {
+		get_window_handle(self.raw())
+	}
+}
+
+impl<'window> HasDisplayHandle for Window {
+	fn display_handle(&self) -> Result<DisplayHandle<'_>, HandleError> {
+		get_display_handle(self.raw())
+	}
+}
+
 // Access window handle using SDL3 properties
-fn get_window_handle<'a>(raw_window: *mut SDL_Window) -> Result<WindowHandle<'a>, HandleError> {
+fn get_window_handle<'window>(raw_window: *mut SDL_Window) -> Result<WindowHandle<'window>, HandleError> {
     // Windows
     #[cfg(target_os = "windows")]
     unsafe {
@@ -190,7 +211,7 @@ fn get_window_handle<'a>(raw_window: *mut SDL_Window) -> Result<WindowHandle<'a>
 }
 
 // Access display handle using SDL3 properties
-fn get_display_handle<'a>(raw_window: *mut SDL_Window) -> Result<DisplayHandle<'a>, HandleError> {
+fn get_display_handle<'window>(raw_window: *mut SDL_Window) -> Result<DisplayHandle<'window>, HandleError> {
     // Windows
     #[cfg(target_os = "windows")]
     unsafe {
