@@ -3265,11 +3265,13 @@ impl crate::EventPump {
     }
 
     #[inline]
+    #[track_caller]
     pub fn mouse_state(&self) -> crate::mouse::MouseState {
         crate::mouse::MouseState::new(self)
     }
 
     #[inline]
+    #[track_caller]
     pub fn relative_mouse_state(&self) -> crate::mouse::RelativeMouseState {
         crate::mouse::RelativeMouseState::new(self)
     }

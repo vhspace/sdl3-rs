@@ -162,7 +162,7 @@ fn get_window_handle<'a>(raw_window: *mut SDL_Window) -> Result<WindowHandle<'a>
                     sys::video::SDL_PROP_WINDOW_X11_WINDOW_NUMBER,
                     0,
                 );
-                let handle = XlibWindowHandle::new(window as u64);
+                let handle = XlibWindowHandle::new(window as _);
                 let raw_window_handle = RawWindowHandle::Xlib(handle);
 
                 Ok(WindowHandle::borrow_raw(raw_window_handle))
