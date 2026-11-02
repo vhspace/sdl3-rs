@@ -163,12 +163,7 @@ impl Device {
         if raw_texture.is_null() {
             Err(get_error())
         } else {
-            Ok(Texture::new(
-                self,
-                raw_texture,
-                create_info.inner.width,
-                create_info.inner.height,
-            ))
+            Ok(Texture::new(self, raw_texture, &create_info.inner))
         }
     }
 

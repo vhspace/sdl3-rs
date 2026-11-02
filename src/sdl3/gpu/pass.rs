@@ -603,13 +603,19 @@ impl CopyPass {
         }
     }
 
+    /// # Panics
+    ///
+    /// If `destination` has no texture, or its mip level, layer or extent
+    /// fall outside the texture.
     #[doc(alias = "SDL_UploadToGPUTexture")]
+    #[track_caller]
     pub fn upload_to_gpu_texture(
         &self,
         source: TextureTransferInfo,
         destination: TextureRegion,
         cycle: bool,
     ) {
+        destination.assert_in_bounds();
         unsafe { SDL_UploadToGPUTexture(self.raw(), &source.inner, &destination.inner, cycle) }
     }
 }

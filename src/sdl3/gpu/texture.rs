@@ -47,7 +47,18 @@ impl TextureTransferInfo {
 #[derive(Default)]
 pub struct TextureRegion<'a> {
     pub(super) inner: SDL_GPUTextureRegion,
+    texture: Option<TextureBounds>,
     _phantom: PhantomData<&'a ()>,
+}
+
+/// What a region needs to know about its texture to be bounds checked.
+#[derive(Clone, Copy)]
+struct TextureBounds {
+    width: u32,
+    height: u32,
+    layer_count_or_depth: u32,
+    num_levels: u32,
+    is_3d: bool,
 }
 impl<'a> TextureRegion<'a> {
     pub fn new() -> Self {
@@ -57,7 +68,63 @@ impl<'a> TextureRegion<'a> {
     /// The texture used in the copy operation.
     pub fn with_texture(mut self, texture: &'a Texture<'_>) -> Self {
         self.inner.texture = texture.raw();
+        self.texture = Some(TextureBounds {
+            width: texture.width,
+            height: texture.height,
+            layer_count_or_depth: texture.layer_count_or_depth,
+            num_levels: texture.num_levels,
+            is_3d: texture.is_3d,
+        });
         self
+    }
+
+    /// Panics unless a texture is set and the region lies inside it at the
+    /// chosen mip level. SDL doesn't check this itself, and some backends
+    /// index out of bounds when it's wrong.
+    #[track_caller]
+    pub(super) fn assert_in_bounds(&self) {
+        let Some(t) = self.texture else {
+            panic!("TextureRegion has no texture");
+        };
+        let r = &self.inner;
+        assert!(
+            r.mip_level < t.num_levels,
+            "mip level {} out of range for a texture with {} levels",
+            r.mip_level,
+            t.num_levels
+        );
+        let extent = |size: u32| (size >> r.mip_level).max(1);
+        let fits = |offset: u32, len: u32, size: u32| {
+            offset.checked_add(len).is_some_and(|end| end <= size)
+        };
+        assert!(
+            fits(r.x, r.w, extent(t.width)) && fits(r.y, r.h, extent(t.height)),
+            "region {}x{} at ({}, {}) doesn't fit in mip level {} ({}x{})",
+            r.w,
+            r.h,
+            r.x,
+            r.y,
+            r.mip_level,
+            extent(t.width),
+            extent(t.height)
+        );
+        if t.is_3d {
+            assert!(
+                fits(r.z, r.d, extent(t.layer_count_or_depth)),
+                "depth range {}..{} doesn't fit in mip level {} (depth {})",
+                r.z,
+                r.z.saturating_add(r.d),
+                r.mip_level,
+                extent(t.layer_count_or_depth)
+            );
+        } else {
+            assert!(
+                r.layer < t.layer_count_or_depth,
+                "layer {} out of range for a texture with {} layers",
+                r.layer,
+                t.layer_count_or_depth
+            );
+        }
     }
 
     /// The mip level index to transfer.
@@ -294,22 +361,27 @@ pub struct Texture<'a> {
     inner: Arc<TextureContainer>,
     width: u32,
     height: u32,
+    layer_count_or_depth: u32,
+    num_levels: u32,
+    is_3d: bool,
     _phantom: PhantomData<&'a ()>,
 }
 impl<'a> Texture<'a> {
     pub(super) fn new(
         device: &Device,
         raw: *mut SDL_GPUTexture,
-        width: u32,
-        height: u32,
+        info: &SDL_GPUTextureCreateInfo,
     ) -> Texture<'a> {
         Texture {
             inner: Arc::new(TextureContainer::UserManaged {
                 raw,
                 device: device.weak(),
             }),
-            width,
-            height,
+            width: info.width,
+            height: info.height,
+            layer_count_or_depth: info.layer_count_or_depth,
+            num_levels: info.num_levels,
+            is_3d: info.r#type == SDL_GPUTextureType::_3D,
             _phantom: Default::default(),
         }
     }
@@ -323,6 +395,9 @@ impl<'a> Texture<'a> {
             inner: Arc::new(TextureContainer::SdlManaged { raw }),
             width,
             height,
+            layer_count_or_depth: 1,
+            num_levels: 1,
+            is_3d: false,
             _phantom: Default::default(),
         }
     }
@@ -338,6 +413,16 @@ impl<'a> Texture<'a> {
 
     pub fn height(&self) -> u32 {
         self.height
+    }
+
+    /// The number of layers, or the depth for a 3D texture.
+    pub fn layer_count_or_depth(&self) -> u32 {
+        self.layer_count_or_depth
+    }
+
+    /// The number of mip levels.
+    pub fn num_levels(&self) -> u32 {
+        self.num_levels
     }
 }
 
@@ -396,5 +481,72 @@ impl TextureCreateInfo {
     pub fn with_sample_count(mut self, value: SampleCount) -> Self {
         self.inner.sample_count = SDL_GPUSampleCount(value as i32);
         self
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn region(is_3d: bool) -> TextureRegion<'static> {
+        let mut region = TextureRegion::new()
+            .with_width(64)
+            .with_height(32)
+            .with_depth(1);
+        region.texture = Some(TextureBounds {
+            width: 64,
+            height: 32,
+            layer_count_or_depth: 4,
+            num_levels: 3,
+            is_3d,
+        });
+        region
+    }
+
+    #[test]
+    fn region_in_bounds() {
+        region(false).with_layer(3).assert_in_bounds();
+        region(false)
+            .with_mip_level(2)
+            .with_width(16)
+            .with_height(8)
+            .assert_in_bounds();
+        region(true).with_z(3).assert_in_bounds();
+    }
+
+    #[test]
+    #[should_panic(expected = "no texture")]
+    fn region_without_texture() {
+        TextureRegion::new().assert_in_bounds();
+    }
+
+    #[test]
+    #[should_panic(expected = "mip level 3 out of range")]
+    fn region_bad_mip() {
+        region(false).with_mip_level(3).assert_in_bounds();
+    }
+
+    #[test]
+    #[should_panic(expected = "doesn't fit in mip level 1")]
+    fn region_too_big_for_mip() {
+        region(false).with_mip_level(1).assert_in_bounds();
+    }
+
+    #[test]
+    #[should_panic(expected = "doesn't fit")]
+    fn region_offset_overflow() {
+        region(false).with_x(u32::MAX).assert_in_bounds();
+    }
+
+    #[test]
+    #[should_panic(expected = "layer 4 out of range")]
+    fn region_bad_layer() {
+        region(false).with_layer(4).assert_in_bounds();
+    }
+
+    #[test]
+    #[should_panic(expected = "depth range 4..5")]
+    fn region_bad_depth() {
+        region(true).with_z(4).assert_in_bounds();
     }
 }
