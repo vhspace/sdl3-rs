@@ -184,6 +184,10 @@ impl Device {
         color_info: &[ColorTargetInfo],
         depth_stencil_target: Option<&DepthStencilTargetInfo>,
     ) -> Result<RenderPass, Error> {
+        if color_info.len() == 0 {
+            panic!("Render pass can not have empty color info!");
+        }
+
         let p = unsafe {
             SDL_BeginGPURenderPass(
                 command_buffer.inner,
