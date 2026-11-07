@@ -61,7 +61,7 @@ impl<'a, E: Engine> Text<'a, E> {
         if index > current.len() || index + size > current.len() {
             return Err(TextModifyError::OutOfBounds)
         }
-        if !current.is_char_boundary(index) {
+        if !current.is_char_boundary(index) || !current.is_char_boundary(index + size) {
             return Err(TextModifyError::InvalidUtf8Boundry)
         }
 
@@ -245,8 +245,9 @@ pub struct RcText<'a, E: Engine> {
 impl<'a, E: Engine> RcText<'a, E> {
     pub fn new(mut owned: OwnedText<'a, E>) -> Self {
         owned.0.refcount = 1;
+        let text = owned.text;
+        std::mem::forget(owned); // Prevent `text` getting Drop()'d
 
-        let OwnedText { text, _type } = owned;
         Self {
             text,
             _type: PhantomData
@@ -256,7 +257,7 @@ impl<'a, E: Engine> RcText<'a, E> {
     pub fn try_own(self) -> Result<OwnedText<'a, E>, Self> {
         // Safety: Checking for a reference_count of 0 ensures exclusivity
         match self.reference_count().get() {
-            1 => Ok(unsafe { OwnedText::from_raw(self.text) }),
+            1 => Ok(unsafe { OwnedText::from_raw(self.into_raw()) }),
             _ => Err(self)
         }
     }
@@ -268,6 +269,13 @@ impl<'a, E: Engine> RcText<'a, E> {
         }
     } 
 
+    unsafe fn into_raw(self) -> NonNull<Text<'a, E>> {
+        let ptr = self.text;
+        std::mem::forget(self);
+
+        ptr
+    }
+
     fn reference_count(&self) -> &Cell<u32> {
         // Safety: SDL3 itself does not make use of `refcount`, leaving it avalible as an "application reference count"
         // Additionally, `refcount` is accessed in no other way than through this function, and, by extension, through a `&Cell<u32>`
@@ -278,8 +286,20 @@ impl<'a, E: Engine> RcText<'a, E> {
 }
 impl<'a, E: Engine> Clone for RcText<'a, E> {
     fn clone(&self) -> Self {
-        // saturating_add(1) to protect against overflow, should somemone make(or mem::forget()) u32::MAX RcText<>'s
-        self.reference_count().update(|value| value.saturating_add(1));
+        // checked_add(1) to protect against overflow, should somemone make(or mem::forget()) u32::MAX many RcText<>'s
+        self.reference_count().update(|count| 
+            match count.checked_add(1) {
+                Some(count) => count,
+                None => {
+                    // Match behavior of standard Rust Rc<T>. To qoute Rc's source,
+                    // > We abort because this is such a degenerate scenario that we don't
+                    // > care about what happens -- no real program should ever experience this.
+                    eprintln!("Overflow over reference-counted text(RcText), aborting.");
+                    std::process::abort()
+                }
+            }
+        );
+        
         Self {
             text: self.text,
             _type: PhantomData
@@ -297,7 +317,7 @@ impl<'a, E: Engine> Deref for RcText<'a, E> {
 }
 impl<'a, E: Engine> Drop for RcText<'a, E> {
     fn drop(&mut self) {
-        self.reference_count().update(|value| value - 1);
+        self.reference_count().update(|value| value);
 
         if self.reference_count().get() == 0 {
             // Safety: Literally just checked if ref count is zero now. 
