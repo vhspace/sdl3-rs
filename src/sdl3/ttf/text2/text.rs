@@ -330,7 +330,7 @@ impl<'a, E: Engine> Deref for RcText<'a, E> {
 }
 impl<'a, E: Engine> Drop for RcText<'a, E> {
     fn drop(&mut self) {
-        self.reference_count().update(|value| value);
+        self.reference_count().update(|count| count - 1);
 
         if self.reference_count().get() == 0 {
             // Safety: Literally just checked if ref count is zero now.
@@ -388,7 +388,7 @@ impl GpuAtlasDrawSequence {
         }
     }
 
-    pub fn indicies(&self) -> &[u32] {
+    pub fn indices(&self) -> &[u32] {
         // Safety: `indicies` will always be present on any GpuAtlasDrawSequence.
         unsafe {
             // SDL's type is `int` for indicies, for some reason, even though they can't be negative by definition(A negative vertex index means nothing). So transmute them into a more conventionally u32.
