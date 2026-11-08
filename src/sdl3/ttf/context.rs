@@ -95,7 +95,7 @@ impl Clone for Sdl3TtfContext {
 /// Returns the version of the dynamically linked `SDL_TTF` library
 #[doc(alias = "TTF_Version")]
 pub fn get_linked_version() -> Version {
-    unsafe { Version::from_ll(ttf::TTF_Version()) }
+    Version::from_ll(ttf::TTF_Version())
 }
 
 #[inline]
