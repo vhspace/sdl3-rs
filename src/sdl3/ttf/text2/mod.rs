@@ -27,7 +27,6 @@ impl StrDestructure for &str {
     }
 }
 
-#[allow(unused_imports)]
-pub use engine::{OwnedTextEngine, TextEngine, Type as EngineType};
-#[allow(unused_imports)]
+
+pub use engine::{OwnedTextEngine, TextEngine};
 pub use text::{OwnedText, Text};

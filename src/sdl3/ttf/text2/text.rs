@@ -12,7 +12,7 @@ use crate::{render::FPoint, Error};
 
 use super::{
     super::{sys, Font},
-    engine::Type::*,
+    engine::kind::*,
     StrDestructure, TextEngine,
 };
 

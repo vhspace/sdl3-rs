@@ -1,5 +1,5 @@
 #[allow(non_snake_case)]
-pub mod Type {
+pub mod kind {
     use crate::ttf;
 
     pub trait Engine {
@@ -34,7 +34,7 @@ pub mod Type {
 use std::{marker::PhantomData, ops::Deref, ptr::NonNull};
 
 use crate::{gpu::Device, ttf, Error};
-use Type::*;
+use kind::*;
 
 pub type GpuTextEngine = TextEngine<Gpu>;
 pub type SurfaceTextEngine = TextEngine<Surface>;
