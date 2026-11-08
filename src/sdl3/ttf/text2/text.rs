@@ -748,7 +748,7 @@ impl<'a, E: Engine> RcText<'a, E> {
 
         // Safety: We have exclusive mutable access to the reference count
         unsafe {
-            (*text.as_ref().raw()).refcount = 0;
+            (*text.as_ref().raw()).refcount = 1;
         }
 
         Self {
