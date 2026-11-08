@@ -315,7 +315,7 @@ impl<'r> Font<'r> {
     /// Returns a new font copying the original. Currently it doesn't copy fonts created using
     /// IOStream
     #[doc(alias = "TTF_CopyFont")]
-    fn try_clone(&self) -> Result<Font<'r>, Error> {
+    pub fn try_clone(&self) -> Result<Font<'r>, Error> {
         if self.iostream.is_some() {
             return Err(Error("Can't copy Font using IOStream".to_owned()));
         }
