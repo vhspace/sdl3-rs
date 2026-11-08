@@ -1,14 +1,79 @@
 use std::{
-    cell::Cell, ffi::CStr, fmt::Display, marker::PhantomData, ops::{Deref, DerefMut}, ptr::NonNull,
+    cell::Cell, ffi::CStr, fmt::Display, marker::{PhantomData, PhantomPinned}, mem::MaybeUninit, num::NonZeroU32, ops::{Deref, DerefMut, Index}, ptr::NonNull,
 };
 
-use crate::{render::FPoint, Error};
+use sdl3_ttf_sys::ttf::{self, TTF_SubString};
+
+use crate::{Error, get_error, pixels::{Color, FColor}, rect::{Point, Rect}, render::FPoint};
 
 use super::{
     super::{sys, Font},
     engine::kind::*,
     StrDestructure, TextEngine,
 };
+
+#[repr(u32)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Direction {
+    Invalid = sys::TTF_DIRECTION_INVALID.0,
+    LeftToRight = sys::TTF_DIRECTION_LTR.0,
+    RightToLeft = sys::TTF_DIRECTION_RTL.0,
+    TopToBottom = sys::TTF_DIRECTION_TTB.0,
+    BottomToTop = sys::TTF_DIRECTION_BTT.0
+}
+impl From<sys::TTF_Direction>  for Direction {
+    // In theory, for returns directly from SDL functions, it might be faster to transmute(), but I doubt that is needed and is more complexity
+    fn from(value: sys::TTF_Direction) -> Self {
+        match value {
+            sys::TTF_DIRECTION_LTR => Self::LeftToRight,
+            sys::TTF_DIRECTION_RTL => Self::RightToLeft,
+            sys::TTF_DIRECTION_TTB => Self::TopToBottom,
+            sys::TTF_DIRECTION_BTT => Self::BottomToTop,
+            _ => Self::Invalid
+        }
+    }
+}
+impl From<Direction> for sys::TTF_Direction {
+    fn from(value: Direction) -> sys::TTF_Direction {
+        sys::TTF_Direction(value as u32)
+    }
+}
+
+
+pub use super::scripts::Script;
+
+// The lifetime here is cursed and I don't think can be expressed conventionally because `substrings` is an array of `*const TTF_SubString` of the same lifetime as `substrings` itself
+// IE: &'a [&'a TTF_SubString], only 'a is inexpressible because both the slice and the elements are owned in the same allocation, so it has to borrowed.
+pub struct SubstringArray {
+    substrings: NonNull<*mut TTF_SubString>,
+    length: usize
+}
+impl SubstringArray {
+    pub fn len(&self) -> usize {
+        self.length
+    }
+    pub fn elements<'a>(&'a self) -> &'a [&'a TTF_SubString] {
+        // Every part of the `substring` is a valid pointer to a `TTF_SubString` with the same lifetime as `substring` itself
+        unsafe {
+            std::slice::from_raw_parts(std::mem::transmute(self.substrings), self.len())
+        }
+    } 
+}
+impl Index<usize> for SubstringArray {
+    type Output = TTF_SubString;
+    fn index(&self, index: usize) -> &Self::Output {
+        self.elements()[index]
+    }   
+}
+impl Drop for SubstringArray {
+    fn drop(&mut self) {
+        // Safety: `substring` will never be used after `drop()`
+        unsafe {
+            crate::sys::stdinc::SDL_free(self.substrings.as_ptr().cast())
+        }
+    }
+}
+
 
 #[derive(Debug)]
 pub enum TextModifyError {
@@ -32,13 +97,11 @@ impl Display for TextModifyError {
 }
 impl std::error::Error for TextModifyError {}
 
-
-
 #[repr(transparent)]
-pub struct Text<'a, E: Engine = Unknown>(
-    sys::TTF_Text,
-    PhantomData<(&'a TextEngine<'a,E>, &'a Font<'a>)>,
-);
+pub struct Text<'a, E: Engine = Unknown> {
+    _opaque: [u8; 0],
+    _phantom: PhantomData<(&'a TextEngine<'a,E>, &'a Font<'a>, *mut u8, PhantomPinned)>,
+}
 impl<'a, E: Engine> Text<'a, E> {
     #[doc(alias = "TTF_InsertTextString")]
     pub fn insert(&mut self, index: usize, text: &str) -> Result<(), TextModifyError> {
@@ -111,11 +174,233 @@ impl<'a, E: Engine> Text<'a, E> {
         // Safety: An SDL3 `TTF_Text` object must always have a vlid `TTF_engine`
         unsafe { TextEngine::from_raw(sys::TTF_GetTextEngine(self.raw())).as_ref_unchecked() }
     }
+    #[doc(alias = "TTF_GetTextProperties")]
+    //pub fn get_properties(&self) {} // Need to figure out how properties work
+    // Can't return a normal `&Font` 'cause  `Font` is not a direct wrapper of `TTF_Font` and can't be reconstructed
+    #[doc(alias = "TTF_GetTextFont")]
+    pub fn get_font(&self) -> Result<NonNull<sys::TTF_Font>, Error> {
+        let font = unsafe { 
+            NonNull::new(sys::TTF_GetTextFont(self.raw()))
+        };
+
+        match font {
+            Some(font) => Ok(font),
+            None => Err(get_error())
+        }
+    }
+    #[doc(alias = "TTF_GetTextDirection")]
+    pub fn get_direction(&self) -> Direction {
+        unsafe {
+            sys::TTF_GetTextDirection(self.raw()).into()
+        }
+    }
+    #[doc(alias = "TTF_GetTextScript")]
+    pub fn get_script(&self) -> Option<Script> {
+        unsafe {
+            Script::from_u32(sys::TTF_GetTextScript(self.raw())) 
+        }
+    }
+    #[doc(alias = "TTF_GetTextColor")]
+    pub fn get_color(&self) -> Result<Color, Error> {
+        let mut data = [MaybeUninit::uninit(); 4];
+        let success = unsafe {
+            sys::TTF_GetTextColor(
+                self.raw(), 
+                data[0].as_mut_ptr(), 
+                data[1].as_mut_ptr(), 
+                data[2].as_mut_ptr(), 
+                data[3].as_mut_ptr()
+            )
+        };
+
+        match success {
+            false => Err(get_error()),
+            // Safety: `TTF_GetTextColor` succeded, initalizing `data`, and `Color` is repr(C), allowing it to be directly transmuted
+            true => unsafe {
+                Ok(std::mem::transmute::<_, Color>(data))
+            }
+        }
+    }
+    #[doc(alias = "TTF_GetTextColorFloat")]
+    pub fn get_color_float(&self) -> Result<FColor, Error> {
+        let mut data = [MaybeUninit::uninit(); 4];
+        let success = unsafe {
+            sys::TTF_GetTextColorFloat(
+                self.raw(), 
+                data[0].as_mut_ptr(),
+                data[1].as_mut_ptr(), 
+                data[2].as_mut_ptr(), 
+                data[3].as_mut_ptr()
+            )
+        };
+
+        match success {
+            false => Err(get_error()),
+            // Safety: `TTF_GetTextColorFloat` succeded, initalizing `data`, and `FColor` is repr(C), allowing it to be directly transmuted
+            true => unsafe {
+                Ok(std::mem::transmute::<_, FColor>(data))
+            }
+        }
+    }
+    #[doc(alias = "TTF_GetTextPosition")]
+    pub fn get_position(&self) -> Result<Point, Error> {
+        let mut data = [MaybeUninit::uninit(); 2];
+        let success = unsafe {
+            ttf::TTF_GetTextPosition(
+                self.raw(),
+                data[0].as_mut_ptr(),
+                data[1].as_mut_ptr()
+            )
+        };
+
+        match success {
+            false => Err(get_error()),
+            // Safety: `TTF_GetTextPOsition` succeded, initalizing `data`
+            true => unsafe {
+                Ok(Point::new(data[0].assume_init(), data[1].assume_init()))
+            }
+        }
+    }
+    #[doc(alias = "TTF_GetTextWrapWidth")]
+    pub fn get_wrap_width(&self) -> Result<Option<NonZeroU32>, Error>{
+        let mut wrap_width = MaybeUninit::uninit();
+        let success = unsafe {
+            ttf::TTF_GetTextWrapWidth(self.raw(), wrap_width.as_mut_ptr())
+        };
+
+        match success {
+            false => Err(get_error()),
+            // Safety: `TTF_GetTextWrapWidth` has succeeded, initalizing `wrap_width`
+            true => unsafe {
+                Ok(NonZeroU32::new(wrap_width.assume_init() as u32)) // 0 means "No set wrap width", and a negative wrap width isn't meaningful, so convert to u32
+            }
+        }
+    }
+    #[doc(alias = "TTF_GetTextSize")]
+    pub fn get_size(&self) -> Result<(u32, u32), Error> {
+        let mut data = [MaybeUninit::uninit(); 2];
+        let success = unsafe {
+            ttf::TTF_GetTextSize(
+                self.raw(),
+                data[0].as_mut_ptr(),
+                data[1].as_mut_ptr()
+            )
+        };
+
+        match success {
+            false => Err(get_error()),
+            // Safety: `TTF_GetTextSize` has succeeded, initalizing `data`
+            true => unsafe {
+                Ok((data[0].assume_init() as u32, data[1].assume_init() as u32)) // Negative size isn't meaningful, so cast to u32
+            }
+        }
+    }
+    #[doc(alias = "TTF_GetTextSubString")]
+    pub fn get_substring(&self, offset: i32) -> Result<TTF_SubString, Error> {
+        let mut substring = MaybeUninit::uninit();
+        let success = unsafe {
+            ttf::TTF_GetTextSubString(self.raw(), offset, substring.as_mut_ptr())
+        };
+
+        match success {
+            false => Err(get_error()),
+            // Safety: `TTF_GetTextSubString` succeeded, initalizing `substring`
+            true => unsafe {
+                Ok(substring.assume_init())
+            }
+        }
+    }
+    #[doc(alias = "TTF_GetTextSubStringForLine")]
+    pub fn get_substring_for_line(&self, line: usize)  -> Result<TTF_SubString, Error> {
+        let mut substring = MaybeUninit::uninit();
+        let success = unsafe {
+            ttf::TTF_GetTextSubStringForLine(
+                self.raw(),
+                line.try_into().unwrap(),
+                substring.as_mut_ptr()
+            )
+        };
+
+        match success {
+            false => Err(get_error()),
+            // Safety: `TTF_GetTextSubStringForLine` succeeded, initalizing `substring`
+            true => unsafe {
+                Ok(substring.assume_init())
+            }
+        }
+    }    
+    #[doc(alias = "TTF_GetTextSubStringsForRange")]
+    pub fn get_substrings_for_range(&self, offset: usize, size: Option<u32>) -> Result<SubstringArray, Error> {
+        let size: i32 = size.map(|s| s.try_into().unwrap()).unwrap_or(-1);
+
+        let mut substrings_count = MaybeUninit::uninit();
+        let success = unsafe {
+            NonNull::new(ttf::TTF_GetTextSubStringsForRange(self.raw(), offset.try_into().unwrap(), size, substrings_count.as_mut_ptr()))
+        };
+
+        match success {
+            None => Err(get_error()),
+            // Safety: 'TTF_GetTextSubStringsForRange` has succeeded, initalizing `substrings` with the quanity of substrings found.`
+            Some(substrings) => unsafe {
+                Ok(SubstringArray { substrings , length: substrings_count.assume_init() as usize })
+            }
+        }
+    }
+    #[doc(alias = "TTF_GetTextSubStringForPoint")]
+    pub fn get_substring_for_point(&self, point: Point) -> Result<TTF_SubString, Error> {
+        let mut substring = MaybeUninit::uninit();
+        let success = unsafe {
+            ttf::TTF_GetTextSubStringForPoint(
+                self.raw(),
+                point.x,
+                point.y,
+                substring.as_mut_ptr()
+            )
+        };
+
+        match success {
+            false => Err(get_error()),
+            // Safety: `TTF_GetTextSubStringForLine` succeeded, initalizing `substring`
+            true => unsafe {
+                Ok(substring.assume_init())
+            }
+        }
+    }
+    /*#[doc(alias = "TTF_GetPreviousTextSubString")]
+    pub fn get_previous_substring() {}
+    #[doc(alias = "TTF_GetNextTextSubString")]
+    pub fn get_next_substring() {}
+    */
+
+
+
+
+
+
+
+
+
+
+
+    /*                                                      
+    bool TTF_SetTextDirection(TTF_Text *text, TTF_Direction direction); 
+    bool TTF_SetTextScript(TTF_Text *text, Uint32 script);                                                                                                                                                                               
+    bool TTF_SetTextColor(TTF_Text *text, Uint8 r, Uint8 g, Uint8 b, Uint8 a);                                                                 
+    bool TTF_SetTextColorFloat(TTF_Text *text, float r, float g, float b, float a);                                                                                                             
+    bool TTF_SetTextPosition(TTF_Text *text, int x, int y);                                                                                    
+    bool TTF_SetTextWrapWidth(TTF_Text *text, int wrap_width);                                                                                                          
+    bool TTF_SetTextWrapWhitespaceVisible(TTF_Text *text, bool visible);              
+
+    bool TTF_TextWrapWhitespaceVisible(TTF_Text *text);                        
+    bool TTF_UpdateText(TTF_Text *text); 
+
+                                                          
+    */
 
     pub fn str(&self) -> &str {
         // Safety: TTF_Text object's strings are always null terminated strings.
         unsafe {
-            let str: &CStr = CStr::from_ptr(self.0.text);
+            let str: &CStr = CStr::from_ptr((*self.raw()).text);
             let str = str.to_bytes();
 
             str::from_utf8_unchecked(str)
@@ -166,7 +451,7 @@ impl<'a, E: Engine> Drop for Text<'a, E> {
 
 impl<'a> Text<'a, Gpu> {
     #[doc(alias = "TTF_GetGPUTextDrawData")]
-    pub fn atlas_draw_sequence(&self) -> Result<&GpuAtlasDrawSequence, Error> {
+    pub fn atlas_draw_sequence(&mut self) -> Result<&GpuAtlasDrawSequence, Error> {
         // Safety: As GpuAtlasDrawSequence is a transparet wrapper, it is safe to cast TTF_GPUAtlasDrawSequence to it
         unsafe {
             match NonNull::new(sys::TTF_GetGPUTextDrawData(self.raw())) {
@@ -264,10 +549,14 @@ pub struct RcText<'a, E: Engine> {
     _type: PhantomData<E>,
 }
 impl<'a, E: Engine> RcText<'a, E> {
-    pub fn new(mut owned: OwnedText<'a, E>) -> Self {
-        owned.0.refcount = 1;
+    pub fn new(owned: OwnedText<'a, E>) -> Self {
         let text = owned.text;
         std::mem::forget(owned); // Prevent `text` getting Drop()'d
+
+        // Safety: We have exclusive mutable access to the reference count
+        unsafe {
+            (*text.as_ref().raw()).refcount = 0;
+        }
 
         Self {
             text,
@@ -302,7 +591,7 @@ impl<'a, E: Engine> RcText<'a, E> {
         // Additionally, `refcount` is accessed in no other way than through this function, and, by extension, through a `&Cell<u32>`
         unsafe {
             Cell::from_mut(
-                (&raw mut (*self.text.as_ptr()).0.refcount as *mut u32).as_mut_unchecked(),
+                (&raw mut (*self.text.as_ref().raw()).refcount as *mut u32).as_mut_unchecked(),
             )
         }
     }

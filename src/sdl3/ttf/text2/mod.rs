@@ -1,5 +1,6 @@
 pub mod engine;
 pub mod text;
+mod scripts;
 
 const NULL_STRING: *const std::ffi::c_char = &raw const *&0;
 
