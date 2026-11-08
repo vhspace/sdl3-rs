@@ -4,7 +4,7 @@ use std::{
 
 use sdl3_ttf_sys::ttf::{self, TTF_SubString};
 
-use crate::{Error, get_error, pixels::{Color, FColor}, rect::{Point, Rect}, render::FPoint};
+use crate::{Error, get_error, pixels::{Color, FColor}, rect::Point, render::FPoint};
 
 use super::{
     super::{sys, Font},
@@ -366,36 +366,146 @@ impl<'a, E: Engine> Text<'a, E> {
             }
         }
     }
-    /*#[doc(alias = "TTF_GetPreviousTextSubString")]
-    pub fn get_previous_substring() {}
+    #[doc(alias = "TTF_GetPreviousTextSubString")]
+    pub fn get_previous_substring(&self, current: TTF_SubString) -> Result<TTF_SubString, Error> {
+        let mut substring = MaybeUninit::uninit();
+        let success = unsafe {
+            ttf::TTF_GetPreviousTextSubString(
+                self.raw(), 
+                &raw const current,
+                substring.as_mut_ptr()
+            )
+        };
+
+        match success {
+            false => Err(get_error()),
+            true => unsafe {
+                // Safety: `TTF_GetPreviousTextSubString` succeeded, initalizng `substring`
+                Ok(substring.assume_init())
+            }
+        }
+    }
     #[doc(alias = "TTF_GetNextTextSubString")]
-    pub fn get_next_substring() {}
-    */
+    pub fn get_next_substring(&self, current: TTF_SubString) -> Result<TTF_SubString, Error> {
+        let mut substring = MaybeUninit::uninit();
+        let success = unsafe {
+            ttf::TTF_GetNextTextSubString(
+                self.raw(), 
+                &raw const current,
+                substring.as_mut_ptr()
+            )
+        };
 
+        match success {
+            false => Err(get_error()),
+            true => unsafe {
+                // Safety: `TTF_GetNextTextSubString` succeeded, initalizng `substring`
+                Ok(substring.assume_init())
+            }
+        }
+    }
+    #[doc(alias = "TTF_TextWrapWhitespaceVisible")]
+    pub fn get_wrap_whitespace_visible(&self) -> bool {
+        unsafe {
+            ttf::TTF_TextWrapWhitespaceVisible(self.raw())
+        }
+    }
+    
+    #[doc(alias = "TTF_SetTextDirection")]
+    pub fn set_direction(&mut self, direction: Direction) -> Result<(), Error> {
+        let success = unsafe {
+            ttf::TTF_SetTextDirection(self.raw(), direction.into())
+        };
 
+        match success {
+            false => Err(get_error()),
+            true => Ok(())
+        }
+    }
+    pub fn set_script(&mut self, script: Script) -> Result<(), Error> {
+        let success = unsafe {
+            ttf::TTF_SetTextScript(self.raw(), script.into())
+        };
 
+        match success {
+            false => Err(get_error()),
+            true => Ok(())
+        }
+    }
+    pub fn set_color(&mut self, color: Color) -> Result<(), Error> {
+        let success = unsafe {
+            ttf::TTF_SetTextColor(
+                self.raw(), 
+                color.r,
+                color.g,
+                color.b,
+                color.a
+            )
+        };
 
+        match success {
+            false => Err(get_error()),
+            true => Ok(())
+        }
+    }
+    pub fn set_color_float(&mut self, color: FColor) -> Result<(), Error> {
+        let success = unsafe {
+            ttf::TTF_SetTextColorFloat(
+                self.raw(), 
+                color.r, 
+                color.g,
+                color.b, 
+                color.a
+            )
+        };
 
+        match success {
+            false => Err(get_error()),
+            true => Ok(())
+        }
+    }
+    pub fn set_position(&mut self, position: Point) -> Result<(), Error> {
+        let success = unsafe {
+            ttf::TTF_SetTextPosition(self.raw(), position.x, position.y)
+        };
 
+        match success {
+            false => Err(get_error()),
+            true => Ok(())
+        }
+    }
+    pub fn set_wrap_width(&mut self, width: Option<NonZeroU32>) -> Result<(), Error> {
+        let width = width.map(|w| w.into()).unwrap_or(0);
+        let success = unsafe {
+            ttf::TTF_SetTextWrapWidth(self.raw(), width.try_into().unwrap())
+        };
 
+        match success {
+            false => Err(get_error()),
+            true => Ok(())
+        }
+    }
+    pub fn set_wrap_width_whitespace_visible(&mut self, visible: bool) -> Result<(), Error> {
+        let success = unsafe {
+            ttf::TTF_SetTextWrapWhitespaceVisible(self.raw(), visible)
+        };
 
+        match success {
+            false => Err(get_error()),
+            true => Ok(())
+        }
+    }
 
+    pub fn update_text(&mut self) -> Result<(), Error> {
+        let success = unsafe {
+            ttf::TTF_UpdateText(self.raw())
+        };
 
-
-    /*                                                      
-    bool TTF_SetTextDirection(TTF_Text *text, TTF_Direction direction); 
-    bool TTF_SetTextScript(TTF_Text *text, Uint32 script);                                                                                                                                                                               
-    bool TTF_SetTextColor(TTF_Text *text, Uint8 r, Uint8 g, Uint8 b, Uint8 a);                                                                 
-    bool TTF_SetTextColorFloat(TTF_Text *text, float r, float g, float b, float a);                                                                                                             
-    bool TTF_SetTextPosition(TTF_Text *text, int x, int y);                                                                                    
-    bool TTF_SetTextWrapWidth(TTF_Text *text, int wrap_width);                                                                                                          
-    bool TTF_SetTextWrapWhitespaceVisible(TTF_Text *text, bool visible);              
-
-    bool TTF_TextWrapWhitespaceVisible(TTF_Text *text);                        
-    bool TTF_UpdateText(TTF_Text *text); 
-
-                                                          
-    */
+        match success {
+            false => Err(get_error()),
+            true => Ok(())
+        }
+    }
 
     pub fn str(&self) -> &str {
         // Safety: TTF_Text object's strings are always null terminated strings.
