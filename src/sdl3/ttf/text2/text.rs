@@ -37,7 +37,7 @@ impl std::error::Error for TextModifyError {}
 #[repr(transparent)]
 pub struct Text<'a, E: Engine = Unknown>(
     sys::TTF_Text,
-    PhantomData<(&'a TextEngine<E>, &'a Font<'a>)>,
+    PhantomData<(&'a TextEngine<'a,E>, &'a Font<'a>)>,
 );
 impl<'a, E: Engine> Text<'a, E> {
     #[doc(alias = "TTF_InsertTextString")]
@@ -107,7 +107,7 @@ impl<'a, E: Engine> Text<'a, E> {
     }
 
     #[doc(alias = "TTF_GetTextEngine")]
-    pub fn get_engine(&self) -> &'a TextEngine<E> {
+    pub fn get_engine(&self) -> &'a TextEngine<'a, E> {
         // Safety: An SDL3 `TTF_Text` object must always have a vlid `TTF_engine`
         unsafe { TextEngine::from_raw(sys::TTF_GetTextEngine(self.raw())).as_ref_unchecked() }
     }

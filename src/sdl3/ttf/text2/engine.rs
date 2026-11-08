@@ -36,13 +36,13 @@ use std::{marker::PhantomData, ops::Deref, ptr::NonNull};
 use crate::{gpu::Device, ttf, Error};
 use kind::*;
 
-pub type GpuTextEngine = TextEngine<Gpu>;
-pub type SurfaceTextEngine = TextEngine<Surface>;
-pub type RendererTextEngine = TextEngine<Renderer>;
+pub type GpuTextEngine<'a> = TextEngine<'a, Gpu>;
+pub type SurfaceTextEngine<'a> = TextEngine<'a, Surface>;
+pub type RendererTextEngine<'a> = TextEngine<'a, Renderer>;
 
 #[repr(transparent)]
-pub struct TextEngine<Type: Engine = Unknown>(ttf::sys::TTF_TextEngine, PhantomData<Type>);
-impl<E: Engine> TextEngine<E> {
+pub struct TextEngine<'a, E: Engine = Unknown>(ttf::sys::TTF_TextEngine, PhantomData<(E, &'a ())>);
+impl<'a, E: Engine> TextEngine<'a, E> {
     // Make a TextEngine from a raw SDL3 TTF_TextEngine.
     // Safety: `engine` MUST be a valid text engine for the given engine type(`E`)
     pub unsafe fn from_raw(engine: *mut ttf::sys::TTF_TextEngine) -> *mut Self {
@@ -54,17 +54,17 @@ impl<E: Engine> TextEngine<E> {
     }
 }
 
-pub struct OwnedTextEngine<E: Engine> {
-    engine: NonNull<TextEngine<E>>,
+pub struct OwnedTextEngine<'a, E: Engine> {
+    engine: NonNull<TextEngine<'a, E>>,
 }
-impl<E: Engine> Deref for OwnedTextEngine<E> {
-    type Target = TextEngine<E>;
+impl<'a, E: Engine> Deref for OwnedTextEngine<'a, E> {
+    type Target = TextEngine<'a, E>;
     fn deref(&self) -> &Self::Target {
         // Safety: `self.engine` is valid for the lifetime of `self`
         unsafe { self.engine.as_ref() }
     }
 }
-impl<E: Engine> Drop for OwnedTextEngine<E> {
+impl<'a, E: Engine> Drop for OwnedTextEngine<'a, E> {
     fn drop(&mut self) {
         // Safety: `self.engine` is valid for the lifetime of `self`
         unsafe {
@@ -73,9 +73,9 @@ impl<E: Engine> Drop for OwnedTextEngine<E> {
     }
 }
 
-impl OwnedTextEngine<Gpu> {
+impl<'a> OwnedTextEngine<'a, Gpu> {
     #[doc(alias = "TTF_CreateGPUTextEngine")]
-    pub fn new_gpu_engine(gpu: &Device) -> Result<Self, Error> {
+    pub fn new_gpu_engine(gpu: &'a Device) -> Result<Self, Error> {
         let engine = unsafe {
             NonNull::new(TextEngine::from_raw(ttf::sys::TTF_CreateGPUTextEngine(
                 gpu.raw(),
@@ -88,7 +88,7 @@ impl OwnedTextEngine<Gpu> {
         }
     }
 }
-impl OwnedTextEngine<Surface> {
+impl<'a> OwnedTextEngine<'a, Surface> {
     #[doc(alias = "TTF_CreateSurfaceTextEngine")]
     pub fn new_surface_engine() -> Result<Self, Error> {
         let engine =
@@ -100,14 +100,12 @@ impl OwnedTextEngine<Surface> {
         }
     }
 }
-impl OwnedTextEngine<Renderer> {
+impl<'a> OwnedTextEngine<'a, Renderer> {
     #[doc(alias = "TTF_CreateRendererTextEngine")]
     pub fn new_renderer_engine<T>(
-        renderer: &crate::render::TextureCreator<T>,
+        renderer: &'a crate::render::TextureCreator<T>,
     ) -> Result<Self, Error> {
         let engine = unsafe {
-            // This feels sketchy, since it doesn't constraint to the lifetime of `renderer`, but this is what ttf::engine does, so I'm going to baselessly assume it is safe
-            // TODO: Verify if this safe
             NonNull::new(TextEngine::from_raw(
                 ttf::sys::TTF_CreateRendererTextEngine(renderer.raw()),
             ))
