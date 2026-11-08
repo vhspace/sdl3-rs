@@ -3,34 +3,45 @@ pub mod kind {
     //! zero-sized type states representing different types of text engine
     use crate::ttf;
 
-    pub trait Engine {
-        // You can't specialize Drop on specific types, so this associated function allows Drop to specialize for T: Engine and handle dropping every engine
-        unsafe fn drop(engine: *mut ttf::sys::TTF_TextEngine);
-    }
-    pub trait OwnableEngine: Engine {
+    // Prevent `Engine` being implemented by user code
+    mod seal {
+        use crate::ttf;
 
+        /// A text engine that can be owned(aka: Not `Unknown`)
+        pub enum Ownable {}
+        /// A text engine that can't be owned(aka: `Unknown`)
+        pub enum NotOwnable {}
+        /// Marker trait for a valid type of `TextEngine`
+        pub unsafe trait Engine {
+            /// You can't specialize Drop on specific types, so this associated function allows Drop to specialize for T: Engine and handle dropping every engine.
+            /// 
+            /// It is undefined behavior to call this function if `CanOwn=NotOwnable`` 
+            unsafe fn drop(engine: *mut ttf::sys::TTF_TextEngine);
+            type CanOwn;
+        }
     }
+    pub use seal::{Engine, Ownable, NotOwnable};    
+
     macro_rules! engines {
         (Unknown, $($name:ident; drop=$drop:path),*) => {
             // Done as an exception to the rest of the macro because Unknown can't be drop, but should still appear in `engines!()` just to be more explicit about it
             /// Typestate representing an unknown text engine
             pub enum Unknown {}
-            impl Engine for Unknown {
+            unsafe impl Engine for Unknown {
+                type CanOwn = seal::NotOwnable;
                 unsafe fn drop(_engine: *mut ttf::sys::TTF_TextEngine) {
-                    // You can't own an TextEngine<Unknown> because it is impossible to drop. OwnedTextEngine<Unknown> should be inconstructable.
-                    // Could be made unreachable_unchecked() in the future
-                    unreachable!("An unknown text engine can never be dropped")
+                    // You can't own an TextEngine<Unknown> because it is impossible to drop. OwnedTextEngine<Unknown> is inconstructable due to `OWNABLE=false`, so this can never be called by safe code
+                    unsafe {
+                        std::hint::unreachable_unchecked()
+                    }
                 }
             }
 
             $(
-                
-
                 #[doc = concat!("Typestate representing the \"", stringify!($name), "\" text engine type")]
                 pub enum $name {}
-                impl Engine for $name {
-                    #[allow(unused_variables)] // Needed due to the unreachable!() invokation at the bottom
-                    #[allow(unreachable_code)]
+                unsafe impl Engine for $name {
+                    type CanOwn = seal::Ownable;
                     unsafe fn drop(engine: *mut ttf::sys::TTF_TextEngine) {
                         unsafe {
                             return $drop(engine);
@@ -73,17 +84,17 @@ impl<'a, E: Engine> TextEngine<'a, E> {
 }
 
 /// A smart pointer around a `TextEngine` representing an owned `TextEngine`
-pub struct OwnedTextEngine<'a, E: Engine> {
+pub struct OwnedTextEngine<'a, E: Engine<CanOwn = Ownable>> {
     engine: NonNull<TextEngine<'a, E>>,
 }
-impl<'a, E: Engine> Deref for OwnedTextEngine<'a, E> {
+impl<'a, E: Engine<CanOwn = Ownable>> Deref for OwnedTextEngine<'a, E> {
     type Target = TextEngine<'a, E>;
     fn deref(&self) -> &Self::Target {
         // Safety: `self.engine` is valid for the lifetime of `self`
         unsafe { self.engine.as_ref() }
     }
 }
-impl<'a, E: Engine> Drop for OwnedTextEngine<'a, E> {
+impl<'a, E: Engine<CanOwn = Ownable>> Drop for OwnedTextEngine<'a, E> {
     fn drop(&mut self) {
         // Safety: `self.engine` is valid for the lifetime of `self`
         unsafe {
@@ -92,7 +103,7 @@ impl<'a, E: Engine> Drop for OwnedTextEngine<'a, E> {
     }
 }
 
-impl<'a, E: Engine> OwnedTextEngine<'a, E> {
+impl<'a, E: Engine<CanOwn = Ownable>> OwnedTextEngine<'a, E> {
     /// Get the inner `TextEngine` point, leaking the `TextEngine`
     pub fn into_raw(self) -> NonNull<TextEngine<'a, E>> {
         let engine = self.engine;
@@ -103,8 +114,6 @@ impl<'a, E: Engine> OwnedTextEngine<'a, E> {
     /// Create an `OwnedTextEngine` directly from a pointer to a `TextEngine`.
     /// # Safety
     /// `engine` must be an exclusively owned `TextEngine`, created by SDL3.
-    /// Note, it is __undefined behavior__ to construct `OwnedTextEngine<Unknown>` as `TextEngine<Unknown>` can not be `drop()`'d(every `TextEngine` has it's own destructor function and it is impossible to check which should be used).
-    // In the future, a super trait like `OwnedableEngine: Engine` could be defined to make `OwnedTextEngine<Unknown>` inexpressible at the type-system level, but that is additional complexity. 
     pub unsafe fn from_raw(engine: NonNull<TextEngine<'a, E>>) -> Self {
         Self { engine }
     }
