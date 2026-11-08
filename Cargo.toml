@@ -24,7 +24,6 @@ path = "src/sdl3/lib.rs"
 [dependencies]
 bitflags = "2.11.1"
 libc = "0.2.186"
-thiserror = "2.0.21"
 
 [dependencies.sdl3-sys]
 version = "0.7.1"

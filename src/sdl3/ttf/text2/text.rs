@@ -1,12 +1,6 @@
 use std::{
-    cell::Cell,
-    ffi::CStr,
-    marker::PhantomData,
-    ops::{Deref, DerefMut},
-    ptr::NonNull,
+    cell::Cell, ffi::CStr, fmt::Display, marker::PhantomData, ops::{Deref, DerefMut}, ptr::NonNull,
 };
-
-use thiserror::Error;
 
 use crate::{render::FPoint, Error};
 
@@ -16,16 +10,29 @@ use super::{
     StrDestructure, TextEngine,
 };
 
-// May remove if desired
-#[derive(Error, Debug)]
+#[derive(Debug)]
 pub enum TextModifyError {
-    #[error(transparent)]
-    Sdl3(#[from] Error),
-    #[error("Invalid index into string outside UTF8 boundry")]
+    Sdl3(Error),
     InvalidUtf8Boundry,
-    #[error("Invalid index outside of string body")]
     OutOfBounds,
 }
+impl From<Error> for TextModifyError {
+    fn from(value: Error) -> Self {
+        Self::Sdl3(value)
+    }
+}
+impl Display for TextModifyError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Sdl3(error) => error.fmt(f),
+            Self::InvalidUtf8Boundry => write!(f, "Invalid index into string outside UTF8 boundry"),
+            Self::OutOfBounds => write!(f, "Invalid index outside of string body")
+        }
+    }
+}
+impl std::error::Error for TextModifyError {}
+
+
 
 #[repr(transparent)]
 pub struct Text<'a, E: Engine = Unknown>(

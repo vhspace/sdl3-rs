@@ -999,7 +999,6 @@ dependencies = [
  "sdl3-net-sys",
  "sdl3-sys",
  "sdl3-ttf-sys",
- "thiserror",
  "wgpu",
  "windows",
  "windows-core 0.100.0",
