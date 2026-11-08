@@ -1,5 +1,7 @@
 macro_rules! make_scripts {
     ($(($code:ident, $n:literal, $name:literal)),*) => {
+        /// Enormous mapping of names and codes for different unicode scripts.
+        /// Taken from <https://unicode.org/iso15924/iso15924-codes.html>.
         #[repr(u32)]
         #[derive(Clone, Copy, Debug, PartialEq, Eq)]
         pub enum Script {

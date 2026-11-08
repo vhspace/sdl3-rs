@@ -1,3 +1,4 @@
+//! Thin wrappers around `TTF_Text` for working with different types of text and engines
 use std::{
     cell::Cell, ffi::CStr, fmt::Display, marker::{PhantomData, PhantomPinned}, mem::MaybeUninit, num::NonZeroU32, ops::{Deref, DerefMut, Index}, ptr::NonNull,
 };
@@ -12,6 +13,8 @@ use super::{
     StrDestructure, TextEngine,
 };
 
+/// Wrapper for TTF_Direction, represents directions that text may be renderered
+#[doc(alias = "TTF_Direction")]
 #[repr(u32)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Direction {
@@ -39,11 +42,40 @@ impl From<Direction> for sys::TTF_Direction {
     }
 }
 
+/// Wrapper around `TTF_ImageType`
+/// 
+/// Values mean as follows:  
+/// Self::Alpha => The texture atlas's color channels are white and carries only alpha data  
+/// Self::Color => The texture atlas's color channels contain image data  
+/// Self::SignedDistance => The texture atlas's alpha channel has signed distance field information  
+#[repr(i32)]
+pub enum ImageType {
+    Invalid = sys::TTF_IMAGE_INVALID.0,
+    Alpha = sys::TTF_IMAGE_ALPHA.0,
+    Color = sys::TTF_IMAGE_COLOR.0,
+    SignedDistance = sys::TTF_IMAGE_SDF.0
+}
+impl From<sys::TTF_ImageType> for ImageType {
+    fn from(value: sys::TTF_ImageType) -> Self {
+        match value {
+            sys::TTF_IMAGE_ALPHA => Self::Alpha,
+            sys::TTF_IMAGE_COLOR => Self::Color,
+            sys::TTF_IMAGE_SDF => Self::SignedDistance,
+            _ => Self::Invalid
+        }
+    }
+}
+impl From<ImageType> for sys::TTF_ImageType {
+    fn from(value: ImageType) -> Self {
+        sys::TTF_ImageType::new(value as i32)
+    }
+}
 
 pub use super::scripts::Script;
 
-// The lifetime here is cursed and I don't think can be expressed conventionally because `substrings` is an array of `*const TTF_SubString` of the same lifetime as `substrings` itself
-// IE: &'a [&'a TTF_SubString], only 'a is inexpressible because both the slice and the elements are owned in the same allocation, so it has to borrowed.
+/// Wrapper for the return type of `TTF_GetTextSubStringsForRange`.
+/// The lifetime here is cursed and I don't think can be expressed conventionally because `substrings` is an array of `*const TTF_SubString` of the same lifetime as `substrings` itself.
+/// IE: &'a [&'a TTF_SubString], only 'a is inexpressible because both the slice and the elements are owned in the same allocation, so it has to borrowed.
 pub struct SubstringArray {
     substrings: NonNull<*mut TTF_SubString>,
     length: usize
@@ -75,6 +107,7 @@ impl Drop for SubstringArray {
 }
 
 
+/// An error from operations modifying the text of a `Text` object 
 #[derive(Debug)]
 pub enum TextModifyError {
     Sdl3(Error),
@@ -101,12 +134,18 @@ impl Display for TextModifyError {
 }
 impl std::error::Error for TextModifyError {}
 
+/// Wrapper for `TTF_Text`, including the type of the `TextEngine` used to create it
+#[doc(alias = "TTF_GPUAtlasDrawSequence")]
 #[repr(transparent)]
 pub struct Text<'a, E: Engine = Unknown> {
     _opaque: [u8; 0],
     _phantom: PhantomData<(&'a TextEngine<'a,E>, &'a Font<'a>, *mut u8, PhantomPinned)>,
 }
 impl<'a, E: Engine> Text<'a, E> {
+    /// Insert the given `text` at the given byte `index`.
+    /// 
+    /// # Errors
+    /// If the underlying SDL3 call errors or if `index` is not a UTF8 boundry or is out of range of the text.
     #[doc(alias = "TTF_InsertTextString")]
     pub fn insert(&mut self, index: usize, text: &str) -> Result<(), TextModifyError> {
         let text = text.destructure();
@@ -128,18 +167,26 @@ impl<'a, E: Engine> Text<'a, E> {
             }
         }
     }
+    /// Append the given `text`.
+    /// 
+    /// # Errors
+    /// If the underlying SDL3 call errors.
     #[doc(alias = "TTF_AppendTextString")]
-    pub fn append(&mut self, text: &str) -> Result<(), TextModifyError> {
+    pub fn append(&mut self, text: &str) -> Result<(), Error> {
         let text = text.destructure();
 
         // Safety: Appending a string requires no validation.  SDL3 makes it's own copy of `text`.
         unsafe {
             match sys::TTF_AppendTextString(self.raw(), text.ptr, text.len) {
-                false => Err(crate::get_error().into()),
+                false => Err(crate::get_error()),
                 true => Ok(()),
             }
         }
     }
+    /// Deletes the text at the given byte `index` for the given length `size`.
+    /// 
+    /// # Errors
+    /// If the underlying SDL3 call errors or if either `index` or `index + size` is out of range or does not fall on a utf8 boundr.
     #[doc(alias = "TTF_DeleteTextString")]
     pub fn delete(&mut self, index: usize, size: usize) -> Result<(), TextModifyError> {
         let current = self.str();
@@ -161,6 +208,10 @@ impl<'a, E: Engine> Text<'a, E> {
             }
         }
     }
+    /// Set the text content to the given `text`.
+    /// 
+    /// # Errors
+    /// If the underlying SDL3 call errors.
     #[doc(alias = "TTF_SetTextString")]
     pub fn set(&mut self, text: &str) -> Result<(), Error> {
         let text = text.destructure();
@@ -512,6 +563,7 @@ impl<'a, E: Engine> Text<'a, E> {
         }
     }
 
+    /// Get access to the underlying string representing the text
     pub fn str(&self) -> &str {
         // Safety: TTF_Text object's strings are always null terminated strings.
         unsafe {
@@ -522,22 +574,26 @@ impl<'a, E: Engine> Text<'a, E> {
         }
     }
 
+    /// Cast from `Text<E>` to `Text<Unknown>`, erasing the type of the engine used to make the text
     pub fn upcast(&self) -> &Text<'a> {
         // Safety: Any valid Text<E>, for some engine E, is a subtype of Text<Unknown>
         unsafe { std::mem::transmute(self) }
     }
+    /// Cast mutably from `Engine<E>` to `Engine<Unknown>`, erasing the type of the engine used to make the text
     pub fn upcast_mut(&mut self) -> &mut Text<'a> {
         // Safety: Any valid Text<E>, for some engine E, is a subtype of Text<Unknown>
         unsafe { std::mem::transmute(self) }
     }
 
+    /// The underlying sys::TTF_Text object. User must ensure const-correctness.
     pub fn raw(&self) -> *mut sys::TTF_Text {
         (self as *const Self).cast_mut().cast()
     }
 }
 impl<'a> Text<'a, Unknown> {
-    // Downcast a Text<> object to a specific Text<Engine> type based on the TextEngine it was created with
-    // Only implemented for Text<'a, Unknown> because it is meaningless to downcast any other Engine, as renderer types are mutually exclusive.
+    /// Downcast `Text<Unknown>` to a specific `Text<Engine>` type based on the `TextEngine` used to create it.
+    /// Only implemented for Text<'a, Unknown> because it is meaningless to downcast any other Engine, as renderer types are mutually exclusive.
+    /// SDL3 does not expose a way to directly check the type of a `TextEngine`, so you need the original engine used to make the text.
     pub fn downcast<E: Engine>(&self, engine: &TextEngine<E>) -> Option<&Text<'a, E>> {
         match (&raw const *engine).addr() == self.get_engine().raw().addr() {
             // Safety: If this TTF_Text object has the same TTF_TextEngine as the given engine, it must have been created with that engine.
@@ -565,8 +621,9 @@ impl<'a, E: Engine> Drop for Text<'a, E> {
 }
 
 impl<'a> Text<'a, Gpu> {
-    // Must take `&mut self` because some methods(like modifying fonts) clear draw data, which can cause a use-after-free
-    // This has a poor interaction with `RcText`, since you can't get `&mut Text` from that, but I am not sure that's easily solvable
+    /// Get access to the `GpuAtlasDrawSequence` to render the `Text` using `sdl3::gpu`,
+    // Must take `&mut self` because some methods(like modifying fonts) clear draw data, which can cause a use-after-free,
+    // This has a poor interaction with `RcText`, since you can't get `&mut Text` from that, but I am not sure that's easily solvable,
     #[doc(alias = "TTF_GetGPUTextDrawData")]
     pub fn atlas_draw_sequence(&mut self) -> Result<Option<&GpuAtlasDrawSequence>, Error> {
         // Safety: As GpuAtlasDrawSequence is a transparet wrapper, it is safe to cast TTF_GPUAtlasDrawSequence to it
@@ -588,6 +645,7 @@ impl<'a> Text<'a, Gpu> {
     }
 }
 impl<'a> Text<'a, Surface> {
+    /// Render the text to a `Surface`
     #[doc(alias = "TTF_DrawSurfaceText")]
     pub fn draw_surface(
         &self,
@@ -605,6 +663,7 @@ impl<'a> Text<'a, Surface> {
     }
 }
 impl<'a> Text<'a, Renderer> {
+    /// Render the text with the attached `Renderer`,
     #[doc(alias = "TTF_DrawRendererText")]
     pub fn draw_renderer(&self, x: f32, y: f32) -> Result<(), Error> {
         let success = unsafe { sys::TTF_DrawRendererText(self.raw(), x, y) };
@@ -616,6 +675,7 @@ impl<'a> Text<'a, Renderer> {
     }
 }
 
+/// An exclusively owned wrapper representing `TTF_Text` 
 pub struct OwnedText<'a, E: Engine> {
     text: NonNull<Text<'a, E>>,
     _type: PhantomData<E>,
@@ -643,6 +703,7 @@ impl<'a, E: Engine> Drop for OwnedText<'a, E> {
 }
 
 impl<'a, E: Engine> OwnedText<'a, E> {
+    /// Create a new `Text` object using the given `TextEngine` 
     #[doc(alias = "TTF_CreateText")]
     pub fn new(engine: &'a TextEngine<E>, font: &'a Font, text: &str) -> Result<Self, Error> {
         let text = text.destructure();
@@ -661,7 +722,9 @@ impl<'a, E: Engine> OwnedText<'a, E> {
         }
     }
 
-    // Create `OwnedText` from a raw `Text` pointer. The pointer must be exclusively owned.
+    /// Create `OwnedText` from a raw `Text` pointer,
+    /// # Safety
+    /// The engine `engine` MUST be exclusively accessed and created by SDL3,
     pub unsafe fn from_raw(engine: NonNull<Text<E>>) -> Self {
         Self {
             text: engine.cast(),
@@ -670,6 +733,10 @@ impl<'a, E: Engine> OwnedText<'a, E> {
     }
 }
 
+
+/// A reference counted version of `OwnedText`, using SDL3's in-built `refcount` field,
+/// 
+/// Note: Does not work while with `E = Gpu``, because you can't call `atlas_draw_sequence` without `&mut Text`, meaning it can't be rendered.
 pub struct RcText<'a, E: Engine> {
     text: NonNull<Text<'a, E>>,
     _type: PhantomData<E>,
@@ -705,7 +772,8 @@ impl<'a, E: Engine> RcText<'a, E> {
         }
     }
 
-    unsafe fn into_raw(self) -> NonNull<Text<'a, E>> {
+    /// Get the raw pointer to the `Text`, leaking the `Text` in the process
+    pub fn into_raw(self) -> NonNull<Text<'a, E>> {
         let ptr = self.text;
         std::mem::forget(self);
 
@@ -763,9 +831,9 @@ impl<'a, E: Engine> Drop for RcText<'a, E> {
     }
 }
 
-// This type soley exists to allow checking if `atlas_texture` is None without having to make a sampler binding.
-// Can't convert the SDL_Texture to a Texture<> either, because that requires the texture's size, which we don't have,
-// so the only thing you can do with the texture is bind it
+/// This type soley exists to allow checking if `atlas_texture` is None without having to make a sampler binding.
+/// Can't convert the SDL_Texture to a Texture<> either, because that requires the texture's size, which we don't have,
+/// so the only thing you can do with the texture is bind it into a `TextureSamplerBinding`.
 pub struct GpuAtlasDrawSequenceTexture<'a>(
     NonNull<crate::sys::gpu::SDL_GPUTexture>,
     PhantomData<&'a crate::sys::gpu::SDL_GPUTexture>,
@@ -787,9 +855,12 @@ impl<'a> GpuAtlasDrawSequenceTexture<'a> {
     }
 }
 
+/// Wrapper around `TTF_GpuAtlasDrawSequence`
+#[doc(alias = "TTF_GPUAtlasDrawSequence")]
 #[repr(transparent)]
 pub struct GpuAtlasDrawSequence(sys::TTF_GPUAtlasDrawSequence);
 impl GpuAtlasDrawSequence {
+    /// Get access to the `atlas_texture` used by this sequence instruction, if there is one
     pub fn atlas_texture(&self) -> Option<GpuAtlasDrawSequenceTexture<'_>> {
         match NonNull::new(self.0.atlas_texture) {
             None => None,
@@ -797,12 +868,14 @@ impl GpuAtlasDrawSequence {
         }
     }
 
+    /// Get access to the verticies(`xy`) used for rendering the text
     pub fn vertices(&self) -> &[FPoint] {
         // Safety: `xy` will always be present on any GpuAtlasDrawSequence.
         unsafe {
             std::slice::from_raw_parts(self.0.xy as *const FPoint, self.0.num_vertices as usize)
         }
     }
+    /// Get access to the texture coordinates(`uv`) used for rendering the text
     pub fn texture_coordinates(&self) -> &[FPoint] {
         // Safety: `uv` will always be present on any GpuAtlasDrawSequence.
         unsafe {
@@ -810,6 +883,7 @@ impl GpuAtlasDrawSequence {
         }
     }
 
+    /// Get access to the `indicies` of the verticies for rendering the text
     pub fn indices(&self) -> &[u32] {
         // Safety: `indicies` will always be present on any GpuAtlasDrawSequence.
         unsafe {
@@ -821,10 +895,14 @@ impl GpuAtlasDrawSequence {
         }
     }
 
-    pub fn image_type(&self) -> &sys::TTF_ImageType {
-        &self.0.image_type
+    /// Get the `ImageType` assoicated with this text's texture information
+    pub fn image_type(&self) -> ImageType {
+        self.0.image_type.into()
     }
 
+    /// Get the next instruction in the `GpuAtlasDrawSequence` sequence.
+    /// 
+    /// Can also be iterated over direction with `.into_iter()`, for easier usage.
     pub fn next<'a>(&'a self) -> Option<&'a Self> {
         // Safety: This is just traversing a linked list. Thus, the life time of the next element will be the same as the lifetime of the current one.
         unsafe {
@@ -845,6 +923,7 @@ impl<'a> IntoIterator for &'a GpuAtlasDrawSequence {
     }
 }
 
+/// Iterator over every draw instruction in `GpuAtlasDrawSequence`
 pub struct GpuAtlasDrawSequenceIter<'a> {
     current: Option<&'a GpuAtlasDrawSequence>,
 }

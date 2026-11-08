@@ -1,3 +1,5 @@
+//! An interface for `TTF_Text` and `TTF_TextEngine`, support all* different types of text engine  
+//! \* GLTextEngine is currently unsupported
 pub mod engine;
 pub mod text;
 mod scripts;
