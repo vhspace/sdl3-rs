@@ -81,6 +81,10 @@ pub enum TextModifyError {
     InvalidUtf8Boundry,
     OutOfBounds,
 }
+fn cast_integer<T: TryInto<i32>>(integer: T) -> Result<i32, TextModifyError> {
+    integer.try_into().map_err(|_| TextModifyError::OutOfBounds)
+}
+
 impl From<Error> for TextModifyError {
     fn from(value: Error) -> Self {
         Self::Sdl3(value)
@@ -108,7 +112,7 @@ impl<'a, E: Engine> Text<'a, E> {
         let text = text.destructure();
         let current = self.str();
 
-        // We already have to check for chararacter boundries, so also check length to provide a more rich error(Error is extremely opaque)
+        // We already have to check for chararacter boundries, so also check length to provide a more rich error(SDL has it's own bounds checking, but Error is extremely opaque)
         if index > current.len() {
             return Err(TextModifyError::OutOfBounds);
         }
@@ -118,7 +122,7 @@ impl<'a, E: Engine> Text<'a, E> {
 
         // Safety: SDL3 performs it's own bounds checking, and we just validated utf8 boundries.  SDL3 makes it's own copy of `text`.
         unsafe {
-            match sys::TTF_InsertTextString(self.raw(), index as i32, text.ptr, text.len) {
+            match sys::TTF_InsertTextString(self.raw(), cast_integer(index)?, text.ptr, text.len) {
                 false => Err(crate::get_error().into()),
                 true => Ok(()),
             }
@@ -140,17 +144,18 @@ impl<'a, E: Engine> Text<'a, E> {
     pub fn delete(&mut self, index: usize, size: usize) -> Result<(), TextModifyError> {
         let current = self.str();
 
-        // We already have to check for chararacter boundries, so also check length to provide a more rich error(Error is extremely opaque)
-        if index > current.len() || index + size > current.len() {
+        // We already have to check for chararacter boundries, so also check length to provide a more rich error(SDL has it's own bounds checking, but Error is extremely opaque)
+        let end = index.checked_add(size).ok_or(TextModifyError::OutOfBounds)?;
+        if index > current.len() ||  end > current.len() {
             return Err(TextModifyError::OutOfBounds);
         }
-        if !current.is_char_boundary(index) || !current.is_char_boundary(index + size) {
+        if !current.is_char_boundary(index) || !current.is_char_boundary(end) {
             return Err(TextModifyError::InvalidUtf8Boundry);
         }
 
         // Safety: SDL3 performs it's own bounds checking, and we just validated utf8 boundries.
         unsafe {
-            match sys::TTF_DeleteTextString(self.raw(), index as i32, size as i32) {
+            match sys::TTF_DeleteTextString(self.raw(), cast_integer(index)?, cast_integer(size)?) {
                 false => Err(crate::get_error().into()),
                 true => Ok(()),
             }
@@ -560,13 +565,24 @@ impl<'a, E: Engine> Drop for Text<'a, E> {
 }
 
 impl<'a> Text<'a, Gpu> {
+    // Must take `&mut self` because some methods(like modifying fonts) clear draw data, which can cause a use-after-free
+    // This has a poor interaction with `RcText`, since you can't get `&mut Text` from that, but I am not sure that's easily solvable
     #[doc(alias = "TTF_GetGPUTextDrawData")]
-    pub fn atlas_draw_sequence(&mut self) -> Result<&GpuAtlasDrawSequence, Error> {
+    pub fn atlas_draw_sequence(&mut self) -> Result<Option<&GpuAtlasDrawSequence>, Error> {
         // Safety: As GpuAtlasDrawSequence is a transparet wrapper, it is safe to cast TTF_GPUAtlasDrawSequence to it
         unsafe {
             match NonNull::new(sys::TTF_GetGPUTextDrawData(self.raw())) {
-                Some(ptr) => Ok(ptr.cast().as_ref()),
-                None => Err(crate::get_error()),
+                Some(ptr) => Ok(Some(ptr.cast().as_ref())),
+                None => {
+                    let error = get_error();
+
+                    // Empty error string means no error was set, and `TTF_GetGPUTextDrawData` also returns null for empty text
+                    if error.0 == "" {
+                        Ok(None)
+                    } else {
+                        Err(error)
+                    }
+                },
             }
         }
     }
@@ -580,7 +596,7 @@ impl<'a> Text<'a, Surface> {
         surface: &crate::surface::Surface,
     ) -> Result<(), Error> {
         let success =
-            unsafe { sys::TTF_DrawSurfaceText(self.raw(), x as i32, y as i32, surface.raw()) };
+            unsafe { sys::TTF_DrawSurfaceText(self.raw(), cast_integer(x).unwrap(), cast_integer(y).unwrap(), surface.raw()) };
 
         match success {
             false => Err(crate::get_error()),
