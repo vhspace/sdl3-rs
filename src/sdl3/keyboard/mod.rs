@@ -6,6 +6,7 @@ use crate::EventPump;
 
 use crate::sys;
 use std::fmt;
+use std::marker::PhantomData;
 use sys::video::SDL_GetWindowID;
 
 mod keycode;
@@ -39,21 +40,31 @@ impl fmt::Display for Mod {
     }
 }
 
+/// A snapshot of which keys were down when it was taken.
 pub struct KeyboardState<'a> {
-    keyboard_state: &'a [bool],
+    keyboard_state: Box<[bool]>,
+    _event_pump: PhantomData<&'a EventPump>,
 }
 
 impl<'a> KeyboardState<'a> {
     #[doc(alias = "SDL_GetKeyboardState")]
     pub fn new(_e: &'a EventPump) -> KeyboardState<'a> {
+        // SDL writes to this array whenever events are pumped, without any
+        // synchronization (libsdl-org/SDL#16562), so a slice into it can't be
+        // held. Copy it out instead. Pumping needs `&mut EventPump`, so it
+        // can't run while the `&EventPump` taken here is alive.
         let keyboard_state = unsafe {
             let mut count = 0;
             let state_ptr = sys::keyboard::SDL_GetKeyboardState(&mut count);
-
-            ::std::slice::from_raw_parts(state_ptr, count as usize)
+            let mut state = vec![false; count as usize].into_boxed_slice();
+            std::ptr::copy_nonoverlapping(state_ptr, state.as_mut_ptr(), state.len());
+            state
         };
 
-        KeyboardState { keyboard_state }
+        KeyboardState {
+            keyboard_state,
+            _event_pump: PhantomData,
+        }
     }
 
     /// Returns true if the scancode is pressed.
@@ -74,7 +85,7 @@ impl<'a> KeyboardState<'a> {
     pub fn scancodes(&self) -> ScancodeIterator<'_> {
         ScancodeIterator {
             index: 0,
-            keyboard_state: self.keyboard_state,
+            keyboard_state: &self.keyboard_state,
         }
     }
 
