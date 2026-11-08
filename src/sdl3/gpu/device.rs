@@ -177,16 +177,32 @@ impl Device {
     }
 
     // You cannot begin another render pass, or begin a compute pass or copy pass until you have ended the render pass.
+    /// # Panics
+    ///
+    /// If there are no color targets and no depth stencil target, or if any
+    /// target was never given a texture.
     #[doc(alias = "SDL_BeginGPURenderPass")]
+    #[track_caller]
     pub fn begin_render_pass(
         &self,
         command_buffer: &CommandBuffer,
         color_info: &[ColorTargetInfo],
         depth_stencil_target: Option<&DepthStencilTargetInfo>,
     ) -> Result<RenderPass, Error> {
-        if color_info.len() == 0 {
-            panic!("Render pass can not have empty color info!");
-        }
+        // SDL dereferences every target's texture, and with no targets at all
+        // the backends size the framebuffer from nothing.
+        assert!(
+            !color_info.is_empty() || depth_stencil_target.is_some(),
+            "a render pass needs at least one color target or a depth stencil target"
+        );
+        assert!(
+            color_info.iter().all(|c| !c.inner.texture.is_null()),
+            "ColorTargetInfo has no texture"
+        );
+        assert!(
+            depth_stencil_target.is_none_or(|d| !d.inner.texture.is_null()),
+            "DepthStencilTargetInfo has no texture"
+        );
 
         let p = unsafe {
             SDL_BeginGPURenderPass(

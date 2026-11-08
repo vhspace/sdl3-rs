@@ -213,7 +213,7 @@ impl CommandBuffer {
 #[repr(C)]
 #[derive(Default)]
 pub struct DepthStencilTargetInfo<'a> {
-    inner: SDL_GPUDepthStencilTargetInfo,
+    pub(super) inner: SDL_GPUDepthStencilTargetInfo,
     _phantom: PhantomData<&'a ()>,
 }
 impl<'a> DepthStencilTargetInfo<'a> {
@@ -280,7 +280,7 @@ impl<'a> DepthStencilTargetInfo<'a> {
 #[repr(C)]
 #[derive(Default)]
 pub struct ColorTargetInfo<'a> {
-    inner: SDL_GPUColorTargetInfo,
+    pub(super) inner: SDL_GPUColorTargetInfo,
     _phantom: PhantomData<&'a ()>,
 }
 impl<'a> ColorTargetInfo<'a> {
