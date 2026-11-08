@@ -55,7 +55,7 @@ impl SubstringArray {
     pub fn elements<'a>(&'a self) -> &'a [&'a TTF_SubString] {
         // Every part of the `substring` is a valid pointer to a `TTF_SubString` with the same lifetime as `substring` itself
         unsafe {
-            std::slice::from_raw_parts(std::mem::transmute(self.substrings), self.len())
+            std::slice::from_raw_parts(self.substrings.cast::<&'a TTF_SubString>().as_ptr(), self.len())
         }
     } 
 }
@@ -523,11 +523,11 @@ impl<'a, E: Engine> Text<'a, E> {
     }
 
     pub fn upcast(&self) -> &Text<'a> {
-        // Safety: Any valid Text<E>, for some engine E, is a supertype of Text<Unknown>
+        // Safety: Any valid Text<E>, for some engine E, is a subtype of Text<Unknown>
         unsafe { std::mem::transmute(self) }
     }
     pub fn upcast_mut(&mut self) -> &mut Text<'a> {
-        // Safety: Any valid Text<E>, for some engine E, is a supertype of Text<Unknown>
+        // Safety: Any valid Text<E>, for some engine E, is a subtype of Text<Unknown>
         unsafe { std::mem::transmute(self) }
     }
 
@@ -813,11 +813,11 @@ impl GpuAtlasDrawSequence {
     pub fn indices(&self) -> &[u32] {
         // Safety: `indicies` will always be present on any GpuAtlasDrawSequence.
         unsafe {
-            // SDL's type is `int` for indicies, for some reason, even though they can't be negative by definition(A negative vertex index means nothing). So transmute them into a more conventionally u32.
-            std::mem::transmute::<&[i32], &[u32]>(std::slice::from_raw_parts(
-                self.0.indices,
+            // SDL's type is `int` for indicies, for some reason, even though they can't be negative by definition(A negative vertex index means nothing). So cast them into a more conventional u32.
+            std::slice::from_raw_parts(
+                self.0.indices.cast::<u32>(),
                 self.0.num_indices as usize,
-            ))
+            )
         }
     }
 
@@ -830,8 +830,8 @@ impl GpuAtlasDrawSequence {
         unsafe {
             self.0
                 .next
+                .cast::<Self>()
                 .as_ref()
-                .map(|ptr| std::mem::transmute::<_, &'a Self>(ptr))
         }
     }
 }
