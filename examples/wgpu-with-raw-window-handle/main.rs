@@ -12,17 +12,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let sdl_context = sdl3::init()?;
     let video_subsystem = sdl_context.video()?;
-    let window = video_subsystem
+    let mut window = video_subsystem
         .window("Raw Window Handle Example", 800, 600)
         .position_centered()
         .resizable()
         .metal_view()
-        .build()
-        .map_err(|e| e.to_string())?;
+        .build()?;
     let (width, height) = window.size();
 
     let instance = wgpu::Instance::new(InstanceDescriptor::new_without_display_handle_from_env());
-    let surface = create_surface::create_surface(&instance, &window)?;
+    let window_handles = window.clone(); // this allows `window` to be mutated while we also have a `WindowHandles` struct with the window's lifetime
+    let window_handles = window_handles.as_window_handles()?;
+    window.show();
+    let surface = instance.create_surface(window_handles)?;
     let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
         power_preference: wgpu::PowerPreference::HighPerformance,
         force_fallback_adapter: false,
@@ -190,35 +192,4 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
-}
-
-mod create_surface {
-    use sdl3::video::Window;
-    use wgpu::rwh::{HasDisplayHandle, HasWindowHandle};
-
-    // contains the unsafe impl as much as possible by putting it in this module
-    struct SyncWindow<'a>(&'a Window);
-
-    unsafe impl<'a> Send for SyncWindow<'a> {}
-    unsafe impl<'a> Sync for SyncWindow<'a> {}
-
-    impl<'a> HasWindowHandle for SyncWindow<'a> {
-        fn window_handle(&self) -> Result<wgpu::rwh::WindowHandle<'_>, wgpu::rwh::HandleError> {
-            self.0.window_handle()
-        }
-    }
-    impl<'a> HasDisplayHandle for SyncWindow<'a> {
-        fn display_handle(&self) -> Result<wgpu::rwh::DisplayHandle<'_>, wgpu::rwh::HandleError> {
-            self.0.display_handle()
-        }
-    }
-
-    pub fn create_surface<'a>(
-        instance: &wgpu::Instance,
-        window: &'a Window,
-    ) -> Result<wgpu::Surface<'a>, String> {
-        instance
-            .create_surface(SyncWindow(&window))
-            .map_err(|err| err.to_string())
-    }
 }
