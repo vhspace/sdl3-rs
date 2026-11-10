@@ -5,6 +5,73 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### <!-- 0 -->Added
+- Make Font::try_clone public ([#503](https://github.com/vhspace/sdl3-rs/pull/503))
+
+### <!-- 1 -->Changed
+- Skip cargo publish when the version is already on crates.io ([#449](https://github.com/vhspace/sdl3-rs/pull/449))
+
+### <!-- 2 -->Fixed
+- Remove unneeded unsafe around Version::from_ll ([#502](https://github.com/vhspace/sdl3-rs/pull/502))
+
+### <!-- 4 -->Dependencies
+- Bump sdl3-sys from 0.7.2+SDL-3.4.18 to 0.7.3+SDL-3.4.20 ([#507](https://github.com/vhspace/sdl3-rs/pull/507))
+- Bump softprops/action-gh-release from 3.0.3 to 3.0.4 ([#506](https://github.com/vhspace/sdl3-rs/pull/506))
+- Bump peter-evans/create-pull-request from 8.1.1 to 8.1.2 ([#505](https://github.com/vhspace/sdl3-rs/pull/505))
+- Bump amannn/action-semantic-pull-request from 6.1.1 to 6.1.2 ([#504](https://github.com/vhspace/sdl3-rs/pull/504))
+- Bump softprops/action-gh-release from 3.0.2 to 3.0.3 ([#453](https://github.com/vhspace/sdl3-rs/pull/453))
+- Bump dtolnay/rust-toolchain from 6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 to 683b588c487a69d01f6c6ddf40f036ff682cc2c8 ([#480](https://github.com/vhspace/sdl3-rs/pull/480))
+
+## [0.22.1] - 2026-11-08
+
+### <!-- 2 -->Fixed
+- Copy the keyboard state instead of borrowing SDL's array ([#500](https://github.com/vhspace/sdl3-rs/pull/500))
+- Reject render passes with no targets or textureless targets ([#498](https://github.com/vhspace/sdl3-rs/pull/498))
+- Fix the build on big-endian targets ([#497](https://github.com/vhspace/sdl3-rs/pull/497))
+- Bounds check the destination region in upload_to_gpu_texture ([#495](https://github.com/vhspace/sdl3-rs/pull/495))
+- Let the Xlib window id cast infer c_ulong ([#494](https://github.com/vhspace/sdl3-rs/pull/494))
+- Panic when reading mouse state off the main thread ([#493](https://github.com/vhspace/sdl3-rs/pull/493))
+- Check for NULL from SDL_GetPrefPath and SDL_GetBasePath ([#492](https://github.com/vhspace/sdl3-rs/pull/492))
+
+## [0.22.0] - 2026-11-02
+
+### <!-- 0 -->Added
+- Convert between TextureFormat and PixelFormat ([#482](https://github.com/vhspace/sdl3-rs/pull/482))
+- Add pinch gesture events and drop the SDL2 gesture leftovers ([#458](https://github.com/vhspace/sdl3-rs/pull/458))
+- Add ColorTargetInfo::with_resolve_texture and MultisampleState builder ([#456](https://github.com/vhspace/sdl3-rs/pull/456))
+- Take a PropertyName in set_app_metadata_property ([#459](https://github.com/vhspace/sdl3-rs/pull/459))
+- Add GLAttr::reset ([#475](https://github.com/vhspace/sdl3-rs/pull/475))
+- Add fullscreen events ([#466](https://github.com/vhspace/sdl3-rs/pull/466))
+- Support fallback fonts ([#461](https://github.com/vhspace/sdl3-rs/pull/461))
+- Made conversions from i/u32 to and from keycodes and scancodes ([#460](https://github.com/vhspace/sdl3-rs/pull/460))
+
+### <!-- 1 -->Changed
+- Build SDL3 from source in the publish workflow ([#487](https://github.com/vhspace/sdl3-rs/pull/487))
+- Fix deprecation warnings ([#476](https://github.com/vhspace/sdl3-rs/pull/476))
+
+### <!-- 2 -->Fixed
+- Tie GPU target and region infos to the textures they borrow ([#490](https://github.com/vhspace/sdl3-rs/pull/490))
+- Make the dialog callback Send and stop leaking or dangling its data ([#488](https://github.com/vhspace/sdl3-rs/pull/488))
+- Fix sdl3-sys repo url ([#452](https://github.com/vhspace/sdl3-rs/pull/452))
+
+### <!-- 4 -->Dependencies
+- Bump orhun/git-cliff-action from 4.9.0 to 4.9.1 ([#467](https://github.com/vhspace/sdl3-rs/pull/467))
+- Update chacha20 to 0.10.2 ([#455](https://github.com/vhspace/sdl3-rs/pull/455))
+- Bump libc from 0.2.190 to 0.2.191 ([#484](https://github.com/vhspace/sdl3-rs/pull/484))
+- Bump windows-core from 0.62.2 to 0.100.0 ([#454](https://github.com/vhspace/sdl3-rs/pull/454))
+- Bump bitflags from 2.13.1 to 2.13.2 ([#462](https://github.com/vhspace/sdl3-rs/pull/462))
+- Bump rand from 0.10.2 to 0.10.3 ([#468](https://github.com/vhspace/sdl3-rs/pull/468))
+- Bump libc from 0.2.189 to 0.2.190 ([#470](https://github.com/vhspace/sdl3-rs/pull/470))
+- Bump objc2 from 0.6.4 to 0.6.5 ([#472](https://github.com/vhspace/sdl3-rs/pull/472))
+- Bump sdl3-image-sys ([#473](https://github.com/vhspace/sdl3-rs/pull/473))
+- Bump sdl3-sys from 0.7.1+SDL-3.4.16 to 0.7.2+SDL-3.4.18 ([#471](https://github.com/vhspace/sdl3-rs/pull/471))
+- Bump actions/checkout from 7.0.0 to 7.0.1 ([#425](https://github.com/vhspace/sdl3-rs/pull/425))
+
+### <!-- 5 -->Documentation
+- Document the file dialog API ([#457](https://github.com/vhspace/sdl3-rs/pull/457))
+
 ## [0.20.0] - 2026-09-07
 
 ### <!-- 0 -->Added
@@ -328,6 +395,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bump bitflags from 2.9.0 to 2.9.1 ([#207](https://github.com/vhspace/sdl3-rs/pull/207))
 - Bump actions/cache from 3 to 4 ([#208](https://github.com/vhspace/sdl3-rs/pull/208))
 
+[unreleased]: https://github.com/vhspace/sdl3-rs/compare/v0.22.1...HEAD
+[0.22.1]: https://github.com/vhspace/sdl3-rs/compare/v0.22.0...v0.22.1
+[0.22.0]: https://github.com/vhspace/sdl3-rs/compare/v0.20.0...v0.22.0
 [0.20.0]: https://github.com/vhspace/sdl3-rs/compare/v0.19.0...v0.20.0
 [0.19.0]: https://github.com/vhspace/sdl3-rs/compare/v0.18.4...v0.19.0
 [0.18.4]: https://github.com/vhspace/sdl3-rs/compare/v0.18.3...v0.18.4
