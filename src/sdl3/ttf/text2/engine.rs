@@ -3,24 +3,22 @@ pub mod kind {
     //! zero-sized type states representing different types of text engine
     use crate::ttf;
 
-    // Prevent `Engine` being implemented by user code
-    mod seal {
-        use crate::ttf;
 
-        /// A text engine that can be owned(aka: Not `Unknown`)
-        pub enum Ownable {}
-        /// A text engine that can't be owned(aka: `Unknown`)
-        pub enum NotOwnable {}
-        /// Marker trait for a valid type of `TextEngine`
-        pub unsafe trait Engine {
-            /// You can't specialize Drop on specific types, so this associated function allows Drop to specialize for T: Engine and handle dropping every engine.
-            /// 
-            /// It is undefined behavior to call this function if `CanOwn=NotOwnable`` 
-            unsafe fn drop(engine: *mut ttf::sys::TTF_TextEngine);
-            type CanOwn;
-        }
+
+    /// A text engine that can be owned(aka: Not `Unknown`)
+    pub enum Ownable {}
+    /// A text engine that can't be owned(aka: `Unknown`)
+    pub enum NotOwnable {}
+    /// Marker trait for a valid type of `TextEngine`
+    // Thisis a public interface, apparently, so allow external code to implement it(unsafely)
+    ///
+    /// # Safety
+    /// A type that implements this trait must be a valid TTF_TextEngine, usable with the standard SDL3 interface 
+    pub unsafe trait Engine {
+        /// You can't specialize Drop on specific types, so this associated function allows Drop to specialize for T: Engine and handle dropping every engine.
+        unsafe fn drop(engine: *mut ttf::sys::TTF_TextEngine);
+        type CanOwn;
     }
-    pub use seal::{Engine, Ownable, NotOwnable};    
 
     macro_rules! engines {
         (Unknown, $($name:ident; drop=$drop:path),*) => {
@@ -28,12 +26,10 @@ pub mod kind {
             /// Typestate representing an unknown text engine
             pub enum Unknown {}
             unsafe impl Engine for Unknown {
-                type CanOwn = seal::NotOwnable;
+                type CanOwn = NotOwnable;
                 unsafe fn drop(_engine: *mut ttf::sys::TTF_TextEngine) {
                     // You can't own an TextEngine<Unknown> because it is impossible to drop. OwnedTextEngine<Unknown> is inconstructable due to `OWNABLE=false`, so this can never be called by safe code
-                    unsafe {
-                        std::hint::unreachable_unchecked()
-                    }
+                    unreachable!("Invalid engine type to be dropped")
                 }
             }
 
@@ -41,7 +37,7 @@ pub mod kind {
                 #[doc = concat!("Typestate representing the \"", stringify!($name), "\" text engine type")]
                 pub enum $name {}
                 unsafe impl Engine for $name {
-                    type CanOwn = seal::Ownable;
+                    type CanOwn = Ownable;
                     unsafe fn drop(engine: *mut ttf::sys::TTF_TextEngine) {
                         unsafe {
                             return $drop(engine);
