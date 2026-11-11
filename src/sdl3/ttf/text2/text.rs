@@ -5,7 +5,7 @@ use std::{
 
 use sdl3_ttf_sys::ttf::{self, TTF_SubString};
 
-use crate::{Error, IntegerOrSdlError, common, get_error, pixels::{Color, FColor}, rect::Point, render::FPoint};
+use crate::{Error, IntegerOrSdlError, common, get_error, pixels::{Color, FColor}, properties::Properties, rect::Point, render::FPoint};
 
 use super::{
     super::{sys, Font},
@@ -257,7 +257,13 @@ impl<'a, E: Engine> Text<'a, E> {
         unsafe { TextEngine::from_raw(sys::TTF_GetTextEngine(self.raw())).as_ref_unchecked() }
     }
     #[doc(alias = "TTF_GetTextProperties")]
-    //pub fn get_properties(&self) {} // Need to figure out how properties work
+    pub fn get_properties(&self) -> Properties {
+        let properties = unsafe {
+            sys::TTF_GetTextProperties(self.raw())
+        };
+
+        Properties::from_ll(properties)
+    }
     // Can't return a normal `&Font` 'cause  `Font` is not a direct wrapper of `TTF_Font` and can't be reconstructed
     #[doc(alias = "TTF_GetTextFont")]
     pub fn get_font(&self) -> Result<NonNull<sys::TTF_Font>, Error> {
@@ -504,6 +510,7 @@ impl<'a, E: Engine> Text<'a, E> {
             true => Ok(())
         }
     }
+    #[doc(alias = "TTF_SetTextScript")]
     pub fn set_script(&mut self, script: Script) -> Result<(), Error> {
         let success = unsafe {
             ttf::TTF_SetTextScript(self.raw(), script.into_tag())
@@ -514,6 +521,7 @@ impl<'a, E: Engine> Text<'a, E> {
             true => Ok(())
         }
     }
+    #[doc(alias = "TTF_SetTextColor")]
     pub fn set_color(&mut self, color: Color) -> Result<(), Error> {
         let success = unsafe {
             ttf::TTF_SetTextColor(
@@ -530,6 +538,7 @@ impl<'a, E: Engine> Text<'a, E> {
             true => Ok(())
         }
     }
+    #[doc(alias = "TTF_SetTextColorFloat")]
     pub fn set_color_float(&mut self, color: FColor) -> Result<(), Error> {
         let success = unsafe {
             ttf::TTF_SetTextColorFloat(
@@ -546,6 +555,7 @@ impl<'a, E: Engine> Text<'a, E> {
             true => Ok(())
         }
     }
+    #[doc(alias = "TTF_SetTextPosition")]
     pub fn set_position(&mut self, position: Point) -> Result<(), Error> {
         let success = unsafe {
             ttf::TTF_SetTextPosition(self.raw(), position.x, position.y)
@@ -556,6 +566,7 @@ impl<'a, E: Engine> Text<'a, E> {
             true => Ok(())
         }
     }
+    #[doc(alias = "TTF_SetTextWrapWidth")]
     pub fn set_wrap_width(&mut self, width: Option<NonZeroU32>) -> Result<(), IntegerOrSdlError> {
         let width = width.map(|w| w.into()).unwrap_or(0);
         let success = unsafe {
@@ -567,6 +578,7 @@ impl<'a, E: Engine> Text<'a, E> {
             true => Ok(())
         }
     }
+    #[doc(alias = "TTF_SetTextWrapWhitespaceVisible")]
     pub fn set_wrap_width_whitespace_visible(&mut self, visible: bool) -> Result<(), Error> {
         let success = unsafe {
             ttf::TTF_SetTextWrapWhitespaceVisible(self.raw(), visible)
@@ -577,7 +589,16 @@ impl<'a, E: Engine> Text<'a, E> {
             true => Ok(())
         }
     }
-
+    #[doc(alias = "TTF_SetTextFont")]
+    pub fn set_font(&mut self, font: &'a Font) {
+        // Safety: The newly set font has the same lifetime(`'a`) as the text itself
+        unsafe {
+            // Returns true if `text==NULL`, which it never is(since `&mut self` can't be null), so no errors to handle.
+            ttf::TTF_SetTextFont(self.raw(), font.raw());
+        }
+    }
+    
+    #[doc(alias = "TTF_UpdateText")]
     pub fn update_text(&mut self) -> Result<(), Error> {
         let success = unsafe {
             ttf::TTF_UpdateText(self.raw())

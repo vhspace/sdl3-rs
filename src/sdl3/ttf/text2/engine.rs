@@ -54,19 +54,45 @@ pub mod kind {
         Renderer; drop=ttf::sys::TTF_DestroyRendererTextEngine
     );
 }
-use std::{marker::PhantomData, ops::Deref, ptr::NonNull};
+use std::{marker::{PhantomData, PhantomPinned}, ops::{Deref, DerefMut}, ptr::NonNull};
 
-use crate::{gpu::Device, ttf, Error};
+use crate::{Error, gpu::Device, ttf};
 use kind::*;
 
 pub type GpuTextEngine<'a> = TextEngine<'a, Gpu>;
 pub type SurfaceTextEngine<'a> = TextEngine<'a, Surface>;
 pub type RendererTextEngine<'a> = TextEngine<'a, Renderer>;
 
+/// Wrapper around `TTF_GPUTextEngineWinding` and `TTF_GlTextEngineWinding`(they are compatible)
+#[repr(i32)]
+pub enum TextWinding {
+    Invalid = -1,
+    Clockwise = 0,
+    CounterClockwise = 1
+}
+impl From<ttf::sys::TTF_GPUTextEngineWinding> for TextWinding {
+    fn from(value: ttf::sys::TTF_GPUTextEngineWinding) -> Self {
+        match value {
+            ttf::sys::TTF_GPU_TEXTENGINE_WINDING_CLOCKWISE => Self::Clockwise,
+            ttf::sys::TTF_GPU_TEXTENGINE_WINDING_COUNTER_CLOCKWISE => Self::CounterClockwise,
+            _ => Self::Invalid
+        }
+    }
+}
+impl From<TextWinding> for ttf::sys::TTF_GPUTextEngineWinding {
+    fn from(value: TextWinding) -> Self {
+        ttf::sys::TTF_GPUTextEngineWinding::new(value as i32)
+    }
+}
+
+
 /// Thin wrapper around SDL'3 `TTF_TextEngine`, carrying the type of the text engine.
 /// Some operations are only valid for certain text engines(particularly drawing operations), so this leverages the type system for that.
 #[repr(transparent)]
-pub struct TextEngine<'a, E: Engine = Unknown>(ttf::sys::TTF_TextEngine, PhantomData<(E, &'a ())>);
+pub struct TextEngine<'a, E: Engine = Unknown> {
+    _opaque: [u8; 0],
+    _phantom: PhantomData<(E, &'a (), *mut u8, PhantomPinned)>
+}
 impl<'a, E: Engine> TextEngine<'a, E> {
     // Make a TextEngine from a raw SDL3 TTF_TextEngine.
     // Safety: `engine` must be a valid text engine for the given engine type(`E`).
@@ -76,6 +102,9 @@ impl<'a, E: Engine> TextEngine<'a, E> {
 
     pub fn raw(&self) -> *const ttf::sys::TTF_TextEngine {
         (&raw const *self).cast()
+    }
+    pub fn raw_mut(&mut self) -> *mut ttf::sys::TTF_TextEngine {
+        (&raw mut *self).cast()
     }
 }
 
@@ -88,6 +117,12 @@ impl<'a, E: Engine<CanOwn = Ownable>> Deref for OwnedTextEngine<'a, E> {
     fn deref(&self) -> &Self::Target {
         // Safety: `self.engine` is valid for the lifetime of `self`
         unsafe { self.engine.as_ref() }
+    }
+}
+impl<'a, E: Engine<CanOwn = Ownable>> DerefMut for OwnedTextEngine<'a, E> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        // Safety: `self.engine` is valid for the lifetime of `self`
+        unsafe { self.engine.as_mut() }
     }
 }
 impl<'a, E: Engine<CanOwn = Ownable>> Drop for OwnedTextEngine<'a, E> {
@@ -127,6 +162,19 @@ impl<'a> OwnedTextEngine<'a, Gpu> {
         match engine {
             None => Err(crate::get_error()),
             Some(engine) => Ok(Self { engine }),
+        }
+    }
+
+    #[doc(alias = "TTF_SetGPUTextEngineWinding")]
+    pub fn set_winding(&mut self, winding: TextWinding) {
+        unsafe {
+            ttf::sys::TTF_SetGPUTextEngineWinding(self.raw_mut(), winding.into());
+        }
+    }
+    #[doc(alias = "TTF_GPUTextEngineWinding")]
+    pub fn get_winding(&self) -> TextWinding {
+        unsafe {
+            ttf::sys::TTF_GetGPUTextEngineWinding(self.raw()).into()
         }
     }
 }
