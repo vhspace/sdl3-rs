@@ -5,7 +5,7 @@ use std::{
 
 use sdl3_ttf_sys::ttf::{self, TTF_SubString};
 
-use crate::{Error, get_error, pixels::{Color, FColor}, rect::Point, render::FPoint};
+use crate::{Error, IntegerOrSdlError, common, get_error, pixels::{Color, FColor}, rect::Point, render::FPoint};
 
 use super::{
     super::{sys, Font},
@@ -106,6 +106,30 @@ impl Drop for SubstringArray {
     }
 }
 
+/// Error from accessing an out of bounds part of text
+#[derive(Debug)]
+pub enum TextAccessError {
+    Sdl3(Error),
+    OutOfBounds
+}
+impl TextAccessError {
+    fn cast_integer<T: TryInto<i32>>(integer: T) -> Result<i32, TextAccessError> {
+        integer.try_into().map_err(|_| Self::OutOfBounds)
+    }
+}
+impl From<Error> for TextAccessError {
+    fn from(value: Error) -> Self {
+        Self::Sdl3(value)
+    }
+}
+impl Display for TextAccessError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Sdl3(error) => error.fmt(f),
+            Self::OutOfBounds => write!(f, "Invalid index into string outside of string body")
+        }
+    }
+}
 
 /// An error from operations modifying the text of a `Text` object 
 #[derive(Debug)]
@@ -114,8 +138,10 @@ pub enum TextModifyError {
     InvalidUtf8Boundry,
     OutOfBounds,
 }
-fn cast_integer<T: TryInto<i32>>(integer: T) -> Result<i32, TextModifyError> {
-    integer.try_into().map_err(|_| TextModifyError::OutOfBounds)
+impl TextModifyError {
+    fn cast_integer<T: TryInto<i32>>(integer: T) -> Result<i32, TextModifyError> {
+        integer.try_into().map_err(|_| TextModifyError::OutOfBounds)
+    }
 }
 
 impl From<Error> for TextModifyError {
@@ -161,7 +187,7 @@ impl<'a, E: Engine> Text<'a, E> {
 
         // Safety: SDL3 performs it's own bounds checking, and we just validated utf8 boundries.  SDL3 makes it's own copy of `text`.
         unsafe {
-            match sys::TTF_InsertTextString(self.raw(), cast_integer(index)?, text.ptr, text.len) {
+            match sys::TTF_InsertTextString(self.raw(), TextModifyError::cast_integer(index)?, text.ptr, text.len) {
                 false => Err(crate::get_error().into()),
                 true => Ok(()),
             }
@@ -202,7 +228,7 @@ impl<'a, E: Engine> Text<'a, E> {
 
         // Safety: SDL3 performs it's own bounds checking, and we just validated utf8 boundries.
         unsafe {
-            match sys::TTF_DeleteTextString(self.raw(), cast_integer(index)?, cast_integer(size)?) {
+            match sys::TTF_DeleteTextString(self.raw(), TextModifyError::cast_integer(index)?, TextModifyError::cast_integer(size)?) {
                 false => Err(crate::get_error().into()),
                 true => Ok(()),
             }
@@ -367,18 +393,18 @@ impl<'a, E: Engine> Text<'a, E> {
         }
     }
     #[doc(alias = "TTF_GetTextSubStringForLine")]
-    pub fn get_substring_for_line(&self, line: usize)  -> Result<TTF_SubString, Error> {
+    pub fn get_substring_for_line(&self, line: usize)  -> Result<TTF_SubString, TextAccessError> {
         let mut substring = MaybeUninit::uninit();
         let success = unsafe {
             ttf::TTF_GetTextSubStringForLine(
                 self.raw(),
-                line.try_into().unwrap(),
+                TextAccessError::cast_integer(line)?,
                 substring.as_mut_ptr()
             )
         };
 
         match success {
-            false => Err(get_error()),
+            false => Err(get_error().into()),
             // Safety: `TTF_GetTextSubStringForLine` succeeded, initalizing `substring`
             true => unsafe {
                 Ok(substring.assume_init())
@@ -386,16 +412,16 @@ impl<'a, E: Engine> Text<'a, E> {
         }
     }    
     #[doc(alias = "TTF_GetTextSubStringsForRange")]
-    pub fn get_substrings_for_range(&self, offset: usize, size: Option<u32>) -> Result<SubstringArray, Error> {
-        let size: i32 = size.map(|s| s.try_into().unwrap()).unwrap_or(-1);
+    pub fn get_substrings_for_range(&self, offset: usize, size: Option<u32>) -> Result<SubstringArray, TextAccessError> {
+        let size: i32 = size.map(|s| TextAccessError::cast_integer(s)).unwrap_or(Ok(-1))?; // Accessing an impossibly long range would, effectively, always be outside the text range
 
         let mut substrings_count = MaybeUninit::uninit();
         let success = unsafe {
-            NonNull::new(ttf::TTF_GetTextSubStringsForRange(self.raw(), offset.try_into().unwrap(), size, substrings_count.as_mut_ptr()))
+            NonNull::new(ttf::TTF_GetTextSubStringsForRange(self.raw(), TextAccessError::cast_integer(offset)?, size, substrings_count.as_mut_ptr()))
         };
 
         match success {
-            None => Err(get_error()),
+            None => Err(get_error().into()),
             // Safety: 'TTF_GetTextSubStringsForRange` has succeeded, initalizing `substrings` with the quanity of substrings found.`
             Some(substrings) => unsafe {
                 Ok(SubstringArray { substrings , length: substrings_count.assume_init() as usize })
@@ -530,14 +556,14 @@ impl<'a, E: Engine> Text<'a, E> {
             true => Ok(())
         }
     }
-    pub fn set_wrap_width(&mut self, width: Option<NonZeroU32>) -> Result<(), Error> {
+    pub fn set_wrap_width(&mut self, width: Option<NonZeroU32>) -> Result<(), IntegerOrSdlError> {
         let width = width.map(|w| w.into()).unwrap_or(0);
         let success = unsafe {
-            ttf::TTF_SetTextWrapWidth(self.raw(), width.try_into().unwrap())
+            ttf::TTF_SetTextWrapWidth(self.raw(), common::validate_int(width, "width")?)
         };
 
         match success {
-            false => Err(get_error()),
+            false => Err(get_error().into()),
             true => Ok(())
         }
     }
@@ -630,15 +656,11 @@ impl<'a> Text<'a, Gpu> {
         unsafe {
             match NonNull::new(sys::TTF_GetGPUTextDrawData(self.raw())) {
                 Some(ptr) => Ok(Some(ptr.cast().as_ref())),
-                None => {
-                    let error = get_error();
 
-                    // Empty error string means no error was set, and `TTF_GetGPUTextDrawData` also returns null for empty text
-                    if error.0 == "" {
-                        Ok(None)
-                    } else {
-                        Err(error)
-                    }
+                // `TTF_GetGPUTextDrawData` also returns null for empty text
+                None => match self.str() {
+                    "" => Ok(None),
+                    _  => Err(get_error())
                 },
             }
         }
@@ -651,13 +673,16 @@ impl<'a> Text<'a, Surface> {
         &self,
         x: u32,
         y: u32,
-        surface: &crate::surface::Surface,
-    ) -> Result<(), Error> {
+        surface: &mut crate::surface::Surface,
+    ) -> Result<(), IntegerOrSdlError> {
+        let x = common::validate_int(x, "x")?;
+        let y = common::validate_int(y, "y")?;
+
         let success =
-            unsafe { sys::TTF_DrawSurfaceText(self.raw(), cast_integer(x).unwrap(), cast_integer(y).unwrap(), surface.raw()) };
+            unsafe { sys::TTF_DrawSurfaceText(self.raw(), x, y, surface.raw()) };
 
         match success {
-            false => Err(crate::get_error()),
+            false => Err(crate::get_error().into()),
             true => Ok(()),
         }
     }
