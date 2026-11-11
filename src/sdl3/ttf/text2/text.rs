@@ -253,7 +253,7 @@ impl<'a, E: Engine> Text<'a, E> {
     #[doc(alias = "TTF_GetTextScript")]
     pub fn get_script(&self) -> Option<Script> {
         unsafe {
-            Script::from_u32(sys::TTF_GetTextScript(self.raw())) 
+            Script::from_tag(sys::TTF_GetTextScript(self.raw())) 
         }
     }
     #[doc(alias = "TTF_GetTextColor")]
@@ -480,7 +480,7 @@ impl<'a, E: Engine> Text<'a, E> {
     }
     pub fn set_script(&mut self, script: Script) -> Result<(), Error> {
         let success = unsafe {
-            ttf::TTF_SetTextScript(self.raw(), script.into())
+            ttf::TTF_SetTextScript(self.raw(), script.into_tag())
         };
 
         match success {

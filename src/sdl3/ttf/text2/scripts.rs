@@ -6,7 +6,7 @@ macro_rules! make_scripts {
         #[derive(Clone, Copy, Debug, PartialEq, Eq)]
         pub enum Script {
             $(
-                $code = $n
+                $code = name_to_tag(stringify!($code))
             ),*
         }
         impl Script {
@@ -17,7 +17,7 @@ macro_rules! make_scripts {
                     ),*
                 }
             }
-            pub fn from_u32(code: u32) -> Option<Self> {
+            pub fn from_code(code: u32) -> Option<Self> {
                 match code {
                     $(
                         $n => Some(Self::$code),
@@ -25,14 +25,30 @@ macro_rules! make_scripts {
                     _ => None
                 }
             }
-        }
-
-        impl From<Script> for u32 {
-            fn from(value: Script) -> u32 {
-                value as u32
+            pub fn from_tag(tag: u32) -> Option<Self> {
+                let tag = tag.to_be_bytes();
+                let tag = str::from_utf8(&tag);
+                match tag {
+                    $(
+                        Ok(stringify!($code)) => Some(Self::$code),
+                    )*
+                    _ => None
+                }
+            }
+            pub fn into_tag(self) -> u32 {
+                self as u32
             }
         }
+
     };
+}
+
+// A reimplementation of TTF_StringToTag for const contexts
+const fn name_to_tag(name: &str) -> u32 {
+    let mut tag = [0u8; 4];
+    tag.copy_from_slice(name.as_bytes());
+
+    u32::from_be_bytes(tag)
 }
 
 // Enormous mapping of names and codes for different unicode scripts.
@@ -193,56 +209,6 @@ make_scripts!(
     (Piqd, 293, "Klingon (KLI pIqaD)"),
     (Prti, 130, "Inscriptional Parthian"),
     (Psin, 103, "Proto-Sinaitic"),
-    (Private0, 900, "Reserved for private use (start)"),
-    (Private1, 901, "Reserved for private use 1"),
-    (Private2, 902, "Reserved for private use 2"),
-    (Private3, 903, "Reserved for private use 3"),
-    (Private4, 904, "Reserved for private use 4"),
-    (Private5, 905, "Reserved for private use 5"),
-    (Private6, 906, "Reserved for private use 6"),
-    (Private7, 907, "Reserved for private use 7"),
-    (Private8, 908, "Reserved for private use 8"),
-    (Private9, 909, "Reserved for private use 9"),
-    (Private10, 910, "Reserved for private use 10"),
-    (Private11, 911, "Reserved for private use 11"),
-    (Private12, 912, "Reserved for private use 12"),
-    (Private13, 913, "Reserved for private use 13"),
-    (Private14, 914, "Reserved for private use 14"),
-    (Private15, 915, "Reserved for private use 15"),
-    (Private16, 916, "Reserved for private use 16"),
-    (Private17, 917, "Reserved for private use 17"),
-    (Private18, 918, "Reserved for private use 18"),
-    (Private19, 919, "Reserved for private use 19"),
-    (Private20, 920, "Reserved for private use 20"),
-    (Private21, 921, "Reserved for private use 21"),
-    (Private22, 922, "Reserved for private use 22"),
-    (Private23, 923, "Reserved for private use 23"),
-    (Private24, 924, "Reserved for private use 24"),
-    (Private25, 925, "Reserved for private use 25"),
-    (Private26, 926, "Reserved for private use 26"),
-    (Private27, 927, "Reserved for private use 27"),
-    (Private28, 928, "Reserved for private use 28"),
-    (Private29, 929, "Reserved for private use 29"),
-    (Private30, 930, "Reserved for private use 30"),
-    (Private31, 931, "Reserved for private use 31"),
-    (Private32, 932, "Reserved for private use 32"),
-    (Private33, 933, "Reserved for private use 33"),
-    (Private34, 934, "Reserved for private use 34"),
-    (Private35, 935, "Reserved for private use 35"),
-    (Private36, 936, "Reserved for private use 36"),
-    (Private37, 937, "Reserved for private use 37"),
-    (Private38, 938, "Reserved for private use 38"),
-    (Private39, 939, "Reserved for private use 39"),
-    (Private40, 940, "Reserved for private use 40"),
-    (Private41, 941, "Reserved for private use 41"),
-    (Private42, 942, "Reserved for private use 42"),
-    (Private43, 943, "Reserved for private use 43"),
-    (Private44, 944, "Reserved for private use 44"),
-    (Private45, 945, "Reserved for private use 45"),
-    (Private46, 946, "Reserved for private use 46"),
-    (Private47, 947, "Reserved for private use 47"),
-    (Private48, 948, "Reserved for private use 48"),
-    (Private49, 949, "Reserved for private use (end)"),
     (Ranj, 303, "Ranjana"),
     (Rjng, 363, "Rejang (Redjang, Kaganga)"),
     (Rohg, 167, "Hanifi Rohingya"),
