@@ -1,8 +1,8 @@
 //! An interface for `TTF_Text` and `TTF_TextEngine`, support all* different types of text engine  
 //! \* GLTextEngine is currently unsupported
 pub mod engine;
-pub mod text;
 mod scripts;
+pub mod text;
 
 const NULL_STRING: *const std::ffi::c_char = &raw const *&0;
 
@@ -29,7 +29,6 @@ impl StrDestructure for &str {
         }
     }
 }
-
 
 pub use engine::{OwnedTextEngine, TextEngine};
 pub use text::{OwnedText, Text};

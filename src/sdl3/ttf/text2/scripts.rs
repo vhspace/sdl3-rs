@@ -52,7 +52,7 @@ const fn name_to_tag(name: &str) -> u32 {
 }
 
 // Enormous mapping of names and codes for different unicode scripts.
-// Taken from https://unicode.org/iso15924/iso15924-codes.html, 
+// Taken from https://unicode.org/iso15924/iso15924-codes.html,
 make_scripts!(
     (Adlm, 166, "Adlam"),
     (Afak, 439, "Afaka"),

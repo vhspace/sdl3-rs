@@ -3,8 +3,6 @@ pub mod kind {
     //! zero-sized type states representing different types of text engine
     use crate::ttf;
 
-
-
     /// A text engine that can be owned(aka: Not `Unknown`)
     pub enum Ownable {}
     /// A text engine that can't be owned(aka: `Unknown`)
@@ -13,7 +11,7 @@ pub mod kind {
     // Thisis a public interface, apparently, so allow external code to implement it(unsafely)
     ///
     /// # Safety
-    /// A type that implements this trait must be a valid TTF_TextEngine, usable with the standard SDL3 interface 
+    /// A type that implements this trait must be a valid TTF_TextEngine, usable with the standard SDL3 interface
     pub unsafe trait Engine {
         /// You can't specialize Drop on specific types, so this associated function allows Drop to specialize for T: Engine and handle dropping every engine.
         unsafe fn drop(engine: *mut ttf::sys::TTF_TextEngine);
@@ -54,9 +52,13 @@ pub mod kind {
         Renderer; drop=ttf::sys::TTF_DestroyRendererTextEngine
     );
 }
-use std::{marker::{PhantomData, PhantomPinned}, ops::{Deref, DerefMut}, ptr::NonNull};
+use std::{
+    marker::{PhantomData, PhantomPinned},
+    ops::{Deref, DerefMut},
+    ptr::NonNull,
+};
 
-use crate::{Error, gpu::Device, ttf};
+use crate::{gpu::Device, ttf, Error};
 use kind::*;
 
 pub type GpuTextEngine<'a> = TextEngine<'a, Gpu>;
@@ -68,14 +70,14 @@ pub type RendererTextEngine<'a> = TextEngine<'a, Renderer>;
 pub enum TextWinding {
     Invalid = -1,
     Clockwise = 0,
-    CounterClockwise = 1
+    CounterClockwise = 1,
 }
 impl From<ttf::sys::TTF_GPUTextEngineWinding> for TextWinding {
     fn from(value: ttf::sys::TTF_GPUTextEngineWinding) -> Self {
         match value {
             ttf::sys::TTF_GPU_TEXTENGINE_WINDING_CLOCKWISE => Self::Clockwise,
             ttf::sys::TTF_GPU_TEXTENGINE_WINDING_COUNTER_CLOCKWISE => Self::CounterClockwise,
-            _ => Self::Invalid
+            _ => Self::Invalid,
         }
     }
 }
@@ -85,13 +87,12 @@ impl From<TextWinding> for ttf::sys::TTF_GPUTextEngineWinding {
     }
 }
 
-
 /// Thin wrapper around SDL'3 `TTF_TextEngine`, carrying the type of the text engine.
 /// Some operations are only valid for certain text engines(particularly drawing operations), so this leverages the type system for that.
 #[repr(transparent)]
 pub struct TextEngine<'a, E: Engine = Unknown> {
     _opaque: [u8; 0],
-    _phantom: PhantomData<(E, &'a (), *mut u8, PhantomPinned)>
+    _phantom: PhantomData<(E, &'a (), *mut u8, PhantomPinned)>,
 }
 impl<'a, E: Engine> TextEngine<'a, E> {
     // Make a TextEngine from a raw SDL3 TTF_TextEngine.
@@ -173,9 +174,7 @@ impl<'a> OwnedTextEngine<'a, Gpu> {
     }
     #[doc(alias = "TTF_GPUTextEngineWinding")]
     pub fn get_winding(&self) -> TextWinding {
-        unsafe {
-            ttf::sys::TTF_GetGPUTextEngineWinding(self.raw()).into()
-        }
+        unsafe { ttf::sys::TTF_GetGPUTextEngineWinding(self.raw()).into() }
     }
 }
 impl<'a> OwnedTextEngine<'a, Surface> {

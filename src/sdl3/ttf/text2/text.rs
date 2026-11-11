@@ -1,11 +1,25 @@
 //! Thin wrappers around `TTF_Text` for working with different types of text and engines
 use std::{
-    cell::Cell, ffi::CStr, fmt::Display, marker::{PhantomData, PhantomPinned}, mem::MaybeUninit, num::NonZeroU32, ops::{Deref, DerefMut, Index}, ptr::NonNull,
+    cell::Cell,
+    ffi::CStr,
+    fmt::Display,
+    marker::{PhantomData, PhantomPinned},
+    mem::MaybeUninit,
+    num::NonZeroU32,
+    ops::{Deref, DerefMut, Index},
+    ptr::NonNull,
 };
 
 use sdl3_ttf_sys::ttf::{self, TTF_SubString};
 
-use crate::{Error, IntegerOrSdlError, common, get_error, pixels::{Color, FColor}, properties::Properties, rect::Point, render::FPoint};
+use crate::{
+    common, get_error,
+    pixels::{Color, FColor},
+    properties::Properties,
+    rect::Point,
+    render::FPoint,
+    Error, IntegerOrSdlError,
+};
 
 use super::{
     super::{sys, Font},
@@ -22,9 +36,9 @@ pub enum Direction {
     LeftToRight = sys::TTF_DIRECTION_LTR.0,
     RightToLeft = sys::TTF_DIRECTION_RTL.0,
     TopToBottom = sys::TTF_DIRECTION_TTB.0,
-    BottomToTop = sys::TTF_DIRECTION_BTT.0
+    BottomToTop = sys::TTF_DIRECTION_BTT.0,
 }
-impl From<sys::TTF_Direction>  for Direction {
+impl From<sys::TTF_Direction> for Direction {
     // In theory, for returns directly from SDL functions, it might be faster to transmute(), but I doubt that is needed and is more complexity
     fn from(value: sys::TTF_Direction) -> Self {
         match value {
@@ -32,7 +46,7 @@ impl From<sys::TTF_Direction>  for Direction {
             sys::TTF_DIRECTION_RTL => Self::RightToLeft,
             sys::TTF_DIRECTION_TTB => Self::TopToBottom,
             sys::TTF_DIRECTION_BTT => Self::BottomToTop,
-            _ => Self::Invalid
+            _ => Self::Invalid,
         }
     }
 }
@@ -43,7 +57,7 @@ impl From<Direction> for sys::TTF_Direction {
 }
 
 /// Wrapper around `TTF_ImageType`
-/// 
+///
 /// Values mean as follows:  
 /// Self::Alpha => The texture atlas's color channels are white and carries only alpha data  
 /// Self::Color => The texture atlas's color channels contain image data  
@@ -53,7 +67,7 @@ pub enum ImageType {
     Invalid = sys::TTF_IMAGE_INVALID.0,
     Alpha = sys::TTF_IMAGE_ALPHA.0,
     Color = sys::TTF_IMAGE_COLOR.0,
-    SignedDistance = sys::TTF_IMAGE_SDF.0
+    SignedDistance = sys::TTF_IMAGE_SDF.0,
 }
 impl From<sys::TTF_ImageType> for ImageType {
     fn from(value: sys::TTF_ImageType) -> Self {
@@ -61,7 +75,7 @@ impl From<sys::TTF_ImageType> for ImageType {
             sys::TTF_IMAGE_ALPHA => Self::Alpha,
             sys::TTF_IMAGE_COLOR => Self::Color,
             sys::TTF_IMAGE_SDF => Self::SignedDistance,
-            _ => Self::Invalid
+            _ => Self::Invalid,
         }
     }
 }
@@ -78,7 +92,7 @@ pub use super::scripts::Script;
 /// IE: &'a [&'a TTF_SubString], only 'a is inexpressible because both the slice and the elements are owned in the same allocation, so it has to borrowed.
 pub struct SubstringArray {
     substrings: NonNull<*mut TTF_SubString>,
-    length: usize
+    length: usize,
 }
 impl SubstringArray {
     pub fn len(&self) -> usize {
@@ -87,22 +101,23 @@ impl SubstringArray {
     pub fn elements<'a>(&'a self) -> &'a [&'a TTF_SubString] {
         // Every part of the `substring` is a valid pointer to a `TTF_SubString` with the same lifetime as `substring` itself
         unsafe {
-            std::slice::from_raw_parts(self.substrings.cast::<&'a TTF_SubString>().as_ptr(), self.len())
+            std::slice::from_raw_parts(
+                self.substrings.cast::<&'a TTF_SubString>().as_ptr(),
+                self.len(),
+            )
         }
-    } 
+    }
 }
 impl Index<usize> for SubstringArray {
     type Output = TTF_SubString;
     fn index(&self, index: usize) -> &Self::Output {
         self.elements()[index]
-    }   
+    }
 }
 impl Drop for SubstringArray {
     fn drop(&mut self) {
         // Safety: `substring` will never be used after `drop()`
-        unsafe {
-            crate::sys::stdinc::SDL_free(self.substrings.as_ptr().cast())
-        }
+        unsafe { crate::sys::stdinc::SDL_free(self.substrings.as_ptr().cast()) }
     }
 }
 
@@ -110,7 +125,7 @@ impl Drop for SubstringArray {
 #[derive(Debug)]
 pub enum TextAccessError {
     Sdl3(Error),
-    OutOfBounds
+    OutOfBounds,
 }
 impl TextAccessError {
     fn cast_integer<T: TryInto<i32>>(integer: T) -> Result<i32, TextAccessError> {
@@ -126,12 +141,12 @@ impl Display for TextAccessError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Sdl3(error) => error.fmt(f),
-            Self::OutOfBounds => write!(f, "Invalid index into string outside of string body")
+            Self::OutOfBounds => write!(f, "Invalid index into string outside of string body"),
         }
     }
 }
 
-/// An error from operations modifying the text of a `Text` object 
+/// An error from operations modifying the text of a `Text` object
 #[derive(Debug)]
 pub enum TextModifyError {
     Sdl3(Error),
@@ -154,7 +169,7 @@ impl Display for TextModifyError {
         match self {
             Self::Sdl3(error) => error.fmt(f),
             Self::InvalidUtf8Boundry => write!(f, "Invalid index into string outside UTF8 boundry"),
-            Self::OutOfBounds => write!(f, "Invalid index outside of string body")
+            Self::OutOfBounds => write!(f, "Invalid index outside of string body"),
         }
     }
 }
@@ -165,11 +180,11 @@ impl std::error::Error for TextModifyError {}
 #[repr(transparent)]
 pub struct Text<'a, E: Engine = Unknown> {
     _opaque: [u8; 0],
-    _phantom: PhantomData<(&'a TextEngine<'a,E>, &'a Font<'a>, *mut u8, PhantomPinned)>,
+    _phantom: PhantomData<(&'a TextEngine<'a, E>, &'a Font<'a>, *mut u8, PhantomPinned)>,
 }
 impl<'a, E: Engine> Text<'a, E> {
     /// Insert the given `text` at the given byte `index`.
-    /// 
+    ///
     /// # Errors
     /// If the underlying SDL3 call errors or if `index` is not a UTF8 boundry or is out of range of the text.
     #[doc(alias = "TTF_InsertTextString")]
@@ -187,14 +202,19 @@ impl<'a, E: Engine> Text<'a, E> {
 
         // Safety: SDL3 performs it's own bounds checking, and we just validated utf8 boundries.  SDL3 makes it's own copy of `text`.
         unsafe {
-            match sys::TTF_InsertTextString(self.raw(), TextModifyError::cast_integer(index)?, text.ptr, text.len) {
+            match sys::TTF_InsertTextString(
+                self.raw(),
+                TextModifyError::cast_integer(index)?,
+                text.ptr,
+                text.len,
+            ) {
                 false => Err(crate::get_error().into()),
                 true => Ok(()),
             }
         }
     }
     /// Append the given `text`.
-    /// 
+    ///
     /// # Errors
     /// If the underlying SDL3 call errors.
     #[doc(alias = "TTF_AppendTextString")]
@@ -210,7 +230,7 @@ impl<'a, E: Engine> Text<'a, E> {
         }
     }
     /// Deletes the text at the given byte `index` for the given length `size`.
-    /// 
+    ///
     /// # Errors
     /// If the underlying SDL3 call errors or if either `index` or `index + size` is out of range or does not fall on a utf8 boundr.
     #[doc(alias = "TTF_DeleteTextString")]
@@ -218,8 +238,10 @@ impl<'a, E: Engine> Text<'a, E> {
         let current = self.str();
 
         // We already have to check for chararacter boundries, so also check length to provide a more rich error(SDL has it's own bounds checking, but Error is extremely opaque)
-        let end = index.checked_add(size).ok_or(TextModifyError::OutOfBounds)?;
-        if index > current.len() ||  end > current.len() {
+        let end = index
+            .checked_add(size)
+            .ok_or(TextModifyError::OutOfBounds)?;
+        if index > current.len() || end > current.len() {
             return Err(TextModifyError::OutOfBounds);
         }
         if !current.is_char_boundary(index) || !current.is_char_boundary(end) {
@@ -228,14 +250,18 @@ impl<'a, E: Engine> Text<'a, E> {
 
         // Safety: SDL3 performs it's own bounds checking, and we just validated utf8 boundries.
         unsafe {
-            match sys::TTF_DeleteTextString(self.raw(), TextModifyError::cast_integer(index)?, TextModifyError::cast_integer(size)?) {
+            match sys::TTF_DeleteTextString(
+                self.raw(),
+                TextModifyError::cast_integer(index)?,
+                TextModifyError::cast_integer(size)?,
+            ) {
                 false => Err(crate::get_error().into()),
                 true => Ok(()),
             }
         }
     }
     /// Set the text content to the given `text`.
-    /// 
+    ///
     /// # Errors
     /// If the underlying SDL3 call errors.
     #[doc(alias = "TTF_SetTextString")]
@@ -258,55 +284,45 @@ impl<'a, E: Engine> Text<'a, E> {
     }
     #[doc(alias = "TTF_GetTextProperties")]
     pub fn get_properties(&self) -> Properties {
-        let properties = unsafe {
-            sys::TTF_GetTextProperties(self.raw())
-        };
+        let properties = unsafe { sys::TTF_GetTextProperties(self.raw()) };
 
         Properties::from_ll(properties)
     }
     // Can't return a normal `&Font` 'cause  `Font` is not a direct wrapper of `TTF_Font` and can't be reconstructed
     #[doc(alias = "TTF_GetTextFont")]
     pub fn get_font(&self) -> Result<NonNull<sys::TTF_Font>, Error> {
-        let font = unsafe { 
-            NonNull::new(sys::TTF_GetTextFont(self.raw()))
-        };
+        let font = unsafe { NonNull::new(sys::TTF_GetTextFont(self.raw())) };
 
         match font {
             Some(font) => Ok(font),
-            None => Err(get_error())
+            None => Err(get_error()),
         }
     }
     #[doc(alias = "TTF_GetTextDirection")]
     pub fn get_direction(&self) -> Direction {
-        unsafe {
-            sys::TTF_GetTextDirection(self.raw()).into()
-        }
+        unsafe { sys::TTF_GetTextDirection(self.raw()).into() }
     }
     #[doc(alias = "TTF_GetTextScript")]
     pub fn get_script(&self) -> Option<Script> {
-        unsafe {
-            Script::from_tag(sys::TTF_GetTextScript(self.raw())) 
-        }
+        unsafe { Script::from_tag(sys::TTF_GetTextScript(self.raw())) }
     }
     #[doc(alias = "TTF_GetTextColor")]
     pub fn get_color(&self) -> Result<Color, Error> {
         let mut data = [MaybeUninit::uninit(); 4];
         let success = unsafe {
             sys::TTF_GetTextColor(
-                self.raw(), 
-                data[0].as_mut_ptr(), 
-                data[1].as_mut_ptr(), 
-                data[2].as_mut_ptr(), 
-                data[3].as_mut_ptr()
+                self.raw(),
+                data[0].as_mut_ptr(),
+                data[1].as_mut_ptr(),
+                data[2].as_mut_ptr(),
+                data[3].as_mut_ptr(),
             )
         };
 
         match success {
             false => Err(get_error()),
             // Safety: `TTF_GetTextColor` succeded, initalizing `data`, and `Color` is repr(C), allowing it to be directly transmuted
-            true => unsafe {
-                Ok(std::mem::transmute::<_, Color>(data))
-            }
+            true => unsafe { Ok(std::mem::transmute::<_, Color>(data)) },
         }
     }
     #[doc(alias = "TTF_GetTextColorFloat")]
@@ -314,144 +330,132 @@ impl<'a, E: Engine> Text<'a, E> {
         let mut data = [MaybeUninit::uninit(); 4];
         let success = unsafe {
             sys::TTF_GetTextColorFloat(
-                self.raw(), 
+                self.raw(),
                 data[0].as_mut_ptr(),
-                data[1].as_mut_ptr(), 
-                data[2].as_mut_ptr(), 
-                data[3].as_mut_ptr()
+                data[1].as_mut_ptr(),
+                data[2].as_mut_ptr(),
+                data[3].as_mut_ptr(),
             )
         };
 
         match success {
             false => Err(get_error()),
             // Safety: `TTF_GetTextColorFloat` succeded, initalizing `data`, and `FColor` is repr(C), allowing it to be directly transmuted
-            true => unsafe {
-                Ok(std::mem::transmute::<_, FColor>(data))
-            }
+            true => unsafe { Ok(std::mem::transmute::<_, FColor>(data)) },
         }
     }
     #[doc(alias = "TTF_GetTextPosition")]
     pub fn get_position(&self) -> Result<Point, Error> {
         let mut data = [MaybeUninit::uninit(); 2];
         let success = unsafe {
-            ttf::TTF_GetTextPosition(
-                self.raw(),
-                data[0].as_mut_ptr(),
-                data[1].as_mut_ptr()
-            )
+            ttf::TTF_GetTextPosition(self.raw(), data[0].as_mut_ptr(), data[1].as_mut_ptr())
         };
 
         match success {
             false => Err(get_error()),
             // Safety: `TTF_GetTextPOsition` succeded, initalizing `data`
-            true => unsafe {
-                Ok(Point::new(data[0].assume_init(), data[1].assume_init()))
-            }
+            true => unsafe { Ok(Point::new(data[0].assume_init(), data[1].assume_init())) },
         }
     }
     #[doc(alias = "TTF_GetTextWrapWidth")]
-    pub fn get_wrap_width(&self) -> Result<Option<NonZeroU32>, Error>{
+    pub fn get_wrap_width(&self) -> Result<Option<NonZeroU32>, Error> {
         let mut wrap_width = MaybeUninit::uninit();
-        let success = unsafe {
-            ttf::TTF_GetTextWrapWidth(self.raw(), wrap_width.as_mut_ptr())
-        };
+        let success = unsafe { ttf::TTF_GetTextWrapWidth(self.raw(), wrap_width.as_mut_ptr()) };
 
         match success {
             false => Err(get_error()),
             // Safety: `TTF_GetTextWrapWidth` has succeeded, initalizing `wrap_width`
             true => unsafe {
                 Ok(NonZeroU32::new(wrap_width.assume_init() as u32)) // 0 means "No set wrap width", and a negative wrap width isn't meaningful, so convert to u32
-            }
+            },
         }
     }
     #[doc(alias = "TTF_GetTextSize")]
     pub fn get_size(&self) -> Result<(u32, u32), Error> {
         let mut data = [MaybeUninit::uninit(); 2];
-        let success = unsafe {
-            ttf::TTF_GetTextSize(
-                self.raw(),
-                data[0].as_mut_ptr(),
-                data[1].as_mut_ptr()
-            )
-        };
+        let success =
+            unsafe { ttf::TTF_GetTextSize(self.raw(), data[0].as_mut_ptr(), data[1].as_mut_ptr()) };
 
         match success {
             false => Err(get_error()),
             // Safety: `TTF_GetTextSize` has succeeded, initalizing `data`
             true => unsafe {
-                Ok((data[0].assume_init() as u32, data[1].assume_init() as u32)) // Negative size isn't meaningful, so cast to u32
-            }
+                Ok((data[0].assume_init() as u32, data[1].assume_init() as u32))
+                // Negative size isn't meaningful, so cast to u32
+            },
         }
     }
     #[doc(alias = "TTF_GetTextSubString")]
     pub fn get_substring(&self, offset: i32) -> Result<TTF_SubString, Error> {
         let mut substring = MaybeUninit::uninit();
-        let success = unsafe {
-            ttf::TTF_GetTextSubString(self.raw(), offset, substring.as_mut_ptr())
-        };
+        let success =
+            unsafe { ttf::TTF_GetTextSubString(self.raw(), offset, substring.as_mut_ptr()) };
 
         match success {
             false => Err(get_error()),
             // Safety: `TTF_GetTextSubString` succeeded, initalizing `substring`
-            true => unsafe {
-                Ok(substring.assume_init())
-            }
+            true => unsafe { Ok(substring.assume_init()) },
         }
     }
     #[doc(alias = "TTF_GetTextSubStringForLine")]
-    pub fn get_substring_for_line(&self, line: usize)  -> Result<TTF_SubString, TextAccessError> {
+    pub fn get_substring_for_line(&self, line: usize) -> Result<TTF_SubString, TextAccessError> {
         let mut substring = MaybeUninit::uninit();
         let success = unsafe {
             ttf::TTF_GetTextSubStringForLine(
                 self.raw(),
                 TextAccessError::cast_integer(line)?,
-                substring.as_mut_ptr()
+                substring.as_mut_ptr(),
             )
         };
 
         match success {
             false => Err(get_error().into()),
             // Safety: `TTF_GetTextSubStringForLine` succeeded, initalizing `substring`
-            true => unsafe {
-                Ok(substring.assume_init())
-            }
+            true => unsafe { Ok(substring.assume_init()) },
         }
-    }    
+    }
     #[doc(alias = "TTF_GetTextSubStringsForRange")]
-    pub fn get_substrings_for_range(&self, offset: usize, size: Option<u32>) -> Result<SubstringArray, TextAccessError> {
-        let size: i32 = size.map(|s| TextAccessError::cast_integer(s)).unwrap_or(Ok(-1))?; // Accessing an impossibly long range would, effectively, always be outside the text range
+    pub fn get_substrings_for_range(
+        &self,
+        offset: usize,
+        size: Option<u32>,
+    ) -> Result<SubstringArray, TextAccessError> {
+        let size: i32 = size
+            .map(|s| TextAccessError::cast_integer(s))
+            .unwrap_or(Ok(-1))?; // Accessing an impossibly long range would, effectively, always be outside the text range
 
         let mut substrings_count = MaybeUninit::uninit();
         let success = unsafe {
-            NonNull::new(ttf::TTF_GetTextSubStringsForRange(self.raw(), TextAccessError::cast_integer(offset)?, size, substrings_count.as_mut_ptr()))
+            NonNull::new(ttf::TTF_GetTextSubStringsForRange(
+                self.raw(),
+                TextAccessError::cast_integer(offset)?,
+                size,
+                substrings_count.as_mut_ptr(),
+            ))
         };
 
         match success {
             None => Err(get_error().into()),
             // Safety: 'TTF_GetTextSubStringsForRange` has succeeded, initalizing `substrings` with the quanity of substrings found.`
             Some(substrings) => unsafe {
-                Ok(SubstringArray { substrings , length: substrings_count.assume_init() as usize })
-            }
+                Ok(SubstringArray {
+                    substrings,
+                    length: substrings_count.assume_init() as usize,
+                })
+            },
         }
     }
     #[doc(alias = "TTF_GetTextSubStringForPoint")]
     pub fn get_substring_for_point(&self, point: Point) -> Result<TTF_SubString, Error> {
         let mut substring = MaybeUninit::uninit();
         let success = unsafe {
-            ttf::TTF_GetTextSubStringForPoint(
-                self.raw(),
-                point.x,
-                point.y,
-                substring.as_mut_ptr()
-            )
+            ttf::TTF_GetTextSubStringForPoint(self.raw(), point.x, point.y, substring.as_mut_ptr())
         };
 
         match success {
             false => Err(get_error()),
             // Safety: `TTF_GetTextSubStringForLine` succeeded, initalizing `substring`
-            true => unsafe {
-                Ok(substring.assume_init())
-            }
+            true => unsafe { Ok(substring.assume_init()) },
         }
     }
     #[doc(alias = "TTF_GetPreviousTextSubString")]
@@ -459,9 +463,9 @@ impl<'a, E: Engine> Text<'a, E> {
         let mut substring = MaybeUninit::uninit();
         let success = unsafe {
             ttf::TTF_GetPreviousTextSubString(
-                self.raw(), 
+                self.raw(),
                 &raw const current,
-                substring.as_mut_ptr()
+                substring.as_mut_ptr(),
             )
         };
 
@@ -470,18 +474,14 @@ impl<'a, E: Engine> Text<'a, E> {
             true => unsafe {
                 // Safety: `TTF_GetPreviousTextSubString` succeeded, initalizng `substring`
                 Ok(substring.assume_init())
-            }
+            },
         }
     }
     #[doc(alias = "TTF_GetNextTextSubString")]
     pub fn get_next_substring(&self, current: TTF_SubString) -> Result<TTF_SubString, Error> {
         let mut substring = MaybeUninit::uninit();
         let success = unsafe {
-            ttf::TTF_GetNextTextSubString(
-                self.raw(), 
-                &raw const current,
-                substring.as_mut_ptr()
-            )
+            ttf::TTF_GetNextTextSubString(self.raw(), &raw const current, substring.as_mut_ptr())
         };
 
         match success {
@@ -489,104 +489,79 @@ impl<'a, E: Engine> Text<'a, E> {
             true => unsafe {
                 // Safety: `TTF_GetNextTextSubString` succeeded, initalizng `substring`
                 Ok(substring.assume_init())
-            }
+            },
         }
     }
     #[doc(alias = "TTF_TextWrapWhitespaceVisible")]
     pub fn get_wrap_whitespace_visible(&self) -> bool {
-        unsafe {
-            ttf::TTF_TextWrapWhitespaceVisible(self.raw())
-        }
+        unsafe { ttf::TTF_TextWrapWhitespaceVisible(self.raw()) }
     }
-    
+
     #[doc(alias = "TTF_SetTextDirection")]
     pub fn set_direction(&mut self, direction: Direction) -> Result<(), Error> {
-        let success = unsafe {
-            ttf::TTF_SetTextDirection(self.raw(), direction.into())
-        };
+        let success = unsafe { ttf::TTF_SetTextDirection(self.raw(), direction.into()) };
 
         match success {
             false => Err(get_error()),
-            true => Ok(())
+            true => Ok(()),
         }
     }
     #[doc(alias = "TTF_SetTextScript")]
     pub fn set_script(&mut self, script: Script) -> Result<(), Error> {
-        let success = unsafe {
-            ttf::TTF_SetTextScript(self.raw(), script.into_tag())
-        };
+        let success = unsafe { ttf::TTF_SetTextScript(self.raw(), script.into_tag()) };
 
         match success {
             false => Err(get_error()),
-            true => Ok(())
+            true => Ok(()),
         }
     }
     #[doc(alias = "TTF_SetTextColor")]
     pub fn set_color(&mut self, color: Color) -> Result<(), Error> {
-        let success = unsafe {
-            ttf::TTF_SetTextColor(
-                self.raw(), 
-                color.r,
-                color.g,
-                color.b,
-                color.a
-            )
-        };
+        let success =
+            unsafe { ttf::TTF_SetTextColor(self.raw(), color.r, color.g, color.b, color.a) };
 
         match success {
             false => Err(get_error()),
-            true => Ok(())
+            true => Ok(()),
         }
     }
     #[doc(alias = "TTF_SetTextColorFloat")]
     pub fn set_color_float(&mut self, color: FColor) -> Result<(), Error> {
-        let success = unsafe {
-            ttf::TTF_SetTextColorFloat(
-                self.raw(), 
-                color.r, 
-                color.g,
-                color.b, 
-                color.a
-            )
-        };
+        let success =
+            unsafe { ttf::TTF_SetTextColorFloat(self.raw(), color.r, color.g, color.b, color.a) };
 
         match success {
             false => Err(get_error()),
-            true => Ok(())
+            true => Ok(()),
         }
     }
     #[doc(alias = "TTF_SetTextPosition")]
     pub fn set_position(&mut self, position: Point) -> Result<(), Error> {
-        let success = unsafe {
-            ttf::TTF_SetTextPosition(self.raw(), position.x, position.y)
-        };
+        let success = unsafe { ttf::TTF_SetTextPosition(self.raw(), position.x, position.y) };
 
         match success {
             false => Err(get_error()),
-            true => Ok(())
+            true => Ok(()),
         }
     }
     #[doc(alias = "TTF_SetTextWrapWidth")]
     pub fn set_wrap_width(&mut self, width: Option<NonZeroU32>) -> Result<(), IntegerOrSdlError> {
         let width = width.map(|w| w.into()).unwrap_or(0);
-        let success = unsafe {
-            ttf::TTF_SetTextWrapWidth(self.raw(), common::validate_int(width, "width")?)
-        };
+        let success =
+            unsafe { ttf::TTF_SetTextWrapWidth(self.raw(), common::validate_int(width, "width")?) };
 
         match success {
             false => Err(get_error().into()),
-            true => Ok(())
+            true => Ok(()),
         }
     }
     #[doc(alias = "TTF_SetTextWrapWhitespaceVisible")]
     pub fn set_wrap_width_whitespace_visible(&mut self, visible: bool) -> Result<(), Error> {
-        let success = unsafe {
-            ttf::TTF_SetTextWrapWhitespaceVisible(self.raw(), visible)
-        };
+        let success = unsafe { ttf::TTF_SetTextWrapWhitespaceVisible(self.raw(), visible) };
 
         match success {
             false => Err(get_error()),
-            true => Ok(())
+            true => Ok(()),
         }
     }
     #[doc(alias = "TTF_SetTextFont")]
@@ -597,16 +572,14 @@ impl<'a, E: Engine> Text<'a, E> {
             ttf::TTF_SetTextFont(self.raw(), font.raw());
         }
     }
-    
+
     #[doc(alias = "TTF_UpdateText")]
     pub fn update_text(&mut self) -> Result<(), Error> {
-        let success = unsafe {
-            ttf::TTF_UpdateText(self.raw())
-        };
+        let success = unsafe { ttf::TTF_UpdateText(self.raw()) };
 
         match success {
             false => Err(get_error()),
-            true => Ok(())
+            true => Ok(()),
         }
     }
 
@@ -681,7 +654,7 @@ impl<'a> Text<'a, Gpu> {
                 // `TTF_GetGPUTextDrawData` also returns null for empty text
                 None => match self.str() {
                     "" => Ok(None),
-                    _  => Err(get_error())
+                    _ => Err(get_error()),
                 },
             }
         }
@@ -699,8 +672,7 @@ impl<'a> Text<'a, Surface> {
         let x = common::validate_int(x, "x")?;
         let y = common::validate_int(y, "y")?;
 
-        let success =
-            unsafe { sys::TTF_DrawSurfaceText(self.raw(), x, y, surface.raw()) };
+        let success = unsafe { sys::TTF_DrawSurfaceText(self.raw(), x, y, surface.raw()) };
 
         match success {
             false => Err(crate::get_error().into()),
@@ -721,7 +693,7 @@ impl<'a> Text<'a, Renderer> {
     }
 }
 
-/// An exclusively owned wrapper representing `TTF_Text` 
+/// An exclusively owned wrapper representing `TTF_Text`
 pub struct OwnedText<'a, E: Engine> {
     text: NonNull<Text<'a, E>>,
     _type: PhantomData<E>,
@@ -749,7 +721,7 @@ impl<'a, E: Engine> Drop for OwnedText<'a, E> {
 }
 
 impl<'a, E: Engine> OwnedText<'a, E> {
-    /// Create a new `Text` object using the given `TextEngine` 
+    /// Create a new `Text` object using the given `TextEngine`
     #[doc(alias = "TTF_CreateText")]
     pub fn new(engine: &'a TextEngine<E>, font: &'a Font, text: &str) -> Result<Self, Error> {
         let text = text.destructure();
@@ -779,9 +751,8 @@ impl<'a, E: Engine> OwnedText<'a, E> {
     }
 }
 
-
 /// A reference counted version of `OwnedText`, using SDL3's in-built `refcount` field,
-/// 
+///
 /// Note: Does not work while with `E = Gpu``, because you can't call `atlas_draw_sequence` without `&mut Text`, meaning it can't be rendered.
 pub struct RcText<'a, E: Engine> {
     text: NonNull<Text<'a, E>>,
@@ -934,10 +905,7 @@ impl GpuAtlasDrawSequence {
         // Safety: `indicies` will always be present on any GpuAtlasDrawSequence.
         unsafe {
             // SDL's type is `int` for indicies, for some reason, even though they can't be negative by definition(A negative vertex index means nothing). So cast them into a more conventional u32.
-            std::slice::from_raw_parts(
-                self.0.indices.cast::<u32>(),
-                self.0.num_indices as usize,
-            )
+            std::slice::from_raw_parts(self.0.indices.cast::<u32>(), self.0.num_indices as usize)
         }
     }
 
@@ -947,16 +915,11 @@ impl GpuAtlasDrawSequence {
     }
 
     /// Get the next instruction in the `GpuAtlasDrawSequence` sequence.
-    /// 
+    ///
     /// Can also be iterated over direction with `.into_iter()`, for easier usage.
     pub fn next<'a>(&'a self) -> Option<&'a Self> {
         // Safety: This is just traversing a linked list. Thus, the life time of the next element will be the same as the lifetime of the current one.
-        unsafe {
-            self.0
-                .next
-                .cast::<Self>()
-                .as_ref()
-        }
+        unsafe { self.0.next.cast::<Self>().as_ref() }
     }
 }
 impl<'a> IntoIterator for &'a GpuAtlasDrawSequence {
