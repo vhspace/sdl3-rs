@@ -36,6 +36,39 @@ fn build_canvas(video_subsystem: &VideoSubsystem) -> Result<Canvas<Window>, Stri
 }
 
 #[test]
+fn set_title_through_shared_reference() {
+    let sdl_context = match sdl3::init() {
+        Ok(ctx) => ctx,
+        Err(err) => {
+            eprintln!("Skipping video test: failed to init SDL: {err}");
+            return;
+        }
+    };
+    let video_subsystem = match sdl_context.video() {
+        Ok(video) => video,
+        Err(err) => {
+            eprintln!("Skipping video test: no video device available: {err}");
+            return;
+        }
+    };
+    let window = match video_subsystem
+        .window("rust-sdl3 test: title", 320, 240)
+        .hidden()
+        .build()
+    {
+        Ok(window) => window,
+        Err(err) => {
+            eprintln!("Skipping video test: couldn't build window: {err}");
+            return;
+        }
+    };
+
+    // `window` is not `mut`: setting the title only needs a shared reference.
+    window.set_title("renamed").unwrap();
+    assert_eq!(window.title(), "renamed");
+}
+
+#[test]
 fn window_from_id() {
     let sdl_context = match sdl3::init() {
         Ok(ctx) => ctx,
