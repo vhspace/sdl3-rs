@@ -37,7 +37,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         {
             // Update the window title.
-            let window = canvas.window_mut();
+            let window = canvas.window();
 
             let position = window.position();
             let size = window.size();
