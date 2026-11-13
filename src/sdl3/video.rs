@@ -2098,7 +2098,7 @@ impl Window {
     }
 
     #[doc(alias = "SDL_SetWindowTitle")]
-    pub fn set_title(&mut self, title: &str) -> Result<(), NulError> {
+    pub fn set_title(&self, title: &str) -> Result<(), NulError> {
         let title = CString::new(title)?;
         unsafe {
             sys::video::SDL_SetWindowTitle(self.context.raw, title.as_ptr() as *const c_char);
