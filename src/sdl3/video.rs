@@ -636,6 +636,39 @@ impl WindowContext {
             metal_view,
         }
     }
+
+    /// Returns the `SDL_MetalView` owned by this window, if one was created.
+    ///
+    /// A view exists only when the window was built with
+    /// [`WindowBuilder::metal_view`] on macOS, or when one was passed to
+    /// [`WindowContext::from_ll`].
+    ///
+    /// The view is destroyed when the `WindowContext` is dropped, so the
+    /// returned handle must not be used after that.
+    #[inline]
+    pub fn metal_view(&self) -> Option<sys::metal::SDL_MetalView> {
+        if self.metal_view.is_null() {
+            None
+        } else {
+            Some(self.metal_view)
+        }
+    }
+
+    /// Returns a pointer to the `CAMetalLayer` backing this window's
+    /// `SDL_MetalView`, if a view was created.
+    ///
+    /// The layer is owned by the view, so the returned pointer must not be
+    /// used after the `WindowContext` is dropped.
+    #[doc(alias = "SDL_Metal_GetLayer")]
+    pub fn metal_layer(&self) -> Option<*mut c_void> {
+        let view = self.metal_view()?;
+        let layer = unsafe { sys::metal::SDL_Metal_GetLayer(view) };
+        if layer.is_null() {
+            None
+        } else {
+            Some(layer)
+        }
+    }
 }
 
 /// Represents a setting for vsync/swap interval.
@@ -1832,6 +1865,24 @@ impl Window {
 
     pub fn context(&self) -> Arc<WindowContext> {
         self.context.clone()
+    }
+
+    /// Returns the `SDL_MetalView` owned by this window, if one was created.
+    ///
+    /// See [`WindowContext::metal_view`].
+    #[inline]
+    pub fn metal_view(&self) -> Option<sys::metal::SDL_MetalView> {
+        self.context.metal_view()
+    }
+
+    /// Returns a pointer to the `CAMetalLayer` backing this window's
+    /// `SDL_MetalView`, if a view was created.
+    ///
+    /// See [`WindowContext::metal_layer`].
+    #[doc(alias = "SDL_Metal_GetLayer")]
+    #[inline]
+    pub fn metal_layer(&self) -> Option<*mut c_void> {
+        self.context.metal_layer()
     }
 
     #[doc(alias = "SDL_GetWindowID")]
