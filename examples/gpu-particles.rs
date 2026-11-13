@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .position_centered()
         .build()?;
 
-    let device: Device = Device::new(ShaderFormat::SPIRV, true)?.with_window(&window)?;
+    let device: Device = Device::new(&video, ShaderFormat::SPIRV, true)?.with_window(&window)?;
 
     // === Create particle buffer ===
     let particles: Vec<Particle> = (0..PARTICLE_COUNT)
