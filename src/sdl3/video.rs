@@ -2106,13 +2106,15 @@ impl Window {
         Ok(())
     }
 
+    /// Returns a copy of the window title.
+    ///
+    /// SDL frees its title buffer whenever the title changes, and `Window` is
+    /// `Clone`, so the title is copied out rather than borrowed.
     #[doc(alias = "SDL_GetWindowTitle")]
-    pub fn title(&self) -> &str {
+    pub fn title(&self) -> String {
         unsafe {
             let buf = sys::video::SDL_GetWindowTitle(self.context.raw);
-
-            // The window title must be encoded in UTF-8.
-            CStr::from_ptr(buf as *const _).to_str().unwrap()
+            CStr::from_ptr(buf).to_string_lossy().into_owned()
         }
     }
 
