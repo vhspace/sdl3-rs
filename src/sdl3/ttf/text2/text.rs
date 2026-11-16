@@ -140,6 +140,7 @@ impl Display for TextAccessError {
         }
     }
 }
+impl std::error::Error for TextAccessError {}
 
 /// An error from operations modifying the text of a `Text` object
 #[derive(Debug)]
@@ -171,7 +172,7 @@ impl Display for TextModifyError {
 impl std::error::Error for TextModifyError {}
 
 /// Wrapper for `TTF_Text`, including the type of the `TextEngine` used to create it
-#[doc(alias = "TTF_GPUAtlasDrawSequence")]
+#[doc(alias = "TTF_Text")]
 #[repr(transparent)]
 pub struct Text<'a, E: Engine = Unknown> {
     _opaque: [u8; 0],
@@ -738,10 +739,10 @@ impl<'a, E: Engine> OwnedText<'a, E> {
 
     /// Create `OwnedText` from a raw `Text` pointer,
     /// # Safety
-    /// The engine `engine` MUST be exclusively accessed and created by SDL3,
-    pub unsafe fn from_raw(engine: NonNull<Text<E>>) -> Self {
+    /// `text` MUST be exclusively accessed and created by SDL3,
+    pub unsafe fn from_raw(text: NonNull<Text<E>>) -> Self {
         Self {
-            text: engine.cast(),
+            text: text.cast(),
             _type: PhantomData,
         }
     }
@@ -797,9 +798,7 @@ impl<'a, E: Engine> RcText<'a, E> {
         // Safety: SDL3 itself does not make use of `refcount`, leaving it avalible as an "application reference count"
         // Additionally, `refcount` is accessed in no other way than through this function, and, by extension, through a `&Cell<u32>`
         unsafe {
-            Cell::from_mut(
-                (&raw mut (*self.text.as_ref().raw()).refcount as *mut u32).as_mut_unchecked(),
-            )
+            (&raw mut (*self.text.as_ref().raw()).refcount as *mut u32).cast::<Cell<u32>>().as_ref_unchecked()
         }
     }
 }
