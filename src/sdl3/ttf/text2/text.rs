@@ -13,7 +13,12 @@ use std::{
 use sdl3_ttf_sys::ttf::{self, TTF_SubString};
 
 use crate::{
-    Error, IntegerOrSdlError, clear_error, common, get_error, pixels::{Color, FColor}, properties::Properties, rect::Point, render::FPoint,
+    clear_error, common, get_error,
+    pixels::{Color, FColor},
+    properties::Properties,
+    rect::Point,
+    render::FPoint,
+    Error, IntegerOrSdlError,
 };
 
 use super::{
@@ -644,15 +649,15 @@ impl<'a> Text<'a, Gpu> {
     pub fn atlas_draw_sequence(&mut self) -> Result<Option<&GpuAtlasDrawSequence>, Error> {
         // Safety: As GpuAtlasDrawSequence is a transparet wrapper, it is safe to cast TTF_GPUAtlasDrawSequence to it
         unsafe {
-            clear_error(); 
+            clear_error();
             match NonNull::new(sys::TTF_GetGPUTextDrawData(self.raw())) {
                 Some(ptr) => Ok(Some(ptr.cast().as_ref())),
 
                 // `TTF_GetGPUTextDrawData` also returns null for empty text
                 None => match get_error() {
                     e if e.is_empty() => Ok(None),
-                    e => Err(e)
-                }
+                    e => Err(e),
+                },
             }
         }
     }
@@ -798,7 +803,9 @@ impl<'a, E: Engine> RcText<'a, E> {
         // Safety: SDL3 itself does not make use of `refcount`, leaving it avalible as an "application reference count"
         // Additionally, `refcount` is accessed in no other way than through this function, and, by extension, through a `&Cell<u32>`
         unsafe {
-            (&raw mut (*self.text.as_ref().raw()).refcount as *mut u32).cast::<Cell<u32>>().as_ref_unchecked()
+            (&raw mut (*self.text.as_ref().raw()).refcount as *mut u32)
+                .cast::<Cell<u32>>()
+                .as_ref_unchecked()
         }
     }
 }
