@@ -13,12 +13,7 @@ use std::{
 use sdl3_ttf_sys::ttf::{self, TTF_SubString};
 
 use crate::{
-    common, get_error,
-    pixels::{Color, FColor},
-    properties::Properties,
-    rect::Point,
-    render::FPoint,
-    Error, IntegerOrSdlError,
+    Error, IntegerOrSdlError, clear_error, common, get_error, pixels::{Color, FColor}, properties::Properties, rect::Point, render::FPoint,
 };
 
 use super::{
@@ -286,7 +281,7 @@ impl<'a, E: Engine> Text<'a, E> {
     pub fn get_properties(&self) -> Properties {
         let properties = unsafe { sys::TTF_GetTextProperties(self.raw()) };
 
-        Properties::from_ll(properties)
+        Properties::const_from_ll(properties)
     }
     // Can't return a normal `&Font` 'cause  `Font` is not a direct wrapper of `TTF_Font` and can't be reconstructed
     #[doc(alias = "TTF_GetTextFont")]
@@ -648,14 +643,15 @@ impl<'a> Text<'a, Gpu> {
     pub fn atlas_draw_sequence(&mut self) -> Result<Option<&GpuAtlasDrawSequence>, Error> {
         // Safety: As GpuAtlasDrawSequence is a transparet wrapper, it is safe to cast TTF_GPUAtlasDrawSequence to it
         unsafe {
+            clear_error(); 
             match NonNull::new(sys::TTF_GetGPUTextDrawData(self.raw())) {
                 Some(ptr) => Ok(Some(ptr.cast().as_ref())),
 
                 // `TTF_GetGPUTextDrawData` also returns null for empty text
-                None => match self.str() {
-                    "" => Ok(None),
-                    _ => Err(get_error()),
-                },
+                None => match get_error() {
+                    e if e.is_empty() => Ok(None),
+                    e => Err(e)
+                }
             }
         }
     }
