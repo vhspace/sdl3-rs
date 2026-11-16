@@ -23,6 +23,7 @@
 mod context;
 mod engine;
 mod font;
+pub mod text2;
 
 pub use sdl3_ttf_sys::ttf as sys;
 

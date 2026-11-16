@@ -1,0 +1,281 @@
+macro_rules! make_scripts {
+    ($(($code:ident, $n:literal, $name:literal)),*) => {
+        /// Enormous mapping of names and codes for different unicode scripts.
+        /// Taken from <https://unicode.org/iso15924/iso15924-codes.html>.
+        #[repr(u32)]
+        #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+        pub enum Script {
+            $(
+                $code = name_to_tag(stringify!($code))
+            ),*
+        }
+        impl Script {
+            pub fn name(self) -> &'static str {
+                match self {
+                    $(
+                        Self::$code => $name
+                    ),*
+                }
+            }
+            pub fn from_code(code: u32) -> Option<Self> {
+                match code {
+                    $(
+                        $n => Some(Self::$code),
+                    )*
+                    _ => None
+                }
+            }
+            pub fn from_tag(tag: u32) -> Option<Self> {
+                let tag = tag.to_be_bytes();
+                let tag = str::from_utf8(&tag);
+                match tag {
+                    $(
+                        Ok(stringify!($code)) => Some(Self::$code),
+                    )*
+                    _ => None
+                }
+            }
+            pub fn into_tag(self) -> u32 {
+                self as u32
+            }
+        }
+
+    };
+}
+
+// A reimplementation of TTF_StringToTag for const contexts
+const fn name_to_tag(name: &str) -> u32 {
+    let mut tag = [0u8; 4];
+    tag.copy_from_slice(name.as_bytes());
+
+    u32::from_be_bytes(tag)
+}
+
+// Enormous mapping of names and codes for different unicode scripts.
+// Taken from https://unicode.org/iso15924/iso15924-codes.html,
+make_scripts!(
+    (Adlm, 166, "Adlam"),
+    (Afak, 439, "Afaka"),
+    (Aghb, 239, "Caucasian Albanian"),
+    (Ahom, 338, "Ahom, Tai Ahom"),
+    (Arab, 160, "Arabic"),
+    (Aran, 161, "Arabic (Nastaliq variant)"),
+    (Armi, 124, "Imperial Aramaic"),
+    (Armn, 230, "Armenian"),
+    (Avst, 134, "Avestan"),
+    (Bali, 360, "Balinese"),
+    (Bamu, 435, "Bamum"),
+    (Bass, 259, "Bassa Vah"),
+    (Batk, 365, "Batak"),
+    (Beng, 325, "Bengali (Bangla)"),
+    (Berf, 258, "Beria Erfe"),
+    (Bhks, 334, "Bhaiksuki"),
+    (Blis, 550, "Blissymbols"),
+    (Bopo, 285, "Bopomofo"),
+    (Brah, 300, "Brahmi"),
+    (Brai, 570, "Braille"),
+    (Bugi, 367, "Buginese"),
+    (Buhd, 372, "Buhid"),
+    (Cakm, 349, "Chakma"),
+    (Cans, 440, "Unified Canadian Aboriginal Syllabics"),
+    (Cari, 201, "Carian"),
+    (Cham, 358, "Cham"),
+    (Cher, 445, "Cherokee"),
+    (Chis, 298, "Chisoi"),
+    (Chrs, 109, "Chorasmian"),
+    (Cirt, 291, "Cirth"),
+    (Copt, 204, "Coptic"),
+    (Cpmn, 402, "Cypro-Minoan"),
+    (Cprt, 403, "Cypriot syllabary"),
+    (Cyrl, 220, "Cyrillic"),
+    (Cyrs, 221, "Cyrillic (Old Church Slavonic variant)"),
+    (Deva, 315, "Devanagari (Nagari)"),
+    (Diak, 342, "Dives Akuru"),
+    (Dogr, 328, "Dogra"),
+    (Dsrt, 250, "Deseret (Mormon)"),
+    (Dupl, 755, "Duployan shorthand, Duployan stenography"),
+    (Egyd, 070, "Egyptian demotic"),
+    (Egyh, 060, "Egyptian hieratic"),
+    (Egyp, 050, "Egyptian hieroglyphs"),
+    (Elba, 226, "Elbasan"),
+    (Elym, 128, "Elymaic"),
+    (Ethi, 430, "Ethiopic (Geʻez)"),
+    (Gara, 164, "Garay"),
+    (Geok, 241, "Khutsuri (Asomtavruli and Nuskhuri)"),
+    (Geor, 240, "Georgian (Mkhedruli and Mtavruli)"),
+    (Glag, 225, "Glagolitic"),
+    (Gong, 312, "Gunjala Gondi"),
+    (Gonm, 313, "Masaram Gondi"),
+    (Goth, 206, "Gothic"),
+    (Gran, 343, "Grantha"),
+    (Grek, 200, "Greek"),
+    (Gujr, 320, "Gujarati"),
+    (Gukh, 397, "Gurung Khema"),
+    (Guru, 310, "Gurmukhi"),
+    (Hanb, 503, "Han with Bopomofo (alias for Han + Bopomofo)"),
+    (Hang, 286, "Hangul (Hangŭl, Hangeul)"),
+    (Hani, 500, "Han (Hanzi, Kanji, Hanja)"),
+    (Hano, 371, "Hanunoo (Hanunóo)"),
+    (Hans, 501, "Han (Simplified variant)"),
+    (Hant, 502, "Han (Traditional variant)"),
+    (Hatr, 127, "Hatran"),
+    (Hebr, 125, "Hebrew"),
+    (Hira, 410, "Hiragana"),
+    (Hluw, 080, "Anatolian Hieroglyphs (Luwian Hieroglyphs, Hittite Hieroglyphs)"),
+    (Hmng, 450, "Pahawh Hmong"),
+    (Hmnp, 451, "Nyiakeng Puachue Hmong"),
+    (Hntl, 504, "Han (Traditional variant) with Latin (alias for Hant + Latn)"),
+    (Hrkt, 412, "Japanese syllabaries (alias for Hiragana + Katakana)"),
+    (Hung, 176, "Old Hungarian (Hungarian Runic)"),
+    (Inds, 610, "Indus (Harappan)"),
+    (Ital, 210, "Old Italic (Etruscan, Oscan, etc.)"),
+    (Jamo, 284, "Jamo (alias for Jamo subset of Hangul)"),
+    (Java, 361, "Javanese"),
+    (Jpan, 413, "Japanese (alias for Han + Hiragana + Katakana)"),
+    (Jurc, 510, "Jurchen"),
+    (Kali, 357, "Kayah Li"),
+    (Kana, 411, "Katakana"),
+    (Kawi, 368, "Kawi"),
+    (Khar, 305, "Kharoshthi"),
+    (Khmr, 355, "Khmer"),
+    (Khoj, 322, "Khojki"),
+    (Kitl, 505, "Khitan large script"),
+    (Kits, 288, "Khitan small script"),
+    (Knda, 345, "Kannada"),
+    (Kore, 287, "Korean (alias for Hangul + Han)"),
+    (Kpel, 436, "Kpelle"),
+    (Krai, 396, "Kirat Rai"),
+    (Kthi, 317, "Kaithi"),
+    (Lana, 351, "Tai Tham (Lanna)"),
+    (Laoo, 356, "Lao"),
+    (Latf, 217, "Latin (Fraktur variant)"),
+    (Latg, 216, "Latin (Gaelic variant)"),
+    (Latn, 215, "Latin"),
+    (Leke, 364, "Leke"),
+    (Lepc, 335, "Lepcha (Róng)"),
+    (Limb, 336, "Limbu"),
+    (Lina, 400, "Linear A"),
+    (Linb, 401, "Linear B"),
+    (Lisu, 399, "Lisu (Fraser)"),
+    (Loma, 437, "Loma"),
+    (Lyci, 202, "Lycian"),
+    (Lydi, 116, "Lydian"),
+    (Mahj, 314, "Mahajani"),
+    (Maka, 366, "Makasar"),
+    (Mand, 140, "Mandaic, Mandaean"),
+    (Mani, 139, "Manichaean"),
+    (Marc, 332, "Marchen"),
+    (Maya, 090, "Mayan hieroglyphs"),
+    (Medf, 265, "Medefaidrin (Oberi Okaime, Oberi Ɔkaimɛ)"),
+    (Mend, 438, "Mende Kikakui"),
+    (Merc, 101, "Meroitic Cursive"),
+    (Mero, 100, "Meroitic Hieroglyphs"),
+    (Mlym, 347, "Malayalam"),
+    (Modi, 324, "Modi, Moḍī"),
+    (Mong, 145, "Mongolian"),
+    (Moon, 218, "Moon (Moon code, Moon script, Moon type)"),
+    (Mroo, 264, "Mro, Mru"),
+    (Mtei, 337, "Meitei Mayek (Meithei, Meetei)"),
+    (Mult, 323, "Multani"),
+    (Mymr, 350, "Myanmar (Burmese)"),
+    (Nagm, 295, "Nag Mundari"),
+    (Nand, 311, "Nandinagari"),
+    (Narb, 106, "Old North Arabian (Ancient North Arabian)"),
+    (Nbat, 159, "Nabataean"),
+    (Newa, 333, "Newa, Newar, Newari, Nepāla lipi"),
+    (Nkdb, 085, "Naxi Dongba (na²¹ɕi³³ to³³ba²¹, Nakhi Tomba)"),
+    (Nkgb, 420, "Naxi Geba (na²¹ɕi³³ gʌ²¹ba²¹, 'Na-'Khi ²Ggŏ-¹baw, Nakhi Geba)"),
+    (Nkoo, 165, "N’Ko"),
+    (Nshu, 499, "Nüshu"),
+    (Ogam, 212, "Ogham"),
+    (Olck, 261, "Ol Chiki (Ol Cemet’, Ol, Santali)"),
+    (Onao, 296, "Ol Onal"),
+    (Orkh, 175, "Old Turkic, Orkhon Runic"),
+    (Orya, 327, "Oriya (Odia)"),
+    (Osge, 219, "Osage"),
+    (Osma, 260, "Osmanya"),
+    (Ougr, 143, "Old Uyghur"),
+    (Palm, 126, "Palmyrene"),
+    (Pauc, 263, "Pau Cin Hau"),
+    (Pcun, 015, "Proto-Cuneiform"),
+    (Pelm, 016, "Proto-Elamite"),
+    (Perm, 227, "Old Permic"),
+    (Phag, 331, "Phags-pa"),
+    (Phli, 131, "Inscriptional Pahlavi"),
+    (Phlp, 132, "Psalter Pahlavi"),
+    (Phlv, 133, "Book Pahlavi"),
+    (Phnx, 115, "Phoenician"),
+    (Plrd, 282, "Miao (Pollard)"),
+    (Piqd, 293, "Klingon (KLI pIqaD)"),
+    (Prti, 130, "Inscriptional Parthian"),
+    (Psin, 103, "Proto-Sinaitic"),
+    (Ranj, 303, "Ranjana"),
+    (Rjng, 363, "Rejang (Redjang, Kaganga)"),
+    (Rohg, 167, "Hanifi Rohingya"),
+    (Roro, 620, "Rongorongo"),
+    (Runr, 211, "Runic"),
+    (Samr, 123, "Samaritan"),
+    (Sara, 292, "Sarati"),
+    (Sarb, 105, "Old South Arabian"),
+    (Saur, 344, "Saurashtra"),
+    (Seal, 590, "(Small) Seal"),
+    (Sgnw, 095, "SignWriting"),
+    (Shaw, 281, "Shavian (Shaw)"),
+    (Shrd, 319, "Sharada, Śāradā"),
+    (Shui, 530, "Shuishu"),
+    (Sidd, 302, "Siddham, Siddhaṃ, Siddhamātṛkā"),
+    (Sidt, 180, "Sidetic"),
+    (Sind, 318, "Khudawadi, Sindhi"),
+    (Sinh, 348, "Sinhala"),
+    (Sogd, 141, "Sogdian"),
+    (Sogo, 142, "Old Sogdian"),
+    (Sora, 398, "Sora Sompeng"),
+    (Soyo, 329, "Soyombo"),
+    (Sund, 362, "Sundanese"),
+    (Sunu, 274, "Sunuwar"),
+    (Sylo, 316, "Syloti Nagri"),
+    (Syrc, 135, "Syriac"),
+    (Syre, 138, "Syriac (Estrangelo variant)"),
+    (Syrj, 137, "Syriac (Western variant)"),
+    (Syrn, 136, "Syriac (Eastern variant)"),
+    (Tagb, 373, "Tagbanwa"),
+    (Takr, 321, "Takri, Ṭākrī, Ṭāṅkrī"),
+    (Tale, 353, "Tai Le"),
+    (Talu, 354, "New Tai Lue"),
+    (Taml, 346, "Tamil"),
+    (Tang, 520, "Tangut"),
+    (Tavt, 359, "Tai Viet"),
+    (Tayo, 380, "Tai Yo"),
+    (Telu, 340, "Telugu"),
+    (Teng, 290, "Tengwar"),
+    (Tfng, 120, "Tifinagh (Berber)"),
+    (Tglg, 370, "Tagalog (Baybayin, Alibata)"),
+    (Thaa, 170, "Thaana"),
+    (Thai, 352, "Thai"),
+    (Tibt, 330, "Tibetan"),
+    (Tirh, 326, "Tirhuta"),
+    (Tnsa, 275, "Tangsa"),
+    (Todr, 229, "Todhri"),
+    (Tols, 299, "Tolong Siki"),
+    (Toto, 294, "Toto"),
+    (Tutg, 341, "Tulu-Tigalari"),
+    (Ugar, 040, "Ugaritic"),
+    (Vaii, 470, "Vai"),
+    (Visp, 280, "Visible Speech"),
+    (Vith, 228, "Vithkuqi"),
+    (Wara, 262, "Warang Citi (Varang Kshiti)"),
+    (Wcho, 283, "Wancho"),
+    (Wole, 480, "Woleai"),
+    (Xpeo, 030, "Old Persian"),
+    (Xsux, 020, "Cuneiform, Sumero-Akkadian"),
+    (Yezi, 192, "Yezidi"),
+    (Yiii, 460, "Yi"),
+    (Zanb, 339, "Zanabazar Square (Zanabazarin Dörböljin Useg, Xewtee Dörböljin Bicig, Horizontal Square Script)"),
+    (Zinh, 994, "Code for inherited script"),
+    (Zmth, 995, "Mathematical notation"),
+    (Zsye, 993, "Symbols (Emoji variant)"),
+    (Zsym, 996, "Symbols"),
+    (Zxxx, 997, "Code for unwritten documents"),
+    (Zyyy, 998, "Code for undetermined script"),
+    (Zzzz, 999, "Code for uncoded script")
+);

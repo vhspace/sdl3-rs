@@ -47,3 +47,8 @@ impl error::Error for IntegerOrSdlError {
         }
     }
 }
+impl From<Error> for IntegerOrSdlError {
+    fn from(value: Error) -> Self {
+        Self::SdlError(value)
+    }
+}

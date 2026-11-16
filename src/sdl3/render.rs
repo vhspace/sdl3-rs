@@ -117,6 +117,7 @@ impl From<i64> for TextureAccess {
 }
 
 // floating-point point
+#[repr(C)]
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub struct FPoint {
     pub x: f32,
