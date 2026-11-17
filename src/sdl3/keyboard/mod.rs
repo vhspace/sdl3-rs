@@ -41,14 +41,13 @@ impl fmt::Display for Mod {
 }
 
 /// A snapshot of which keys were down when it was taken.
-pub struct KeyboardState<'a> {
+pub struct KeyboardState {
     keyboard_state: Box<[bool]>,
-    _event_pump: PhantomData<&'a EventPump>,
 }
 
-impl<'a> KeyboardState<'a> {
+impl KeyboardState {
     #[doc(alias = "SDL_GetKeyboardState")]
-    pub fn new(_e: &'a EventPump) -> KeyboardState<'a> {
+    pub fn new(_e: &EventPump) -> KeyboardState {
         // SDL writes to this array whenever events are pumped, without any
         // synchronization (libsdl-org/SDL#16562), so a slice into it can't be
         // held. Copy it out instead. Pumping needs `&mut EventPump`, so it
@@ -61,10 +60,7 @@ impl<'a> KeyboardState<'a> {
             state
         };
 
-        KeyboardState {
-            keyboard_state,
-            _event_pump: PhantomData,
-        }
+        KeyboardState { keyboard_state }
     }
 
     /// Returns true if the scancode is pressed.
