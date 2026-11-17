@@ -7,11 +7,21 @@ use raw_window_handle::{
 };
 #[cfg(target_os = "windows")]
 use std::num::NonZero;
+#[cfg(all(
+    unix,
+    not(target_os = "macos"),
+    not(target_os = "ios"),
+    not(target_os = "android")
+))]
 use std::{ffi::CStr, ptr::NonNull};
-use sys::{
-    properties::{SDL_GetNumberProperty, SDL_GetPointerProperty},
-    video::SDL_Window,
-};
+#[cfg(all(
+    unix,
+    not(target_os = "macos"),
+    not(target_os = "ios"),
+    not(target_os = "android")
+))]
+use sys::properties::SDL_GetNumberProperty;
+use sys::{properties::SDL_GetPointerProperty, video::SDL_Window};
 
 // this queries then stores all handles upon creation, then returns the stored values on request
 
@@ -53,27 +63,40 @@ impl Window {
     pub fn as_window_handles<'window>(
         &'window self,
     ) -> Result<WindowHandles<'window>, HandleError> {
-        Ok(WindowHandles {
-            window_handle: get_window_handle(self.raw())?,
-            display_handle: get_display_handle(self.raw())?,
-        })
+        unsafe {
+            // safety: the function signature ensures that the lifetime of the returned value (the handles) does not outlive the lifetime of the argument (the window)
+            Ok(WindowHandles {
+                window_handle: get_window_handle(self.raw())?,
+                display_handle: get_display_handle(self.raw())?,
+            })
+        }
     }
 }
 
-impl<'window> HasWindowHandle for Window {
-    fn window_handle(&self) -> Result<WindowHandle<'_>, HandleError> {
-        get_window_handle(self.raw())
+impl HasWindowHandle for Window {
+    fn window_handle<'window>(&'window self) -> Result<WindowHandle<'window>, HandleError> {
+        unsafe {
+            // safety: the function signature ensures that the lifetime of the returned value (the handles) does not outlive the lifetime of the argument (the window)
+            get_window_handle(self.raw())
+        }
     }
 }
 
-impl<'window> HasDisplayHandle for Window {
-    fn display_handle(&self) -> Result<DisplayHandle<'_>, HandleError> {
-        get_display_handle(self.raw())
+impl HasDisplayHandle for Window {
+    fn display_handle<'window>(&'window self) -> Result<DisplayHandle<'window>, HandleError> {
+        unsafe {
+            // safety: the function signature ensures that the lifetime of the returned value (the handles) does not outlive the lifetime of the argument (the window)
+            get_display_handle(self.raw())
+        }
     }
 }
 
-// Access window handle using SDL3 properties
-fn get_window_handle<'window>(
+/// Access window handle using SDL3 properties
+///
+/// # Safety:
+///
+/// This returns a value with a caller-defined lifetime, and this lifetime must not outline the window given to this function
+unsafe fn get_window_handle<'window>(
     raw_window: *mut SDL_Window,
 ) -> Result<WindowHandle<'window>, HandleError> {
     // Windows
@@ -207,8 +230,12 @@ fn get_window_handle<'window>(
     }
 }
 
-// Access display handle using SDL3 properties
-fn get_display_handle<'window>(
+/// Access display handle using SDL3 properties
+///
+/// # Safety:
+///
+/// This returns a value with a caller-defined lifetime, and this lifetime must not outline the window given to this function
+unsafe fn get_display_handle<'window>(
     raw_window: *mut SDL_Window,
 ) -> Result<DisplayHandle<'window>, HandleError> {
     // Windows
