@@ -12,13 +12,8 @@ mod raw_window_handle_test {
     fn get_windows_handle() {
         use raw_window_handle::RawDisplayHandle;
 
-        let mut window = new_hidden_window();
-        let (window, window_as_handle) = window.as_window_handles_mut().unwrap();
-        window.show();
-        window.minimize();
-        window.restore();
-        window.hide();
-        assert_eq!(window_as_handle, window.as_window_handles().unwrap()); // this doesn't definitively prove that the handle never changes, but it can at least possibly catch cases where it does (which is assumed to be never, but that's why tests exist)
+        let window = new_hidden_window();
+        let window_as_handle = window.as_window_handles().unwrap();
         let window_handle = match window_as_handle.window_handle() {
             Ok(v) => v,
             Err(err) => panic!(
@@ -102,13 +97,8 @@ mod raw_window_handle_test {
     #[cfg(target_os = "macos")]
     #[test]
     fn get_macos_handle() {
-        let mut window = new_hidden_window();
-        let (window, window_as_handle) = window.as_window_handles_mut().unwrap();
-        window.show();
-        window.minimize();
-        window.restore();
-        window.hide();
-        assert_eq!(window_as_handle, window.as_window_handles().unwrap()); // this doesn't definitively prove that the handle never changes, but it can at least possibly catch cases where it does (which is assumed to be never, but that's why tests exist)
+        let window = new_hidden_window();
+        let window_as_handle = window.as_window_handles().unwrap();
         let window_handle = match window_as_handle.window_handle() {
             Ok(v) => v,
             Err(err) => panic!(

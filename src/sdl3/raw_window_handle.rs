@@ -15,7 +15,7 @@ use sys::{
 
 // this queries then stores all handles upon creation, then returns the stored values on request
 
-/// Holds the handles for a [`Window`]. This can be created using [`Window::as_window_handles()`] or [`Window::as_window_handles_mut()`] then can be given to a crate such as wgpu or glutin. This might only be needed for wgpu (which needs a value that is Send/Sync), and the [`Window`] struct already implements [`HasWindowHandle`] and [`HasDisplayHandle`] for crates that do not need a Send/Sync value.
+/// Holds the handles for a [`Window`], created using [`Window::as_window_handles()`]. This might only be needed for wgpu (which needs a value that is Send/Sync), and the [`Window`] struct already implements [`HasWindowHandle`] and [`HasDisplayHandle`] for crates that do not need a Send/Sync value.
 ///
 /// Note: this implements Send/Sync due to wgpu requirements, but the values returned by [`WindowHandles::window_handle()`] and [`WindowHandles::display_handle()`] can only be used on the same thread that created the window due to raw-window-handle (and OS) requirements
 pub struct WindowHandles<'window> {
