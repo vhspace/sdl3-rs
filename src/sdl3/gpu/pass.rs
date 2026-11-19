@@ -1,13 +1,12 @@
 use super::{Buffer, ComputePipeline, Device, Filter, WeakDevice};
 use crate::{
-    get_error,
+    Error, get_error,
     gpu::{
         BufferBinding, BufferRegion, GraphicsPipeline, IndexElementSize, LoadOp, StoreOp, Texture,
         TextureRegion, TextureSamplerBinding, TextureTransferInfo, TransferBufferLocation,
     },
     pixels::{Color, FColor},
     rect::Rect,
-    Error,
 };
 use std::{marker::PhantomData, sync::Arc};
 use sys::gpu::{
@@ -221,7 +220,7 @@ impl<'a> DepthStencilTargetInfo<'a> {
         Default::default()
     }
 
-    pub fn with_texture(mut self, texture: &'a mut Texture<'_>) -> Self {
+    pub fn with_texture(mut self, texture: &'a Texture<'_>) -> Self {
         self.inner.texture = texture.raw();
         self
     }
