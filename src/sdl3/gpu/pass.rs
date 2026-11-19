@@ -1,12 +1,13 @@
 use super::{Buffer, ComputePipeline, Device, Filter, WeakDevice};
 use crate::{
-    Error, get_error,
+    get_error,
     gpu::{
         BufferBinding, BufferRegion, GraphicsPipeline, IndexElementSize, LoadOp, StoreOp, Texture,
         TextureRegion, TextureSamplerBinding, TextureTransferInfo, TransferBufferLocation,
     },
     pixels::{Color, FColor},
     rect::Rect,
+    Error
 };
 use std::{marker::PhantomData, sync::Arc};
 use sys::gpu::{
