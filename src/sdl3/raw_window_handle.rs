@@ -5,22 +5,6 @@ use raw_window_handle::{
     DisplayHandle, HandleError, HasDisplayHandle, HasWindowHandle, RawDisplayHandle,
     RawWindowHandle, WindowHandle,
 };
-#[cfg(target_os = "windows")]
-use std::num::NonZero;
-#[cfg(all(
-    unix,
-    not(target_os = "macos"),
-    not(target_os = "ios"),
-    not(target_os = "android")
-))]
-use std::{ffi::CStr, ptr::NonNull};
-#[cfg(all(
-    unix,
-    not(target_os = "macos"),
-    not(target_os = "ios"),
-    not(target_os = "android")
-))]
-use sys::properties::SDL_GetNumberProperty;
 use sys::{properties::SDL_GetPointerProperty, video::SDL_Window};
 
 // this queries then stores all handles upon creation, then returns the stored values on request
@@ -103,6 +87,7 @@ unsafe fn get_window_handle<'window>(
     #[cfg(target_os = "windows")]
     unsafe {
         use raw_window_handle::Win32WindowHandle;
+        use std::num::NonZero;
 
         let window_properties = sys::video::SDL_GetWindowProperties(raw_window);
 
@@ -128,6 +113,7 @@ unsafe fn get_window_handle<'window>(
     unsafe {
         use objc2::{msg_send, runtime::NSObject};
         use raw_window_handle::AppKitWindowHandle;
+        use std::ptr::NonNull;
 
         let window_properties = sys::video::SDL_GetWindowProperties(raw_window);
 
@@ -150,6 +136,7 @@ unsafe fn get_window_handle<'window>(
     #[cfg(target_os = "ios")]
     unsafe {
         use raw_window_handle::UiKitWindowHandle;
+        use std::ptr::NonNull;
 
         let window_properties = sys::video::SDL_GetWindowProperties(raw_window);
 
@@ -168,6 +155,7 @@ unsafe fn get_window_handle<'window>(
     #[cfg(target_os = "android")]
     unsafe {
         use raw_window_handle::AndroidNdkWindowHandle;
+        use std::ptr::NonNull;
 
         let window_properties = sys::video::SDL_GetWindowProperties(raw_window);
 
@@ -190,6 +178,8 @@ unsafe fn get_window_handle<'window>(
         not(target_os = "android")
     ))]
     unsafe {
+        use std::{ffi::CStr, ptr::NonNull};
+		use sys::properties::SDL_GetNumberProperty;
         let video_driver = CStr::from_ptr(sys::video::SDL_GetCurrentVideoDriver());
 
         match video_driver.to_bytes() {
@@ -286,6 +276,8 @@ unsafe fn get_display_handle<'window>(
         not(target_os = "android")
     ))]
     unsafe {
+        use std::{ffi::CStr, ptr::NonNull};
+		use sys::properties::SDL_GetNumberProperty;
         let video_driver = CStr::from_ptr(sys::video::SDL_GetCurrentVideoDriver());
 
         match video_driver.to_bytes() {
