@@ -7,7 +7,7 @@ use crate::{
     },
     pixels::{Color, FColor},
     rect::Rect,
-    Error
+    Error,
 };
 use std::{marker::PhantomData, sync::Arc};
 use sys::gpu::{
