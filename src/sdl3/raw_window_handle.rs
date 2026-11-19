@@ -101,8 +101,14 @@ unsafe fn get_window_handle<'window>(
             sys::video::SDL_PROP_WINDOW_WIN32_INSTANCE_POINTER,
             std::ptr::null_mut(),
         );
-        let mut handle = Win32WindowHandle::new(NonZero::new_unchecked(hwnd.addr() as isize));
-        handle.hinstance = Some(NonZero::new_unchecked(hinstance.addr() as isize));
+        let Some(hwnd_addr) = NonZero::new(hwnd.addr() as isize) else {
+            return Err(HandleError::Unavailable);
+        };
+        let Some(hinstance_addr) = NonZero::new(hinstance.addr() as isize) else {
+            return Err(HandleError::Unavailable);
+        };
+        let mut handle = Win32WindowHandle::new(hwnd_addr);
+        handle.hinstance = Some(hinstance_addr);
         let raw_window_handle = RawWindowHandle::Win32(handle);
 
         Ok(WindowHandle::borrow_raw(raw_window_handle))
@@ -123,10 +129,10 @@ unsafe fn get_window_handle<'window>(
             std::ptr::null_mut(),
         );
         let ns_view: *mut NSObject = msg_send![ns_window as *mut NSObject, contentView];
-        if ns_view.is_null() {
+        let Some(ns_view) = NonNull::new(ns_view.cast()) else {
             return Err(HandleError::Unavailable);
-        }
-        let handle = AppKitWindowHandle::new(NonNull::new_unchecked(ns_view.cast()));
+        };
+        let handle = AppKitWindowHandle::new(ns_view);
         let raw_window_handle = RawWindowHandle::AppKit(handle);
 
         Ok(WindowHandle::borrow_raw(raw_window_handle))
@@ -145,7 +151,10 @@ unsafe fn get_window_handle<'window>(
             sys::video::SDL_PROP_WINDOW_UIKIT_WINDOW_POINTER,
             std::ptr::null_mut(),
         );
-        let handle = UiKitWindowHandle::new(NonNull::new_unchecked(ui_view));
+        let Some(ui_view) = NonNull::new(ui_view) else {
+            return Err(HandleError::Unavailable);
+        };
+        let handle = UiKitWindowHandle::new(ui_view);
         let raw_window_handle = RawWindowHandle::UiKit(handle);
 
         Ok(WindowHandle::borrow_raw(raw_window_handle))
@@ -164,7 +173,10 @@ unsafe fn get_window_handle<'window>(
             sys::video::SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER,
             std::ptr::null_mut(),
         );
-        let handle = AndroidNdkWindowHandle::new(NonNull::new_unchecked(native_window));
+        let Some(handle) = NonNull::new(handle) else {
+            return Err(HandleError::Unavailable);
+        };
+        let handle = AndroidNdkWindowHandle::new(handle);
         let raw_window_handle = RawWindowHandle::AndroidNdk(handle);
 
         Ok(WindowHandle::borrow_raw(raw_window_handle))
@@ -179,7 +191,7 @@ unsafe fn get_window_handle<'window>(
     ))]
     unsafe {
         use std::{ffi::CStr, ptr::NonNull};
-		use sys::properties::SDL_GetNumberProperty;
+        use sys::properties::SDL_GetNumberProperty;
         let video_driver = CStr::from_ptr(sys::video::SDL_GetCurrentVideoDriver());
 
         match video_driver.to_bytes() {
@@ -208,7 +220,10 @@ unsafe fn get_window_handle<'window>(
                     sys::video::SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER,
                     std::ptr::null_mut(),
                 );
-                let handle = WaylandWindowHandle::new(NonNull::new_unchecked(window));
+                let Some(window) = NonNull::new(window) else {
+                    return Err(HandleError::Unavailable);
+                };
+                let handle = WaylandWindowHandle::new(window);
                 let raw_window_handle = RawWindowHandle::Wayland(handle);
 
                 Ok(WindowHandle::borrow_raw(raw_window_handle))
@@ -277,7 +292,7 @@ unsafe fn get_display_handle<'window>(
     ))]
     unsafe {
         use std::{ffi::CStr, ptr::NonNull};
-		use sys::properties::SDL_GetNumberProperty;
+        use sys::properties::SDL_GetNumberProperty;
         let video_driver = CStr::from_ptr(sys::video::SDL_GetCurrentVideoDriver());
 
         match video_driver.to_bytes() {
@@ -291,7 +306,7 @@ unsafe fn get_display_handle<'window>(
                     sys::video::SDL_PROP_WINDOW_X11_DISPLAY_POINTER,
                     std::ptr::null_mut(),
                 );
-                let display = core::ptr::NonNull::<libc::c_void>::new(display);
+                let display = NonNull::new(display);
 
                 let window = SDL_GetNumberProperty(
                     window_properties,
@@ -313,8 +328,8 @@ unsafe fn get_display_handle<'window>(
                     sys::video::SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER,
                     std::ptr::null_mut(),
                 );
-                let Some(display) = core::ptr::NonNull::<libc::c_void>::new(display) else {
-                    return Err(HandleError::Unavailable); // I'm unsure if this is the right error type, of if we should just panic here if the display isn't available?
+                let Some(display) = NonNull::new(display) else {
+                    return Err(HandleError::Unavailable);
                 };
                 let handle = WaylandDisplayHandle::new(display);
                 let raw_window_handle = RawDisplayHandle::Wayland(handle);
