@@ -221,7 +221,7 @@ impl<'a> DepthStencilTargetInfo<'a> {
         Default::default()
     }
 
-    pub fn with_texture(mut self, texture: &'a mut Texture<'_>) -> Self {
+    pub fn with_texture(mut self, texture: &'a Texture<'_>) -> Self {
         self.inner.texture = texture.raw();
         self
     }
