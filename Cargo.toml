@@ -308,7 +308,7 @@ name = "window-properties"
 
 [[example]]
 required-features = ["raw-window-handle"]
-name = "raw-window-handle-with-wgpu"
+name = "wgpu-with-raw-window-handle"
 
 [[example]]
 name = "virtual-joysticks"
