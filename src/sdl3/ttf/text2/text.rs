@@ -291,12 +291,17 @@ impl<'a, E: Engine> Text<'a, E> {
     }
     // Can't return a normal `&Font` 'cause  `Font` is not a direct wrapper of `TTF_Font` and can't be reconstructed
     #[doc(alias = "TTF_GetTextFont")]
-    pub fn get_font(&self) -> Result<NonNull<sys::TTF_Font>, Error> {
+    pub fn get_font(&self) -> Result<Option<NonNull<sys::TTF_Font>>, Error> {
+        clear_error();
         let font = unsafe { NonNull::new(sys::TTF_GetTextFont(self.raw())) };
 
         match font {
-            Some(font) => Ok(font),
-            None => Err(get_error()),
+            Some(font) => Ok(Some(font)),
+            // `TTF_GetTextFont` returns `NULL` both on an error or when the font is set to `NULL`
+            None => match get_error() {
+                e if e.is_empty() => Ok(None),
+                e => Err(e)
+            },
         }
     }
     #[doc(alias = "TTF_GetTextDirection")]
@@ -566,11 +571,11 @@ impl<'a, E: Engine> Text<'a, E> {
         }
     }
     #[doc(alias = "TTF_SetTextFont")]
-    pub fn set_font(&mut self, font: &'a Font) {
+    pub fn set_font(&mut self, font: Option<&'a Font>) {
         // Safety: The newly set font has the same lifetime(`'a`) as the text itself
         unsafe {
             // Returns true if `text==NULL`, which it never is(since `&mut self` can't be null), so no errors to handle.
-            ttf::TTF_SetTextFont(self.raw(), font.raw());
+            ttf::TTF_SetTextFont(self.raw(), font.map(|font| font.raw()).unwrap_or(std::ptr::null_mut()));
         }
     }
 
@@ -641,12 +646,56 @@ impl<'a, E: Engine> Drop for Text<'a, E> {
     }
 }
 
+#[derive(Debug)]
+pub enum TryAtlasDrawError {
+    Sdl(Error),
+    HasFont
+}
+impl Display for TryAtlasDrawError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Sdl(e) => e.fmt(f),
+            Self::HasFont => write!(f, "The given text has a font attached to it")
+        }
+    }
+}
+impl std::error::Error for TryAtlasDrawError {}
+impl From<Error> for TryAtlasDrawError {
+    fn from(value: Error) -> Self {
+        Self::Sdl(value)
+    }
+}
+
 impl<'a> Text<'a, Gpu> {
-    /// Get access to the `GpuAtlasDrawSequence` to render the `Text` using `sdl3::gpu`,
-    // Must take `&mut self` because some methods(like modifying fonts) clear draw data, which can cause a use-after-free,
-    // This has a poor interaction with `RcText`, since you can't get `&mut Text` from that, but I am not sure that's easily solvable,
+    /// Get access to the `GpuAtlasDrawSequence` to render the `Text`
+    /// 
+    /// Note: Requires `&mut self` since `Text` immutably borrows it's `&Font`, and certain actions which can be done on a font(like changing font size)
+    /// will mark all text using that font as dirty, then, most getter functions for `Text` info will rebuild the text's representation, freeing the draw data. 
+    /// If `text` has no associated font, see [`try_atlas_draw_sequence()`] to get the draw sequence behind `&Text`
     #[doc(alias = "TTF_GetGPUTextDrawData")]
     pub fn atlas_draw_sequence(&mut self) -> Result<Option<&GpuAtlasDrawSequence>, Error> {
+        // Safety: Since we have `&mut self`, no one else can query font info to trigger a rebuild. 
+        unsafe {
+            self.ungaurded_atlas_draw_sequence()
+        }
+    }
+
+    /// Immutable borrowing version of `[atlas_draw_sequence]`.
+    /// 
+    /// Requires `self` to have no font associated with it(`self.set_font(None)`), to prevent the drawing data being invalidated while borrowed
+    pub fn try_atlas_draw_sequence(&self) -> Result<Option<&GpuAtlasDrawSequence>, TryAtlasDrawError> {
+        if matches!(self.get_font()?, None) {
+            return Err(TryAtlasDrawError::HasFont)
+        }
+
+        // Safety: Since the font is `NULL`, and `self` can't be modified behind `&self`, it is impossible to mark the font dirty(and, by extension, trigger a rebuild)
+        unsafe {
+            Ok(self.ungaurded_atlas_draw_sequence()?)
+        }
+    }
+
+
+    unsafe fn ungaurded_atlas_draw_sequence(&self) -> Result<Option<&GpuAtlasDrawSequence>, Error> {
         // Safety: As GpuAtlasDrawSequence is a transparet wrapper, it is safe to cast TTF_GPUAtlasDrawSequence to it
         unsafe {
             clear_error();
@@ -754,8 +803,6 @@ impl<'a, E: Engine> OwnedText<'a, E> {
 }
 
 /// A reference counted version of `OwnedText`, using SDL3's in-built `refcount` field,
-///
-/// Note: Does not work while with `E = Gpu``, because you can't call `atlas_draw_sequence` without `&mut Text`, meaning it can't be rendered.
 pub struct RcText<'a, E: Engine> {
     text: NonNull<Text<'a, E>>,
     _type: PhantomData<E>,
