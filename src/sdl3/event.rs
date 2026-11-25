@@ -116,7 +116,7 @@ impl crate::EventSubsystem {
             } else {
                 events.set_len(result as usize);
 
-                events.into_iter().map(Event::from_ll).collect()
+                events.into_iter().map(|e| Event::from_ll(e)).collect()
             }
         }
     }
@@ -1792,7 +1792,17 @@ impl Event {
         }
     }
 
-    pub fn from_ll(raw: sys::events::SDL_Event) -> Event {
+    /// Converts a raw `SDL_Event` into an [`Event`].
+    ///
+    /// # Safety
+    ///
+    /// `raw` must be a valid, fully initialized event as produced by SDL (for
+    /// example from `SDL_PollEvent` or an event watch callback). In particular,
+    /// the union member selected by `raw.type` must be initialized and hold
+    /// valid data for that event type, including any pointers it carries
+    /// (text, drop file names, user data, etc.). Passing an event whose type
+    /// tag doesn't match its contents is undefined behavior.
+    pub unsafe fn from_ll(raw: sys::events::SDL_Event) -> Event {
         let raw_type = unsafe { raw.r#type };
 
         // if event type has not been defined, treat it as a UserEvent
@@ -3104,7 +3114,8 @@ impl Event {
         unsafe {
             sys::render::SDL_ConvertEventToRenderCoordinates(canvas.raw(), &mut raw);
         }
-        Some(Self::from_ll(raw))
+        // SAFETY: `raw` came from `to_ll` and was only adjusted in place by SDL.
+        Some(unsafe { Self::from_ll(raw) })
     }
 
     // Returns `true` on success and false if the event cannot be converted to its raw form (should not happen)
@@ -3116,7 +3127,8 @@ impl Event {
             unsafe {
                 sys::render::SDL_ConvertEventToRenderCoordinates(canvas.raw(), &mut raw);
             }
-            *self = Self::from_ll(raw);
+            // SAFETY: `raw` came from `to_ll` and was only adjusted in place by SDL.
+            *self = unsafe { Self::from_ll(raw) };
             true
         } else {
             false
@@ -3496,7 +3508,7 @@ extern "C" fn event_callback_marshall<CB: EventWatchCallback>(
     event: *mut sdl3_sys::events::SDL_Event,
 ) -> bool {
     let f: &mut CB = unsafe { &mut *(user_data as *mut _) };
-    let event = Event::from_ll(unsafe { *event });
+    let event = unsafe { Event::from_ll(*event) };
     f.callback(event);
     false
 }
@@ -3527,7 +3539,7 @@ mod test {
     fn test_to_from_ll() {
         {
             let e = Event::Quit { timestamp: 0 };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3536,7 +3548,7 @@ mod test {
                 display: Display::from_ll(sys::video::SDL_DisplayID(1)),
                 display_event: DisplayEvent::Orientation(Orientation::LandscapeFlipped),
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3545,7 +3557,7 @@ mod test {
                 window_id: 0,
                 win_event: WindowEvent::Resized(1, 2),
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3559,7 +3571,7 @@ mod test {
                 which: 0,
                 raw: 0,
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3573,7 +3585,7 @@ mod test {
                 which: 0,
                 raw: 0,
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3587,7 +3599,7 @@ mod test {
                 xrel: -1.,
                 yrel: 43.,
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3600,7 +3612,7 @@ mod test {
                 x: 543.,
                 y: 345.,
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3613,7 +3625,7 @@ mod test {
                 x: 543.,
                 y: 345.,
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3629,7 +3641,7 @@ mod test {
                 integer_x: -3,
                 integer_y: 5,
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3639,7 +3651,7 @@ mod test {
                 axis_idx: 1,
                 value: 12,
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3649,7 +3661,7 @@ mod test {
                 hat_idx: 1,
                 state: HatState::Left,
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3658,7 +3670,7 @@ mod test {
                 which: JoystickId::new(0),
                 button_idx: 3,
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3667,7 +3679,7 @@ mod test {
                 which: JoystickId::new(1),
                 button_idx: 2,
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3675,7 +3687,7 @@ mod test {
                 timestamp: 0,
                 which: JoystickId::new(1),
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3683,7 +3695,7 @@ mod test {
                 timestamp: 0,
                 which: JoystickId::new(2),
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3693,7 +3705,7 @@ mod test {
                 axis: Axis::LeftX,
                 value: 3,
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3702,7 +3714,7 @@ mod test {
                 which: JoystickId::new(1),
                 button: Button::Guide,
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3711,7 +3723,7 @@ mod test {
                 which: JoystickId::new(0),
                 button: Button::DPadRight,
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3719,7 +3731,7 @@ mod test {
                 timestamp: 543,
                 which: JoystickId::new(3),
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3727,7 +3739,7 @@ mod test {
                 timestamp: 555,
                 which: JoystickId::new(3),
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3735,7 +3747,7 @@ mod test {
                 timestamp: 654,
                 which: JoystickId::new(0),
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3744,7 +3756,7 @@ mod test {
                 scale: 1.0,
                 window_id: 2,
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3753,7 +3765,7 @@ mod test {
                 scale: 1.25,
                 window_id: 2,
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
         {
@@ -3762,7 +3774,7 @@ mod test {
                 scale: 0.5,
                 window_id: 2,
             };
-            let e2 = Event::from_ll(e.clone().to_ll().unwrap());
+            let e2 = unsafe { Event::from_ll(e.clone().to_ll().unwrap()) };
             assert_eq!(e, e2);
         }
     }
@@ -3787,7 +3799,7 @@ mod test {
             raw_event.key.r#mod = sys::keycode::SDL_Keymod(0xffff);
         }
 
-        if let Event::KeyDown { keymod, .. } = Event::from_ll(raw_event) {
+        if let Event::KeyDown { keymod, .. } = unsafe { Event::from_ll(raw_event) } {
             assert_eq!(keymod, Mod::all());
         } else {
             panic!()
@@ -3814,7 +3826,7 @@ mod test {
             raw_event.key.r#mod = sys::keycode::SDL_Keymod(0xffff);
         }
 
-        if let Event::KeyUp { keymod, .. } = Event::from_ll(raw_event) {
+        if let Event::KeyUp { keymod, .. } = unsafe { Event::from_ll(raw_event) } {
             assert_eq!(keymod, Mod::all());
         } else {
             panic!()
