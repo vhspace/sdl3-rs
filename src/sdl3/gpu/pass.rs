@@ -143,7 +143,8 @@ impl CommandBuffer {
     ///
     /// ```rs
     /// # let sdl = sdl3::init()?;
-    /// # let device = Device::new(ShaderFormat::INVALID, true)?;
+    /// # let video = sdl.video()?;
+    /// # let device = Device::new(&video, ShaderFormat::INVALID, true)?;
     /// # let command_buffer = device.acquire_command_buffer()?;
     /// let fence = command_buffer.submit_and_acquire_fence(&device)?;
     /// device.wait_fences(true, &[fence])?;
