@@ -6,7 +6,6 @@ use crate::EventPump;
 
 use crate::sys;
 use std::fmt;
-use std::marker::PhantomData;
 use sys::video::SDL_GetWindowID;
 
 mod keycode;
