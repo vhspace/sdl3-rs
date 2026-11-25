@@ -9,7 +9,7 @@ use crate::{
     properties::Properties,
     sys,
     video::Window,
-    Error,
+    Error, VideoSubsystem,
 };
 use std::sync::{Arc, Weak};
 use sys::gpu::{
@@ -68,9 +68,9 @@ pub(super) type WeakDevice = Weak<DeviceContainer>;
 #[derive(Clone)]
 pub struct Device {
     inner: Arc<DeviceContainer>,
-    // Keep a `VideoSubsystem` in each `Device`,
-    // to properly drop data in the right order
-    subsystem: Option<crate::VideoSubsystem>,
+    // Keep a `VideoSubsystem` in each `Device`: SDL needs the video subsystem
+    // to create a GPU device, and it must outlive the device.
+    _subsystem: VideoSubsystem,
 }
 impl Device {
     #[inline]
@@ -82,36 +82,46 @@ impl Device {
         Arc::downgrade(&self.inner)
     }
 
+    /// Creates a GPU device.
+    ///
+    /// SDL can only create a GPU device while the video subsystem is
+    /// initialized, so this takes a [`VideoSubsystem`] and keeps it alive for
+    /// as long as the device exists.
     #[doc(alias = "SDL_CreateGPUDevice")]
-    pub fn new(flags: ShaderFormat, debug_mode: bool) -> Result<Self, Error> {
+    pub fn new(
+        video: &VideoSubsystem,
+        flags: ShaderFormat,
+        debug_mode: bool,
+    ) -> Result<Self, Error> {
         let raw_device = unsafe { SDL_CreateGPUDevice(flags.0, debug_mode, std::ptr::null()) };
-        if raw_device.is_null() {
-            Err(get_error())
-        } else {
-            Ok(Self {
-                inner: Arc::new(DeviceContainer(raw_device)),
-                subsystem: None,
-            })
-        }
+        Self::from_new_raw(video, raw_device)
     }
 
+    /// Creates a GPU device from a set of properties.
+    ///
+    /// Like [`Device::new`], this needs the video subsystem to be initialized.
     #[doc(alias = "SDL_CreateGPUDeviceWithProperties")]
-    pub fn new_with_properties(properties: Properties) -> Result<Self, Error> {
+    pub fn new_with_properties(
+        video: &VideoSubsystem,
+        properties: Properties,
+    ) -> Result<Self, Error> {
         let raw_device = unsafe { SDL_CreateGPUDeviceWithProperties(properties.raw()) };
+        Self::from_new_raw(video, raw_device)
+    }
+
+    fn from_new_raw(video: &VideoSubsystem, raw_device: *mut SDL_GPUDevice) -> Result<Self, Error> {
         if raw_device.is_null() {
             Err(get_error())
         } else {
             Ok(Self {
                 inner: Arc::new(DeviceContainer(raw_device)),
-                subsystem: None,
+                _subsystem: video.clone(),
             })
         }
     }
 
     #[doc(alias = "SDL_ClaimWindowForGPUDevice")]
-    pub fn with_window(mut self, window: &crate::video::Window) -> Result<Self, Error> {
-        self.subsystem = Some(window.subsystem().clone());
-
+    pub fn with_window(self, window: &crate::video::Window) -> Result<Self, Error> {
         let p = unsafe { sys::gpu::SDL_ClaimWindowForGPUDevice(self.inner.0, window.raw()) };
         if p {
             Ok(self)
