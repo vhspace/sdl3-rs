@@ -200,7 +200,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     copy_commands.submit()?;
 
     // We'll need to allocate a texture buffer for our depth buffer for depth testing to work
-    let mut depth_texture = gpu.create_texture(
+    let depth_texture = gpu.create_texture(
         TextureCreateInfo::new()
             .with_type(TextureType::_2D)
             .with_width(WINDOW_SIZE)
@@ -241,7 +241,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
                 .with_clear_color(Color::RGB(128, 128, 128))];
             // This time, however, we want depth testing, so we need to also target a depth texture buffer
             let depth_target = DepthStencilTargetInfo::new()
-                .with_texture(&mut depth_texture)
+                .with_texture(&depth_texture)
                 .with_cycle(true)
                 .with_clear_depth(1.0)
                 .with_clear_stencil(0)
