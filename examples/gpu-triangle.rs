@@ -23,6 +23,7 @@ pub fn main() -> Result<(), Box<dyn std::error::Error>> {
     // aren't using any shaders)
     // We'll also turn on debug mode to true, so we get debug stuff
     let gpu = Device::new(
+        &video_subsystem,
         ShaderFormat::SPIRV | ShaderFormat::DXIL | ShaderFormat::DXBC | ShaderFormat::METALLIB,
         true,
     )?
