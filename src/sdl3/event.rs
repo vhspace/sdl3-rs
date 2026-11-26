@@ -3272,7 +3272,7 @@ impl crate::EventPump {
     }
 
     #[inline]
-    pub fn keyboard_state(&self) -> crate::keyboard::KeyboardState<'_> {
+    pub fn keyboard_state(&self) -> crate::keyboard::KeyboardState {
         crate::keyboard::KeyboardState::new(self)
     }
 
