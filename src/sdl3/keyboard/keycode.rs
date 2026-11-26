@@ -555,20 +555,25 @@ impl From<Keycode> for SDL_Keycode {
     }
 }
 
-use crate::keyboard::Scancode;
+use crate::keyboard::{Mod, Scancode};
 
 impl Keycode {
-    /// Gets the virtual key from a scancode. Returns None if there is no corresponding virtual key.
+    /// Gets the virtual key for a scancode under the current keyboard layout.
+    ///
+    /// With `key_event` set to `true`, the result matches the keycode SDL would put in a key
+    /// event and modifiers are ignored, except num lock when the `SDL_HINT_KEYCODE_OPTIONS` hint
+    /// includes `hide_numpad`. With `key_event` set to `false`, `modstate` is applied, so for
+    /// example shift turns `a` into `A`.
+    ///
+    /// Returns `None` if there is no corresponding virtual key, or if SDL returns a keycode that
+    /// has no `Keycode` variant. Shifted letters and most symbols produced with
+    /// `key_event = false` fall in that second case.
     #[doc(alias = "SDL_GetKeyFromScancode")]
-    pub fn from_scancode(
-        scancode: Scancode,
-        modstate: SDL_Keymod,
-        key_event: bool,
-    ) -> Option<Keycode> {
+    pub fn from_scancode(scancode: Scancode, modstate: Mod, key_event: bool) -> Option<Keycode> {
         unsafe {
             let keycode_id = sys::keyboard::SDL_GetKeyFromScancode(
                 sys::scancode::SDL_Scancode(scancode as i32),
-                modstate,
+                SDL_Keymod(modstate.bits()),
                 key_event,
             );
             if keycode_id == sys::keycode::SDLK_UNKNOWN {

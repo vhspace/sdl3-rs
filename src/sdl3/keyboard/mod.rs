@@ -89,7 +89,6 @@ impl KeyboardState {
     /// # Example
     /// ```no_run
     /// use sdl3::keyboard::{Keycode, Mod, Scancode};
-    /// use sdl3::sys::keycode::SDL_Keymod;
     /// use std::collections::HashSet;
     ///
     /// fn pressed_scancode_set(e: &sdl3::EventPump) -> HashSet<Scancode> {
@@ -98,7 +97,7 @@ impl KeyboardState {
     ///
     /// fn pressed_keycode_set(e: &sdl3::EventPump) -> HashSet<Keycode> {
     ///     e.keyboard_state().pressed_scancodes()
-    ///         .filter_map(|scancode| Keycode::from_scancode(scancode, SDL_Keymod(Mod::NOMOD.bits()), false))
+    ///         .filter_map(|scancode| Keycode::from_scancode(scancode, Mod::NOMOD, false))
     ///         .collect()
     /// }
     ///
