@@ -8,20 +8,23 @@ use sdl3_main::app::{PassEventMut, PassEventRef, PassEventVal};
 impl PassEventVal for Event {
     #[inline(always)]
     fn pass_event_val<R>(event: &mut SDL_Event, f: impl FnOnce(Self) -> R) -> R {
-        f(Event::from_ll(*event))
+        // SAFETY: SDL hands us a valid event from the app callback.
+        f(unsafe { Event::from_ll(*event) })
     }
 }
 
 impl PassEventRef for Event {
     #[inline(always)]
     fn pass_event_ref<R>(event: &mut SDL_Event, f: impl FnOnce(&Self) -> R) -> R {
-        f(&Event::from_ll(*event))
+        // SAFETY: SDL hands us a valid event from the app callback.
+        f(&unsafe { Event::from_ll(*event) })
     }
 }
 
 impl PassEventMut for Event {
     #[inline(always)]
     fn pass_event_mut<R>(event: &mut SDL_Event, f: impl FnOnce(&mut Self) -> R) -> R {
-        f(&mut Event::from_ll(*event))
+        // SAFETY: SDL hands us a valid event from the app callback.
+        f(&mut unsafe { Event::from_ll(*event) })
     }
 }
