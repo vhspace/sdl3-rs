@@ -130,7 +130,7 @@ mod raw_window_handle_test {
     #[test]
     fn get_macos_handle() {
         let window = new_hidden_window();
-		let window_clone = window.clone();
+        let window_clone = window.clone();
         let window_as_handle = window_clone.as_window_handles().unwrap();
         let window_handle = match window_as_handle.window_handle() {
             Ok(v) => v,
