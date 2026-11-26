@@ -136,3 +136,29 @@ fn metal_view_and_layer_are_exposed() {
     assert!(window.metal_layer().is_some());
     assert_eq!(window.context().metal_view(), window.metal_view());
 }
+
+#[test]
+fn title_survives_set_title_on_clone() {
+    let Some((_sdl_context, video_subsystem)) = init_video() else {
+        return;
+    };
+    let window = match video_subsystem
+        .window("rust-sdl3 test: old title", 320, 240)
+        .hidden()
+        .build()
+    {
+        Ok(window) => window,
+        Err(err) => {
+            eprintln!("Skipping video test: couldn't build window: {err}");
+            return;
+        }
+    };
+
+    // SDL frees the old title buffer in SDL_SetWindowTitle. The title read
+    // before the change must not point into it.
+    let mut other = window.clone();
+    let old = window.title();
+    other.set_title("new title").unwrap();
+    assert_eq!(old, "rust-sdl3 test: old title");
+    assert_eq!(window.title(), "new title");
+}
