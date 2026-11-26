@@ -36,6 +36,28 @@ fn build_canvas(video_subsystem: &VideoSubsystem) -> Result<Canvas<Window>, Stri
 }
 
 #[test]
+fn set_title_through_shared_reference() {
+    let Some((_sdl_context, video_subsystem)) = init_video() else {
+        return;
+    };
+    let window = match video_subsystem
+        .window("rust-sdl3 test: title", 320, 240)
+        .hidden()
+        .build()
+    {
+        Ok(window) => window,
+        Err(err) => {
+            eprintln!("Skipping video test: couldn't build window: {err}");
+            return;
+        }
+    };
+
+    // `window` is not `mut`: setting the title only needs a shared reference.
+    window.set_title("renamed").unwrap();
+    assert_eq!(window.title(), "renamed");
+}
+
+#[test]
 fn window_from_id() {
     let sdl_context = match sdl3::init() {
         Ok(ctx) => ctx,
@@ -156,7 +178,7 @@ fn title_survives_set_title_on_clone() {
 
     // SDL frees the old title buffer in SDL_SetWindowTitle. The title read
     // before the change must not point into it.
-    let mut other = window.clone();
+    let other = window.clone();
     let old = window.title();
     other.set_title("new title").unwrap();
     assert_eq!(old, "rust-sdl3 test: old title");
