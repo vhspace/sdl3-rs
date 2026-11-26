@@ -11,7 +11,9 @@ use sys::{properties::SDL_GetPointerProperty, video::SDL_Window};
 
 /// Holds the handles for a [`Window`], created using [`Window::as_window_handles()`]. This might only be needed for wgpu (which needs a value that is Send/Sync), and the [`Window`] struct already implements [`HasWindowHandle`] and [`HasDisplayHandle`] for crates that do not need a Send/Sync value.
 ///
-/// Note: this implements Send/Sync due to wgpu requirements, but the values returned by [`WindowHandles::window_handle()`] and [`WindowHandles::display_handle()`] can only be used on the same thread that created the window due to raw-window-handle (and OS) requirements
+/// Notes:
+/// - This implements Send/Sync due to wgpu requirements, but the values returned by [`WindowHandles::window_handle()`] and [`WindowHandles::display_handle()`] can only be used on the same thread that created the window due to raw-window-handle (and OS) requirements
+/// - This is essentially a snapshot of what the window and display handles are when the [`WindowHandles`] struct is created. On most platforms it can be assumed that the handles will never change for as long as the window is alive, but on some platforms (such as Android) the window handles can change after suspend/resume
 pub struct WindowHandles<'window> {
     window_handle: WindowHandle<'window>,
     display_handle: DisplayHandle<'window>,
@@ -79,7 +81,7 @@ impl HasDisplayHandle for Window {
 ///
 /// # Safety:
 ///
-/// This returns a value with a caller-defined lifetime, and this lifetime must not outline the window given to this function
+/// This returns a value with a caller-defined lifetime, and this lifetime must not outlive the window given to this function
 unsafe fn get_window_handle<'window>(
     raw_window: *mut SDL_Window,
 ) -> Result<WindowHandle<'window>, HandleError> {
@@ -104,11 +106,9 @@ unsafe fn get_window_handle<'window>(
         let Some(hwnd_addr) = NonZero::new(hwnd.addr() as isize) else {
             return Err(HandleError::Unavailable);
         };
-        let Some(hinstance_addr) = NonZero::new(hinstance.addr() as isize) else {
-            return Err(HandleError::Unavailable);
-        };
+        let hinstance_addr = NonZero::new(hinstance.addr() as isize);
         let mut handle = Win32WindowHandle::new(hwnd_addr);
-        handle.hinstance = Some(hinstance_addr);
+        handle.hinstance = hinstance_addr;
         let raw_window_handle = RawWindowHandle::Win32(handle);
 
         Ok(WindowHandle::borrow_raw(raw_window_handle))
@@ -173,7 +173,7 @@ unsafe fn get_window_handle<'window>(
             sys::video::SDL_PROP_WINDOW_ANDROID_WINDOW_POINTER,
             std::ptr::null_mut(),
         );
-        let Some(handle) = NonNull::new(handle) else {
+        let Some(handle) = NonNull::new(native_window) else {
             return Err(HandleError::Unavailable);
         };
         let handle = AndroidNdkWindowHandle::new(handle);
@@ -239,7 +239,7 @@ unsafe fn get_window_handle<'window>(
 ///
 /// # Safety:
 ///
-/// This returns a value with a caller-defined lifetime, and this lifetime must not outline the window given to this function
+/// This returns a value with a caller-defined lifetime, and this lifetime must not outlive the window given to this function
 unsafe fn get_display_handle<'window>(
     raw_window: *mut SDL_Window,
 ) -> Result<DisplayHandle<'window>, HandleError> {

@@ -5,15 +5,44 @@ mod raw_window_handle_test {
     use self::raw_window_handle::{
         HasDisplayHandle, HasWindowHandle, RawDisplayHandle, RawWindowHandle,
     };
-    use sdl3::video::Window;
+    use sdl3::{raw_window_handle::WindowHandles, video::Window};
+
+    const fn assert_send_sync<T: Send + Sync>() {}
+    const fn assert_has_window_and_display_handle<T: HasWindowHandle + HasDisplayHandle>() {}
+    #[allow(dead_code)]
+    const ASSERT: () = {
+        assert_has_window_and_display_handle::<Window>();
+        assert_has_window_and_display_handle::<WindowHandles<'static>>();
+        assert_send_sync::<WindowHandles<'static>>();
+    };
+
+    /// Tests whether two structs with `HasWindowHandle + HasDisplayHandle` both return Ok(..) and both return the same value
+    fn test_window_handle_providers_match(
+        left: impl HasWindowHandle + HasDisplayHandle,
+        right: impl HasWindowHandle + HasDisplayHandle,
+    ) {
+        assert_eq!(
+            left.window_handle()
+                .expect("Failed to get the window handle for the window"),
+            right
+                .window_handle()
+                .expect("Failed to get the window handle for the window")
+        );
+        assert_eq!(
+            left.display_handle()
+                .expect("Failed to get the display handle for the window"),
+            right
+                .display_handle()
+                .expect("Failed to get the display handle for the window")
+        );
+    }
 
     #[cfg(target_os = "windows")]
     #[test]
     fn get_windows_handle() {
-        use raw_window_handle::RawDisplayHandle;
-
         let window = new_hidden_window();
-        let window_as_handle = window.as_window_handles().unwrap();
+        let window_clone = window.clone();
+        let window_as_handle = window_clone.as_window_handles().unwrap();
         let window_handle = match window_as_handle.window_handle() {
             Ok(v) => v,
             Err(err) => panic!(
@@ -38,6 +67,7 @@ mod raw_window_handle_test {
             RawDisplayHandle::Windows(_) => {}
             x => panic!("Received wrong RawDisplayHandle type for Windows: {:?}", x),
         }
+        test_window_handle_providers_match(window, window_as_handle);
         println!("Successfully received Windows RawDisplayHandle!");
     }
 
@@ -51,7 +81,8 @@ mod raw_window_handle_test {
     #[test]
     fn get_linux_handle() {
         let window = new_hidden_window();
-        let window_as_handle = window.as_window_handles().unwrap();
+        let window_clone = window.clone();
+        let window_as_handle = window_clone.as_window_handles().unwrap();
         match window_as_handle.window_handle().unwrap().as_raw() {
             RawWindowHandle::Xlib(x11_handle) => {
                 assert_ne!(x11_handle.window, 0, "Window for X11 should not be 0");
@@ -92,13 +123,15 @@ mod raw_window_handle_test {
                 x
             ),
         }
+        test_window_handle_providers_match(window, window_as_handle);
     }
 
     #[cfg(target_os = "macos")]
     #[test]
     fn get_macos_handle() {
         let window = new_hidden_window();
-        let window_as_handle = window.as_window_handles().unwrap();
+		let window_clone = window.clone();
+        let window_as_handle = window_clone.as_window_handles().unwrap();
         let window_handle = match window_as_handle.window_handle() {
             Ok(v) => v,
             Err(err) => panic!(
@@ -134,6 +167,7 @@ mod raw_window_handle_test {
                 x
             ),
         }
+        test_window_handle_providers_match(window, window_as_handle);
     }
 
     pub fn new_hidden_window() -> Window {
