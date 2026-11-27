@@ -313,6 +313,15 @@ impl<'a> TextureSamplerBinding<'a> {
     }
 
     /// The texture to bind. Must have been created with [`SDL_GPU_TEXTUREUSAGE_SAMPLER`].
+    ///
+    /// # Safety:
+    /// `texture` must be valid for the duration of `Self`'s existence
+    pub unsafe fn with_raw_texture(mut self, texture: *mut SDL_GPUTexture) -> Self {
+        self.inner.texture = texture;
+        self
+    }
+
+    /// The texture to bind. Must have been created with [`SDL_GPU_TEXTUREUSAGE_SAMPLER`].
     pub fn with_texture(mut self, texture: &'a Texture<'static>) -> Self {
         self.inner.texture = texture.raw();
         self
